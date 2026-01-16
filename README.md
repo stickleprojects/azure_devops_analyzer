@@ -30,12 +30,15 @@ This system analyzes Azure DevOps repositories and stores comprehensive metrics 
 ### AI Agent Guides
 The `agents/` directory contains comprehensive guides for AI-driven development across all stages of the SDLC:
 
+- [00-documentation-standards.md](agents/00-documentation-standards.md) - **START HERE** - Standards for documentation and code examples
 - [01-requirements-gathering.md](agents/01-requirements-gathering.md) - Requirements elicitation and documentation
 - [02-architecture-and-design.md](agents/02-architecture-and-design.md) - System design and technical decisions
 - [03-implementation.md](agents/03-implementation.md) - Coding best practices and patterns
 - [04-testing.md](agents/04-testing.md) - Testing strategies and quality assurance
 - [05-code-review.md](agents/05-code-review.md) - Code review processes and checklists
 - [06-deployment-and-operations.md](agents/06-deployment-and-operations.md) - Deployment strategies and operational excellence
+
+**Important**: All guides follow the standards in `00-documentation-standards.md`, emphasizing concepts over code.
 
 ## Using the AI Agent Guides
 
