@@ -192,7 +192,7 @@ class GitHubExtractor(RepositoryExtractor):
                     committer_name=c.commit.committer.name if c.commit.committer else None,
                     commit_date=c.commit.author.date if c.commit.author else datetime.utcnow(),
                     parent_shas=[p.sha for p in c.parents],
-                    files_changed=len(c.files) if c.files else None,
+                    files_changed=stats.total if stats else None,
                     lines_added=stats.additions if stats else None,
                     lines_removed=stats.deletions if stats else None,
                 )
