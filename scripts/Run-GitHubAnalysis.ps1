@@ -66,7 +66,13 @@ $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptRoot
 $EnvFile = Join-Path $ProjectRoot ".env"
 $SchemaFile = Join-Path $ProjectRoot "database\schema.sql"
-$githubtoken = [System.Environment]::ExpandEnvironmentVariables($GitHubToken)
+# Resolve any environment variable references in the token
+if ($GitHubToken -and $GitHubToken.Contains('%')) {
+    $githubtoken = [Environment]::ExpandEnvironmentVariables($GitHubToken)
+}
+else {
+    $githubtoken = $GitHubToken
+}
 
 # Color output helpers
 function Write-Step {
@@ -270,6 +276,17 @@ AZURE_BACKUP_CONTAINER=database-backups
     Write-Success "Environment file created/updated: $EnvFile"
 }
 
+# Helper to run docker compose commands
+function Run-DockerCompose {
+    param([string[]]$Arguments)
+    if ($script:ComposeCommand -eq "docker compose") {
+        & docker compose @Arguments
+    }
+    else {
+        & docker-compose @Arguments
+    }
+}
+
 # Start Docker infrastructure
 function Start-Infrastructure {
     Write-Step "Starting Docker infrastructure..."
@@ -278,11 +295,11 @@ function Start-Infrastructure {
     try {
         # Pull latest images
         Write-Info "Pulling Docker images..."
-        Invoke-Expression "$script:ComposeCommand pull timescaledb rabbitmq 2>&1" | Out-Null
+        Run-DockerCompose -Arguments @("pull", "timescaledb", "rabbitmq", "flower", "grafana") 2>&1 | Out-Null
 
         # Start infrastructure services only (not the app services yet)
-        Write-Info "Starting TimescaleDB and RabbitMQ..."
-        Invoke-Expression "$script:ComposeCommand up -d timescaledb rabbitmq 2>&1"
+        Write-Info "Starting TimescaleDB, RabbitMQ, Flower, and Grafana..."
+        Run-DockerCompose -Arguments @("up", "-d", "timescaledb", "rabbitmq", "flower", "grafana") 2>&1 | Out-Null
 
         # Wait for services to be healthy
         Write-Info "Waiting for services to be healthy..."
@@ -378,338 +395,12 @@ function Start-Analysis {
     try {
         # Build the application image
         Write-Info "Building application image..."
-        Invoke-Expression "$script:ComposeCommand build scheduler 2>&1" | Out-Null
+        Run-DockerCompose -Arguments @("build", "scheduler") 2>&1 | Out-Null
 
-        # Create a one-off container to run the extraction
-        Write-Info "Starting repository extraction..."
+        # Run the extraction using the external Python script
+        Write-Info "Starting repository extraction (this may take a while for large accounts)..."
 
-        # Create a Python script to run the extraction
-        $extractorScript = @'
-import sys
-import os
-
-# Add src to path
-sys.path.insert(0, '/app')
-
-from src.extractors.github.extractor import GitHubExtractor
-from src.database.connection import session_scope, get_engine
-from src.database.models import (
-    Organization, Project, Repository, Branch,
-    Contributor, Commit, PullRequest, PRReview, PRComment
-)
-from sqlalchemy import text
-import logging
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
-def run_extraction():
-    """Run GitHub repository extraction."""
-    logger.info("Initializing GitHub extractor...")
-    extractor = GitHubExtractor()
-
-    logger.info("Fetching organizations/users...")
-    orgs = extractor.get_organizations()
-
-    for org_data in orgs:
-        logger.info(f"Processing: {org_data.name}")
-
-        with session_scope() as session:
-            # Create or update organization
-            org = session.query(Organization).filter_by(
-                platform=org_data.platform.value,
-                name=org_data.name
-            ).first()
-
-            if not org:
-                org = Organization(
-                    name=org_data.name,
-                    url=org_data.url,
-                    platform=org_data.platform.value
-                )
-                session.add(org)
-                session.flush()
-                logger.info(f"  Created organization: {org_data.name}")
-            else:
-                logger.info(f"  Organization exists: {org_data.name}")
-
-            # Create project (GitHub doesn't have projects, use org name)
-            project = session.query(Project).filter_by(
-                organization_id=org.organization_id,
-                name=org_data.name
-            ).first()
-
-            if not project:
-                project = Project(
-                    organization_id=org.organization_id,
-                    name=org_data.name,
-                    description=f"GitHub repositories for {org_data.name}"
-                )
-                session.add(project)
-                session.flush()
-
-        # Fetch repositories
-        logger.info(f"  Fetching repositories for {org_data.name}...")
-        repos = extractor.get_repositories(org_data.name)
-        logger.info(f"  Found {len(repos)} repositories")
-
-        for repo_data in repos:
-            logger.info(f"    Processing repo: {repo_data.name}")
-
-            with session_scope() as session:
-                # Get project
-                project = session.query(Project).join(Organization).filter(
-                    Organization.name == org_data.name,
-                    Organization.platform == org_data.platform.value
-                ).first()
-
-                # Create or update repository
-                repo = session.query(Repository).filter_by(repo_id=repo_data.repo_id).first()
-
-                if not repo:
-                    repo = Repository(
-                        repo_id=repo_data.repo_id,
-                        project_id=project.project_id,
-                        name=repo_data.name,
-                        url=repo_data.url,
-                        default_branch=repo_data.default_branch,
-                        platform_repo_id=repo_data.platform_repo_id,
-                        created_at=repo_data.created_at,
-                        is_active=True
-                    )
-                    session.add(repo)
-                    session.flush()
-                    logger.info(f"      Created repository: {repo_data.name}")
-                else:
-                    repo.url = repo_data.url
-                    repo.default_branch = repo_data.default_branch
-                    logger.info(f"      Updated repository: {repo_data.name}")
-
-            # Fetch branches
-            try:
-                branches = extractor.get_branches(repo_data.repo_id)
-                logger.info(f"      Found {len(branches)} branches")
-
-                with session_scope() as session:
-                    for branch_data in branches[:10]:  # Limit to first 10 branches
-                        branch = session.query(Branch).filter_by(
-                            repo_id=repo_data.repo_id,
-                            branch_name=branch_data.name
-                        ).first()
-
-                        if not branch:
-                            branch = Branch(
-                                repo_id=repo_data.repo_id,
-                                branch_name=branch_data.name,
-                                latest_commit_sha=branch_data.latest_commit_sha,
-                                is_active=True
-                            )
-                            session.add(branch)
-            except Exception as e:
-                logger.warning(f"      Failed to fetch branches: {e}")
-
-            # Fetch recent commits (limit to 50)
-            try:
-                commits = extractor.get_commits(repo_data.repo_id, limit=50)
-                logger.info(f"      Found {len(commits)} recent commits")
-
-                with session_scope() as session:
-                    for commit_data in commits:
-                        # Check if commit exists
-                        existing = session.query(Commit).filter_by(commit_sha=commit_data.sha).first()
-                        if existing:
-                            continue
-
-                        # Get or create contributor
-                        contributor = session.query(Contributor).filter_by(
-                            email=commit_data.author_email
-                        ).first()
-
-                        if not contributor:
-                            contributor = Contributor(
-                                email=commit_data.author_email,
-                                name=commit_data.author_name
-                            )
-                            session.add(contributor)
-                            session.flush()
-
-                        commit = Commit(
-                            commit_sha=commit_data.sha,
-                            repo_id=repo_data.repo_id,
-                            branch_name=repo_data.default_branch,
-                            author_id=contributor.id,
-                            committer_id=contributor.id,
-                            message=commit_data.message[:1000] if commit_data.message else "",
-                            commit_date=commit_data.commit_date,
-                            files_changed=commit_data.files_changed,
-                            lines_added=commit_data.lines_added,
-                            lines_removed=commit_data.lines_removed
-                        )
-                        session.add(commit)
-            except Exception as e:
-                logger.warning(f"      Failed to fetch commits: {e}")
-
-            # Fetch pull requests (limit to 20 most recent)
-            try:
-                prs = extractor.get_pull_requests(repo_data.repo_id)[:20]
-                logger.info(f"      Found {len(prs)} pull requests")
-
-                with session_scope() as session:
-                    for pr_data in prs:
-                        # Check if PR exists
-                        existing = session.query(PullRequest).filter_by(
-                            repo_id=repo_data.repo_id,
-                            pr_number=pr_data.pr_number
-                        ).first()
-
-                        if existing:
-                            continue
-
-                        # Get or create author contributor
-                        author = session.query(Contributor).filter_by(
-                            email=pr_data.author_email
-                        ).first()
-
-                        if not author:
-                            author = Contributor(
-                                email=pr_data.author_email,
-                                name=pr_data.author_name
-                            )
-                            session.add(author)
-                            session.flush()
-
-                        # Determine size classification
-                        total_changes = pr_data.lines_added + pr_data.lines_removed
-                        if total_changes < 50:
-                            size = "small"
-                        elif total_changes < 200:
-                            size = "medium"
-                        elif total_changes < 500:
-                            size = "large"
-                        else:
-                            size = "extra_large"
-
-                        pr = PullRequest(
-                            repo_id=repo_data.repo_id,
-                            pr_number=pr_data.pr_number,
-                            platform_pr_id=pr_data.platform_pr_id,
-                            title=pr_data.title[:500] if pr_data.title else "",
-                            description=pr_data.description[:2000] if pr_data.description else None,
-                            source_branch=pr_data.source_branch,
-                            target_branch=pr_data.target_branch,
-                            author_id=author.id,
-                            status=pr_data.status,
-                            created_at=pr_data.created_at,
-                            updated_at=pr_data.updated_at,
-                            merged_at=pr_data.merged_at,
-                            closed_at=pr_data.closed_at,
-                            files_changed=pr_data.files_changed,
-                            lines_added=pr_data.lines_added,
-                            lines_removed=pr_data.lines_removed,
-                            size_category=size
-                        )
-                        session.add(pr)
-                        session.flush()
-
-                        # Add reviews
-                        for review_data in pr_data.reviews:
-                            reviewer = session.query(Contributor).filter_by(
-                                email=review_data.reviewer_email
-                            ).first()
-
-                            if not reviewer:
-                                reviewer = Contributor(
-                                    email=review_data.reviewer_email,
-                                    name=review_data.reviewer_name
-                                )
-                                session.add(reviewer)
-                                session.flush()
-
-                            # Map state to vote
-                            vote_map = {
-                                "approved": 10,
-                                "changes_requested": -10,
-                                "commented": 0,
-                                "dismissed": 0
-                            }
-
-                            review = PRReview(
-                                pr_id=pr.id,
-                                reviewer_id=reviewer.id,
-                                review_date=review_data.review_date,
-                                vote=vote_map.get(review_data.state, 0),
-                                is_required=review_data.is_required
-                            )
-                            session.add(review)
-
-                        # Add comments
-                        for comment_data in pr_data.comments[:50]:  # Limit comments
-                            commenter = session.query(Contributor).filter_by(
-                                email=comment_data.author_email
-                            ).first()
-
-                            if not commenter:
-                                commenter = Contributor(
-                                    email=comment_data.author_email,
-                                    name=comment_data.author_name
-                                )
-                                session.add(commenter)
-                                session.flush()
-
-                            comment = PRComment(
-                                pr_id=pr.id,
-                                author_id=commenter.id,
-                                content=comment_data.content[:2000] if comment_data.content else "",
-                                published_date=comment_data.published_date,
-                                thread_id=comment_data.thread_id,
-                                file_path=comment_data.file_path,
-                                line_number=comment_data.line_number,
-                                comment_type=comment_data.comment_type
-                            )
-                            session.add(comment)
-
-            except Exception as e:
-                logger.warning(f"      Failed to fetch PRs: {e}")
-
-    logger.info("Extraction complete!")
-
-    # Print summary
-    with session_scope() as session:
-        org_count = session.query(Organization).count()
-        repo_count = session.query(Repository).count()
-        branch_count = session.query(Branch).count()
-        commit_count = session.query(Commit).count()
-        pr_count = session.query(PullRequest).count()
-        contributor_count = session.query(Contributor).count()
-
-        print("\n" + "=" * 50)
-        print("EXTRACTION SUMMARY")
-        print("=" * 50)
-        print(f"Organizations:  {org_count}")
-        print(f"Repositories:   {repo_count}")
-        print(f"Branches:       {branch_count}")
-        print(f"Commits:        {commit_count}")
-        print(f"Pull Requests:  {pr_count}")
-        print(f"Contributors:   {contributor_count}")
-        print("=" * 50)
-
-if __name__ == "__main__":
-    run_extraction()
-'@
-
-        # Save script to temp location and copy to container
-        $tempScript = Join-Path $env:TEMP "run_extraction.py"
-        $extractorScript | Out-File -FilePath $tempScript -Encoding utf8 -Force
-
-        # Run extraction using docker compose run
-        Write-Info "Executing extraction (this may take a while for large accounts)..."
-
-        # Copy script into container
-        docker cp $tempScript "analyzer-timescaledb:/tmp/run_extraction.py"
-
-        # Run a one-off container with the extraction script
-        $runCmd = "$script:ComposeCommand run --rm -v `"$($tempScript):/app/run_extraction.py:ro`" scheduler python /app/run_extraction.py"
-        Invoke-Expression $runCmd
+        Run-DockerCompose -Arguments @("run", "--rm", "scheduler", "python", "/app/scripts/run_extraction.py")
 
         if ($LASTEXITCODE -ne 0) {
             Write-Warning "Extraction completed with some warnings"
@@ -717,9 +408,6 @@ if __name__ == "__main__":
         else {
             Write-Success "Extraction completed successfully"
         }
-
-        # Cleanup temp file
-        Remove-Item $tempScript -Force -ErrorAction SilentlyContinue
     }
     finally {
         Pop-Location
@@ -737,6 +425,8 @@ function Show-AccessInfo {
  TimescaleDB:     localhost:5432
  RabbitMQ:        localhost:5672
  RabbitMQ UI:     http://localhost:15672
+ Flower UI:       http://localhost:5555  (task monitoring)
+ Grafana UI:      http://localhost:3000  (admin/admin)
 
  DATABASE CONNECTION:
  --------------------
@@ -755,10 +445,10 @@ function Show-AccessInfo {
  JOIN organizations o ON p.organization_id = o.organization_id;
 
  -- Count commits by contributor
- SELECT c.name, c.email, COUNT(cm.sha) as commit_count
+ SELECT c.name, c.email, COUNT(cm.commit_sha) as commit_count
  FROM contributors c
- JOIN commits cm ON c.contributor_id = cm.author_id
- GROUP BY c.contributor_id
+ JOIN commits cm ON c.id = cm.author_id
+ GROUP BY c.id, c.name, c.email
  ORDER BY commit_count DESC;
 
  -- PR statistics
@@ -781,7 +471,7 @@ function Stop-Infrastructure {
 
     Push-Location $ProjectRoot
     try {
-        Invoke-Expression "$script:ComposeCommand down -v 2>&1"
+        Run-DockerCompose -Arguments @("down", "-v") 2>&1 | Out-Null
         Write-Success "Infrastructure stopped and volumes removed"
     }
     finally {
