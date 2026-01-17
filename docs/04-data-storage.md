@@ -24,6 +24,10 @@ erDiagram
     projects ||--o{ repositories : contains
     repositories ||--o{ branches : has
 
+    %% Service Mapping
+    services ||--o{ repository_services : includes
+    repositories ||--o{ repository_services : belongs_to
+
     %% Repository Analysis
     repositories ||--o{ repository_languages : analyzed_for
     repositories ||--o{ dependencies : has
@@ -291,6 +295,22 @@ erDiagram
         integer total_lines
         integer divergence_from_main
     }
+
+    services {
+        serial service_id PK
+        varchar name UK
+        text purpose
+        varchar cmdb_id UK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    repository_services {
+        serial id PK
+        varchar repo_id FK
+        integer service_id FK
+        timestamp linked_at
+    }
 ```
 
 ### Core Entity Tables
@@ -345,6 +365,13 @@ PR lifecycle and review tracking:
 Branch-level analytics as time-series:
 
 - **branch_metrics**: Tracks commit count, unique contributors, age, staleness, and divergence from main branch. Weekly hypertable.
+
+### Service Tables
+
+Services represent logical groupings of repositories that together deliver a business capability:
+
+- **services**: Defines services with a unique name, purpose description, and CMDB identifier for integration with configuration management systems. Each service can aggregate metrics from multiple repositories.
+- **repository_services**: Junction table implementing the many-to-many relationship between repositories and services. A repository may belong to zero or more services (e.g., an API repo and its database repo both belong to a "user" service), and a service may have zero or more repositories.
 
 ## Indexing Strategy
 
