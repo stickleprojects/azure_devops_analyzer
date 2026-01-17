@@ -296,3 +296,34 @@ Before finalizing the design:
 - Is this within budget and timeline?
 - Does the team have the skills needed?
 - Are there any single points of failure?
+
+## Session Resumption
+
+When resuming an architecture/design session:
+
+1. **Review Current State**
+   - Check which ADRs are documented vs pending decisions
+   - Review open architectural questions
+   - Identify any trade-off analyses in progress
+
+2. **Context to Provide**
+   - Decisions already made (reference ADRs)
+   - Pending decisions awaiting input
+   - Alternatives being evaluated
+   - Diagrams created or in progress
+
+3. **Session Handoff Notes**
+   - Update [11-session-continuity.md](../docs/11-session-continuity.md) with:
+     - ADRs written this session
+     - Design decisions made and rationale
+     - Open questions needing stakeholder input
+     - Diagrams to create or update
+
+4. **Decision State Markers**
+   Use ADR status consistently:
+   - `Proposed` - Under discussion
+   - `Accepted` - Approved and ready for implementation
+   - `Deprecated` - No longer valid
+   - `Superseded` - Replaced by newer decision
+
+See [Session Continuity Guide](../docs/11-session-continuity.md) for detailed handoff procedures.

@@ -8,403 +8,396 @@ The storage layer uses PostgreSQL with TimescaleDB extension for efficient time-
 
 The system requires PostgreSQL 15 with the TimescaleDB extension enabled. Additional extensions `pg_trgm` and `btree_gin` are used for text search and indexing.
 
+**Schema Location**: See [database/schema.sql](../database/schema.sql) for the complete DDL.
+
 ## Database Schema
+
+### Entity Relationship Diagram
+
+> **Note**: The diagram below renders in GitHub, VS Code, and other Mermaid-compatible viewers.
+> Source file: [images/database-schema.mmd](images/database-schema.mmd)
+
+```mermaid
+erDiagram
+    %% Core Entities
+    organizations ||--o{ projects : contains
+    projects ||--o{ repositories : contains
+    repositories ||--o{ branches : has
+
+    %% Repository Analysis
+    repositories ||--o{ repository_languages : analyzed_for
+    repositories ||--o{ dependencies : has
+    repositories ||--o{ code_quality_metrics : measured_by
+    repositories ||--o{ code_issues : contains
+    repositories ||--o{ repository_summaries : described_by
+    repositories ||--o{ readme_files : documents
+    repositories ||--o{ commits : tracks
+    repositories ||--o{ pull_requests : manages
+    repositories ||--o{ contributor_metrics : tracks
+
+    %% Branch Analysis
+    branches ||--o{ repository_languages : analyzed_for
+    branches ||--o{ dependencies : has
+    branches ||--o{ code_quality_metrics : measured_by
+    branches ||--o{ code_issues : contains
+    branches ||--o{ repository_summaries : described_by
+    branches ||--o{ readme_files : documents
+    branches ||--o{ branch_metrics : tracked_by
+
+    %% Dependencies and Security
+    dependencies ||--o{ vulnerabilities : exposes
+
+    %% Contributors
+    contributors ||--o{ contributor_metrics : generates
+    contributors ||--o{ commits : authors
+    contributors ||--o{ pull_requests : creates
+    contributors ||--o{ pr_reviews : submits
+    contributors ||--o{ pr_comments : writes
+
+    %% Pull Requests
+    pull_requests ||--o{ pr_reviews : reviewed_by
+    pull_requests ||--o{ pr_comments : discussed_in
+
+    %% Table Definitions
+    organizations {
+        serial organization_id PK
+        varchar name
+        text url
+        varchar platform
+        timestamp created_at
+    }
+
+    projects {
+        serial project_id PK
+        integer organization_id FK
+        varchar name
+        text description
+        timestamp created_at
+    }
+
+    repositories {
+        varchar repo_id PK
+        integer project_id FK
+        varchar name
+        text url
+        varchar default_branch
+        bigint platform_repo_id
+        timestamp created_at
+        timestamp last_analyzed_at
+        boolean is_active
+    }
+
+    branches {
+        serial branch_id PK
+        varchar repo_id FK
+        varchar branch_name
+        varchar latest_commit_sha
+        timestamp created_at
+        timestamp last_analyzed_at
+        boolean is_active
+    }
+
+    repository_languages {
+        serial id PK
+        varchar repo_id FK
+        integer branch_id FK
+        varchar language
+        decimal percentage
+        integer line_count
+        bigint byte_count
+        timestamp analyzed_at "hypertable"
+    }
+
+    dependencies {
+        serial id PK
+        varchar repo_id FK
+        integer branch_id FK
+        varchar package_name
+        varchar version
+        varchar ecosystem
+        varchar latest_version
+        boolean is_dev_dependency
+        boolean has_vulnerabilities
+        boolean is_eol
+        date eol_date
+        timestamp analyzed_at "hypertable"
+    }
+
+    vulnerabilities {
+        serial id PK
+        integer dependency_id FK
+        varchar cve_id
+        varchar vulnerability_id
+        varchar severity
+        text summary
+        text description
+        timestamp published_date
+        timestamp modified_date
+        varchar fixed_in_version
+        jsonb references
+        timestamp created_at
+    }
+
+    code_quality_metrics {
+        serial id PK
+        varchar repo_id FK
+        integer branch_id FK
+        timestamp timestamp "hypertable"
+        integer total_issues
+        integer critical_issues
+        integer high_issues
+        integer medium_issues
+        integer low_issues
+        decimal complexity_score
+        decimal maintainability_index
+        decimal test_coverage
+        integer code_smells
+        integer technical_debt_minutes
+    }
+
+    code_issues {
+        serial id PK
+        integer quality_metric_id
+        varchar repo_id FK
+        integer branch_id FK
+        text file_path
+        integer line_number
+        varchar severity
+        varchar category
+        varchar rule_id
+        text message
+        timestamp detected_at
+        timestamp resolved_at
+    }
+
+    repository_summaries {
+        serial id PK
+        varchar repo_id FK
+        integer branch_id FK
+        text summary_text
+        text purpose
+        text[] key_technologies
+        text target_audience
+        timestamp generated_at
+        varchar generated_by
+    }
+
+    readme_files {
+        serial id PK
+        varchar repo_id FK
+        integer branch_id FK
+        text file_path
+        text content
+        text summary
+        integer word_count
+        timestamp analyzed_at
+    }
+
+    contributors {
+        serial id PK
+        varchar email UK
+        varchar name
+        timestamp first_seen_at
+        timestamp last_seen_at
+    }
+
+    contributor_metrics {
+        serial id PK
+        varchar repo_id FK
+        integer contributor_id FK
+        timestamp period_start "hypertable"
+        timestamp period_end
+        integer commit_count
+        integer lines_added
+        integer lines_removed
+        integer files_modified
+        integer pr_created
+        integer pr_reviews
+        integer pr_approvals
+        integer active_days
+        decimal avg_commit_message_quality
+    }
+
+    commits {
+        varchar commit_sha PK
+        varchar repo_id FK
+        varchar branch_name
+        integer author_id FK
+        integer committer_id FK
+        text message
+        decimal message_quality_score
+        timestamp commit_date
+        text[] parent_shas
+        integer files_changed
+        integer lines_added
+        integer lines_removed
+    }
+
+    pull_requests {
+        serial id PK
+        varchar repo_id FK
+        integer pr_number
+        varchar platform_pr_id UK
+        text title
+        text description
+        varchar source_branch
+        varchar target_branch
+        integer author_id FK
+        varchar status
+        timestamp created_at
+        timestamp updated_at
+        timestamp merged_at
+        timestamp closed_at
+        integer files_changed
+        integer lines_added
+        integer lines_removed
+        integer comment_count
+        integer approval_count
+        varchar size_category
+        boolean has_issues
+        text[] issue_flags
+    }
+
+    pr_reviews {
+        serial id PK
+        integer pr_id FK
+        integer reviewer_id FK
+        timestamp review_date
+        integer vote
+        boolean is_required
+        integer comment_count
+    }
+
+    pr_comments {
+        serial id PK
+        integer pr_id FK
+        varchar thread_id
+        integer author_id FK
+        text content
+        varchar comment_type
+        timestamp published_date
+        text file_path
+        integer line_number
+    }
+
+    branch_metrics {
+        serial id PK
+        integer branch_id FK
+        timestamp timestamp "hypertable"
+        integer commit_count
+        integer unique_contributors
+        integer age_days
+        integer staleness_days
+        integer total_lines
+        integer divergence_from_main
+    }
+```
 
 ### Core Entity Tables
 
-```sql
--- Organizations and Projects
-CREATE TABLE organizations (
-    organization_id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL UNIQUE,
-    url TEXT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+The foundation of the data model consists of hierarchical entities:
 
-CREATE TABLE projects (
-    project_id SERIAL PRIMARY KEY,
-    organization_id INTEGER REFERENCES organizations(organization_id),
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(organization_id, name)
-);
-
--- Repositories
-CREATE TABLE repositories (
-    repo_id VARCHAR(255) PRIMARY KEY,  -- Azure DevOps repo ID
-    project_id INTEGER REFERENCES projects(project_id),
-    name VARCHAR(255) NOT NULL,
-    url TEXT NOT NULL,
-    default_branch VARCHAR(255),
-    created_at TIMESTAMP,
-    last_analyzed_at TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE,
-    INDEX idx_repo_project (project_id),
-    INDEX idx_repo_last_analyzed (last_analyzed_at)
-);
-
--- Branches
-CREATE TABLE branches (
-    branch_id SERIAL PRIMARY KEY,
-    repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    branch_name VARCHAR(255) NOT NULL,
-    latest_commit_sha VARCHAR(255),
-    created_at TIMESTAMP,
-    last_analyzed_at TIMESTAMP,
-    is_active BOOLEAN DEFAULT TRUE,
-    UNIQUE(repo_id, branch_name),
-    INDEX idx_branch_repo (repo_id),
-    INDEX idx_branch_last_analyzed (last_analyzed_at)
-);
-```
+- **organizations**: Top-level Azure DevOps organizations with name and URL
+- **projects**: Projects within organizations, linked by foreign key
+- **repositories**: Individual repos with Azure DevOps ID as primary key, tracking default branch and last analysis timestamp
+- **branches**: Branch metadata per repository, tracking latest commit SHA and analysis status
 
 ### Language and Dependency Tables
 
-```sql
--- Repository Languages
-CREATE TABLE repository_languages (
-    id SERIAL PRIMARY KEY,
-    repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    branch_id INTEGER REFERENCES branches(branch_id) ON DELETE CASCADE,
-    language VARCHAR(100) NOT NULL,
-    percentage DECIMAL(5,2),
-    line_count INTEGER,
-    byte_count BIGINT,
-    analyzed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_lang_repo (repo_id),
-    INDEX idx_lang_branch (branch_id),
-    INDEX idx_lang_analyzed (analyzed_at)
-);
+These tables track the technology makeup of each repository:
 
--- Convert to hypertable for time-series
-SELECT create_hypertable('repository_languages', 'analyzed_at',
-    chunk_time_interval => INTERVAL '1 month',
-    if_not_exists => TRUE
-);
-
--- Dependencies
-CREATE TABLE dependencies (
-    id SERIAL PRIMARY KEY,
-    repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    branch_id INTEGER REFERENCES branches(branch_id) ON DELETE CASCADE,
-    package_name VARCHAR(500) NOT NULL,
-    version VARCHAR(100),
-    ecosystem VARCHAR(100) NOT NULL,  -- PyPI, npm, Maven, NuGet, etc.
-    latest_version VARCHAR(100),
-    is_dev_dependency BOOLEAN DEFAULT FALSE,
-    has_vulnerabilities BOOLEAN DEFAULT FALSE,
-    is_eol BOOLEAN DEFAULT FALSE,
-    eol_date DATE,
-    analyzed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_dep_repo (repo_id),
-    INDEX idx_dep_branch (branch_id),
-    INDEX idx_dep_has_vuln (has_vulnerabilities),
-    INDEX idx_dep_is_eol (is_eol),
-    INDEX idx_dep_analyzed (analyzed_at)
-);
-
-SELECT create_hypertable('dependencies', 'analyzed_at',
-    chunk_time_interval => INTERVAL '1 month',
-    if_not_exists => TRUE
-);
-
--- Vulnerabilities
-CREATE TABLE vulnerabilities (
-    id SERIAL PRIMARY KEY,
-    dependency_id INTEGER REFERENCES dependencies(id) ON DELETE CASCADE,
-    cve_id VARCHAR(50),
-    vulnerability_id VARCHAR(100),  -- OSV or other ID
-    severity VARCHAR(20) NOT NULL,  -- CRITICAL, HIGH, MEDIUM, LOW
-    summary TEXT,
-    description TEXT,
-    published_date TIMESTAMP,
-    modified_date TIMESTAMP,
-    fixed_in_version VARCHAR(100),
-    references JSONB,  -- Array of reference URLs
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    INDEX idx_vuln_dependency (dependency_id),
-    INDEX idx_vuln_severity (severity),
-    INDEX idx_vuln_cve (cve_id)
-);
-```
+- **repository_languages**: Stores detected languages with percentage, line count, and byte count. Configured as a TimescaleDB hypertable partitioned by `analyzed_at` (monthly chunks).
+- **dependencies**: Package information including name, version, ecosystem (PyPI, npm, Maven, NuGet), and security flags (`has_vulnerabilities`, `is_eol`). Also a hypertable for time-series tracking.
+- **vulnerabilities**: CVE and OSV vulnerability records linked to dependencies, storing severity, description, and fix version.
 
 ### Code Quality Tables
 
-```sql
--- Code Quality Metrics (Time-series)
-CREATE TABLE code_quality_metrics (
-    id SERIAL,
-    repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    branch_id INTEGER REFERENCES branches(branch_id) ON DELETE CASCADE,
-    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    total_issues INTEGER DEFAULT 0,
-    critical_issues INTEGER DEFAULT 0,
-    high_issues INTEGER DEFAULT 0,
-    medium_issues INTEGER DEFAULT 0,
-    low_issues INTEGER DEFAULT 0,
-    complexity_score DECIMAL(10,2),
-    maintainability_index DECIMAL(5,2),
-    test_coverage DECIMAL(5,2),
-    code_smells INTEGER DEFAULT 0,
-    technical_debt_minutes INTEGER DEFAULT 0,
-    PRIMARY KEY (id, timestamp),
-    INDEX idx_quality_repo (repo_id),
-    INDEX idx_quality_branch (branch_id)
-);
+Quality metrics are stored as time-series data for trend analysis:
 
-SELECT create_hypertable('code_quality_metrics', 'timestamp',
-    chunk_time_interval => INTERVAL '1 week',
-    if_not_exists => TRUE
-);
-
--- Individual Code Issues
-CREATE TABLE code_issues (
-    id SERIAL PRIMARY KEY,
-    quality_metric_id INTEGER NOT NULL,
-    repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    branch_id INTEGER REFERENCES branches(branch_id) ON DELETE CASCADE,
-    file_path TEXT NOT NULL,
-    line_number INTEGER,
-    severity VARCHAR(20) NOT NULL,
-    category VARCHAR(100),  -- bug, vulnerability, code_smell, etc.
-    rule_id VARCHAR(100),
-    message TEXT,
-    detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    resolved_at TIMESTAMP,
-    INDEX idx_issue_repo (repo_id),
-    INDEX idx_issue_severity (severity),
-    INDEX idx_issue_category (category),
-    INDEX idx_issue_detected (detected_at)
-);
-```
+- **code_quality_metrics**: Aggregated counts of issues by severity, plus complexity scores, maintainability index, test coverage, and technical debt. Hypertable with weekly chunks.
+- **code_issues**: Individual issue records with file path, line number, category (bug, vulnerability, code_smell), and resolution status.
 
 ### Repository Summary Tables
 
-```sql
--- Repository Summaries
-CREATE TABLE repository_summaries (
-    id SERIAL PRIMARY KEY,
-    repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    branch_id INTEGER REFERENCES branches(branch_id) ON DELETE CASCADE,
-    summary_text TEXT NOT NULL,
-    purpose TEXT,
-    key_technologies TEXT[],  -- Array of technologies
-    target_audience TEXT,
-    generated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    generated_by VARCHAR(100),  -- e.g., "claude-3-opus", "gpt-4"
-    INDEX idx_summary_repo (repo_id),
-    INDEX idx_summary_generated (generated_at)
-);
+AI-generated insights and documentation:
 
--- README Files
-CREATE TABLE readme_files (
-    id SERIAL PRIMARY KEY,
-    repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    branch_id INTEGER REFERENCES branches(branch_id) ON DELETE CASCADE,
-    file_path TEXT NOT NULL,
-    content TEXT,
-    summary TEXT,
-    word_count INTEGER,
-    analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(repo_id, branch_id, file_path),
-    INDEX idx_readme_repo (repo_id)
-);
-
--- Enable full-text search on README content
-CREATE INDEX idx_readme_content_fts ON readme_files
-USING gin(to_tsvector('english', content));
-```
+- **repository_summaries**: LLM-generated summaries including purpose, key technologies (as array), and target audience. Tracks which model generated each summary.
+- **readme_files**: Extracted README content with full-text search index using PostgreSQL's `gin` and `tsvector`.
 
 ### Contributor and Activity Tables
 
-```sql
--- Contributors
-CREATE TABLE contributors (
-    id SERIAL PRIMARY KEY,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    name VARCHAR(255),
-    first_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_seen_at TIMESTAMP,
-    INDEX idx_contributor_email (email)
-);
+Developer metrics and commit history:
 
--- Contributor Metrics (Time-series)
-CREATE TABLE contributor_metrics (
-    id SERIAL,
-    repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    contributor_id INTEGER REFERENCES contributors(id) ON DELETE CASCADE,
-    period_start TIMESTAMP NOT NULL,
-    period_end TIMESTAMP NOT NULL,
-    commit_count INTEGER DEFAULT 0,
-    lines_added INTEGER DEFAULT 0,
-    lines_removed INTEGER DEFAULT 0,
-    files_modified INTEGER DEFAULT 0,
-    pr_created INTEGER DEFAULT 0,
-    pr_reviews INTEGER DEFAULT 0,
-    pr_approvals INTEGER DEFAULT 0,
-    active_days INTEGER DEFAULT 0,
-    avg_commit_message_quality DECIMAL(5,2),
-    PRIMARY KEY (id, period_start),
-    INDEX idx_contrib_metrics_repo (repo_id),
-    INDEX idx_contrib_metrics_contributor (contributor_id)
-);
-
-SELECT create_hypertable('contributor_metrics', 'period_start',
-    chunk_time_interval => INTERVAL '1 month',
-    if_not_exists => TRUE
-);
-
--- Commits (for detailed tracking)
-CREATE TABLE commits (
-    commit_sha VARCHAR(255) PRIMARY KEY,
-    repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    branch_name VARCHAR(255),
-    author_id INTEGER REFERENCES contributors(id),
-    committer_id INTEGER REFERENCES contributors(id),
-    message TEXT,
-    message_quality_score DECIMAL(5,2),
-    commit_date TIMESTAMP NOT NULL,
-    parent_shas TEXT[],
-    files_changed INTEGER,
-    lines_added INTEGER,
-    lines_removed INTEGER,
-    INDEX idx_commit_repo (repo_id),
-    INDEX idx_commit_author (author_id),
-    INDEX idx_commit_date (commit_date)
-);
-```
+- **contributors**: Unique contributors identified by email, with first/last seen timestamps
+- **contributor_metrics**: Time-series metrics per contributor per repository, including commit counts, lines changed, PR activity, and commit message quality scores. Monthly hypertable.
+- **commits**: Individual commit records with author, message, quality score, and change statistics.
 
 ### Pull Request Tables
 
-```sql
--- Pull Requests
-CREATE TABLE pull_requests (
-    id SERIAL PRIMARY KEY,
-    repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    pr_number INTEGER NOT NULL,
-    azure_pr_id VARCHAR(255) UNIQUE,
-    title TEXT NOT NULL,
-    description TEXT,
-    source_branch VARCHAR(255),
-    target_branch VARCHAR(255),
-    author_id INTEGER REFERENCES contributors(id),
-    status VARCHAR(50),  -- active, completed, abandoned
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP,
-    merged_at TIMESTAMP,
-    closed_at TIMESTAMP,
-    files_changed INTEGER DEFAULT 0,
-    lines_added INTEGER DEFAULT 0,
-    lines_removed INTEGER DEFAULT 0,
-    comment_count INTEGER DEFAULT 0,
-    approval_count INTEGER DEFAULT 0,
-    size_category VARCHAR(20),  -- small, medium, large, extra_large
-    has_issues BOOLEAN DEFAULT FALSE,
-    issue_flags TEXT[],  -- Array of issue descriptions
-    UNIQUE(repo_id, pr_number),
-    INDEX idx_pr_repo (repo_id),
-    INDEX idx_pr_status (status),
-    INDEX idx_pr_created (created_at),
-    INDEX idx_pr_merged (merged_at)
-);
+PR lifecycle and review tracking:
 
--- PR Reviews
-CREATE TABLE pr_reviews (
-    id SERIAL PRIMARY KEY,
-    pr_id INTEGER REFERENCES pull_requests(id) ON DELETE CASCADE,
-    reviewer_id INTEGER REFERENCES contributors(id),
-    review_date TIMESTAMP NOT NULL,
-    vote INTEGER,  -- -10=rejected, 0=no vote, 5=approved with suggestions, 10=approved
-    is_required BOOLEAN DEFAULT FALSE,
-    comment_count INTEGER DEFAULT 0,
-    INDEX idx_review_pr (pr_id),
-    INDEX idx_review_reviewer (reviewer_id),
-    INDEX idx_review_date (review_date)
-);
+- **pull_requests**: PR metadata including branches, status, timestamps, size metrics, and issue flags
+- **pr_reviews**: Individual review records with vote values (-10=rejected, 0=no vote, 5=approved with suggestions, 10=approved)
+- **pr_comments**: Thread and comment content with optional file/line associations
 
--- PR Comments/Threads
-CREATE TABLE pr_comments (
-    id SERIAL PRIMARY KEY,
-    pr_id INTEGER REFERENCES pull_requests(id) ON DELETE CASCADE,
-    thread_id VARCHAR(255),
-    author_id INTEGER REFERENCES contributors(id),
-    content TEXT,
-    comment_type VARCHAR(50),  -- text, system
-    published_date TIMESTAMP NOT NULL,
-    file_path TEXT,
-    line_number INTEGER,
-    INDEX idx_comment_pr (pr_id),
-    INDEX idx_comment_author (author_id),
-    INDEX idx_comment_date (published_date)
-);
-```
+### Branch Metrics
 
-### Branch-Specific Metrics
+Branch-level analytics as time-series:
 
-```sql
--- Branch Metrics (Time-series)
-CREATE TABLE branch_metrics (
-    id SERIAL,
-    branch_id INTEGER REFERENCES branches(branch_id) ON DELETE CASCADE,
-    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    commit_count INTEGER DEFAULT 0,
-    unique_contributors INTEGER DEFAULT 0,
-    age_days INTEGER DEFAULT 0,
-    staleness_days INTEGER DEFAULT 0,
-    total_lines INTEGER DEFAULT 0,
-    divergence_from_main INTEGER DEFAULT 0,  -- Commit count difference
-    PRIMARY KEY (id, timestamp),
-    INDEX idx_branch_metrics_branch (branch_id)
-);
+- **branch_metrics**: Tracks commit count, unique contributors, age, staleness, and divergence from main branch. Weekly hypertable.
 
-SELECT create_hypertable('branch_metrics', 'timestamp',
-    chunk_time_interval => INTERVAL '1 week',
-    if_not_exists => TRUE
-);
-```
+## Indexing Strategy
 
-## Indexes for Performance
+The schema employs several indexing patterns:
 
-```sql
--- Additional composite indexes for common queries
+- **Foreign key indexes**: All relationship columns indexed for join performance
+- **Timestamp indexes**: Time-based columns indexed for range queries
+- **Composite indexes**: Common query patterns pre-optimized (e.g., `repo_id + timestamp DESC`)
+- **Partial indexes**: Security-focused index on dependencies where vulnerabilities or EOL flags are true
+- **Full-text search**: GIN index on README content for text search
 
--- Repository + timestamp queries
-CREATE INDEX idx_quality_repo_timestamp ON code_quality_metrics(repo_id, timestamp DESC);
-CREATE INDEX idx_dep_repo_timestamp ON dependencies(repo_id, analyzed_at DESC);
+## Data Access Layer
 
--- Contributor + repo queries
-CREATE INDEX idx_contrib_metrics_repo_period ON contributor_metrics(repo_id, period_start DESC);
-
--- PR filtering
-CREATE INDEX idx_pr_repo_status_created ON pull_requests(repo_id, status, created_at DESC);
-
--- Security-focused queries
-CREATE INDEX idx_dep_security ON dependencies(repo_id, has_vulnerabilities, is_eol)
-WHERE has_vulnerabilities = true OR is_eol = true;
-```
-
-## Data Access Layer (Python)
-
-The application uses SQLAlchemy for ORM mapping and `psycopg2` for efficient database connections. It implements a `Database` class to handle connection pooling and transaction management.
+The application uses SQLAlchemy for ORM mapping and `psycopg2` for efficient database connections. A `Database` class handles connection pooling and transaction management.
 
 ## Backup and Restore
 
 ### Backup Strategy
 
-Backups are performed daily using `pg_dump` in custom format, compressed with gzip, and uploaded to Azure Blob Storage. Local backups are retained for 7 days, and cloud backups for 30 days.
+- **Daily backups**: `pg_dump` in custom format, compressed with gzip
+- **Storage**: Uploaded to Azure Blob Storage
+- **Retention**: 7 days local, 30 days cloud
 
-### Restore from Backup
+### Restore Process
 
-Restoration involves downloading the backup from Azure Blob Storage, decompressing it, and using `pg_restore` to populate a clean database instance.
+1. Download backup from Azure Blob Storage
+2. Decompress the archive
+3. Use `pg_restore` to populate a clean database instance
 
-### Incremental Backup with WAL Archiving
+### Point-in-Time Recovery
 
-PostgreSQL is configured with WAL archiving enabled (`wal_level = replica`, `archive_mode = on`) to support point-in-time recovery.
+PostgreSQL is configured with WAL archiving (`wal_level = replica`, `archive_mode = on`) to support point-in-time recovery for disaster scenarios.
 
 ## Data Retention and Archival
 
-Data older than 2 years is moved to archive tables. TimescaleDB chunks older than 6 months are compressed to save storage space.
+- **Archival threshold**: Data older than 2 years is moved to archive tables
+- **Compression**: TimescaleDB chunks older than 6 months are compressed to reduce storage
+
+## Checklist
+
+- [ ] PostgreSQL 15+ installed with TimescaleDB extension
+- [ ] Extensions enabled: `timescaledb`, `pg_trgm`, `btree_gin`
+- [ ] Schema applied from `database/schema.sql`
+- [ ] Read-only user created for Grafana
+- [ ] Connection pooling configured
+- [ ] Backup automation configured
+- [ ] WAL archiving enabled for PITR
+
+## Further Reading
+
+- [TimescaleDB Documentation](https://docs.timescale.com/)
+- [PostgreSQL Indexing Best Practices](https://www.postgresql.org/docs/current/indexes.html)
+- [SQLAlchemy ORM Tutorial](https://docs.sqlalchemy.org/en/20/orm/tutorial.html)
 
 ## Next Steps
 

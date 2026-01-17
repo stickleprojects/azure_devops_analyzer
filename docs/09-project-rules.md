@@ -26,4 +26,4 @@ These rules apply to all development and documentation activities to ensure the 
 
 - **Concise Responses**: When generating code or text, prioritize brevity.
 - **Diffs Only**: Provide `diff` blocks for code changes rather than reprinting entire files.
-- **Context Awareness**: Assume knowledge of the existing technology stack (Python 3.11, PostgreSQL, Airflow/APScheduler).
+- **Context Awareness**: Assume knowledge of the existing technology stack (Python 3.11, PostgreSQL, APScheduler/Celery).

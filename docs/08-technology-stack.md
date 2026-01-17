@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document provides a comprehensive overview of all technologies, tools, and libraries used in the Azure DevOps Repository Analysis System.
+This document provides a comprehensive overview of all technologies, tools, and libraries used in the Repository Analysis System, which supports both Azure DevOps and GitHub platforms.
 
 ## Core Technologies
 
@@ -13,7 +13,7 @@ This document provides a comprehensive overview of all technologies, tools, and 
 | Python   | 3.11+         | Primary application language   | Rich ecosystem for data processing, good Azure SDK support |
 | SQL      | PostgreSQL 15 | Database queries               | Standard for data storage and retrieval                    |
 | Bash     | 4.0+          | Deployment scripts, automation | System administration and CI/CD                            |
-| YAML     | 1.2           | Configuration files            | Airflow DAGs, CI/CD pipelines                              |
+| YAML     | 1.2           | Configuration files            | Scheduler config, CI/CD pipelines                          |
 
 ## Backend Stack
 
@@ -49,6 +49,14 @@ This document provides a comprehensive overview of all technologies, tools, and 
 - `msrest`
 - **Purpose**: Azure DevOps REST API integration
 - **Features**: Repository access, PR management, commit history
+
+#### GitHub SDK
+
+- `PyGithub>=2.1.0`
+- **Purpose**: GitHub REST API integration
+- **Features**: Repository access, PR management, commit history, reviews, comments
+- **Rate Limiting**: Built-in handling for GitHub's rate limits
+- **Authentication**: PAT or GitHub App authentication
 
 #### Database Libraries
 
@@ -440,10 +448,11 @@ This document provides a comprehensive overview of all technologies, tools, and 
 
 ## Network Requirements
 
-- **Outbound HTTPS (443)**: Azure DevOps API, OSV.dev, endoflife.date
+- **Outbound HTTPS (443)**: Azure DevOps API, GitHub API, OSV.dev, endoflife.date
 - **Inbound**:
   - Port 3000: Grafana
-  - Port 8080: Airflow web UI
+  - Port 5555: Flower (Celery monitoring)
+  - Port 15672: RabbitMQ management UI
   - Port 5432: PostgreSQL (internal only)
 
 ## License Considerations
@@ -453,7 +462,7 @@ This document provides a comprehensive overview of all technologies, tools, and 
 - PostgreSQL, TimescaleDB (Apache 2.0)
 - Python, most Python libraries (PSF, MIT, Apache)
 - Grafana (AGPL v3)
-- Airflow (Apache 2.0)
+- Celery (BSD), RabbitMQ (MPL 2.0), APScheduler (MIT)
 
 ### Commercial/Paid Options
 

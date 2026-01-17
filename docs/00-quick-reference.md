@@ -24,7 +24,7 @@ Azure DevOps → Python Extractors → Analyzers → PostgreSQL → Grafana
 | Component  | Technology               | Purpose                              |
 | ---------- | ------------------------ | ------------------------------------ |
 | Scheduler  | APScheduler              | Schedule analysis jobs               |
-| Job Queue  | Redis + RQ               | Distribute work to workers           |
+| Job Queue  | Celery + RabbitMQ        | Distribute work to workers           |
 | Extractors | Python + Azure SDK       | Fetch repo data from Azure DevOps    |
 | Analyzers  | Python + Various tools   | Analyze code quality, security, etc. |
 | Database   | PostgreSQL + TimescaleDB | Store all metrics                    |
@@ -41,7 +41,7 @@ Azure DevOps → Python Extractors → Analyzers → PostgreSQL → Grafana
 
 - **Language**: Python 3.11+
 - **Orchestration**: APScheduler 3.10.4, Celery 5.3.4
-- **Message Broker**: Redis 7.0+
+- **Message Broker**: RabbitMQ 3.12+
 - **Database**: PostgreSQL 15+, TimescaleDB 2.x
 - **Visualization**: Grafana 10+
 - **Analysis Tools**: SonarQube, OSV.dev, language-specific linters
@@ -49,57 +49,21 @@ Azure DevOps → Python Extractors → Analyzers → PostgreSQL → Grafana
 
 ## Quick Commands
 
-### Start the System
+**Start the System**: Start RabbitMQ, run the scheduler (`python src/scheduler/main.py`), then start Celery workers (`bash workers/worker_start.sh`).
 
-```bash
-# Start Redis
-sudo systemctl start redis
+**Monitor Jobs**: Use the `JobTracker` class from `utils.job_tracker` to get queue statistics, or access the Flower UI at `http://localhost:5555`.
 
-# Start scheduler
-python src/scheduler/main.py
-
-# Start workers (separate terminal)
-bash workers/worker_start.sh
-```
-
-### Monitor Jobs
-
-```python
-from utils.job_tracker import JobTracker
-
-tracker = JobTracker()
-stats = tracker.get_queue_stats()
-print(stats)
-```
-
-### Trigger Manual Scan
-
-```python
-from scheduler.main import AnalyzerScheduler
-
-scheduler = AnalyzerScheduler()
-job_id = scheduler.trigger_full_scan()
-```
+**Trigger Manual Scan**: Instantiate `AnalyzerScheduler` from `scheduler.main` and call `trigger_full_scan()`.
 
 ## Database Quick Access
 
-```sql
--- View repository health
-SELECT name, last_analyzed_at
-FROM repositories
-WHERE is_active = true;
+Common queries for monitoring system health:
 
--- Check for vulnerabilities
-SELECT COUNT(*)
-FROM vulnerabilities v
-JOIN dependencies d ON v.dependency_id = d.id
-WHERE v.severity = 'CRITICAL';
+- **Repository health**: Query `repositories` table for `last_analyzed_at` timestamps
+- **Vulnerabilities**: Join `vulnerabilities` and `dependencies` tables, filter by `severity = 'CRITICAL'`
+- **Recent PRs**: Query `pull_requests` where `created_at > NOW() - INTERVAL '7 days'`
 
--- Recent PR metrics
-SELECT * FROM pull_requests
-WHERE created_at > NOW() - INTERVAL '7 days'
-ORDER BY created_at DESC;
-```
+See [04-data-storage.md](04-data-storage.md) for complete schema details.
 
 ## Grafana Dashboards
 
@@ -117,8 +81,8 @@ Default dashboards:
 
 **Jobs not running?**
 
-- Check Redis: `redis-cli ping`
-- Check workers: `ps aux | grep rq`
+- Check RabbitMQ: `rabbitmqctl status`
+- Check workers: `celery -A src.tasks inspect active`
 - Check scheduler: `ps aux | grep scheduler`
 
 **Database issues?**
@@ -153,6 +117,9 @@ Default dashboards:
 6. [Visualization](06-visualization.md) - Grafana dashboards
 7. [Implementation Plan](07-implementation-plan.md) - Development roadmap
 8. [Technology Stack](08-technology-stack.md) - All technologies used
+9. [Project Rules](09-project-rules.md) - Development guidelines
+10. [Requirements](10-requirements.md) - Dependencies and maintenance
+11. [Session Continuity](11-session-continuity.md) - AI session handoff guide
 
 ## Support
 

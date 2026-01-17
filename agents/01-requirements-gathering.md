@@ -147,3 +147,26 @@ Before transitioning to the Architecture Agent:
 - Be specific with numbers (avoid "fast", "many", "often")
 - Document open questions and track them to resolution
 - Keep requirements focused on business value
+
+## Session Resumption
+
+When resuming a requirements gathering session:
+
+1. **Review Current State**
+   - Check which requirements are documented vs pending
+   - Review open questions awaiting stakeholder response
+   - Identify any blockers or dependencies
+
+2. **Context to Provide**
+   - List of stakeholders already interviewed
+   - Requirements gathered so far (reference docs)
+   - Outstanding clarifications needed
+
+3. **Session Handoff Notes**
+   - Update [11-session-continuity.md](../docs/11-session-continuity.md) with:
+     - Requirements completed this session
+     - Open questions sent to stakeholders
+     - Next stakeholders to interview
+     - Decisions made and rationale
+
+See [Session Continuity Guide](../docs/11-session-continuity.md) for detailed handoff procedures.

@@ -616,3 +616,34 @@ Before transitioning to Testing Agent:
 - Automated code review (CodeClimate, DeepSource)
 
 Remember: Good code is code that is easy to understand, easy to change, and hard to break.
+
+## Session Resumption
+
+When resuming an implementation session:
+
+1. **Review Current State**
+   - Check `git status` for uncommitted changes
+   - Review `git log` for recent commits
+   - Identify partially implemented features
+
+2. **Context to Provide**
+   - Files currently being modified
+   - Functions/modules partially complete
+   - Tests written vs tests pending
+   - Any failing tests or known issues
+
+3. **Session Handoff Notes**
+   - Update [11-session-continuity.md](../docs/11-session-continuity.md) with:
+     - Code completed this session
+     - Work in progress (with completion %)
+     - Technical decisions made
+     - Known issues or blockers
+
+4. **Code State Markers**
+   Use clear commit messages for session boundaries:
+   ```bash
+   git commit -m "WIP: [feature] - [what's done], [what's pending]"
+   git commit -m "Complete: [feature] - [summary of implementation]"
+   ```
+
+See [Session Continuity Guide](../docs/11-session-continuity.md) for detailed handoff procedures.

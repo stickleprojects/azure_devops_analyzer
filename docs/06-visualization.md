@@ -100,6 +100,26 @@ Materialized views are used to pre-calculate complex metrics like repository hea
 
 Grafana is configured to use connection pooling to manage database load efficiently.
 
+## Checklist
+
+- [ ] Grafana installed and accessible
+- [ ] PostgreSQL data source configured with read-only user
+- [ ] TimescaleDB support enabled in data source
+- [ ] Repository Overview dashboard created
+- [ ] Security dashboard created
+- [ ] Code Quality dashboard created
+- [ ] Contributor dashboard created
+- [ ] Pull Request dashboard created
+- [ ] Alerting rules configured
+- [ ] Dashboard provisioning set up for version control
+
+## Further Reading
+
+- [Grafana Documentation](https://grafana.com/docs/grafana/latest/)
+- [Grafana PostgreSQL Data Source](https://grafana.com/docs/grafana/latest/datasources/postgres/)
+- [Grafana Alerting](https://grafana.com/docs/grafana/latest/alerting/)
+- [Grafana Dashboard Best Practices](https://grafana.com/docs/grafana/latest/dashboards/build-dashboards/best-practices/)
+
 ## Next Steps
 
 - See [07-implementation-plan.md](07-implementation-plan.md) for deployment roadmap

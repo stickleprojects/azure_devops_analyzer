@@ -695,3 +695,35 @@ Before transitioning to Code Review Agent:
 - **Maintainability**: Tests fail only when behavior changes
 
 Remember: Good tests give confidence to refactor and deploy. Write tests that verify behavior, not implementation.
+
+## Session Resumption
+
+When resuming a testing session:
+
+1. **Review Current State**
+   - Run test suite to see current status
+   - Check test coverage report
+   - Identify failing or skipped tests
+
+2. **Context to Provide**
+   - Tests written vs tests still needed
+   - Test coverage percentage and gaps
+   - Known flaky tests or issues
+   - Testing infrastructure setup status
+
+3. **Session Handoff Notes**
+   - Update [11-session-continuity.md](../docs/11-session-continuity.md) with:
+     - Tests completed this session
+     - Coverage improvements
+     - Tests still needed (with priorities)
+     - Known issues or blockers
+
+4. **Quick Commands**
+   ```bash
+   # Check current test status
+   pytest --collect-only  # List tests
+   pytest -v              # Run all tests
+   pytest --cov=src       # Run with coverage
+   ```
+
+See [Session Continuity Guide](../docs/11-session-continuity.md) for detailed handoff procedures.

@@ -647,3 +647,34 @@ Before approving for deployment:
 6. **Be pragmatic** - Perfect is the enemy of good
 
 Remember: The goal of code review is to improve code quality and share knowledge, not to find fault or show superiority.
+
+## Session Resumption
+
+When resuming a code review session:
+
+1. **Review Current State**
+   - Check which PRs are pending review
+   - Review any feedback awaiting response
+   - Identify approved PRs ready for merge
+
+2. **Context to Provide**
+   - PRs reviewed vs still pending
+   - Critical issues found and their status
+   - Feedback given awaiting author response
+   - PRs blocked on external factors
+
+3. **Session Handoff Notes**
+   - Update [11-session-continuity.md](../docs/11-session-continuity.md) with:
+     - PRs reviewed this session
+     - Critical findings (security, bugs)
+     - Outstanding review items
+     - Decisions made on review issues
+
+4. **Review State Markers**
+   Track PR review status:
+   - `Pending Review` - Not yet reviewed
+   - `Changes Requested` - Feedback given, awaiting fixes
+   - `Approved` - Ready to merge
+   - `Blocked` - Cannot proceed (dependency, question)
+
+See [Session Continuity Guide](../docs/11-session-continuity.md) for detailed handoff procedures.

@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(claude mcp:*)",
+      "Bash(where:*)",
+      "Bash(npx:*)",
+      "Bash(dir:*)",
+      "Bash(npm install:*)",
+      "Bash(mmdc --version:*)"
+    ]
+  }
+}

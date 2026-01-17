@@ -1048,3 +1048,47 @@ Before declaring deployment complete:
 8. **Cost awareness** - Monitor and optimize cloud spending
 
 Remember: Operations is not just about keeping the lights on—it's about enabling the team to ship quickly and safely.
+
+## Session Resumption
+
+When resuming a deployment/operations session:
+
+1. **Review Current State**
+   - Check current deployment status across environments
+   - Review any active incidents or alerts
+   - Identify in-progress rollouts or changes
+
+2. **Context to Provide**
+   - Deployment status (which version where)
+   - Active alerts or incidents
+   - Pending infrastructure changes
+   - Rollback state if applicable
+
+3. **Session Handoff Notes**
+   - Update [11-session-continuity.md](../docs/11-session-continuity.md) with:
+     - Deployments completed this session
+     - Infrastructure changes made
+     - Incidents encountered and resolution
+     - Pending operations work
+
+4. **Quick Status Commands**
+   ```bash
+   # Check deployment status
+   docker-compose ps
+   kubectl get deployments -A
+
+   # Check service health
+   curl http://localhost:8080/health
+
+   # Check logs
+   docker-compose logs --tail=50
+   ```
+
+5. **Critical State Information**
+   Always note:
+   - Current production version
+   - Last successful deployment time
+   - Any rollback performed
+   - Active feature flags
+
+See [Session Continuity Guide](../docs/11-session-continuity.md) for detailed handoff procedures.

@@ -75,6 +75,24 @@ Flower provides a web-based UI for monitoring Celery clusters.
 - **Broker Connection**: Verifies connectivity to RabbitMQ.
 - **Worker Status**: Checks if workers are online and accepting tasks.
 
+## Checklist
+
+- [ ] RabbitMQ installed and running
+- [ ] Celery app configured with broker URL
+- [ ] Task queues defined (default, extraction, analysis)
+- [ ] APScheduler configured with SQLAlchemy job store
+- [ ] Scheduled jobs registered (full scan, incremental, maintenance)
+- [ ] Celery workers deployed and consuming tasks
+- [ ] Flower installed for monitoring
+- [ ] Health check tasks implemented
+
+## Further Reading
+
+- [Celery Documentation](https://docs.celeryq.dev/en/stable/)
+- [APScheduler Documentation](https://apscheduler.readthedocs.io/en/stable/)
+- [RabbitMQ Tutorials](https://www.rabbitmq.com/tutorials)
+- [Flower - Celery Monitoring](https://flower.readthedocs.io/en/latest/)
+
 ## Next Steps
 
 - See [06-visualization.md](06-visualization.md) for Grafana dashboard setup

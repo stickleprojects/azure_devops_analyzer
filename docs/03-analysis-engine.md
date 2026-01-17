@@ -84,6 +84,23 @@ Calculates branch-specific metrics including age, staleness (days since last com
 
 The orchestration layer coordinates the execution of all analysis modules, ensuring that dependencies (like extracting data before analyzing it) are met and that results are aggregated for storage.
 
+## Checklist
+
+- [ ] Language detection configured (Linguist or file extension fallback)
+- [ ] Dependency parsers implemented for target ecosystems
+- [ ] OSV.dev API integration for vulnerability scanning
+- [ ] endoflife.date API integration for EOL detection
+- [ ] SonarQube or linter integration for code quality
+- [ ] LLM API configured for repository summarization
+- [ ] Parallel execution configured via ThreadPoolExecutor
+
+## Further Reading
+
+- [OSV.dev API Documentation](https://osv.dev/docs/)
+- [endoflife.date API](https://endoflife.date/docs/api)
+- [SonarQube Documentation](https://docs.sonarsource.com/sonarqube/latest/)
+- [GitHub Linguist](https://github.com/github-linguist/linguist)
+
 ## Next Steps
 
 - See [04-data-storage.md](04-data-storage.md) for storing these analysis results
