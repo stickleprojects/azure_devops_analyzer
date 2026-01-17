@@ -14,6 +14,7 @@ from src.database.models.organization import Organization, Project
 from src.database.models.pull_request import PRComment, PRReview, PullRequest
 from src.database.models.quality import CodeIssue, CodeQualityMetric
 from src.database.models.repository import Branch, Repository
+from src.database.models.service import RepositoryService, Service
 from src.database.models.summary import ReadmeFile, RepositorySummary
 
 __all__ = [
@@ -48,4 +49,7 @@ __all__ = [
     "PRComment",
     # Branch Metric
     "BranchMetric",
+    # Service
+    "Service",
+    "RepositoryService",
 ]

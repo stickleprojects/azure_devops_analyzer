@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     from src.database.models.organization import Project
     from src.database.models.pull_request import PullRequest
     from src.database.models.quality import CodeIssue, CodeQualityMetric
+    from src.database.models.service import RepositoryService, Service
     from src.database.models.summary import ReadmeFile, RepositorySummary
 
 
@@ -71,6 +72,14 @@ class Repository(Base):
     pull_requests: Mapped[list["PullRequest"]] = relationship(
         back_populates="repository", cascade="all, delete-orphan"
     )
+    repository_services: Mapped[list["RepositoryService"]] = relationship(
+        back_populates="repository", cascade="all, delete-orphan"
+    )
+
+    @property
+    def services(self) -> list["Service"]:
+        """Get all services this repository belongs to."""
+        return [rs.service for rs in self.repository_services]
 
 
 class Branch(Base):

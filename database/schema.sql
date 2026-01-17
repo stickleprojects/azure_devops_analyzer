@@ -383,6 +383,35 @@ SELECT create_hypertable('branch_metrics', 'timestamp',
 );
 
 -- =============================================================================
+-- SERVICE TABLES
+-- =============================================================================
+
+-- Services (logical groupings of repositories)
+CREATE TABLE services (
+    service_id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    purpose TEXT,
+    cmdb_id VARCHAR(100) UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_service_name ON services(name);
+CREATE INDEX idx_service_cmdb ON services(cmdb_id);
+
+-- Repository-Service mapping (many-to-many)
+CREATE TABLE repository_services (
+    id SERIAL PRIMARY KEY,
+    repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
+    service_id INTEGER REFERENCES services(service_id) ON DELETE CASCADE,
+    linked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(repo_id, service_id)
+);
+
+CREATE INDEX idx_repo_service_repo ON repository_services(repo_id);
+CREATE INDEX idx_repo_service_service ON repository_services(service_id);
+
+-- =============================================================================
 -- PERFORMANCE INDEXES
 -- =============================================================================
 
