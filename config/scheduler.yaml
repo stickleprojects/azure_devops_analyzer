@@ -50,7 +50,7 @@ extraction:
   # Maximum commits to fetch per repository
   commit_limit: 1000
   # Only fetch commits from last N days (used for first-time scans)
-  commit_since_days: 90
+  commit_since_days: 200
   # Maximum PRs to fetch per repository
   pr_limit: 100
   # Include file tree in extraction
