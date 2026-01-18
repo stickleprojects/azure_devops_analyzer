@@ -1074,14 +1074,14 @@ When resuming a deployment/operations session:
 4. **Quick Status Commands**
    ```bash
    # Check deployment status
-   docker-compose ps
+   docker compose ps
    kubectl get deployments -A
 
    # Check service health
    curl http://localhost:8080/health
 
    # Check logs
-   docker-compose logs --tail=50
+   docker compose logs --tail=50
    ```
 
 5. **Critical State Information**

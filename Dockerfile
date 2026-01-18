@@ -22,5 +22,5 @@ COPY scripts/ ./scripts/
 RUN useradd --create-home --shell /bin/bash appuser
 USER appuser
 
-# Default command (overridden in docker-compose)
+# Default command (overridden in docker compose configuration)
 CMD ["python", "-m", "src.scheduler.main"]

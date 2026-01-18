@@ -68,17 +68,17 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 - **PR Throughput**: Created vs. merged over time
 - **Recent Pull Requests**: Table with clickable repo names → Deep-Dive
 
-### 5. Contributor Analytics Dashboard (`contributor-analytics.json`)
+### 6. Security Dashboard (`security-dashboard.json`)
 
-**UID**: `contributor-analytics`
-**Purpose**: Analyze team productivity and collaboration
+**UID**: `security-dashboard`
+**Purpose**: Organization-wide security overview with vulnerability and end-of-life dependency tracking
 
-**Panels**:
-- **Active Contributors**: Count in last 30 days
-- **Commits/PR Reviews**: 30-day totals
-- **Top 10 Contributors by Commits**: Horizontal bar chart
-- **Top 10 Reviewers**: Horizontal bar chart
-- **Contributor Activity Summary**: Table with commits, lines, PRs authored, reviews given
+**Sections**:
+- **Organization Security Summary**: Total vulnerabilities, EOL dependencies, repositories affected
+- **Vulnerability Analysis**: Severity distribution pie chart, top repositories by critical vulnerabilities
+- **End-of-Life Dependencies**: EOL status categorization (expired, expiring soon, future), repository security overview table with drilldown links
+- **Security Trends**: Time series of vulnerability counts over time
+- **Top Vulnerable Dependencies**: Table of most problematic packages across repositories
 
 ## Dashboard Navigation
 
@@ -89,7 +89,7 @@ All dashboards are cross-linked:
 
 ## Dashboard Designs (Planned)
 
-### Security Dashboard (Not Yet Implemented)
+### Security Dashboard (Implemented)
 
 **Purpose**: Track vulnerabilities and security issues
 
@@ -98,6 +98,8 @@ All dashboards are cross-linked:
 - **Top Vulnerable Dependencies**: Table listing packages with known vulnerabilities
 - **EOL Dependencies**: List of packages that have reached End-of-Life
 - **Vulnerability Trends**: Time series showing vulnerability counts over time
+
+*Note: Security features are currently implemented within the Repository Deep-Dive dashboard under the 'Security & Dependencies' section.*
 
 ### Code Quality Dashboard (Not Yet Implemented)
 
@@ -152,7 +154,7 @@ Grafana is configured to use connection pooling to manage database load efficien
 - [x] Contributor dashboard created (`contributor-analytics.json`)
 - [x] Cross-dashboard navigation links implemented
 - [x] Data links for drill-down navigation (repo → Deep-Dive)
-- [ ] Security dashboard created
+- [x] Security dashboard created (`security-dashboard.json`)
 - [ ] Code Quality dashboard created
 - [ ] Alerting rules configured
 

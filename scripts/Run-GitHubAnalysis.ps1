@@ -138,21 +138,20 @@ function Test-Prerequisites {
         Write-Error "Docker daemon is not running. Please start Docker Desktop."
     }
 
-    # Check docker-compose
-    if (-not (Get-Command docker-compose -ErrorAction SilentlyContinue)) {
-        # Try docker compose (v2)
-        try {
-            $null = docker compose version 2>&1
-            Write-Success "Docker Compose v2 is available"
-            $script:ComposeCommand = "docker compose"
-        }
-        catch {
-            Write-Error "Docker Compose is not installed. Please install Docker Compose."
-        }
+    # Check docker compose (v2)
+    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+        Write-Error "Docker is not installed. Please install Docker."
+        return
     }
-    else {
-        Write-Success "Docker Compose is available"
-        $script:ComposeCommand = "docker-compose"
+
+    try {
+        $null = docker compose version 2>&1
+        Write-Success "Docker Compose v2 is available"
+        $script:ComposeCommand = "docker compose"
+    }
+    catch {
+        Write-Error "Docker Compose v2 is not available. Please ensure Docker Desktop or Docker Compose v2 is installed."
+        return
     }
 
     # Check GitHub token
@@ -279,12 +278,7 @@ AZURE_BACKUP_CONTAINER=database-backups
 # Helper to run docker compose commands
 function Run-DockerCompose {
     param([string[]]$Arguments)
-    if ($script:ComposeCommand -eq "docker compose") {
-        & docker compose @Arguments
-    }
-    else {
-        & docker-compose @Arguments
-    }
+    & docker compose @Arguments
 }
 
 # Start Docker infrastructure
@@ -460,7 +454,7 @@ function Show-AccessInfo {
  -----------
  1. Open Grafana at http://localhost:3000 (admin/admin) to view dashboards
  2. Connect a SQL client to explore raw data if needed
- 3. Run scheduled analysis with: docker-compose up -d
+ 3. Run scheduled analysis with: docker compose up -d
  4. Check Flower at http://localhost:5555 to monitor background tasks
 
 "@ -ForegroundColor Gray
