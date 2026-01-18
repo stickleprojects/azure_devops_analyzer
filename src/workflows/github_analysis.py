@@ -19,6 +19,7 @@ from src.database.storage import (
     store_branch,
     store_commit,
     store_pull_request,
+    store_readme,
     update_repository_analyzed_timestamp,
     get_extraction_summary,
 )
@@ -156,6 +157,7 @@ class GitHubAnalysisWorkflow:
 
         # Process repository contents
         self._process_branches(repo_data)
+        self._process_readme_files(repo_data)
         self._process_commits(repo_data)
         self._process_pull_requests(repo_data)
 
@@ -176,6 +178,19 @@ class GitHubAnalysisWorkflow:
 
         except Exception as e:
             logger.warning("      Failed to fetch branches: %s", e)
+
+    def _process_readme_files(self, repo_data):
+        """Fetch and store README files for a repository."""
+        try:
+            readme_files = self.extractor.get_readme_files(repo_data.repo_id)
+            logger.info("      Found %d README files", len(readme_files))
+
+            with session_scope() as session:
+                for readme_data in readme_files:
+                    store_readme(session, repo_data.repo_id, readme_data)
+
+        except Exception as e:
+            logger.warning("      Failed to fetch README files: %s", e)
 
     def _process_commits(self, repo_data):
         """Fetch and store commits for a repository."""

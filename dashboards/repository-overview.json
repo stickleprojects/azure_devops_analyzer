@@ -6,7 +6,52 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": null,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Team Overview",
+      "type": "link",
+      "url": "/d/team-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Repository Deep-Dive",
+      "type": "link",
+      "url": "/d/repo-deep-dive"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Pull Requests",
+      "type": "link",
+      "url": "/d/pull-requests"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Contributors",
+      "type": "link",
+      "url": "/d/contributor-analytics"
+    }
+  ],
   "panels": [
     {
       "datasource": {
@@ -362,7 +407,37 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "repository"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View Repository Deep-Dive",
+                    "url": "/d/repo-deep-dive?var-repository=${__data.fields.repo_id}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "repo_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -391,7 +466,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  r.name as repository,\n  COUNT(c.commit_sha) as commits,\n  r.url\nFROM repositories r\nLEFT JOIN commits c ON r.repo_id = c.repo_id \n  AND c.commit_date > NOW() - INTERVAL '30 days'\nWHERE r.is_active = true\nGROUP BY r.repo_id, r.name, r.url\nORDER BY commits DESC\nLIMIT 10;",
+          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  COUNT(c.commit_sha) as commits,\n  r.url\nFROM repositories r\nLEFT JOIN commits c ON r.repo_id = c.repo_id \n  AND c.commit_date > NOW() - INTERVAL '30 days'\nWHERE r.is_active = true\nGROUP BY r.repo_id, r.name, r.url\nORDER BY commits DESC\nLIMIT 10;",
           "refId": "A"
         }
       ],
@@ -426,7 +501,37 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "repository"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View Repository Deep-Dive",
+                    "url": "/d/repo-deep-dive?var-repository=${__data.fields.repo_id}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "repo_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -455,7 +560,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  r.name as repository,\n  o.name as organization,\n  r.default_branch,\n  r.url,\n  r.last_analyzed_at,\n  (SELECT COUNT(*) FROM commits c WHERE c.repo_id = r.repo_id) as total_commits,\n  (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id) as total_prs\nFROM repositories r\nJOIN projects p ON r.project_id = p.project_id\nJOIN organizations o ON p.organization_id = o.organization_id\nWHERE r.is_active = true\nORDER BY r.last_analyzed_at DESC NULLS LAST;",
+          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  o.name as organization,\n  r.default_branch,\n  r.url,\n  r.last_analyzed_at,\n  (SELECT COUNT(*) FROM commits c WHERE c.repo_id = r.repo_id) as total_commits,\n  (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id) as total_prs\nFROM repositories r\nJOIN projects p ON r.project_id = p.project_id\nJOIN organizations o ON p.organization_id = o.organization_id\nWHERE r.is_active = true\nORDER BY r.last_analyzed_at DESC NULLS LAST;",
           "refId": "A"
         }
       ],

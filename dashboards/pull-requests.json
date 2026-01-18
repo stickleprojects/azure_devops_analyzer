@@ -6,7 +6,52 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": null,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Team Overview",
+      "type": "link",
+      "url": "/d/team-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Repository Overview",
+      "type": "link",
+      "url": "/d/repo-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Repository Deep-Dive",
+      "type": "link",
+      "url": "/d/repo-deep-dive"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Contributors",
+      "type": "link",
+      "url": "/d/contributor-analytics"
+    }
+  ],
   "panels": [
     {
       "datasource": {
@@ -529,7 +574,37 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "repository"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "View Repository Deep-Dive",
+                    "url": "/d/repo-deep-dive?var-repository=${__data.fields.repo_id}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "repo_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 10,
@@ -558,7 +633,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  r.name as repository,\n  pr.pr_number,\n  pr.title,\n  COALESCE(c.name, c.email) as author,\n  pr.status,\n  pr.size_category,\n  pr.files_changed,\n  pr.lines_added,\n  pr.lines_removed,\n  pr.created_at,\n  pr.merged_at\nFROM pull_requests pr\nJOIN repositories r ON pr.repo_id = r.repo_id\nLEFT JOIN contributors c ON pr.author_id = c.id\nWHERE pr.created_at > NOW() - INTERVAL '30 days'\nORDER BY pr.created_at DESC\nLIMIT 50;",
+          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  pr.pr_number,\n  pr.title,\n  COALESCE(c.name, c.email) as author,\n  pr.status,\n  pr.size_category,\n  pr.files_changed,\n  pr.lines_added,\n  pr.lines_removed,\n  pr.created_at,\n  pr.merged_at\nFROM pull_requests pr\nJOIN repositories r ON pr.repo_id = r.repo_id\nLEFT JOIN contributors c ON pr.author_id = c.id\nWHERE pr.created_at > NOW() - INTERVAL '30 days'\nORDER BY pr.created_at DESC\nLIMIT 50;",
           "refId": "A"
         }
       ],

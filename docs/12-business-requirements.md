@@ -134,6 +134,19 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 | FR-10.4 | System shall aggregate metrics at the service level                               | Medium   | Dashboard views available showing combined metrics for all repositories in a service           |
 | FR-10.5 | System shall support repositories belonging to multiple services                  | Medium   | Cross-service repository contributions tracked without duplication                             |
 
+### FR-11: Team Management and Contributor Linking
+
+| ID      | Requirement                                                                           | Priority | Acceptance Criteria                                                                          |
+| ------- | ------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------- |
+| FR-11.1 | System shall support defining teams with name, description, and optional CMDB link    | High     | Teams can be created with all required attributes                                            |
+| FR-11.2 | System shall support many-to-many relationships between contributors and teams        | High     | A contributor can belong to zero or more teams; a team can have zero or more contributors    |
+| FR-11.3 | System shall track team membership with effective dates (start/end)                   | Medium   | Historical team membership queryable for past periods                                        |
+| FR-11.4 | System shall support team hierarchy (parent/child teams)                              | Low      | Nested teams with aggregated metrics at parent level                                         |
+| FR-11.5 | System shall aggregate contributor metrics at the team level                          | High     | Team-level totals for commits, PRs, reviews, lines changed                                   |
+| FR-11.6 | System shall provide Individual Contributor Dashboard                                 | Medium   | Dashboard showing personal commits, PRs authored, reviews given across all repositories      |
+| FR-11.7 | System shall display team member aggregates on Team Overview dashboard                | Medium   | Team Overview shows per-member stats (commits, PRs, reviews) with drill-down to contributor  |
+| FR-11.8 | System shall support filtering dashboards by team                                     | Medium   | All relevant dashboards can be filtered to show only team members' activity                  |
+
 ## Non-Functional Requirements
 
 ### NFR-1: Performance
@@ -244,12 +257,14 @@ The following items are explicitly excluded from this project:
 | PR         | Pull Request - code change proposal for review                                             |
 | SDLC       | Software Development Life Cycle                                                            |
 | Service    | A logical grouping of one or more repositories that together deliver a business capability |
+| Team       | A group of contributors who work together, used for aggregating metrics and filtering views |
 
 ## Revision History
 
 | Version | Date       | Author | Changes                                                  |
 | ------- | ---------- | ------ | -------------------------------------------------------- |
 | 1.0     | 2026-01-17 | System | Initial draft based on README and documentation analysis |
+| 1.1     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking     |
 
 ## Approval
 

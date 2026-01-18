@@ -6,7 +6,15 @@
       "Bash(npx:*)",
       "Bash(dir:*)",
       "Bash(npm install:*)",
-      "Bash(mmdc --version:*)"
+      "Bash(mmdc --version:*)",
+      "Bash(python3:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(docker compose:*)",
+      "Bash(POSTGRES_HOST=localhost python3:*)",
+      "Bash(PGPASSWORD=TGMcVHdlaznNimYu82r3CL61 psql:*)",
+      "Bash(docker exec:*)",
+      "Bash(wc:*)",
+      "Bash(jq:*)"
     ]
   }
 }

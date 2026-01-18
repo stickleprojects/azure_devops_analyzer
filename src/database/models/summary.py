@@ -62,6 +62,20 @@ class ReadmeFile(Base):
     word_count: Mapped[Optional[int]] = mapped_column(Integer)
     analyzed_at: Mapped[Optional[datetime]] = mapped_column()
 
+    # Scope and context fields
+    scope_type: Mapped[Optional[str]] = mapped_column(String(50))  # repository, module, package, component
+    scope_path: Mapped[Optional[str]] = mapped_column(Text)  # directory path this README covers
+    parent_readme_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("readme_files.id", ondelete="SET NULL")
+    )
+    affects_paths: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))  # paths this README documents
+
     # Relationships
     repository: Mapped["Repository"] = relationship(back_populates="readme_files")
     branch: Mapped[Optional["Branch"]] = relationship(back_populates="readme_files")
+    parent_readme: Mapped[Optional["ReadmeFile"]] = relationship(
+        "ReadmeFile", remote_side=[id], back_populates="child_readmes"
+    )
+    child_readmes: Mapped[list["ReadmeFile"]] = relationship(
+        "ReadmeFile", back_populates="parent_readme"
+    )

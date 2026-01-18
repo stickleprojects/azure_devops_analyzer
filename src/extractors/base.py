@@ -7,7 +7,7 @@ and return data using these standardized data classes.
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 from typing import Optional
 
@@ -128,6 +128,22 @@ class PullRequestData:
 
 
 @dataclass
+class ReadmeData:
+    """README file content and metadata."""
+    file_path: str
+    content: str
+    branch: Optional[str] = None
+    word_count: Optional[int] = None
+    analyzed_at: Optional[datetime] = None
+
+    # Scope and context information
+    scope_type: Optional[str] = None  # repository, module, package, component
+    scope_path: Optional[str] = None  # directory path this README covers
+    parent_readme_path: Optional[str] = None  # path to parent README
+    affects_paths: Optional[list[str]] = None  # paths this README documents
+
+
+@dataclass
 class RepositoryData:
     """Complete repository data."""
     repo_id: str  # Platform-specific identifier
@@ -145,6 +161,7 @@ class RepositoryData:
     commits: list[CommitData] = field(default_factory=list)
     pull_requests: list[PullRequestData] = field(default_factory=list)
     file_tree: list[FileTreeItem] = field(default_factory=list)
+    readme_files: list[ReadmeData] = field(default_factory=list)
 
 
 class RepositoryExtractor(ABC):
@@ -298,6 +315,207 @@ class RepositoryExtractor(ABC):
             File content as string, or None if not found.
         """
         pass
+
+    def get_readme_files(
+        self,
+        repo_id: str,
+        branch: Optional[str] = None
+    ) -> list[ReadmeData]:
+        """
+        Find and extract README files from a repository with scope detection.
+
+        Args:
+            repo_id: Repository identifier.
+            branch: Branch to scan (defaults to default branch).
+
+        Returns:
+            List of README files found with scope context.
+        """
+        readme_patterns = [
+            "README.md", "README.rst", "README.txt", "README",
+            "readme.md", "readme.rst", "readme.txt", "readme",
+            "Readme.md", "Readme.rst", "Readme.txt", "Readme"
+        ]
+
+        file_tree = self.get_file_tree(repo_id, branch)
+        readme_files = []
+
+        # First pass: collect all README files
+        for item in file_tree:
+            if not item.is_directory:
+                file_name = item.path.split('/')[-1]
+                if file_name in readme_patterns:
+                    content = self.get_file_content(repo_id, item.path, branch)
+                    if content:
+                        readme_files.append(
+                            ReadmeData(
+                                file_path=item.path,
+                                content=content,
+                                branch=branch,
+                                word_count=len(content.split()),
+                                analyzed_at=datetime.now(UTC)
+                            )
+                        )
+
+        # Second pass: analyze scope and relationships
+        self._analyze_readme_scopes(readme_files, file_tree)
+
+        return readme_files
+
+    def _analyze_readme_scopes(
+        self,
+        readme_files: list[ReadmeData],
+        file_tree: list[FileTreeItem]
+    ) -> None:
+        """
+        Analyze scope and hierarchical relationships between README files.
+
+        Args:
+            readme_files: List of README files to analyze.
+            file_tree: Complete file tree for context.
+        """
+        # Create directory structure map
+        directories = set()
+        for item in file_tree:
+            if item.is_directory:
+                directories.add(item.path)
+            else:
+                # Add all parent directories
+                path_parts = item.path.split('/')[:-1]
+                for i in range(len(path_parts)):
+                    dir_path = '/'.join(path_parts[:i+1])
+                    if dir_path:
+                        directories.add(dir_path)
+
+        # Sort README files by path depth (root first)
+        readme_files.sort(key=lambda r: len(r.file_path.split('/')))
+
+        # Analyze each README file
+        for readme in readme_files:
+            self._determine_readme_scope(readme, readme_files, directories)
+
+    def _determine_readme_scope(
+        self,
+        readme: ReadmeData,
+        all_readmes: list[ReadmeData],
+        directories: set[str]
+    ) -> None:
+        """
+        Determine the scope and context for a single README file.
+
+        Args:
+            readme: README file to analyze.
+            all_readmes: All README files for context.
+            directories: Set of all directories in the repository.
+        """
+        path = readme.file_path
+        path_parts = path.split('/')
+
+        # Determine scope path (directory containing the README)
+        if len(path_parts) == 1:
+            # Root README
+            readme.scope_path = "/"
+            readme.scope_type = "repository"
+        else:
+            # README in subdirectory
+            readme.scope_path = '/'.join(path_parts[:-1])
+            readme.scope_type = self._classify_scope_type(readme.scope_path, directories)
+
+        # Find parent README (closest README in parent directories)
+        readme.parent_readme_path = self._find_parent_readme(readme, all_readmes)
+
+        # Determine affected paths (what this README documents)
+        readme.affects_paths = self._calculate_affected_paths(readme, directories)
+
+    def _classify_scope_type(self, scope_path: str, directories: set[str]) -> str:
+        """
+        Classify the type of scope based on directory structure.
+
+        Args:
+            scope_path: Directory path of the README.
+            directories: Set of all directories.
+
+        Returns:
+            Scope type: repository, module, package, or component.
+        """
+        path_parts = scope_path.split('/')
+        path_lower = scope_path.lower()
+
+        # Package patterns (usually have multiple subdirectories)
+        package_indicators = ['packages', 'libs', 'modules', 'components']
+        if any(indicator in path_lower for indicator in package_indicators):
+            return "package"
+
+        # Module patterns (organized by functionality)
+        module_indicators = ['src', 'lib', 'app', 'core', 'services', 'api', 'web', 'backend', 'frontend']
+        if any(indicator in path_lower for indicator in module_indicators):
+            return "module"
+
+        # Component patterns (specific features or utilities)
+        component_indicators = ['utils', 'helpers', 'tools', 'scripts', 'configs', 'tests', 'docs']
+        if any(indicator in path_lower for indicator in component_indicators):
+            return "component"
+
+        # Depth-based classification
+        if len(path_parts) >= 3:
+            return "component"
+        elif len(path_parts) == 2:
+            return "module"
+        else:
+            return "repository"
+
+    def _find_parent_readme(self, readme: ReadmeData, all_readmes: list[ReadmeData]) -> Optional[str]:
+        """
+        Find the parent README file (in a parent directory).
+
+        Args:
+            readme: Current README file.
+            all_readmes: All README files to search.
+
+        Returns:
+            Path to parent README, or None if no parent found.
+        """
+        current_parts = readme.file_path.split('/')[:-1]  # Remove filename
+
+        # Search for README in parent directories
+        while len(current_parts) > 0:
+            current_parts.pop()  # Move up one directory
+            parent_dir = '/'.join(current_parts) if current_parts else ''
+
+            # Look for README in this parent directory
+            for other_readme in all_readmes:
+                if other_readme.file_path == readme.file_path:
+                    continue  # Skip self
+
+                other_dir = '/'.join(other_readme.file_path.split('/')[:-1])
+                if other_dir == parent_dir:
+                    return other_readme.file_path
+
+        return None
+
+    def _calculate_affected_paths(self, readme: ReadmeData, directories: set[str]) -> list[str]:
+        """
+        Calculate which paths/directories this README documents.
+
+        Args:
+            readme: README file to analyze.
+            directories: Set of all directories.
+
+        Returns:
+            List of paths this README covers.
+        """
+        if readme.scope_type == "repository":
+            return ["/"]
+
+        scope_path = readme.scope_path
+        affected_paths = [scope_path]
+
+        # Add all subdirectories under the scope path
+        for directory in directories:
+            if directory.startswith(scope_path + '/'):
+                affected_paths.append(directory)
+
+        return affected_paths
 
     def get_repository_metadata(
         self,

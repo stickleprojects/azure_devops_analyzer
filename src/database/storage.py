@@ -5,7 +5,7 @@ Provides functions to persist extracted data into the database with
 deduplication, upsert logic, and relationship management.
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -20,6 +20,7 @@ from src.database.models import (
     PullRequest,
     PRReview,
     PRComment,
+    ReadmeFile,
 )
 from src.extractors.base import (
     OrganizationData,
@@ -29,6 +30,7 @@ from src.extractors.base import (
     PullRequestData,
     PRReviewData,
     PRCommentData,
+    ReadmeData,
 )
 
 
@@ -56,8 +58,12 @@ def should_scan_repository(
     if not repo or not repo.last_analyzed_at:
         return True
 
-    threshold = datetime.utcnow() - timedelta(hours=min_hours)
-    return repo.last_analyzed_at < threshold
+    threshold = datetime.now(UTC) - timedelta(hours=min_hours)
+    # Ensure last_analyzed_at is timezone-aware (assume UTC if naive)
+    last_analyzed = repo.last_analyzed_at
+    if last_analyzed.tzinfo is None:
+        last_analyzed = last_analyzed.replace(tzinfo=UTC)
+    return last_analyzed < threshold
 
 
 def get_or_create_contributor(
@@ -451,7 +457,93 @@ def update_repository_analyzed_timestamp(session: Session, repo_id: str) -> None
     """
     repo = session.query(Repository).filter_by(repo_id=repo_id).first()
     if repo:
-        repo.last_analyzed_at = datetime.utcnow()
+        repo.last_analyzed_at = datetime.now(UTC)
+
+
+def store_readme(
+    session: Session,
+    repo_id: str,
+    readme_data: ReadmeData,
+) -> ReadmeFile:
+    """
+    Store a README file with scope context.
+
+    Args:
+        session: Database session.
+        repo_id: Repository identifier.
+        readme_data: README data from extractor.
+
+    Returns:
+        ReadmeFile instance.
+    """
+    # Get repository
+    repo = session.query(Repository).filter_by(repo_id=repo_id).first()
+    if not repo:
+        raise ValueError(f"Repository {repo_id} not found")
+
+    # Find branch if specified
+    branch_id = None
+    if readme_data.branch:
+        branch = (
+            session.query(Branch)
+            .filter_by(repo_id=repo_id, branch_name=readme_data.branch)
+            .first()
+        )
+        if branch:
+            branch_id = branch.branch_id
+
+    # Find parent README if specified
+    parent_readme_id = None
+    if readme_data.parent_readme_path:
+        parent_readme = (
+            session.query(ReadmeFile)
+            .filter_by(
+                repo_id=repo_id,
+                branch_id=branch_id,
+                file_path=readme_data.parent_readme_path
+            )
+            .first()
+        )
+        if parent_readme:
+            parent_readme_id = parent_readme.id
+
+    # Check if README already exists
+    existing = (
+        session.query(ReadmeFile)
+        .filter_by(
+            repo_id=repo_id,
+            branch_id=branch_id,
+            file_path=readme_data.file_path
+        )
+        .first()
+    )
+
+    if existing:
+        # Update existing README
+        existing.content = readme_data.content
+        existing.word_count = readme_data.word_count
+        existing.analyzed_at = readme_data.analyzed_at
+        existing.scope_type = readme_data.scope_type
+        existing.scope_path = readme_data.scope_path
+        existing.parent_readme_id = parent_readme_id
+        existing.affects_paths = readme_data.affects_paths
+        return existing
+    else:
+        # Create new README
+        readme_file = ReadmeFile(
+            repo_id=repo_id,
+            branch_id=branch_id,
+            file_path=readme_data.file_path,
+            content=readme_data.content,
+            word_count=readme_data.word_count,
+            analyzed_at=readme_data.analyzed_at,
+            scope_type=readme_data.scope_type,
+            scope_path=readme_data.scope_path,
+            parent_readme_id=parent_readme_id,
+            affects_paths=readme_data.affects_paths,
+        )
+        session.add(readme_file)
+        return readme_file
 
 
 def get_extraction_summary(session: Session) -> dict:
@@ -471,4 +563,5 @@ def get_extraction_summary(session: Session) -> dict:
         "commits": session.query(Commit).count(),
         "pull_requests": session.query(PullRequest).count(),
         "contributors": session.query(Contributor).count(),
+        "readme_files": session.query(ReadmeFile).count(),
     }

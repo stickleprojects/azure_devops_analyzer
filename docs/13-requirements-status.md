@@ -7,7 +7,7 @@
 | Project Name     | Repository Analysis System |
 | Document Version | 1.0                        |
 | Status           | Active                     |
-| Last Updated     | 2026-01-17                 |
+| Last Updated     | 2026-01-18                 |
 
 ## Status Legend
 
@@ -22,7 +22,7 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 6        | 12      | 16          | 34    |
+| Functional Requirements     | 9        | 13      | 20          | 42    |
 | Non-Functional Requirements | 5        | 5       | 7           | 17    |
 
 ---
@@ -134,14 +134,14 @@
 
 ### FR-9: Visualization and Reporting
 
-| ID     | Requirement                                             | Priority | Status          | Notes                                                     |
-| ------ | ------------------------------------------------------- | -------- | --------------- | --------------------------------------------------------- |
-| FR-9.1 | System shall provide Grafana dashboards for all metrics | High     | :x: Not Started | Schema is Grafana-ready; no dashboard JSON definitions    |
-| FR-9.2 | System shall support time-range filtering               | High     | :x: Not Started | TimescaleDB hypertables support this; no dashboards yet   |
-| FR-9.3 | System shall support drill-down navigation              | Medium   | :x: Not Started | Data model supports hierarchy; no UI implementation       |
-| FR-9.4 | System shall provide security-focused dashboard views   | High     | :x: Not Started | Partial indexes for security queries exist; no dashboards |
+| ID     | Requirement                                             | Priority | Status                      | Notes                                                                                                                                           |
+| ------ | ------------------------------------------------------- | -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-9.1 | System shall provide Grafana dashboards for all metrics | High     | :white_check_mark: Complete | 5 dashboards implemented: Team Overview, Repository Overview, Repository Deep-Dive, Pull Requests, Contributor Analytics                       |
+| FR-9.2 | System shall support time-range filtering               | High     | :white_check_mark: Complete | All dashboards use Grafana time picker; navigation preserves time range                                                                         |
+| FR-9.3 | System shall support drill-down navigation              | Medium   | :white_check_mark: Complete | Repository names in tables link to Deep-Dive dashboard; cross-dashboard navigation links on all dashboards                                     |
+| FR-9.4 | System shall provide security-focused dashboard views   | High     | :large_orange_diamond: Partial | Security metrics included in Team Overview and Repository Deep-Dive (vulnerabilities, EOL deps); dedicated Security dashboard not yet created |
 
-**FR-9 Summary:** 0/4 Complete, 0/4 Partial, 4/4 Not Started
+**FR-9 Summary:** 3/4 Complete, 1/4 Partial, 0/4 Not Started
 
 ---
 
@@ -156,6 +156,23 @@
 | FR-10.5 | System shall support repositories belonging to multiple services | Medium   | :white_check_mark: Complete | Many-to-many relationship supports this                                                                    |
 
 **FR-10 Summary:** 4/5 Complete, 0/5 Partial, 1/5 Not Started
+
+---
+
+### FR-11: Team Management and Contributor Linking
+
+| ID      | Requirement                                                        | Priority | Status          | Notes                                                           |
+| ------- | ------------------------------------------------------------------ | -------- | --------------- | --------------------------------------------------------------- |
+| FR-11.1 | System shall support defining teams with name, description         | High     | :x: Not Started | No Team entity or table exists yet                              |
+| FR-11.2 | System shall support many-to-many relationships (contributors-teams) | High   | :x: Not Started | No contributor-team junction table                              |
+| FR-11.3 | System shall track team membership with effective dates            | Medium   | :x: Not Started | Date-range membership for historical analysis                   |
+| FR-11.4 | System shall support team hierarchy (parent/child teams)           | Low      | :x: Not Started | Optional nested team structure                                  |
+| FR-11.5 | System shall aggregate contributor metrics at team level           | High     | :x: Not Started | Team-level totals for commits, PRs, reviews                     |
+| FR-11.6 | System shall provide Individual Contributor Dashboard              | Medium   | :x: Not Started | Personal dashboard showing commits, PRs, reviews across repos   |
+| FR-11.7 | System shall display team member aggregates on Team Overview       | Medium   | :x: Not Started | Per-member stats with drill-down to Individual Contributor view |
+| FR-11.8 | System shall support filtering dashboards by team                  | Medium   | :x: Not Started | Team template variable on relevant dashboards                   |
+
+**FR-11 Summary:** 0/8 Complete, 0/8 Partial, 8/8 Not Started
 
 ---
 
@@ -232,7 +249,7 @@
 | TC-1 | PostgreSQL 15+ with TimescaleDB | :white_check_mark: Met | Docker Compose configured with TimescaleDB |
 | TC-2 | Python 3.11+                    | :white_check_mark: Met | Project configured for Python 3.11+        |
 | TC-3 | RabbitMQ for task queue         | :white_check_mark: Met | RabbitMQ in Docker Compose                 |
-| TC-4 | Grafana 10+ for visualization   | :x: Not Met            | Grafana not yet added to infrastructure    |
+| TC-4 | Grafana 10+ for visualization   | :white_check_mark: Met | Grafana 11.0.0 in Docker Compose with 5 provisioned dashboards |
 
 ---
 
@@ -264,12 +281,19 @@
 3. Implement PR quality issue detection
 4. Calculate commit message quality scores
 
-### Phase 3: Visualization (Medium Priority)
+### Phase 3: Visualization (Medium Priority) - MOSTLY COMPLETE
 
-1. Add Grafana to Docker Compose
-2. Create core dashboards (overview, security, contributors)
+1. ~~Add Grafana to Docker Compose~~ ✅ Complete
+2. ~~Create core dashboards (overview, security, contributors)~~ ✅ 5 dashboards implemented
 3. Implement service-level metric aggregation
-4. Add drill-down navigation
+4. ~~Add drill-down navigation~~ ✅ Complete
+
+**Dashboards Implemented:**
+- Team Overview (`team-overview.json`)
+- Repository Overview (`repository-overview.json`)
+- Repository Deep-Dive (`repository-deep-dive.json`)
+- Pull Request Analysis (`pull-requests.json`)
+- Contributor Analytics (`contributor-analytics.json`)
 
 ### Phase 4: AI & Advanced Features (Medium Priority)
 
@@ -288,6 +312,8 @@
 
 ## Revision History
 
-| Version | Date       | Author | Changes                                              |
-| ------- | ---------- | ------ | ---------------------------------------------------- |
-| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis |
+| Version | Date       | Author | Changes                                                                                        |
+| ------- | ---------- | ------ | ---------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                           |
+| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation    |
+| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started)    |

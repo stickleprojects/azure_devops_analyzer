@@ -21,7 +21,7 @@ CREATE TABLE organizations (
     name VARCHAR(255) NOT NULL,
     url TEXT NOT NULL,
     platform VARCHAR(20) NOT NULL DEFAULT 'azure_devops',  -- azure_devops, github
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(platform, name)
 );
 
@@ -32,7 +32,7 @@ CREATE TABLE projects (
     organization_id INTEGER REFERENCES organizations(organization_id),
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(organization_id, name)
 );
 
@@ -44,8 +44,8 @@ CREATE TABLE repositories (
     url TEXT NOT NULL,
     default_branch VARCHAR(255),
     platform_repo_id BIGINT,  -- GitHub numeric repo ID (optional)
-    created_at TIMESTAMP,
-    last_analyzed_at TIMESTAMP,
+    created_at TIMESTAMPTZ,
+    last_analyzed_at TIMESTAMPTZ,
     is_active BOOLEAN DEFAULT TRUE
 );
 
@@ -58,8 +58,8 @@ CREATE TABLE branches (
     repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
     branch_name VARCHAR(255) NOT NULL,
     latest_commit_sha VARCHAR(255),
-    created_at TIMESTAMP,
-    last_analyzed_at TIMESTAMP,
+    created_at TIMESTAMPTZ,
+    last_analyzed_at TIMESTAMPTZ,
     is_active BOOLEAN DEFAULT TRUE,
     UNIQUE(repo_id, branch_name)
 );
@@ -80,7 +80,7 @@ CREATE TABLE repository_languages (
     percentage DECIMAL(5,2),
     line_count INTEGER,
     byte_count BIGINT,
-    analyzed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    analyzed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_lang_repo ON repository_languages(repo_id);
@@ -105,7 +105,7 @@ CREATE TABLE dependencies (
     has_vulnerabilities BOOLEAN DEFAULT FALSE,
     is_eol BOOLEAN DEFAULT FALSE,
     eol_date DATE,
-    analyzed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    analyzed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_dep_repo ON dependencies(repo_id);
@@ -128,11 +128,11 @@ CREATE TABLE vulnerabilities (
     severity VARCHAR(20) NOT NULL,  -- CRITICAL, HIGH, MEDIUM, LOW
     summary TEXT,
     description TEXT,
-    published_date TIMESTAMP,
-    modified_date TIMESTAMP,
+    published_date TIMESTAMPTZ,
+    modified_date TIMESTAMPTZ,
     fixed_in_version VARCHAR(100),
     references JSONB,  -- Array of reference URLs
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_vuln_dependency ON vulnerabilities(dependency_id);
@@ -148,7 +148,7 @@ CREATE TABLE code_quality_metrics (
     id SERIAL,
     repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
     branch_id INTEGER REFERENCES branches(branch_id) ON DELETE CASCADE,
-    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     total_issues INTEGER DEFAULT 0,
     critical_issues INTEGER DEFAULT 0,
     high_issues INTEGER DEFAULT 0,
@@ -182,8 +182,8 @@ CREATE TABLE code_issues (
     category VARCHAR(100),  -- bug, vulnerability, code_smell, etc.
     rule_id VARCHAR(100),
     message TEXT,
-    detected_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    resolved_at TIMESTAMP
+    detected_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    resolved_at TIMESTAMPTZ
 );
 
 CREATE INDEX idx_issue_repo ON code_issues(repo_id);
@@ -204,7 +204,7 @@ CREATE TABLE repository_summaries (
     purpose TEXT,
     key_technologies TEXT[],  -- Array of technologies
     target_audience TEXT,
-    generated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    generated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     generated_by VARCHAR(100)  -- e.g., "claude-3-opus", "gpt-4"
 );
 
@@ -220,7 +220,7 @@ CREATE TABLE readme_files (
     content TEXT,
     summary TEXT,
     word_count INTEGER,
-    analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    analyzed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(repo_id, branch_id, file_path)
 );
 
@@ -236,8 +236,8 @@ CREATE TABLE contributors (
     id SERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
     name VARCHAR(255),
-    first_seen_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_seen_at TIMESTAMP
+    first_seen_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at TIMESTAMPTZ
 );
 
 CREATE INDEX idx_contributor_email ON contributors(email);
@@ -247,8 +247,8 @@ CREATE TABLE contributor_metrics (
     id SERIAL,
     repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
     contributor_id INTEGER REFERENCES contributors(id) ON DELETE CASCADE,
-    period_start TIMESTAMP NOT NULL,
-    period_end TIMESTAMP NOT NULL,
+    period_start TIMESTAMPTZ NOT NULL,
+    period_end TIMESTAMPTZ NOT NULL,
     commit_count INTEGER DEFAULT 0,
     lines_added INTEGER DEFAULT 0,
     lines_removed INTEGER DEFAULT 0,
@@ -278,7 +278,7 @@ CREATE TABLE commits (
     committer_id INTEGER REFERENCES contributors(id),
     message TEXT,
     message_quality_score DECIMAL(5,2),
-    commit_date TIMESTAMP NOT NULL,
+    commit_date TIMESTAMPTZ NOT NULL,
     parent_shas TEXT[],
     files_changed INTEGER,
     lines_added INTEGER,
@@ -305,10 +305,10 @@ CREATE TABLE pull_requests (
     target_branch VARCHAR(255),
     author_id INTEGER REFERENCES contributors(id),
     status VARCHAR(50),  -- active, completed, abandoned
-    created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP,
-    merged_at TIMESTAMP,
-    closed_at TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ,
+    merged_at TIMESTAMPTZ,
+    closed_at TIMESTAMPTZ,
     files_changed INTEGER DEFAULT 0,
     lines_added INTEGER DEFAULT 0,
     lines_removed INTEGER DEFAULT 0,
@@ -330,7 +330,7 @@ CREATE TABLE pr_reviews (
     id SERIAL PRIMARY KEY,
     pr_id INTEGER REFERENCES pull_requests(id) ON DELETE CASCADE,
     reviewer_id INTEGER REFERENCES contributors(id),
-    review_date TIMESTAMP NOT NULL,
+    review_date TIMESTAMPTZ NOT NULL,
     vote INTEGER,  -- -10=rejected, 0=no vote, 5=approved with suggestions, 10=approved
     is_required BOOLEAN DEFAULT FALSE,
     comment_count INTEGER DEFAULT 0
@@ -348,7 +348,7 @@ CREATE TABLE pr_comments (
     author_id INTEGER REFERENCES contributors(id),
     content TEXT,
     comment_type VARCHAR(50),  -- text, system
-    published_date TIMESTAMP NOT NULL,
+    published_date TIMESTAMPTZ NOT NULL,
     file_path TEXT,
     line_number INTEGER
 );
@@ -365,7 +365,7 @@ CREATE INDEX idx_comment_date ON pr_comments(published_date);
 CREATE TABLE branch_metrics (
     id SERIAL,
     branch_id INTEGER REFERENCES branches(branch_id) ON DELETE CASCADE,
-    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     commit_count INTEGER DEFAULT 0,
     unique_contributors INTEGER DEFAULT 0,
     age_days INTEGER DEFAULT 0,
@@ -392,8 +392,8 @@ CREATE TABLE services (
     name VARCHAR(255) NOT NULL UNIQUE,
     purpose TEXT,
     cmdb_id VARCHAR(100) UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_service_name ON services(name);
@@ -404,7 +404,7 @@ CREATE TABLE repository_services (
     id SERIAL PRIMARY KEY,
     repo_id VARCHAR(255) REFERENCES repositories(repo_id) ON DELETE CASCADE,
     service_id INTEGER REFERENCES services(service_id) ON DELETE CASCADE,
-    linked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    linked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(repo_id, service_id)
 );
 

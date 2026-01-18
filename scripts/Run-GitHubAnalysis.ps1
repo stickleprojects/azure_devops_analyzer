@@ -458,9 +458,10 @@ function Show-AccessInfo {
 
  NEXT STEPS:
  -----------
- 1. Connect a SQL client to explore the data
- 2. Add Grafana for visualization (coming soon)
+ 1. Open Grafana at http://localhost:3000 (admin/admin) to view dashboards
+ 2. Connect a SQL client to explore raw data if needed
  3. Run scheduled analysis with: docker-compose up -d
+ 4. Check Flower at http://localhost:5555 to monitor background tasks
 
 "@ -ForegroundColor Gray
 }
