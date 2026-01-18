@@ -14,6 +14,13 @@
                 "-GitHubToken",
                 "%REPO_ANALYZER_GITHUB_TOKEN%"
             ]
+        },
+        {
+            "name": "PowerShell Launch Current File",
+            "type": "PowerShell",
+            "request": "launch",
+            "script": "${file}",
+            "cwd": "${cwd}"
         }
     ]
 }

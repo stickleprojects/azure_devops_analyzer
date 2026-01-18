@@ -118,8 +118,8 @@ class GitHubExtractor(RepositoryExtractor):
             gh_repos = org.get_repos()
         except GithubException:
             # Fall back to user
-            user = self.client.get_user(organization)
-            gh_repos = user.get_repos()
+            user = self.client.get_user()
+            gh_repos = user.get_repos( visibility="all")
 
         for r in gh_repos:
             repos.append(
