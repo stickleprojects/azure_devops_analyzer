@@ -243,7 +243,7 @@ This phased implementation plan breaks down the Azure DevOps Repository Analysis
   - Language distribution
   - Activity timeline
   - Health scores
-- [ ] Create security dashboard
+- [x] Create security dashboard
   - Vulnerability tracking
   - EOL dependencies
   - Severity distribution

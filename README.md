@@ -8,6 +8,7 @@ This system analyzes Azure DevOps repositories and stores comprehensive metrics 
 
 - **Multi-language support**: Detects and analyzes code in various programming languages
 - **Security scanning**: Identifies vulnerabilities in dependencies and code
+- **Organization-wide security dashboard**: Tracks vulnerabilities and EOL dependencies across all repositories with drilldown capabilities
 - **Code quality analysis**: Static analysis for best practices and structural issues
 - **Contributor analytics**: Tracks developer activity and patterns
 - **Pull request metrics**: Analyzes PR size, quality, and review patterns
