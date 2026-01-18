@@ -1,936 +1,936 @@
 {
-  "annotations": {
-    "list": []
-  },
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
-  "id": null,
-  "links": [
-    {
-      "asDropdown": false,
-      "icon": "home",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Home",
-      "type": "link",
-      "url": "/d/dashboard-home"
+    "annotations": {
+        "list": []
     },
-    {
-      "asDropdown": false,
-      "icon": "dashboard",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Team Overview",
-      "type": "link",
-      "url": "/d/team-overview"
-    },
-    {
-      "asDropdown": false,
-      "icon": "dashboard",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Repository Overview",
-      "type": "link",
-      "url": "/d/repo-overview"
-    },
-    {
-      "asDropdown": false,
-      "icon": "dashboard",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Repository Deep-Dive",
-      "type": "link",
-      "url": "/d/repo-deep-dive"
-    },
-    {
-      "asDropdown": false,
-      "icon": "dashboard",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Pull Requests",
-      "type": "link",
-      "url": "/d/pull-requests"
-    },
-    {
-      "asDropdown": false,
-      "icon": "dashboard",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Contributors",
-      "type": "link",
-      "url": "/d/contributor-analytics"
-    }
-  ],
-  "liveNow": false,
-  "panels": [
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 1,
-      "panels": [],
-      "title": "Organization Security Summary",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "TimescaleDB"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 10
-              },
-              {
-                "color": "red",
-                "value": 50
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 0,
-        "y": 1
-      },
-      "id": 2,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": null,
+    "links": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "TimescaleDB"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as total_vulnerabilities\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nWHERE d.analyzed_at = (\n  SELECT MAX(analyzed_at) FROM dependencies\n);",
-          "refId": "A"
-        }
-      ],
-      "title": "Total Vulnerabilities",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "TimescaleDB"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 5
-              },
-              {
-                "color": "red",
-                "value": 20
-              }
-            ]
-          }
+            "asDropdown": false,
+            "icon": "home",
+            "includeVars": false,
+            "keepTime": true,
+            "tags": [],
+            "targetBlank": false,
+            "title": "Home",
+            "type": "link",
+            "url": "/d/dashboard-home"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 4,
-        "y": 1
-      },
-      "id": 3,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "TimescaleDB"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as total_eol_deps\nFROM dependencies\nWHERE is_eol = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies\n  );",
-          "refId": "A"
-        }
-      ],
-      "title": "Total EOL Dependencies",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "TimescaleDB"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          }
+            "asDropdown": false,
+            "icon": "dashboard",
+            "includeVars": false,
+            "keepTime": true,
+            "tags": [],
+            "targetBlank": false,
+            "title": "Team Overview",
+            "type": "link",
+            "url": "/d/team-overview"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 8,
-        "y": 1
-      },
-      "id": 4,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "TimescaleDB"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT repo_id) as repos_with_vulns\nFROM dependencies\nWHERE has_vulnerabilities = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = dependencies.repo_id\n  );",
-          "refId": "A"
-        }
-      ],
-      "title": "Repositories with Vulnerabilities",
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "TimescaleDB"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          }
+            "asDropdown": false,
+            "icon": "dashboard",
+            "includeVars": false,
+            "keepTime": true,
+            "tags": [],
+            "targetBlank": false,
+            "title": "Repository Overview",
+            "type": "link",
+            "url": "/d/repo-overview"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 12,
-        "y": 1
-      },
-      "id": 5,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "textMode": "auto"
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "TimescaleDB"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT repo_id) as repos_with_eol\nFROM dependencies\nWHERE is_eol = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = dependencies.repo_id\n  );",
-          "refId": "A"
-        }
-      ],
-      "title": "Repositories with EOL Dependencies",
-      "type": "stat"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 5
-      },
-      "id": 6,
-      "panels": [],
-      "title": "Vulnerability Analysis",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "TimescaleDB"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            }
-          },
-          "mappings": []
+            "asDropdown": false,
+            "icon": "dashboard",
+            "includeVars": false,
+            "keepTime": true,
+            "tags": [],
+            "targetBlank": false,
+            "title": "Repository Deep-Dive",
+            "type": "link",
+            "url": "/d/repo-deep-dive"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 6
-      },
-      "id": 7,
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "pieType": "pie",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "TimescaleDB"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  v.severity,\n  COUNT(*) as count\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nWHERE d.analyzed_at = (\n  SELECT MAX(analyzed_at) FROM dependencies\n)\nGROUP BY v.severity\nORDER BY \n  CASE v.severity \n    WHEN 'CRITICAL' THEN 1 \n    WHEN 'HIGH' THEN 2 \n    WHEN 'MEDIUM' THEN 3 \n    WHEN 'LOW' THEN 4 \n  END;",
-          "refId": "A"
+            "asDropdown": false,
+            "icon": "dashboard",
+            "includeVars": false,
+            "keepTime": true,
+            "tags": [],
+            "targetBlank": false,
+            "title": "Pull Requests",
+            "type": "link",
+            "url": "/d/pull-requests"
+        },
+        {
+            "asDropdown": false,
+            "icon": "dashboard",
+            "includeVars": false,
+            "keepTime": true,
+            "tags": [],
+            "targetBlank": false,
+            "title": "Contributors",
+            "type": "link",
+            "url": "/d/contributor-analytics"
         }
-      ],
-      "title": "Vulnerability Severity Distribution",
-      "type": "piechart"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "TimescaleDB"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 80,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
+    ],
+    "liveNow": false,
+    "panels": [
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
             },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
+            "id": 1,
+            "panels": [],
+            "title": "Organization Security Summary",
+            "type": "row"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 6
-      },
-      "id": 8,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "TimescaleDB"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  r.name as repository,\n  COUNT(*) as critical_vulns\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nJOIN repositories r ON d.repo_id = r.repo_id\nWHERE v.severity = 'CRITICAL'\n  AND d.analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = d.repo_id\n  )\nGROUP BY r.name\nORDER BY critical_vulns DESC\nLIMIT 10;",
-          "refId": "A"
-        }
-      ],
-      "title": "Top 10 Repositories by Critical Vulnerabilities",
-      "type": "barchart"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 14
-      },
-      "id": 9,
-      "panels": [],
-      "title": "End-of-Life Dependencies",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "TimescaleDB"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
-            }
-          },
-          "mappings": []
+            "datasource": {
+                "type": "postgres",
+                "uid": "TimescaleDB"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 10
+                            },
+                            {
+                                "color": "red",
+                                "value": 50
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 0,
+                "y": 1
+            },
+            "id": 2,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "11.0.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "postgres",
+                        "uid": "TimescaleDB"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT COUNT(*) as total_vulnerabilities\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nWHERE d.analyzed_at = (\n  SELECT MAX(analyzed_at) FROM dependencies\n);",
+                    "refId": "A"
+                }
+            ],
+            "title": "Total Vulnerabilities",
+            "type": "stat"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 15
-      },
-      "id": 10,
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "pieType": "pie",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "TimescaleDB"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  CASE \n    WHEN eol_date < CURRENT_DATE THEN 'Expired'\n    WHEN eol_date < CURRENT_DATE + INTERVAL '90 days' THEN 'Expiring Soon'\n    ELSE 'Future EOL'\n  END as category,\n  COUNT(*) as count\nFROM dependencies\nWHERE is_eol = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies\n  )\nGROUP BY category\nORDER BY \n  CASE category \n    WHEN 'Expired' THEN 1 \n    WHEN 'Expiring Soon' THEN 2 \n    WHEN 'Future EOL' THEN 3 \n  END;",
-          "refId": "A"
-        }
-      ],
-      "title": "EOL Dependency Status",
-      "type": "piechart"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "TimescaleDB"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
+            "datasource": {
+                "type": "postgres",
+                "uid": "TimescaleDB"
             },
-            "filterable": true,
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 5
+                            },
+                            {
+                                "color": "red",
+                                "value": 20
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 4,
+                "y": 1
+            },
+            "id": 3,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "11.0.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "postgres",
+                        "uid": "TimescaleDB"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT COUNT(*) as total_eol_deps\nFROM dependencies\nWHERE is_eol = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies\n  );",
+                    "refId": "A"
+                }
+            ],
+            "title": "Total EOL Dependencies",
+            "type": "stat"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Repository"
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "TimescaleDB"
             },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "targetBlank": false,
-                    "title": "",
-                    "url": "/d/repo-deep-dive?var-repository=${__value.raw}"
-                  }
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 1
+                            },
+                            {
+                                "color": "red",
+                                "value": 5
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 8,
+                "y": 1
+            },
+            "id": 4,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "11.0.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "postgres",
+                        "uid": "TimescaleDB"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT COUNT(DISTINCT repo_id) as repos_with_vulns\nFROM dependencies\nWHERE has_vulnerabilities = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = dependencies.repo_id\n  );",
+                    "refId": "A"
+                }
+            ],
+            "title": "Repositories with Vulnerabilities",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "TimescaleDB"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 1
+                            },
+                            {
+                                "color": "red",
+                                "value": 5
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 4,
+                "x": 12,
+                "y": 1
+            },
+            "id": 5,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "textMode": "auto"
+            },
+            "pluginVersion": "11.0.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "postgres",
+                        "uid": "TimescaleDB"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT COUNT(DISTINCT repo_id) as repos_with_eol\nFROM dependencies\nWHERE is_eol = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = dependencies.repo_id\n  );",
+                    "refId": "A"
+                }
+            ],
+            "title": "Repositories with EOL Dependencies",
+            "type": "stat"
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 5
+            },
+            "id": 6,
+            "panels": [],
+            "title": "Vulnerability Analysis",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "TimescaleDB"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "vis": false
+                        }
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 6
+            },
+            "id": 7,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "pieType": "pie",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "pluginVersion": "11.0.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "postgres",
+                        "uid": "TimescaleDB"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT \n  v.severity,\n  COUNT(*) as count\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nWHERE d.analyzed_at = (\n  SELECT MAX(analyzed_at) FROM dependencies\n)\nGROUP BY v.severity\nORDER BY \n  CASE v.severity \n    WHEN 'CRITICAL' THEN 1 \n    WHEN 'HIGH' THEN 2 \n    WHEN 'MEDIUM' THEN 3 \n    WHEN 'LOW' THEN 4 \n  END;",
+                    "refId": "A"
+                }
+            ],
+            "title": "Vulnerability Severity Distribution",
+            "type": "piechart"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "TimescaleDB"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "bars",
+                        "fillOpacity": 80,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "vis": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 6
+            },
+            "id": 8,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "pluginVersion": "11.0.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "postgres",
+                        "uid": "TimescaleDB"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT \n  r.name as repository,\n  COUNT(*) as critical_vulns\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nJOIN repositories r ON d.repo_id = r.repo_id\nWHERE v.severity = 'CRITICAL'\n  AND d.analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = d.repo_id\n  )\nGROUP BY r.name\nORDER BY critical_vulns DESC\nLIMIT 10;",
+                    "refId": "A"
+                }
+            ],
+            "title": "Top 10 Repositories by Critical Vulnerabilities",
+            "type": "barchart"
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 14
+            },
+            "id": 9,
+            "panels": [],
+            "title": "End-of-Life Dependencies",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "TimescaleDB"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "vis": false
+                        }
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 15
+            },
+            "id": 10,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "pieType": "pie",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "pluginVersion": "11.0.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "postgres",
+                        "uid": "TimescaleDB"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT \n  CASE \n    WHEN eol_date < CURRENT_DATE THEN 'Expired'\n    WHEN eol_date < CURRENT_DATE + INTERVAL '90 days' THEN 'Expiring Soon'\n    ELSE 'Future EOL'\n  END as category,\n  COUNT(*) as count\nFROM dependencies\nWHERE is_eol = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies\n  )\nGROUP BY category\nORDER BY \n  CASE category \n    WHEN 'Expired' THEN 1 \n    WHEN 'Expiring Soon' THEN 2 \n    WHEN 'Future EOL' THEN 3 \n  END;",
+                    "refId": "A"
+                }
+            ],
+            "title": "EOL Dependency Status",
+            "type": "piechart"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "TimescaleDB"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "auto",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "filterable": true,
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Repository"
+                        },
+                        "properties": [
+                            {
+                                "id": "links",
+                                "value": [
+                                    {
+                                        "targetBlank": false,
+                                        "title": "",
+                                        "url": "/d/repo-deep-dive?var-repository=${__value.raw}"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
                 ]
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 15
-      },
-      "id": 11,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 15
+            },
+            "id": 11,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true,
+                "sortBy": []
+            },
+            "pluginVersion": "11.0.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "postgres",
+                        "uid": "TimescaleDB"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT \n  r.name as \"Repository\",\n  COALESCE(vuln_counts.critical, 0) as \"Critical Vulns\",\n  COALESCE(vuln_counts.high, 0) as \"High Vulns\",\n  COALESCE(vuln_counts.medium, 0) as \"Medium Vulns\",\n  COALESCE(vuln_counts.low, 0) as \"Low Vulns\",\n  COALESCE(eol_counts.eol_deps, 0) as \"EOL Deps\"\nFROM repositories r\nLEFT JOIN (\n  SELECT \n    d.repo_id,\n    SUM(CASE WHEN v.severity = 'CRITICAL' THEN 1 ELSE 0 END) as critical,\n    SUM(CASE WHEN v.severity = 'HIGH' THEN 1 ELSE 0 END) as high,\n    SUM(CASE WHEN v.severity = 'MEDIUM' THEN 1 ELSE 0 END) as medium,\n    SUM(CASE WHEN v.severity = 'LOW' THEN 1 ELSE 0 END) as low\n  FROM vulnerabilities v\n  JOIN dependencies d ON v.dependency_id = d.id\n  WHERE d.analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = d.repo_id\n  )\n  GROUP BY d.repo_id\n) vuln_counts ON r.repo_id = vuln_counts.repo_id\nLEFT JOIN (\n  SELECT \n    repo_id,\n    COUNT(*) as eol_deps\n  FROM dependencies\n  WHERE is_eol = true\n    AND analyzed_at = (\n      SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = dependencies.repo_id\n    )\n  GROUP BY repo_id\n) eol_counts ON r.repo_id = eol_counts.repo_id\nWHERE r.is_active = true\nORDER BY (COALESCE(vuln_counts.critical, 0) + COALESCE(vuln_counts.high, 0)) DESC;",
+                    "refId": "A"
+                }
+            ],
+            "title": "Repository Security Overview",
+            "type": "table"
         },
-        "showHeader": true,
-        "sortBy": []
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "TimescaleDB"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  r.name as \"Repository\",\n  COALESCE(vuln_counts.critical, 0) as \"Critical Vulns\",\n  COALESCE(vuln_counts.high, 0) as \"High Vulns\",\n  COALESCE(vuln_counts.medium, 0) as \"Medium Vulns\",\n  COALESCE(vuln_counts.low, 0) as \"Low Vulns\",\n  COALESCE(eol_counts.eol_deps, 0) as \"EOL Deps\"\nFROM repositories r\nLEFT JOIN (\n  SELECT \n    d.repo_id,\n    SUM(CASE WHEN v.severity = 'CRITICAL' THEN 1 ELSE 0 END) as critical,\n    SUM(CASE WHEN v.severity = 'HIGH' THEN 1 ELSE 0 END) as high,\n    SUM(CASE WHEN v.severity = 'MEDIUM' THEN 1 ELSE 0 END) as medium,\n    SUM(CASE WHEN v.severity = 'LOW' THEN 1 ELSE 0 END) as low\n  FROM vulnerabilities v\n  JOIN dependencies d ON v.dependency_id = d.id\n  WHERE d.analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = d.repo_id\n  )\n  GROUP BY d.repo_id\n) vuln_counts ON r.repo_id = vuln_counts.repo_id\nLEFT JOIN (\n  SELECT \n    repo_id,\n    COUNT(*) as eol_deps\n  FROM dependencies\n  WHERE is_eol = true\n    AND analyzed_at = (\n      SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = dependencies.repo_id\n    )\n  GROUP BY repo_id\n) eol_counts ON r.repo_id = eol_counts.repo_id\nWHERE r.is_active = true\nORDER BY (COALESCE(vuln_counts.critical, 0) + COALESCE(vuln_counts.high, 0)) DESC;",
-          "refId": "A"
-        }
-      ],
-      "title": "Repository Security Overview",
-      "type": "table"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 23
-      },
-      "id": 12,
-      "panels": [],
-      "title": "Security Trends",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "TimescaleDB"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisBorderShow": false,
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "hideFrom": {
-              "legend": false,
-              "tooltip": false,
-              "vis": false
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 23
             },
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "auto",
-            "spanNulls": false,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
-          "unit": "short"
+            "id": 12,
+            "panels": [],
+            "title": "Security Trends",
+            "type": "row"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 24
-      },
-      "id": 13,
-      "options": {
-        "legend": {
-          "calcs": [],
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "TimescaleDB"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "group": [],
-          "metricColumn": "none",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  time_bucket('1 day', d.analyzed_at) as time,\n  COUNT(*) as vulnerabilities\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nWHERE $__timeFilter(d.analyzed_at)\nGROUP BY time_bucket('1 day', d.analyzed_at)\nORDER BY time;",
-          "refId": "A",
-          "select": [
-            [
-              {
-                "params": [
-                  "value"
-                ],
-                "type": "column"
-              }
-            ]
-          ],
-          "table": "vulnerabilities",
-          "timeColumn": "analyzed_at",
-          "timeColumnType": "timestamp",
-          "where": [
-            {
-              "name": "$__timeFilter",
-              "params": [],
-              "type": "macro"
-            }
-          ]
-        }
-      ],
-      "title": "Vulnerability Trends Over Time",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 32
-      },
-      "id": 14,
-      "panels": [],
-      "title": "Top Vulnerable Dependencies",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "postgres",
-        "uid": "TimescaleDB"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "custom": {
-            "align": "auto",
-            "cellOptions": {
-              "type": "auto"
+            "datasource": {
+                "type": "postgres",
+                "uid": "TimescaleDB"
             },
-            "filterable": true,
-            "inspect": false
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          }
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisBorderShow": false,
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "vis": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 24
+            },
+            "id": 13,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "pluginVersion": "11.0.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "postgres",
+                        "uid": "TimescaleDB"
+                    },
+                    "editorMode": "code",
+                    "format": "time_series",
+                    "group": [],
+                    "metricColumn": "none",
+                    "rawQuery": true,
+                    "rawSql": "SELECT \n  time_bucket('1 day', d.analyzed_at) as time,\n  COUNT(*) as vulnerabilities\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nWHERE $__timeFilter(d.analyzed_at)\nGROUP BY time_bucket('1 day', d.analyzed_at)\nORDER BY time;",
+                    "refId": "A",
+                    "select": [
+                        [
+                            {
+                                "params": [
+                                    "value"
+                                ],
+                                "type": "column"
+                            }
+                        ]
+                    ],
+                    "table": "vulnerabilities",
+                    "timeColumn": "analyzed_at",
+                    "timeColumnType": "timestamp",
+                    "where": [
+                        {
+                            "name": "$__timeFilter",
+                            "params": [],
+                            "type": "macro"
+                        }
+                    ]
+                }
+            ],
+            "title": "Vulnerability Trends Over Time",
+            "type": "timeseries"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 33
-      },
-      "id": 15,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {
-          "countRows": false,
-          "fields": "",
-          "reducer": [
-            "sum"
-          ],
-          "show": false
-        },
-        "showHeader": true,
-        "sortBy": []
-      },
-      "pluginVersion": "11.0.0",
-      "targets": [
         {
-          "datasource": {
-            "type": "postgres",
-            "uid": "TimescaleDB"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT \n  d.package_name as \"Package\",\n  d.version as \"Version\",\n  d.ecosystem as \"Ecosystem\",\n  v.severity as \"Severity\",\n  COUNT(DISTINCT d.repo_id) as \"Affected Repositories\",\n  STRING_AGG(DISTINCT r.name, ', ') as \"Repositories\"\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nJOIN repositories r ON d.repo_id = r.repo_id\nWHERE d.analyzed_at = (\n  SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = d.repo_id\n)\nGROUP BY d.package_name, d.version, d.ecosystem, v.severity\nORDER BY \n  CASE v.severity \n    WHEN 'CRITICAL' THEN 1 \n    WHEN 'HIGH' THEN 2 \n    WHEN 'MEDIUM' THEN 3 \n    WHEN 'LOW' THEN 4 \n  END,\n  COUNT(DISTINCT d.repo_id) DESC\nLIMIT 20;",
-          "refId": "A"
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 32
+            },
+            "id": 14,
+            "panels": [],
+            "title": "Top Vulnerable Dependencies",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "TimescaleDB"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "custom": {
+                        "align": "auto",
+                        "cellOptions": {
+                            "type": "auto"
+                        },
+                        "filterable": true,
+                        "inspect": false
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 33
+            },
+            "id": 15,
+            "options": {
+                "cellHeight": "sm",
+                "footer": {
+                    "countRows": false,
+                    "fields": "",
+                    "reducer": [
+                        "sum"
+                    ],
+                    "show": false
+                },
+                "showHeader": true,
+                "sortBy": []
+            },
+            "pluginVersion": "11.0.0",
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "postgres",
+                        "uid": "TimescaleDB"
+                    },
+                    "editorMode": "code",
+                    "format": "table",
+                    "rawQuery": true,
+                    "rawSql": "SELECT \n  d.package_name as \"Package\",\n  d.version as \"Version\",\n  d.ecosystem as \"Ecosystem\",\n  v.severity as \"Severity\",\n  COUNT(DISTINCT d.repo_id) as \"Affected Repositories\",\n  STRING_AGG(DISTINCT r.name, ', ') as \"Repositories\"\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nJOIN repositories r ON d.repo_id = r.repo_id\nWHERE d.analyzed_at = (\n  SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = d.repo_id\n)\nGROUP BY d.package_name, d.version, d.ecosystem, v.severity\nORDER BY \n  CASE v.severity \n    WHEN 'CRITICAL' THEN 1 \n    WHEN 'HIGH' THEN 2 \n    WHEN 'MEDIUM' THEN 3 \n    WHEN 'LOW' THEN 4 \n  END,\n  COUNT(DISTINCT d.repo_id) DESC\nLIMIT 20;",
+                    "refId": "A"
+                }
+            ],
+            "title": "Top Vulnerable Dependencies",
+            "type": "table"
         }
-      ],
-      "title": "Top Vulnerable Dependencies",
-      "type": "table"
-    }
-  ],
-  "refresh": "",
-  "schemaVersion": 38,
-  "style": "dark",
-  "tags": [],
-  "templating": {
-    "list": []
-  },
-  "time": {
-    "from": "now-30d",
-    "to": "now"
-  },
-  "timepicker": {},
-  "timezone": "",
-  "title": "Security Overview",
-  "uid": "security-dashboard",
-  "version": 1,
-  "weekStart": ""
+    ],
+    "refresh": "",
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": [],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-30d",
+        "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "",
+    "title": "Security Overview",
+    "uid": "security-dashboard",
+    "version": 1,
+    "weekStart": ""
 }
