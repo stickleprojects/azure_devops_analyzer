@@ -78,6 +78,8 @@ class CommitData:
     files_changed: Optional[int] = None
     lines_added: Optional[int] = None
     lines_removed: Optional[int] = None
+    is_verified: Optional[bool] = None  # GPG signature verification
+    verification_reason: Optional[str] = None  # Reason if verification failed
 
 
 @dataclass
@@ -157,6 +159,20 @@ class RepositoryData:
     created_at: Optional[datetime] = None
     team_name: Optional[str] = None  # From repository.json
     service_name: Optional[str] = None  # From repository.json
+    
+    # Security and code quality metrics
+    is_private: Optional[bool] = None
+    is_archived: Optional[bool] = None
+    repository_size: Optional[int] = None  # Size in KB
+    open_issues_count: Optional[int] = None
+    license_name: Optional[str] = None
+    license_key: Optional[str] = None
+    has_vulnerability_alerts: Optional[bool] = None
+    has_secret_scanning: Optional[bool] = None
+    has_dependabot_alerts: Optional[bool] = None
+    pushed_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    
     branches: list[BranchData] = field(default_factory=list)
     commits: list[CommitData] = field(default_factory=list)
     pull_requests: list[PullRequestData] = field(default_factory=list)

@@ -5,7 +5,7 @@ Repository and Branch models.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import BigInteger, Boolean, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.models.base import Base
@@ -43,6 +43,19 @@ class Repository(Base):
     created_at: Mapped[Optional[datetime]] = mapped_column()
     last_analyzed_at: Mapped[Optional[datetime]] = mapped_column()
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    
+    # Security and code quality metrics
+    is_private: Mapped[Optional[bool]] = mapped_column(Boolean)
+    is_archived: Mapped[Optional[bool]] = mapped_column(Boolean)
+    repository_size: Mapped[Optional[int]] = mapped_column(Integer)  # Size in KB
+    open_issues_count: Mapped[Optional[int]] = mapped_column(Integer)
+    license_name: Mapped[Optional[str]] = mapped_column(String(255))
+    license_key: Mapped[Optional[str]] = mapped_column(String(100))
+    has_vulnerability_alerts: Mapped[Optional[bool]] = mapped_column(Boolean)
+    has_secret_scanning: Mapped[Optional[bool]] = mapped_column(Boolean)
+    has_dependabot_alerts: Mapped[Optional[bool]] = mapped_column(Boolean)
+    pushed_at: Mapped[Optional[datetime]] = mapped_column()
+    updated_at: Mapped[Optional[datetime]] = mapped_column()
 
     # Relationships
     project: Mapped[Optional["Project"]] = relationship(back_populates="repositories")

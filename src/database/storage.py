@@ -234,6 +234,18 @@ def store_repository(
             platform_repo_id=repo_data.platform_repo_id,
             created_at=repo_data.created_at,
             is_active=True,
+            # Security and code quality metrics
+            is_private=repo_data.is_private,
+            is_archived=repo_data.is_archived,
+            repository_size=repo_data.repository_size,
+            open_issues_count=repo_data.open_issues_count,
+            license_name=repo_data.license_name,
+            license_key=repo_data.license_key,
+            has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
+            has_secret_scanning=repo_data.has_secret_scanning,
+            has_dependabot_alerts=repo_data.has_dependabot_alerts,
+            pushed_at=repo_data.pushed_at,
+            updated_at=repo_data.updated_at,
         )
         session.add(repo)
         session.flush()
@@ -241,6 +253,18 @@ def store_repository(
         repo.url = repo_data.url
         repo.default_branch = repo_data.default_branch
         repo.team_id = team_id  # Update team if changed
+        # Update security and code quality metrics
+        repo.is_private = repo_data.is_private
+        repo.is_archived = repo_data.is_archived
+        repo.repository_size = repo_data.repository_size
+        repo.open_issues_count = repo_data.open_issues_count
+        repo.license_name = repo_data.license_name
+        repo.license_key = repo_data.license_key
+        repo.has_vulnerability_alerts = repo_data.has_vulnerability_alerts
+        repo.has_secret_scanning = repo_data.has_secret_scanning
+        repo.has_dependabot_alerts = repo_data.has_dependabot_alerts
+        repo.pushed_at = repo_data.pushed_at
+        repo.updated_at = repo_data.updated_at
 
     return repo
 
@@ -319,6 +343,8 @@ def store_commit(
         files_changed=commit_data.files_changed,
         lines_added=commit_data.lines_added,
         lines_removed=commit_data.lines_removed,
+        is_verified=commit_data.is_verified,
+        verification_reason=commit_data.verification_reason,
     )
     session.add(commit)
     return commit

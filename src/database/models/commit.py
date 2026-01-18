@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -40,6 +40,8 @@ class Commit(Base):
     files_changed: Mapped[Optional[int]] = mapped_column(Integer)
     lines_added: Mapped[Optional[int]] = mapped_column(Integer)
     lines_removed: Mapped[Optional[int]] = mapped_column(Integer)
+    is_verified: Mapped[Optional[bool]] = mapped_column(Boolean)  # GPG signature verification
+    verification_reason: Mapped[Optional[str]] = mapped_column(String(255))  # Reason if verification failed
 
     # Relationships
     repository: Mapped["Repository"] = relationship(back_populates="commits")

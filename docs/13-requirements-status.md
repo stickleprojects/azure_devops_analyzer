@@ -22,7 +22,7 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 9        | 13      | 20          | 42    |
+| Functional Requirements     | 11       | 13      | 20          | 44    |
 | Non-Functional Requirements | 5        | 5       | 7           | 17    |
 
 ---
@@ -69,28 +69,31 @@
 
 ### FR-4: Security Vulnerability Scanning
 
-| ID     | Requirement                                                         | Priority | Status                         | Notes                                                                     |
-| ------ | ------------------------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------------------------------- |
-| FR-4.1 | System shall identify known vulnerabilities (CVEs) in dependencies  | Critical | :large_orange_diamond: Partial | `Vulnerability` entity with CVE/OSV ID fields; OSV.dev API not integrated |
-| FR-4.2 | System shall classify vulnerabilities by severity                   | Critical | :white_check_mark: Complete    | `severity` enum (critical, high, medium, low) on Vulnerability entity     |
-| FR-4.3 | System shall provide remediation guidance (fixed version)           | High     | :white_check_mark: Complete    | `fixed_in_version` field on Vulnerability entity                          |
-| FR-4.4 | System shall track vulnerability publication and modification dates | Medium   | :large_orange_diamond: Partial | Schema has `published_at` and `modified_at` fields; not populated         |
+| ID     | Requirement                                                         | Priority | Status                         | Notes                                                                                                           |
+| ------ | ------------------------------------------------------------------- | -------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| FR-4.1 | System shall identify known vulnerabilities (CVEs) in dependencies  | Critical | :large_orange_diamond: Partial | `Vulnerability` entity with CVE/OSV ID fields; OSV.dev API not integrated                                       |
+| FR-4.2 | System shall classify vulnerabilities by severity                   | Critical | :white_check_mark: Complete    | `severity` enum (critical, high, medium, low) on Vulnerability entity                                           |
+| FR-4.3 | System shall provide remediation guidance (fixed version)           | High     | :white_check_mark: Complete    | `fixed_in_version` field on Vulnerability entity                                                                |
+| FR-4.4 | System shall track vulnerability publication and modification dates | Medium   | :large_orange_diamond: Partial | Schema has `published_at` and `modified_at` fields; not populated                                               |
+| FR-4.5 | System shall track GitHub security features enabled per repository  | High     | :white_check_mark: Complete    | GitHub extractor captures vulnerability alerts, secret scanning, and Dependabot alerts - implemented 2026-01-18 |
 
-**FR-4 Summary:** 2/4 Complete, 2/4 Partial
+**FR-4 Summary:** 3/5 Complete, 2/5 Partial
 
 ---
 
 ### FR-5: Code Quality Analysis
 
-| ID     | Requirement                                        | Priority | Status                         | Notes                                                                                   |
-| ------ | -------------------------------------------------- | -------- | ------------------------------ | --------------------------------------------------------------------------------------- |
-| FR-5.1 | System shall calculate code complexity metrics     | High     | :large_orange_diamond: Partial | `CodeQualityMetric` has complexity fields; analysis engine not implemented              |
-| FR-5.2 | System shall identify code issues by category      | High     | :large_orange_diamond: Partial | `CodeIssue` entity with type (bug, vulnerability, code_smell) and severity; no analysis |
-| FR-5.3 | System shall calculate maintainability index       | Medium   | :large_orange_diamond: Partial | `maintainability_index` field exists; no calculation logic                              |
-| FR-5.4 | System shall track test coverage percentage        | Medium   | :large_orange_diamond: Partial | `test_coverage` field exists; no integration with test runners                          |
-| FR-5.5 | System shall estimate technical debt in time units | Medium   | :large_orange_diamond: Partial | `technical_debt_minutes` field exists; no calculation logic                             |
+| ID     | Requirement                                          | Priority | Status                         | Notes                                                                                             |
+| ------ | ---------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------- |
+| FR-5.1 | System shall calculate code complexity metrics       | High     | :large_orange_diamond: Partial | `CodeQualityMetric` has complexity fields; analysis engine not implemented                        |
+| FR-5.2 | System shall identify code issues by category        | High     | :large_orange_diamond: Partial | `CodeIssue` entity with type (bug, vulnerability, code_smell) and severity; no analysis           |
+| FR-5.3 | System shall calculate maintainability index         | Medium   | :large_orange_diamond: Partial | `maintainability_index` field exists; no calculation logic                                        |
+| FR-5.4 | System shall track test coverage percentage          | Medium   | :large_orange_diamond: Partial | `test_coverage` field exists; no integration with test runners                                    |
+| FR-5.5 | System shall estimate technical debt in time units   | Medium   | :large_orange_diamond: Partial | `technical_debt_minutes` field exists; no calculation logic                                       |
+| FR-5.6 | System shall track repository health metrics         | Medium   | :white_check_mark: Complete    | Repository size, issue counts, archive status, and license info captured - implemented 2026-01-18 |
+| FR-5.7 | System shall track commit GPG signature verification | Medium   | :white_check_mark: Complete    | GPG verification status and reason captured for all commits - implemented 2026-01-18              |
 
-**FR-5 Summary:** 0/5 Complete, 5/5 Partial
+**FR-5 Summary:** 2/7 Complete, 5/7 Partial
 
 ---
 
@@ -134,11 +137,11 @@
 
 ### FR-9: Visualization and Reporting
 
-| ID     | Requirement                                             | Priority | Status                      | Notes                                                                                                                                           |
-| ------ | ------------------------------------------------------- | -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-9.1 | System shall provide Grafana dashboards for all metrics | High     | :white_check_mark: Complete | 5 dashboards implemented: Team Overview, Repository Overview, Repository Deep-Dive, Pull Requests, Contributor Analytics                       |
-| FR-9.2 | System shall support time-range filtering               | High     | :white_check_mark: Complete | All dashboards use Grafana time picker; navigation preserves time range                                                                         |
-| FR-9.3 | System shall support drill-down navigation              | Medium   | :white_check_mark: Complete | Repository names in tables link to Deep-Dive dashboard; cross-dashboard navigation links on all dashboards                                     |
+| ID     | Requirement                                             | Priority | Status                         | Notes                                                                                                                                         |
+| ------ | ------------------------------------------------------- | -------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-9.1 | System shall provide Grafana dashboards for all metrics | High     | :white_check_mark: Complete    | 5 dashboards implemented: Team Overview, Repository Overview, Repository Deep-Dive, Pull Requests, Contributor Analytics                      |
+| FR-9.2 | System shall support time-range filtering               | High     | :white_check_mark: Complete    | All dashboards use Grafana time picker; navigation preserves time range                                                                       |
+| FR-9.3 | System shall support drill-down navigation              | Medium   | :white_check_mark: Complete    | Repository names in tables link to Deep-Dive dashboard; cross-dashboard navigation links on all dashboards                                    |
 | FR-9.4 | System shall provide security-focused dashboard views   | High     | :large_orange_diamond: Partial | Security metrics included in Team Overview and Repository Deep-Dive (vulnerabilities, EOL deps); dedicated Security dashboard not yet created |
 
 **FR-9 Summary:** 3/4 Complete, 1/4 Partial, 0/4 Not Started
@@ -161,16 +164,16 @@
 
 ### FR-11: Team Management and Contributor Linking
 
-| ID      | Requirement                                                        | Priority | Status          | Notes                                                           |
-| ------- | ------------------------------------------------------------------ | -------- | --------------- | --------------------------------------------------------------- |
-| FR-11.1 | System shall support defining teams with name, description         | High     | :x: Not Started | No Team entity or table exists yet                              |
-| FR-11.2 | System shall support many-to-many relationships (contributors-teams) | High   | :x: Not Started | No contributor-team junction table                              |
-| FR-11.3 | System shall track team membership with effective dates            | Medium   | :x: Not Started | Date-range membership for historical analysis                   |
-| FR-11.4 | System shall support team hierarchy (parent/child teams)           | Low      | :x: Not Started | Optional nested team structure                                  |
-| FR-11.5 | System shall aggregate contributor metrics at team level           | High     | :x: Not Started | Team-level totals for commits, PRs, reviews                     |
-| FR-11.6 | System shall provide Individual Contributor Dashboard              | Medium   | :x: Not Started | Personal dashboard showing commits, PRs, reviews across repos   |
-| FR-11.7 | System shall display team member aggregates on Team Overview       | Medium   | :x: Not Started | Per-member stats with drill-down to Individual Contributor view |
-| FR-11.8 | System shall support filtering dashboards by team                  | Medium   | :x: Not Started | Team template variable on relevant dashboards                   |
+| ID      | Requirement                                                          | Priority | Status          | Notes                                                           |
+| ------- | -------------------------------------------------------------------- | -------- | --------------- | --------------------------------------------------------------- |
+| FR-11.1 | System shall support defining teams with name, description           | High     | :x: Not Started | No Team entity or table exists yet                              |
+| FR-11.2 | System shall support many-to-many relationships (contributors-teams) | High     | :x: Not Started | No contributor-team junction table                              |
+| FR-11.3 | System shall track team membership with effective dates              | Medium   | :x: Not Started | Date-range membership for historical analysis                   |
+| FR-11.4 | System shall support team hierarchy (parent/child teams)             | Low      | :x: Not Started | Optional nested team structure                                  |
+| FR-11.5 | System shall aggregate contributor metrics at team level             | High     | :x: Not Started | Team-level totals for commits, PRs, reviews                     |
+| FR-11.6 | System shall provide Individual Contributor Dashboard                | Medium   | :x: Not Started | Personal dashboard showing commits, PRs, reviews across repos   |
+| FR-11.7 | System shall display team member aggregates on Team Overview         | Medium   | :x: Not Started | Per-member stats with drill-down to Individual Contributor view |
+| FR-11.8 | System shall support filtering dashboards by team                    | Medium   | :x: Not Started | Team template variable on relevant dashboards                   |
 
 **FR-11 Summary:** 0/8 Complete, 0/8 Partial, 8/8 Not Started
 
@@ -244,11 +247,11 @@
 
 ## Technical Constraints Status
 
-| ID   | Constraint                      | Status                 | Notes                                      |
-| ---- | ------------------------------- | ---------------------- | ------------------------------------------ |
-| TC-1 | PostgreSQL 15+ with TimescaleDB | :white_check_mark: Met | Docker Compose configured with TimescaleDB |
-| TC-2 | Python 3.11+                    | :white_check_mark: Met | Project configured for Python 3.11+        |
-| TC-3 | RabbitMQ for task queue         | :white_check_mark: Met | RabbitMQ in Docker Compose                 |
+| ID   | Constraint                      | Status                 | Notes                                                          |
+| ---- | ------------------------------- | ---------------------- | -------------------------------------------------------------- |
+| TC-1 | PostgreSQL 15+ with TimescaleDB | :white_check_mark: Met | Docker Compose configured with TimescaleDB                     |
+| TC-2 | Python 3.11+                    | :white_check_mark: Met | Project configured for Python 3.11+                            |
+| TC-3 | RabbitMQ for task queue         | :white_check_mark: Met | RabbitMQ in Docker Compose                                     |
 | TC-4 | Grafana 10+ for visualization   | :white_check_mark: Met | Grafana 11.0.0 in Docker Compose with 5 provisioned dashboards |
 
 ---
@@ -312,8 +315,8 @@
 
 ## Revision History
 
-| Version | Date       | Author | Changes                                                                                        |
-| ------- | ---------- | ------ | ---------------------------------------------------------------------------------------------- |
-| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                           |
-| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation    |
-| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started)    |
+| Version | Date       | Author | Changes                                                                                    |
+| ------- | ---------- | ------ | ------------------------------------------------------------------------------------------ |
+| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                       |
+| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation |
+| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started) |

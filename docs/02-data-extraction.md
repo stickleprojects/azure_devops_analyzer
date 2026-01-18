@@ -94,6 +94,17 @@ If there is a file `repository.json` in the repository then this should be used 
 - Size
 - Creation date
 - Last update date
+- **Security & Code Quality Metrics**:
+  - Repository visibility (public/private)
+  - Archive status
+  - License information (name and key)
+  - Security features enabled:
+    - Vulnerability alerts
+    - Secret scanning
+    - Dependabot alerts
+  - Open issues count
+  - Last push timestamp
+  - Last update timestamp
 
 ### 2. Git Data Collector
 
@@ -116,6 +127,9 @@ Retrieves commit history with support for pagination and filtering by branch or 
 - Message
 - Parent commit SHAs
 - Change counts (additions, deletions, edits)
+- **GPG Signature Verification**:
+  - Verification status (signed/unsigned)
+  - Verification reason (if failed)
 
 #### File Tree Collection
 

@@ -82,6 +82,7 @@ erDiagram
     repositories {
         varchar repo_id PK
         integer project_id FK
+        integer team_id FK
         varchar name
         text url
         varchar default_branch
@@ -89,6 +90,17 @@ erDiagram
         timestamp created_at
         timestamp last_analyzed_at
         boolean is_active
+        boolean is_private
+        boolean is_archived
+        integer repository_size
+        integer open_issues_count
+        varchar license_name
+        varchar license_key
+        boolean has_vulnerability_alerts
+        boolean has_secret_scanning
+        boolean has_dependabot_alerts
+        timestamptz pushed_at
+        timestamptz updated_at
     }
 
     branches {
@@ -235,6 +247,8 @@ erDiagram
         integer files_changed
         integer lines_added
         integer lines_removed
+        boolean is_verified
+        varchar verification_reason
     }
 
     pull_requests {

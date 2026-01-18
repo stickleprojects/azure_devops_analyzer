@@ -140,16 +140,22 @@ This phased implementation plan breaks down the Azure DevOps Repository Analysis
 
 ### Phase 3: Metrics Collection (Weeks 6-7)
 
-**Goal**: Implement contributor and PR analytics
+**Goal**: Implement contributor and PR analytics, and GitHub security metrics
 
-#### Week 6: Contributor Analytics
+#### Week 6: Contributor Analytics & GitHub Security Features
 
 **Tasks**:
 
+- [x] Implement GitHub security metrics extraction (COMPLETED 2026-01-18)
+  - Repository visibility and archive status
+  - Security features (vulnerability alerts, secret scanning, Dependabot)
+  - License information and compliance tracking
+  - Repository health metrics (size, issue counts)
 - [ ] Implement commit analysis
   - Parse commit history
   - Calculate per-contributor metrics
   - Commit message quality scoring
+  - GPG signature verification tracking
 - [ ] Build contributor aggregator
   - Group commits by author
   - Calculate time-based metrics
@@ -159,6 +165,7 @@ This phased implementation plan breaks down the Azure DevOps Repository Analysis
 
 **Deliverables**:
 
+- GitHub security metrics extractor
 - Contributor analysis module
 - Commit message quality scorer
 - Contributor metrics calculator

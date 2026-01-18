@@ -133,6 +133,18 @@ class GitHubExtractor(RepositoryExtractor):
                     project_name=organization,
                     organization_name=organization,
                     created_at=r.created_at,
+                    # Security and code quality metrics
+                    is_private=r.private,
+                    is_archived=r.archived,
+                    repository_size=r.size,
+                    open_issues_count=r.open_issues_count,
+                    license_name=r.license.name if r.license else None,
+                    license_key=r.license.key if r.license else None,
+                    has_vulnerability_alerts=getattr(r.security_and_analysis, 'vulnerability_alerts', {}).get('enabled', False) if hasattr(r, 'security_and_analysis') else None,
+                    has_secret_scanning=getattr(r.security_and_analysis, 'secret_scanning', {}).get('enabled', False) if hasattr(r, 'security_and_analysis') else None,
+                    has_dependabot_alerts=getattr(r.security_and_analysis, 'dependabot_security_updates', {}).get('enabled', False) if hasattr(r, 'security_and_analysis') else None,
+                    pushed_at=r.pushed_at,
+                    updated_at=r.updated_at,
                 )
             )
 
@@ -195,6 +207,8 @@ class GitHubExtractor(RepositoryExtractor):
                     files_changed=stats.total if stats else None,
                     lines_added=stats.additions if stats else None,
                     lines_removed=stats.deletions if stats else None,
+                    is_verified=getattr(c.commit, 'verification', {}).get('verified', None) if hasattr(c.commit, 'verification') else None,
+                    verification_reason=getattr(c.commit, 'verification', {}).get('reason', None) if hasattr(c.commit, 'verification') else None,
                 )
             )
             count += 1

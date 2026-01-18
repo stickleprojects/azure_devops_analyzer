@@ -2,9 +2,9 @@
 
 ## System Overview
 
-The Azure DevOps Repository Analysis System is a Python-based solution that:
+The Repository Analysis System is a Python-based solution that:
 
-- Analyzes Azure DevOps repositories for code quality, security, and team metrics
+- Analyzes Azure DevOps and GitHub repositories for code quality, security, and team metrics
 - Uses APScheduler + Celery (with RabbitMQ) for job orchestration
 - Stores data in PostgreSQL with TimescaleDB
 - Visualizes metrics in Grafana dashboards
@@ -12,7 +12,7 @@ The Azure DevOps Repository Analysis System is a Python-based solution that:
 ## Architecture at a Glance
 
 ```
-Azure DevOps → Python Extractors → Analyzers → PostgreSQL → Grafana
+Azure DevOps/GitHub → Python Extractors → Analyzers → PostgreSQL → Grafana
                       ↓
                 APScheduler (schedules jobs)
                       ↓
@@ -21,14 +21,14 @@ Azure DevOps → Python Extractors → Analyzers → PostgreSQL → Grafana
 
 ## Key Components
 
-| Component  | Technology               | Purpose                              |
-| ---------- | ------------------------ | ------------------------------------ |
-| Scheduler  | APScheduler              | Schedule analysis jobs               |
-| Job Queue  | Celery + RabbitMQ        | Distribute work to workers           |
-| Extractors | Python + Azure SDK       | Fetch repo data from Azure DevOps    |
-| Analyzers  | Python + Various tools   | Analyze code quality, security, etc. |
-| Database   | PostgreSQL + TimescaleDB | Store all metrics                    |
-| Dashboards | Grafana                  | Visualize data                       |
+| Component  | Technology                    | Purpose                                      |
+| ---------- | ----------------------------- | -------------------------------------------- |
+| Scheduler  | APScheduler                   | Schedule analysis jobs                       |
+| Job Queue  | Celery + RabbitMQ             | Distribute work to workers                   |
+| Extractors | Python + Azure SDK + PyGitHub | Fetch repo data from Azure DevOps and GitHub |
+| Analyzers  | Python + Various tools        | Analyze code quality, security, etc.         |
+| Database   | PostgreSQL + TimescaleDB      | Store all metrics                            |
+| Dashboards | Grafana                       | Visualize data                               |
 
 ## Job Types
 
@@ -36,6 +36,22 @@ Azure DevOps → Python Extractors → Analyzers → PostgreSQL → Grafana
 2. **Incremental Update** (Hourly): Process only changes since last run
 3. **Branch Scan** (On-demand): Analyze specific branch
 4. **Maintenance** (Daily): Cleanup and backups
+
+## Metrics Collected
+
+### Repository Security & Health
+- **GitHub Security Features**: Vulnerability alerts, secret scanning, Dependabot alerts enabled status
+- **Repository Metadata**: Size, issue counts, license information, archive status, visibility
+- **Timestamps**: Last push, last update, creation date
+
+### Code Quality Indicators
+- **Commit Verification**: GPG signature status and verification reasons
+- **Repository Health**: Open issue counts, repository size metrics
+- **License Compliance**: License name and SPDX identifier tracking
+
+### Contributor Analytics
+- **Activity Metrics**: Commits, lines changed, PR contributions
+- **Quality Indicators**: Commit message quality scores, active days
 
 ## Tech Stack Summary
 
@@ -110,7 +126,7 @@ Default dashboards:
 ## Documentation Index
 
 1. [Architecture](01-architecture.md) - System design
-2. [Data Extraction](02-data-extraction.md) - Azure DevOps integration
+2. [Data Extraction](02-data-extraction.md) - Azure DevOps and GitHub integration
 3. [Analysis Engine](03-analysis-engine.md) - Code analysis
 4. [Data Storage](04-data-storage.md) - Database design
 5. [Orchestration](05-orchestration.md) - Job scheduling
