@@ -140,6 +140,17 @@ class GitHubAnalysisWorkflow:
                 )
                 return
 
+        # Get repository metadata (team_name, service_name)
+        try:
+            metadata = self.extractor.get_repository_metadata(repo_data.repo_id)
+            if metadata:
+                repo_data.team_name = metadata.team_name
+                repo_data.service_name = metadata.service_name
+                logger.info("      Found metadata: team=%s, service=%s", 
+                          repo_data.team_name, repo_data.service_name)
+        except Exception as e:
+            logger.warning("      Failed to fetch repository metadata: %s", e)
+
         # Store repository
         with session_scope() as session:
             project = (

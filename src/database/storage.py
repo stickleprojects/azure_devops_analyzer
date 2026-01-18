@@ -21,6 +21,7 @@ from src.database.models import (
     PRReview,
     PRComment,
     ReadmeFile,
+    Team,
 )
 from src.extractors.base import (
     OrganizationData,
@@ -88,6 +89,39 @@ def get_or_create_contributor(
         session.add(contributor)
         session.flush()
     return contributor
+
+
+def get_or_create_team(
+    session: Session,
+    organization: Organization,
+    team_name: str,
+    description: Optional[str] = None,
+) -> Team:
+    """
+    Get existing team or create a new one.
+
+    Args:
+        session: Database session.
+        organization: Parent organization.
+        team_name: Team name.
+        description: Team description.
+
+    Returns:
+        Team instance.
+    """
+    team = session.query(Team).filter_by(
+        organization_id=organization.organization_id,
+        name=team_name,
+    ).first()
+    if not team:
+        team = Team(
+            organization_id=organization.organization_id,
+            name=team_name,
+            description=description,
+        )
+        session.add(team)
+        session.flush()
+    return team
 
 
 def store_organization(
@@ -174,10 +208,26 @@ def store_repository(
     """
     repo = session.query(Repository).filter_by(repo_id=repo_data.repo_id).first()
 
+    # Get or create team if team_name is provided
+    team_id = None
+    if repo_data.team_name:
+        # Get the organization from the project
+        organization = session.query(Organization).filter_by(
+            organization_id=project.organization_id
+        ).first()
+        if organization:
+            team = get_or_create_team(
+                session,
+                organization,
+                repo_data.team_name,
+            )
+            team_id = team.team_id
+
     if not repo:
         repo = Repository(
             repo_id=repo_data.repo_id,
             project_id=project.project_id,
+            team_id=team_id,
             name=repo_data.name,
             url=repo_data.url,
             default_branch=repo_data.default_branch,
@@ -190,6 +240,7 @@ def store_repository(
     else:
         repo.url = repo_data.url
         repo.default_branch = repo_data.default_branch
+        repo.team_id = team_id  # Update team if changed
 
     return repo
 

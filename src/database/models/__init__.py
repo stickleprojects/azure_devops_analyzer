@@ -16,6 +16,7 @@ from src.database.models.quality import CodeIssue, CodeQualityMetric
 from src.database.models.repository import Branch, Repository
 from src.database.models.service import RepositoryService, Service
 from src.database.models.summary import ReadmeFile, RepositorySummary
+from src.database.models.team import Team
 
 __all__ = [
     # Base
@@ -24,6 +25,7 @@ __all__ = [
     # Organization
     "Organization",
     "Project",
+    "Team",
     # Repository
     "Repository",
     "Branch",

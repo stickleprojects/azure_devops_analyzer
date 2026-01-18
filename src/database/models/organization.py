@@ -12,6 +12,7 @@ from src.database.models.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from src.database.models.repository import Repository
+    from src.database.models.team import Team
 
 
 class Organization(Base, TimestampMixin):
@@ -31,6 +32,9 @@ class Organization(Base, TimestampMixin):
 
     # Relationships
     projects: Mapped[list["Project"]] = relationship(
+        back_populates="organization", cascade="all, delete-orphan"
+    )
+    teams: Mapped[list["Team"]] = relationship(
         back_populates="organization", cascade="all, delete-orphan"
     )
 

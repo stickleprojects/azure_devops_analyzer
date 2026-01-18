@@ -9,6 +9,17 @@
   "links": [
     {
       "asDropdown": false,
+      "icon": "home",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Home",
+      "type": "link",
+      "url": "/d/dashboard-home"
+    },
+    {
+      "asDropdown": false,
       "icon": "dashboard",
       "includeVars": false,
       "keepTime": true,
@@ -102,7 +113,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -161,7 +174,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -220,7 +235,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -279,7 +296,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -338,7 +357,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -397,7 +418,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -496,7 +519,9 @@
       "id": 7,
       "options": {
         "legend": {
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -516,7 +541,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('day', commit_date) as time,\n  COUNT(*) as commits\nFROM commits\nWHERE commit_date > NOW() - INTERVAL '30 days'\nGROUP BY date_trunc('day', commit_date)\nORDER BY time;",
+          "rawSql": "SELECT \n  date_trunc('day', c.commit_date) as time,\n  COALESCE(t.name, 'No Team') as team,\n  COUNT(*) as commits\nFROM commits c\nLEFT JOIN repositories r ON c.repo_id = r.repo_id\nLEFT JOIN teams t ON r.team_id = t.team_id\nWHERE c.commit_date > NOW() - INTERVAL '30 days'\n  AND COALESCE(t.name, 'No Team') IN (${team:singlequote})\nGROUP BY date_trunc('day', c.commit_date), t.name\nORDER BY time, team;",
           "refId": "A"
         }
       ],
@@ -617,7 +642,9 @@
       "id": 8,
       "options": {
         "legend": {
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -637,7 +664,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('day', created_at) as time,\n  COUNT(*) as created\nFROM pull_requests\nWHERE created_at > NOW() - INTERVAL '30 days'\nGROUP BY date_trunc('day', created_at)\nORDER BY time;",
+          "rawSql": "SELECT \n  date_trunc('day', p.created_at) as time,\n  COALESCE(t.name, 'No Team') as team,\n  COUNT(*) as created\nFROM pull_requests p\nLEFT JOIN repositories r ON p.repo_id = r.repo_id\nLEFT JOIN teams t ON r.team_id = t.team_id\nWHERE p.created_at > NOW() - INTERVAL '30 days'\n  AND COALESCE(t.name, 'No Team') IN (${team:singlequote})\nGROUP BY date_trunc('day', p.created_at), t.name\nORDER BY time, team;",
           "refId": "created"
         },
         {
@@ -649,7 +676,7 @@
           "format": "time_series",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('day', merged_at) as time,\n  COUNT(*) as merged\nFROM pull_requests\nWHERE merged_at > NOW() - INTERVAL '30 days'\nGROUP BY date_trunc('day', merged_at)\nORDER BY time;",
+          "rawSql": "SELECT \n  date_trunc('day', p.merged_at) as time,\n  COALESCE(t.name, 'No Team') as team,\n  COUNT(*) as merged\nFROM pull_requests p\nLEFT JOIN repositories r ON p.repo_id = r.repo_id\nLEFT JOIN teams t ON r.team_id = t.team_id\nWHERE p.merged_at > NOW() - INTERVAL '30 days'\n  AND COALESCE(t.name, 'No Team') IN (${team:singlequote})\nGROUP BY date_trunc('day', p.merged_at), t.name\nORDER BY time, team;",
           "refId": "merged"
         }
       ],
@@ -840,7 +867,9 @@
       "id": 10,
       "options": {
         "legend": {
-          "calcs": ["sum"],
+          "calcs": [
+            "sum"
+          ],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -1092,7 +1121,9 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true,
@@ -1113,7 +1144,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  (SELECT COUNT(*) FROM commits c WHERE c.repo_id = r.repo_id AND c.commit_date > NOW() - INTERVAL '30 days') as commits_30d,\n  (SELECT COUNT(DISTINCT author_id) FROM commits c WHERE c.repo_id = r.repo_id AND c.commit_date > NOW() - INTERVAL '30 days') as contributors_30d,\n  (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id AND p.status = 'open') as open_prs,\n  (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id AND p.merged_at > NOW() - INTERVAL '30 days') as merged_prs_30d,\n  COALESCE((SELECT COUNT(v.id) FROM vulnerabilities v JOIN dependencies d ON v.dependency_id = d.id WHERE d.repo_id = r.repo_id AND d.analyzed_at = (SELECT MAX(analyzed_at) FROM dependencies WHERE repo_id = r.repo_id)), 0) as vulnerabilities,\n  (SELECT COUNT(*) FROM branches b LEFT JOIN (SELECT branch_id, staleness_days, ROW_NUMBER() OVER (PARTITION BY branch_id ORDER BY timestamp DESC) as rn FROM branch_metrics) bm ON b.branch_id = bm.branch_id AND bm.rn = 1 WHERE b.repo_id = r.repo_id AND b.is_active = true AND COALESCE(bm.staleness_days, 999) > 30) as stale_branches,\n  r.last_analyzed_at\nFROM repositories r\nWHERE r.is_active = true\nORDER BY commits_30d DESC;",
+          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  COALESCE(t.name, 'No Team') as team,\n  (SELECT COUNT(*) FROM commits c WHERE c.repo_id = r.repo_id AND c.commit_date > NOW() - INTERVAL '30 days') as commits_30d,\n  (SELECT COUNT(DISTINCT author_id) FROM commits c WHERE c.repo_id = r.repo_id AND c.commit_date > NOW() - INTERVAL '30 days') as contributors_30d,\n  (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id AND p.status = 'open') as open_prs,\n  (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id AND p.merged_at > NOW() - INTERVAL '30 days') as merged_prs_30d,\n  COALESCE((SELECT COUNT(v.id) FROM vulnerabilities v JOIN dependencies d ON v.dependency_id = d.id WHERE d.repo_id = r.repo_id AND d.analyzed_at = (SELECT MAX(analyzed_at) FROM dependencies WHERE repo_id = r.repo_id)), 0) as vulnerabilities,\n  (SELECT COUNT(*) FROM branches b LEFT JOIN (SELECT branch_id, staleness_days, ROW_NUMBER() OVER (PARTITION BY branch_id ORDER BY timestamp DESC) as rn FROM branch_metrics) bm ON b.branch_id = bm.branch_id AND bm.rn = 1 WHERE b.repo_id = r.repo_id AND b.is_active = true AND COALESCE(bm.staleness_days, 999) > 30) as stale_branches,\n  r.last_analyzed_at\nFROM repositories r\nLEFT JOIN teams t ON r.team_id = t.team_id\nWHERE r.is_active = true\n  AND COALESCE(t.name, 'No Team') IN (${team:singlequote})\nORDER BY commits_30d DESC;",
           "refId": "A"
         }
       ],
@@ -1178,7 +1209,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1245,7 +1278,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1312,7 +1347,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1379,7 +1416,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1438,7 +1477,9 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": true
         },
@@ -1561,7 +1602,9 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": true
         },
@@ -1620,11 +1663,15 @@
           "displayMode": "table",
           "placement": "right",
           "showLegend": true,
-          "values": ["percent"]
+          "values": [
+            "percent"
+          ]
         },
         "pieType": "donut",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": true
         },
@@ -1847,6 +1894,85 @@
         "x": 0,
         "y": 55
       },
+      "id": 104,
+      "panels": [],
+      "title": "Team Statistics",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 56
+      },
+      "id": 22,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT \n  COALESCE(t.name, 'No Team') as team,\n  COUNT(DISTINCT r.repo_id) as repositories,\n  COUNT(DISTINCT c.id) as contributors,\n  COUNT(cm.commit_sha) as commits_30d,\n  COUNT(DISTINCT CASE WHEN p.status = 'open' THEN p.id END) as open_prs,\n  COUNT(DISTINCT CASE WHEN p.merged_at > NOW() - INTERVAL '30 days' THEN p.id END) as merged_prs_30d,\n  ROUND(AVG(EXTRACT(EPOCH FROM (p.merged_at - p.created_at)) / 86400), 1) as avg_merge_time_days\nFROM teams t\nLEFT JOIN repositories r ON t.team_id = r.team_id\nLEFT JOIN commits cm ON r.repo_id = cm.repo_id AND cm.commit_date > NOW() - INTERVAL '30 days'\nLEFT JOIN contributors c ON cm.author_id = c.id\nLEFT JOIN pull_requests p ON r.repo_id = p.repo_id\nWHERE COALESCE(t.name, 'No Team') IN (${team:singlequote})\nGROUP BY t.team_id, t.name\nORDER BY commits_30d DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Team Performance Summary",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
       "id": 105,
       "panels": [],
       "title": "Recent Activity",
@@ -1916,7 +2042,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 56
+        "y": 65
       },
       "id": 21,
       "options": {
@@ -1924,7 +2050,9 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": ["sum"],
+          "reducer": [
+            "sum"
+          ],
           "show": false
         },
         "showHeader": true
@@ -1939,7 +2067,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  pr.pr_number as \"PR #\",\n  pr.title,\n  COALESCE(c.name, c.email) as author,\n  pr.status,\n  pr.size_category as size,\n  pr.files_changed as files,\n  pr.approval_count as approvals,\n  pr.created_at\nFROM pull_requests pr\nJOIN repositories r ON pr.repo_id = r.repo_id\nLEFT JOIN contributors c ON pr.author_id = c.id\nWHERE pr.created_at > NOW() - INTERVAL '7 days'\nORDER BY pr.created_at DESC\nLIMIT 25;",
+          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  COALESCE(t.name, 'No Team') as team,\n  pr.pr_number as \"PR #\",\n  pr.title,\n  COALESCE(c.name, c.email) as author,\n  pr.status,\n  pr.size_category as size,\n  pr.files_changed as files,\n  pr.approval_count as approvals,\n  pr.created_at\nFROM pull_requests pr\nJOIN repositories r ON pr.repo_id = r.repo_id\nLEFT JOIN teams t ON r.team_id = t.team_id\nLEFT JOIN contributors c ON pr.author_id = c.id\nWHERE pr.created_at > NOW() - INTERVAL '7 days'\n  AND COALESCE(t.name, 'No Team') IN (${team:singlequote})\nORDER BY pr.created_at DESC\nLIMIT 25;",
           "refId": "A"
         }
       ],
@@ -1949,9 +2077,38 @@
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": ["team", "overview", "summary"],
+  "tags": [
+    "team",
+    "overview",
+    "summary"
+  ],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "All",
+          "value": "$__all"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "TimescaleDB"
+        },
+        "definition": "SELECT DISTINCT COALESCE(t.name, 'No Team') as team FROM teams t UNION SELECT 'No Team' ORDER BY team",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Team",
+        "multi": true,
+        "name": "team",
+        "options": [],
+        "query": "SELECT DISTINCT COALESCE(t.name, 'No Team') as team FROM teams t UNION SELECT 'No Team' ORDER BY team",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-30d",

@@ -9,6 +9,17 @@
   "links": [
     {
       "asDropdown": false,
+      "icon": "home",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Home",
+      "type": "link",
+      "url": "/d/dashboard-home"
+    },
+    {
+      "asDropdown": false,
       "icon": "dashboard",
       "includeVars": false,
       "keepTime": true,

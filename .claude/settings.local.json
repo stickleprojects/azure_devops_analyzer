@@ -14,7 +14,8 @@
       "Bash(PGPASSWORD=TGMcVHdlaznNimYu82r3CL61 psql:*)",
       "Bash(docker exec:*)",
       "Bash(wc:*)",
-      "Bash(jq:*)"
+      "Bash(jq:*)",
+      "Bash(find:*)"
     ]
   }
 }

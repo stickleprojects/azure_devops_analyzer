@@ -36,10 +36,22 @@ CREATE TABLE projects (
     UNIQUE(organization_id, name)
 );
 
+-- teams
+CREATE TABLE teams (
+    team_id SERIAL PRIMARY KEY,
+    organization_id INTEGER REFERENCES organizations(organization_id),
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(team_id, name)
+);
+
 -- Repositories
 CREATE TABLE repositories (
     repo_id VARCHAR(255) PRIMARY KEY,  -- Platform-specific ID (Azure GUID or GitHub owner/repo)
     project_id INTEGER REFERENCES projects(project_id),
+    team_id INTEGER REFERENCES teams(team_id),
+    
     name VARCHAR(255) NOT NULL,
     url TEXT NOT NULL,
     default_branch VARCHAR(255),
@@ -234,6 +246,7 @@ CREATE INDEX idx_readme_content_fts ON readme_files USING gin(to_tsvector('engli
 -- Contributors
 CREATE TABLE contributors (
     id SERIAL PRIMARY KEY,
+    team_id INTEGER REFERENCES teams(team_id),
     email VARCHAR(255) NOT NULL UNIQUE,
     name VARCHAR(255),
     first_seen_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,

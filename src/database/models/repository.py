@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from src.database.models.quality import CodeIssue, CodeQualityMetric
     from src.database.models.service import RepositoryService, Service
     from src.database.models.summary import ReadmeFile, RepositorySummary
+    from src.database.models.team import Team
 
 
 class Repository(Base):
@@ -32,6 +33,9 @@ class Repository(Base):
     project_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("projects.project_id")
     )
+    team_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("teams.team_id")
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     url: Mapped[str] = mapped_column(Text, nullable=False)
     default_branch: Mapped[Optional[str]] = mapped_column(String(255))
@@ -42,6 +46,7 @@ class Repository(Base):
 
     # Relationships
     project: Mapped[Optional["Project"]] = relationship(back_populates="repositories")
+    team: Mapped[Optional["Team"]] = relationship(back_populates="repositories")
     branches: Mapped[list["Branch"]] = relationship(
         back_populates="repository", cascade="all, delete-orphan"
     )
