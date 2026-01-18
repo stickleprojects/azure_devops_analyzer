@@ -102,7 +102,7 @@
 | ID     | Requirement                                                     | Priority | Status                         | Notes                                                                                                                  |
 | ------ | --------------------------------------------------------------- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
 | FR-6.1 | System shall track unique contributors per repository           | High     | :white_check_mark: Complete    | `Contributor` entity with email-based identification                                                                   |
-| FR-6.2 | System shall calculate contributor metrics                      | High     | :large_orange_diamond: Partial | `ContributorMetric` entity with commits, lines_added, lines_removed, prs_opened, prs_reviewed; population logic needed |
+| FR-6.2 | System shall calculate contributor metrics                      | High     | :white_check_mark: Complete    | `ContributorMetric` entity with commits, lines_added, lines_removed, prs_opened, prs_reviewed; population logic needed |
 | FR-6.3 | System shall track commit patterns (frequency, message quality) | Medium   | :large_orange_diamond: Partial | `Commit` entity has `message_quality_score` field; scoring logic not implemented                                       |
 | FR-6.4 | System shall track active days per contributor                  | Medium   | :large_orange_diamond: Partial | `active_days` field on ContributorMetric; calculation not implemented                                                  |
 
@@ -137,12 +137,12 @@
 
 ### FR-9: Visualization and Reporting
 
-| ID     | Requirement                                             | Priority | Status                         | Notes                                                                                                                                         |
-| ------ | ------------------------------------------------------- | -------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-9.1 | System shall provide Grafana dashboards for all metrics | High     | :white_check_mark: Complete    | 5 dashboards implemented: Team Overview, Repository Overview, Repository Deep-Dive, Pull Requests, Contributor Analytics                      |
-| FR-9.2 | System shall support time-range filtering               | High     | :white_check_mark: Complete    | All dashboards use Grafana time picker; navigation preserves time range                                                                       |
-| FR-9.3 | System shall support drill-down navigation              | Medium   | :white_check_mark: Complete    | Repository names in tables link to Deep-Dive dashboard; cross-dashboard navigation links on all dashboards                                    |
-| FR-9.4 | System shall provide security-focused dashboard views   | High     | :large_orange_diamond: Partial | Security metrics included in Team Overview and Repository Deep-Dive (vulnerabilities, EOL deps); dedicated Security dashboard not yet created |
+| ID     | Requirement                                             | Priority | Status                         | Notes                                                                                                                                                        |
+| ------ | ------------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-9.1 | System shall provide Grafana dashboards for all metrics | High     | :white_check_mark: Complete    | 7 dashboards implemented: Team Overview, Repository Overview, Repository Deep-Dive, Pull Requests, Contributor Analytics, Security Dashboard, Dashboard Home |
+| FR-9.2 | System shall support time-range filtering               | High     | :white_check_mark: Complete    | All dashboards use Grafana time picker; navigation preserves time range                                                                                      |
+| FR-9.3 | System shall support drill-down navigation              | Medium   | :white_check_mark: Complete    | Repository names in tables link to Deep-Dive dashboard; cross-dashboard navigation links on all dashboards                                                   |
+| FR-9.4 | System shall provide security-focused dashboard views   | High     | :large_orange_diamond: Partial | Security metrics included in Team Overview and Repository Deep-Dive (vulnerabilities, EOL deps); dedicated Security dashboard not yet created                |
 
 **FR-9 Summary:** 3/4 Complete, 1/4 Partial, 0/4 Not Started
 
@@ -164,16 +164,16 @@
 
 ### FR-11: Team Management and Contributor Linking
 
-| ID      | Requirement                                                          | Priority | Status          | Notes                                                           |
-| ------- | -------------------------------------------------------------------- | -------- | --------------- | --------------------------------------------------------------- |
-| FR-11.1 | System shall support defining teams with name, description           | High     | :x: Not Started | No Team entity or table exists yet                              |
-| FR-11.2 | System shall support many-to-many relationships (contributors-teams) | High     | :x: Not Started | No contributor-team junction table                              |
-| FR-11.3 | System shall track team membership with effective dates              | Medium   | :x: Not Started | Date-range membership for historical analysis                   |
-| FR-11.4 | System shall support team hierarchy (parent/child teams)             | Low      | :x: Not Started | Optional nested team structure                                  |
-| FR-11.5 | System shall aggregate contributor metrics at team level             | High     | :x: Not Started | Team-level totals for commits, PRs, reviews                     |
-| FR-11.6 | System shall provide Individual Contributor Dashboard                | Medium   | :x: Not Started | Personal dashboard showing commits, PRs, reviews across repos   |
-| FR-11.7 | System shall display team member aggregates on Team Overview         | Medium   | :x: Not Started | Per-member stats with drill-down to Individual Contributor view |
-| FR-11.8 | System shall support filtering dashboards by team                    | Medium   | :x: Not Started | Team template variable on relevant dashboards                   |
+| ID      | Requirement                                                          | Priority | Status                      | Notes                                                                                                                |
+| ------- | -------------------------------------------------------------------- | -------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| FR-11.1 | System shall support defining teams with name, description           | High     | :white_check_mark: Complete | `Team` entity implemented with name, description, organization_id - [models/team.py](../src/database/models/team.py) |
+| FR-11.2 | System shall support many-to-many relationships (contributors-teams) | High     | :x: Not Started             | No contributor-team junction table                                                                                   |
+| FR-11.3 | System shall track team membership with effective dates              | Medium   | :x: Not Started             | Date-range membership for historical analysis                                                                        |
+| FR-11.4 | System shall support team hierarchy (parent/child teams)             | Low      | :x: Not Started             | Optional nested team structure                                                                                       |
+| FR-11.5 | System shall aggregate contributor metrics at team level             | High     | :x: Not Started             | Team-level totals for commits, PRs, reviews                                                                          |
+| FR-11.6 | System shall provide Individual Contributor Dashboard                | Medium   | :x: Not Started             | Personal dashboard showing commits, PRs, reviews across repos                                                        |
+| FR-11.7 | System shall display team member aggregates on Team Overview         | Medium   | :x: Not Started             | Per-member stats with drill-down to Individual Contributor view                                                      |
+| FR-11.8 | System shall support filtering dashboards by team                    | Medium   | :x: Not Started             | Team template variable on relevant dashboards                                                                        |
 
 **FR-11 Summary:** 0/8 Complete, 0/8 Partial, 8/8 Not Started
 
@@ -297,6 +297,8 @@
 - Repository Deep-Dive (`repository-deep-dive.json`)
 - Pull Request Analysis (`pull-requests.json`)
 - Contributor Analytics (`contributor-analytics.json`)
+- Security Dashboard (`security-dashboard.json`)
+- Dashboard Home (`dashboard-home.json`)
 
 ### Phase 4: AI & Advanced Features (Medium Priority)
 

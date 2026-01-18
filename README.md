@@ -1,8 +1,8 @@
-# Azure DevOps Repository Analysis System
+# Multi-Platform Repository Analysis System
 
 ## Overview
 
-This system analyzes Azure DevOps repositories and stores comprehensive metrics for visualization in Grafana dashboards. It provides insights into code quality, security vulnerabilities, contributor activity, pull request patterns, and repository health.
+This system analyzes repositories from multiple platforms (Azure DevOps and GitHub) and stores comprehensive metrics for visualization in Grafana dashboards. It provides insights into code quality, security vulnerabilities, contributor activity, pull request patterns, and repository health.
 
 ## Key Features
 

@@ -1,8 +1,8 @@
-# Orchestration Layer
+# System Architecture
 
 ## Overview
 
-The orchestration layer manages job scheduling, workflow coordination, and incremental updates using Python-based scheduling libraries. This approach provides a lightweight, flexible alternative to heavyweight workflow engines.
+The system architecture manages job scheduling, workflow coordination, and incremental updates using Python-based scheduling libraries. This approach provides a lightweight, flexible alternative to heavyweight workflow engines for analyzing repositories across multiple platforms.
 
 ## Technology Stack
 
@@ -31,23 +31,25 @@ This combination provides:
 ```
 azure-devops-analyzer/
 ├── src/
-│   ├── scheduler/
-│   │   ├── __init__.py
-│   │   ├── main.py              # Main scheduler process
-│   │   ├── jobs.py              # Job definitions
-│   │   ├── workers.py           # RQ worker management
-│   │   └── config.py            # Scheduler configuration
-│   ├── tasks/
-│   │   ├── __init__.py
-│   │   ├── extraction.py        # Data extraction tasks
-│   │   ├── analysis.py          # Analysis tasks
-│   │   ├── storage.py           # Database storage tasks
-│   │   └── maintenance.py       # Cleanup and maintenance
-│   ├── workflows/
-│   │   ├── __init__.py
-│   │   ├── full_scan.py         # Full repository scan workflow
-│   │   ├── incremental.py       # Incremental update workflow
-│   │   └── branch_scan.py       # Branch-specific scan workflow
+│   ├── extractors/         # Multi-platform data extraction (Azure DevOps, GitHub)
+│   │   ├── base.py         # Abstract extractor interface
+│   │   ├── factory.py      # Extractor factory for platform selection
+│   │   ├── azure_devops/   # Azure DevOps API client and extractor
+│   │   └── github/         # GitHub API client and extractor
+│   ├── analyzers/          # Analysis modules (language, security, quality)
+│   ├── database/           # ORM models, connection, storage operations
+│   ├── workflows/          # Analysis workflow orchestration
+│   └── utils/              # Shared utilities
+├── database/               # SQL schema and migration files
+├── dashboards/             # Grafana dashboard JSON definitions
+├── docs/                   # Documentation and guides
+├── tests/                  # Unit and integration tests
+├── config/                 # Configuration files
+├── workers/                # Worker startup scripts
+├── docker-compose.yml
+├── Dockerfile
+└── requirements.txt
+```
 │   └── utils/
 │       ├── __init__.py
 │       ├── job_tracker.py       # Job status tracking
@@ -75,10 +77,10 @@ It uses `SQLAlchemyJobStore` (PostgreSQL) for persistence and `ThreadPoolExecuto
 
 The full scan workflow performs the following steps:
 
-1.  **Fetch Repositories**: Retrieves a list of all repositories from Azure DevOps.
-2.  **Parallel Processing**: Enqueues a separate Celery task for each repository.
+1.  **Fetch Organizations/Projects**: Retrieves a list of all organizations/projects from configured platforms.
+2.  **Parallel Processing**: Enqueues a separate Celery task for each repository across all platforms.
 3.  **Single Repository Pipeline**:
-    - **Extract**: Fetches metadata, commits, PRs, and file trees.
+    - **Extract**: Fetches metadata, commits, PRs, and file trees from Azure DevOps or GitHub APIs.
     - **Analyze**: Runs language detection, dependency scanning, code quality checks, and summarization.
     - **Store**: Saves all results to the database in a transaction.
 4.  **Monitor**: Tracks job completion and updates scan metadata.
@@ -102,7 +104,7 @@ This workflow allows on-demand analysis of specific branches, useful for PR vali
 
 ### 1. Extraction Tasks
 
-Extraction tasks interface with the Azure DevOps Client to retrieve:
+Extraction tasks interface with repository hosting platforms (Azure DevOps and GitHub) to retrieve:
 
 - **Repository Data**: Metadata, branches, commits (last 90 days), PRs, and file trees.
 - **Branch Data**: Specific commit history and file tree for a branch.
