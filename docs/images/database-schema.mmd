@@ -1,0 +1,271 @@
+erDiagram
+    %% Core Entities
+    organizations ||--o{ projects : contains
+    projects ||--o{ repositories : contains
+    repositories ||--o{ branches : has
+
+    %% Repository Analysis
+    repositories ||--o{ repository_languages : analyzed_for
+    repositories ||--o{ dependencies : has
+    repositories ||--o{ code_quality_metrics : measured_by
+    repositories ||--o{ code_issues : contains
+    repositories ||--o{ repository_summaries : described_by
+    repositories ||--o{ readme_files : documents
+    repositories ||--o{ commits : tracks
+    repositories ||--o{ pull_requests : manages
+    repositories ||--o{ contributor_metrics : tracks
+
+    %% Branch Analysis
+    branches ||--o{ repository_languages : analyzed_for
+    branches ||--o{ dependencies : has
+    branches ||--o{ code_quality_metrics : measured_by
+    branches ||--o{ code_issues : contains
+    branches ||--o{ repository_summaries : described_by
+    branches ||--o{ readme_files : documents
+    branches ||--o{ branch_metrics : tracked_by
+
+    %% Dependencies and Security
+    dependencies ||--o{ vulnerabilities : exposes
+
+    %% Contributors
+    contributors ||--o{ contributor_metrics : generates
+    contributors ||--o{ commits : authors
+    contributors ||--o{ pull_requests : creates
+    contributors ||--o{ pr_reviews : submits
+    contributors ||--o{ pr_comments : writes
+
+    %% Pull Requests
+    pull_requests ||--o{ pr_reviews : reviewed_by
+    pull_requests ||--o{ pr_comments : discussed_in
+
+    %% Table Definitions
+    organizations {
+        serial organization_id PK
+        varchar name
+        text url
+        varchar platform
+        timestamp created_at
+    }
+
+    projects {
+        serial project_id PK
+        integer organization_id FK
+        varchar name
+        text description
+        timestamp created_at
+    }
+
+    repositories {
+        varchar repo_id PK
+        integer project_id FK
+        varchar name
+        text url
+        varchar default_branch
+        bigint platform_repo_id
+        timestamp created_at
+        timestamp last_analyzed_at
+        boolean is_active
+    }
+
+    branches {
+        serial branch_id PK
+        varchar repo_id FK
+        varchar branch_name
+        varchar latest_commit_sha
+        timestamp created_at
+        timestamp last_analyzed_at
+        boolean is_active
+    }
+
+    repository_languages {
+        serial id PK
+        varchar repo_id FK
+        integer branch_id FK
+        varchar language
+        decimal percentage
+        integer line_count
+        bigint byte_count
+        timestamp analyzed_at "hypertable"
+    }
+
+    dependencies {
+        serial id PK
+        varchar repo_id FK
+        integer branch_id FK
+        varchar package_name
+        varchar version
+        varchar ecosystem
+        varchar latest_version
+        boolean is_dev_dependency
+        boolean has_vulnerabilities
+        boolean is_eol
+        date eol_date
+        timestamp analyzed_at "hypertable"
+    }
+
+    vulnerabilities {
+        serial id PK
+        integer dependency_id FK
+        varchar cve_id
+        varchar vulnerability_id
+        varchar severity
+        text summary
+        text description
+        timestamp published_date
+        varchar fixed_in_version
+        jsonb references
+    }
+
+    code_quality_metrics {
+        serial id PK
+        varchar repo_id FK
+        integer branch_id FK
+        timestamp timestamp "hypertable"
+        integer total_issues
+        integer critical_issues
+        integer high_issues
+        integer medium_issues
+        integer low_issues
+        decimal complexity_score
+        decimal maintainability_index
+        decimal test_coverage
+        integer code_smells
+        integer technical_debt_minutes
+    }
+
+    code_issues {
+        serial id PK
+        integer quality_metric_id
+        varchar repo_id FK
+        integer branch_id FK
+        text file_path
+        integer line_number
+        varchar severity
+        varchar category
+        varchar rule_id
+        text message
+        timestamp detected_at
+        timestamp resolved_at
+    }
+
+    repository_summaries {
+        serial id PK
+        varchar repo_id FK
+        integer branch_id FK
+        text summary_text
+        text purpose
+        text[] key_technologies
+        text target_audience
+        timestamp generated_at
+        varchar generated_by
+    }
+
+    readme_files {
+        serial id PK
+        varchar repo_id FK
+        integer branch_id FK
+        text file_path
+        text content
+        text summary
+        integer word_count
+        timestamp analyzed_at
+    }
+
+    contributors {
+        serial id PK
+        varchar email UK
+        varchar name
+        timestamp first_seen_at
+        timestamp last_seen_at
+    }
+
+    contributor_metrics {
+        serial id PK
+        varchar repo_id FK
+        integer contributor_id FK
+        timestamp period_start "hypertable"
+        timestamp period_end
+        integer commit_count
+        integer lines_added
+        integer lines_removed
+        integer files_modified
+        integer pr_created
+        integer pr_reviews
+        integer pr_approvals
+        integer active_days
+        decimal avg_commit_message_quality
+    }
+
+    commits {
+        varchar commit_sha PK
+        varchar repo_id FK
+        varchar branch_name
+        integer author_id FK
+        integer committer_id FK
+        text message
+        decimal message_quality_score
+        timestamp commit_date
+        text[] parent_shas
+        integer files_changed
+        integer lines_added
+        integer lines_removed
+    }
+
+    pull_requests {
+        serial id PK
+        varchar repo_id FK
+        integer pr_number
+        varchar platform_pr_id UK
+        text title
+        text description
+        varchar source_branch
+        varchar target_branch
+        integer author_id FK
+        varchar status
+        timestamp created_at
+        timestamp updated_at
+        timestamp merged_at
+        timestamp closed_at
+        integer files_changed
+        integer lines_added
+        integer lines_removed
+        integer comment_count
+        integer approval_count
+        varchar size_category
+        boolean has_issues
+        text[] issue_flags
+    }
+
+    pr_reviews {
+        serial id PK
+        integer pr_id FK
+        integer reviewer_id FK
+        timestamp review_date
+        integer vote
+        boolean is_required
+        integer comment_count
+    }
+
+    pr_comments {
+        serial id PK
+        integer pr_id FK
+        varchar thread_id
+        integer author_id FK
+        text content
+        varchar comment_type
+        timestamp published_date
+        text file_path
+        integer line_number
+    }
+
+    branch_metrics {
+        serial id PK
+        integer branch_id FK
+        timestamp timestamp "hypertable"
+        integer commit_count
+        integer unique_contributors
+        integer age_days
+        integer staleness_days
+        integer total_lines
+        integer divergence_from_main
+    }

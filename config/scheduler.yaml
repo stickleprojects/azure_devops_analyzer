@@ -1,0 +1,73 @@
+# Scheduler Configuration
+# Used by APScheduler for job scheduling
+
+scheduler:
+  timezone: UTC
+
+  job_defaults:
+    # Combine multiple pending executions into one
+    coalesce: true
+    # Only one instance of a job can run at a time
+    max_instances: 1
+    # Grace period for missed jobs (seconds)
+    misfire_grace_time: 3600
+
+jobs:
+  # Weekly full repository scan
+  # Runs every Sunday at 02:00 UTC
+  full_scan:
+    trigger: cron
+    day_of_week: sun
+    hour: 2
+    minute: 0
+    platforms:
+      - github
+      - azure_devops
+
+  # Hourly incremental updates
+  # Fetches only new commits and PRs since last run
+  incremental_update:
+    trigger: interval
+    hours: 1
+
+  # Daily database maintenance
+  # Cleans up old data and optimizes tables
+  database_cleanup:
+    trigger: cron
+    hour: 3
+    minute: 0
+    retention_days: 365
+
+  # Daily database backup
+  # Backs up to Azure Storage (if configured)
+  database_backup:
+    trigger: cron
+    hour: 4
+    minute: 0
+
+# Extraction settings
+extraction:
+  # Maximum commits to fetch per repository
+  commit_limit: 1000
+  # Only fetch commits from last N days (used for first-time scans)
+  commit_since_days: 200
+  # Maximum PRs to fetch per repository
+  pr_limit: 100
+  # Include file tree in extraction
+  include_file_tree: true
+  # Minimum hours between scans of the same repository
+  min_scan_interval_hours: 6
+
+# Rate limiting
+rate_limits:
+  github:
+    requests_per_hour: 5000
+    retry_after_seconds: 60
+  azure_devops:
+    requests_per_minute: 150
+    retry_after_seconds: 30
+
+# Logging
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"

@@ -1,0 +1,219 @@
+services:
+  # ===========================================
+  # TimescaleDB - PostgreSQL with time-series extension
+  # Used for: APScheduler job store, application data, metrics
+  # ===========================================
+  timescaledb:
+    image: timescale/timescaledb:latest-pg16
+    container_name: analyzer-timescaledb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TIMESCALEDB_TELEMETRY: ${TIMESCALEDB_TELEMETRY:-off}
+    volumes:
+      - timescaledb_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - analyzer-network
+
+  # ===========================================
+  # RabbitMQ - Message broker for Celery
+  # Used for: Task queue, job distribution to workers
+  # ===========================================
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    container_name: analyzer-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    ports:
+      - "5672:5672"      # AMQP protocol
+      - "15672:15672"    # Management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - analyzer-network
+
+  # ===========================================
+  # Scheduler - APScheduler main process
+  # Handles: Cron jobs, interval scheduling, job coordination
+  # ===========================================
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: analyzer-scheduler
+    restart: unless-stopped
+    command: python -m src.scheduler.main
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      AZURE_DEVOPS_ORG_URL: ${AZURE_DEVOPS_ORG_URL}
+      AZURE_DEVOPS_PAT: ${AZURE_DEVOPS_PAT}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_ORG: ${GITHUB_ORG}
+      GITHUB_USER: ${GITHUB_USER}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ./src:/app/src:ro
+      - ./config:/app/config:ro
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - analyzer-network
+
+  # ===========================================
+  # Celery Worker - Distributed task execution
+  # Handles: Repository extraction, analysis, storage tasks
+  # ===========================================
+  celery-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: analyzer-celery-worker
+    restart: unless-stopped
+    command: celery -A src.tasks worker --loglevel=${LOG_LEVEL:-INFO} --concurrency=${CELERY_WORKER_CONCURRENCY:-4}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      AZURE_DEVOPS_ORG_URL: ${AZURE_DEVOPS_ORG_URL}
+      AZURE_DEVOPS_PAT: ${AZURE_DEVOPS_PAT}
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_ORG: ${GITHUB_ORG}
+      GITHUB_USER: ${GITHUB_USER}
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING}
+      AZURE_BACKUP_CONTAINER: ${AZURE_BACKUP_CONTAINER}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ./src:/app/src:ro
+      - ./config:/app/config:ro
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    deploy:
+      replicas: 1
+    networks:
+      - analyzer-network
+
+  # ===========================================
+  # Celery Beat - Periodic task scheduler
+  # Handles: Scheduled task triggers (alternative to APScheduler)
+  # ===========================================
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: analyzer-celery-beat
+    restart: unless-stopped
+    command: celery -A src.tasks beat --loglevel=${LOG_LEVEL:-INFO}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - ./src:/app/src:ro
+      - ./config:/app/config:ro
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - analyzer-network
+
+  # ===========================================
+  # Flower - Celery monitoring dashboard
+  # Provides: Real-time task monitoring, worker status
+  # ===========================================
+  flower:
+    image: mher/flower:2.0
+    container_name: analyzer-flower
+    restart: unless-stopped
+    command: celery --broker=${CELERY_BROKER_URL} flower --port=5555
+    environment:
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+    ports:
+      - "5555:5555"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - analyzer-network
+
+  # ===========================================
+  # Grafana - Visualization dashboards
+  # Provides: Repository metrics, security, code quality dashboards
+  # ===========================================
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: analyzer-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    networks:
+      - analyzer-network
+
+volumes:
+  timescaledb_data:
+    driver: local
+  rabbitmq_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  analyzer-network:
+    driver: bridge
