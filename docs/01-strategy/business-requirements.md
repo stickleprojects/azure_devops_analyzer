@@ -219,6 +219,14 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 | NFR-5.3 | Documentation          | All modules documented with docstrings              |
 | NFR-5.4 | Logging                | Structured logging with correlation IDs             |
 
+### NFR-6: Parallel Repository Processing
+
+| ID      | Requirement                              | Target                                                                                                                                                   |
+| ------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| NFR-6.1 | Repository parallelism                   | System must process repositories in parallel via the task queue, with a configurable worker pool supporting at least 5 concurrent workers in production. |
+| NFR-6.2 | Parallel throughput                      | With 5+ workers, sustain end-to-end processing of 500 repositories per hour without triggering platform rate limits.                                     |
+| NFR-6.3 | Configurable throttling and coordination | Rate limiting and queue routing must be configurable per platform (GitHub, Azure DevOps) to safely scale worker concurrency.                             |
+
 ## Constraints
 
 ### Technical Constraints

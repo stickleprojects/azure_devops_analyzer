@@ -1,0 +1,124 @@
+# Documentation Navigator
+
+Welcome to the **Repository Analysis System** documentation. This folder contains strategic, architectural, operational, and implementation guidance organized for easy navigation.
+
+## Quick Navigation
+
+### 📋 [01-strategy/](01-strategy/) — Business & Planning
+
+_For understanding what we're building and why_
+
+- [business-requirements.md](01-strategy/business-requirements.md) — Functional and non-functional requirements, constraints, dependencies
+- [requirements-status.md](01-strategy/requirements-status.md) — Current implementation progress against requirements
+- [project-rules.md](01-strategy/project-rules.md) — Guidelines for documentation, coding, and architecture
+
+**Start here if you're**: Product owner, new to the project, need to understand objectives
+
+---
+
+### 🏗️ [02-architecture/](02-architecture/) — System Design
+
+_For understanding how the system works_
+
+- [system-architecture.md](02-architecture/system-architecture.md) — High-level architecture, components, workflows
+- [technology-stack.md](02-architecture/technology-stack.md) — Tools, libraries, frameworks, versions
+- [data-flow.md](02-architecture/data-flow.md) — Data extraction from repositories (Azure DevOps, GitHub)
+- [analysis-pipeline.md](02-architecture/analysis-pipeline.md) — Analysis engines, language detection, security scanning
+- [data-storage.md](02-architecture/data-storage.md) — Database schema, TimescaleDB design, storage patterns
+- [job-orchestration.md](02-architecture/job-orchestration.md) — APScheduler, Celery, task management
+
+**Start here if you're**: Developer, architect, need to understand system design
+
+---
+
+### ⚙️ [03-operations/](03-operations/) — Deployment & Runtime
+
+_For getting the system running and maintaining it_
+
+- [visualization.md](03-operations/visualization.md) — Grafana dashboards, metrics, visualization design
+- [deployment-plan.md](03-operations/deployment-plan.md) — Implementation timeline, phases, checklist
+- [session-continuity.md](03-operations/session-continuity.md) — Session management, context tracking, reproducibility
+
+**Start here if you're**: DevOps engineer, system operator, deploying to production
+
+---
+
+### 🚀 [04-implementation/](04-implementation/) — Future Work & Decisions
+
+_For planning what comes next and evaluating options_
+
+- [parallelization-plan.md](04-implementation/parallelization-plan.md) — Multi-worker strategy, rate limiting, scaling
+- [infrastructure-options.md](04-implementation/infrastructure-options.md) — Kubernetes vs Docker Compose evaluation, pros/cons
+
+**Start here if you're**: Planning next phase, evaluating infrastructure options, scaling decisions
+
+---
+
+## Document Types
+
+| Type             | Purpose                        | Example                                            |
+| ---------------- | ------------------------------ | -------------------------------------------------- |
+| **Requirements** | What the system must do        | business-requirements.md                           |
+| **Architecture** | How the system is designed     | system-architecture.md                             |
+| **Design**       | Technical details              | data-storage.md, analysis-pipeline.md              |
+| **Operations**   | How to run and maintain it     | deployment-plan.md, visualization.md               |
+| **Planning**     | Future direction and decisions | parallelization-plan.md, infrastructure-options.md |
+| **Guidelines**   | How to work on the project     | project-rules.md                                   |
+
+---
+
+## Key Concepts
+
+- **Repository Analysis System**: Automated extraction and analysis of code repositories across Azure DevOps and GitHub
+- **Multi-platform**: Supports both Azure DevOps and GitHub with consistent data model
+- **Time-series Data**: Uses TimescaleDB for efficient historical analysis
+- **Parallel Processing**: Celery + RabbitMQ for distributed job execution
+- **Dashboards**: Grafana for visualization and reporting
+
+---
+
+## Recommended Reading Order
+
+### For Product / Leadership
+
+1. [business-requirements.md](01-strategy/business-requirements.md) — Understand objectives
+2. [requirements-status.md](01-strategy/requirements-status.md) — See progress
+3. [visualization.md](03-operations/visualization.md) — View what's available to users
+
+### For Engineers / Architects
+
+1. [system-architecture.md](02-architecture/system-architecture.md) — Understand design
+2. [technology-stack.md](02-architecture/technology-stack.md) — Know what we're using
+3. [data-storage.md](02-architecture/data-storage.md) — Learn data model
+4. [analysis-pipeline.md](02-architecture/analysis-pipeline.md) — See analysis components
+5. [project-rules.md](01-strategy/project-rules.md) — Follow coding standards
+
+### For DevOps / Operations
+
+1. [deployment-plan.md](03-operations/deployment-plan.md) — Understand setup
+2. [system-architecture.md](02-architecture/system-architecture.md) — Know services
+3. [visualization.md](03-operations/visualization.md) — Configure dashboards
+4. [infrastructure-options.md](04-implementation/infrastructure-options.md) — Plan scaling
+
+---
+
+## Related Files
+
+- **[00-quick-reference.md](00-quick-reference.md)** — Quick command reference (at root level)
+- **[requirements.txt](../requirements.txt)** — Python dependencies
+- **[docker-compose.yml](../docker-compose.yml)** — Local development stack
+- **[src/](../src/)** — Application code
+
+---
+
+## Getting Help
+
+- **Lost?** Start with your role above and read in order
+- **Need quick info?** Check [00-quick-reference.md](00-quick-reference.md)
+- **Looking for specific feature?** Use [requirements-status.md](01-strategy/requirements-status.md)
+- **Want to understand a component?** Navigate to [02-architecture/](02-architecture/)
+
+---
+
+**Last Updated**: 2026-01-19  
+**Organized for**: Easy navigation and discovery
