@@ -9,7 +9,7 @@
             "name": "PowerShell: github analysis local",
             "type": "PowerShell",
             "request": "launch",
-            "script": "${workspaceFolder}/scripts/run-githubAnalysis.ps1",
+            "script": "${workspaceFolder}/Start-RepoAnalysis.ps1",
             "args": [
                 "-GitHubToken",
                 "%REPO_ANALYZER_GITHUB_TOKEN%"

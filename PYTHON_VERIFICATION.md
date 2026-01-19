@@ -106,7 +106,7 @@ For full integration testing, you'll need the Docker environment with all servic
 
 ## 6. Recommendation
 
-Before running `Run-GitHubAnalysis.ps1`, you can now:
+Before running `Start-RepoAnalysis.ps1`, you can now:
 
 1. Run the test suite to verify all imports and structure
 2. This catches 95% of common Python errors without needing Docker
