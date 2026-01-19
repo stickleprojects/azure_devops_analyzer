@@ -7,7 +7,7 @@
 | Project Name     | Repository Analysis System |
 | Document Version | 1.0                        |
 | Status           | Active                     |
-| Last Updated     | 2026-01-18                 |
+| Last Updated     | 2026-01-19                 |
 
 ## Status Legend
 
@@ -22,7 +22,7 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 11       | 13      | 20          | 44    |
+| Functional Requirements     | 12       | 12      | 20          | 44    |
 | Non-Functional Requirements | 5        | 5       | 7           | 17    |
 
 ---
@@ -56,14 +56,14 @@
 
 ### FR-3: Dependency Analysis
 
-| ID     | Requirement                                                              | Priority | Status                         | Notes                                                                                       |
-| ------ | ------------------------------------------------------------------------ | -------- | ------------------------------ | ------------------------------------------------------------------------------------------- |
-| FR-3.1 | System shall extract dependencies from package manifest files            | High     | :large_orange_diamond: Partial | `Dependency` entity supports PyPI, npm, Maven, NuGet ecosystems; extraction not implemented |
-| FR-3.2 | System shall identify current and latest versions of dependencies        | High     | :large_orange_diamond: Partial | Schema has `current_version` and `latest_version` fields; no version lookup service         |
-| FR-3.3 | System shall flag end-of-life (EOL) dependencies                         | High     | :large_orange_diamond: Partial | Schema has `eol_date` field; endoflife.date API integration not implemented                 |
-| FR-3.4 | System shall distinguish between production and development dependencies | Medium   | :white_check_mark: Complete    | `is_dev_dependency` field on Dependency entity                                              |
+| ID     | Requirement                                                              | Priority | Status                         | Notes                                                                                                                                                                                 |
+| ------ | ------------------------------------------------------------------------ | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-3.1 | System shall extract dependencies from package manifest files            | High     | :white_check_mark: Complete    | Parser framework with 7 ecosystem parsers: PyPI (requirements.txt, pyproject.toml, Pipfile), npm (package.json), Maven (pom.xml), NuGet (*.csproj, packages.config), Go, Ruby, Rust |
+| FR-3.2 | System shall identify current and latest versions of dependencies        | High     | :large_orange_diamond: Partial | Version extraction implemented from manifest files; `latest_version` lookup via external API not yet implemented                                                                     |
+| FR-3.3 | System shall flag end-of-life (EOL) dependencies                         | High     | :large_orange_diamond: Partial | Schema has `eol_date` field; endoflife.date API integration not implemented                                                                                                           |
+| FR-3.4 | System shall distinguish between production and development dependencies | Medium   | :white_check_mark: Complete    | `is_dev_dependency` field populated by parsers based on file names, sections, and package indicators                                                                                  |
 
-**FR-3 Summary:** 1/4 Complete, 3/4 Partial
+**FR-3 Summary:** 2/4 Complete, 2/4 Partial
 
 ---
 
@@ -273,7 +273,7 @@
 ### Phase 1: Core Analysis (High Priority)
 
 1. Implement language detection from repository file trees
-2. Implement dependency extraction from package manifests
+2. ~~Implement dependency extraction from package manifests~~ ✅ Complete (7 ecosystems)
 3. Connect OSV.dev API for vulnerability scanning
 4. Implement contributor metrics calculation from commits/PRs
 
@@ -317,8 +317,9 @@
 
 ## Revision History
 
-| Version | Date       | Author | Changes                                                                                    |
-| ------- | ---------- | ------ | ------------------------------------------------------------------------------------------ |
-| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                       |
-| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation |
-| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started) |
+| Version | Date       | Author | Changes                                                                                                                        |
+| ------- | ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                                                           |
+| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation                                     |
+| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started)                                     |
+| 1.3     | 2026-01-19 | System | FR-3.1 Complete: Dependency extraction implemented with 7 ecosystem parsers (PyPI, npm, Maven, NuGet, Go, Ruby, Rust)          |

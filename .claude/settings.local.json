@@ -14,7 +14,8 @@
       "Bash(docker exec:*)",
       "Bash(wc:*)",
       "Bash(jq:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(python:*)"
     ]
   }
 }

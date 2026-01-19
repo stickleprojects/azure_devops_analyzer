@@ -22,6 +22,7 @@ from src.database.models import (
     PRComment,
     ReadmeFile,
     Team,
+    Dependency,
 )
 from src.extractors.base import (
     OrganizationData,
@@ -32,6 +33,7 @@ from src.extractors.base import (
     PRReviewData,
     PRCommentData,
     ReadmeData,
+    DependencyData,
 )
 
 
@@ -623,6 +625,68 @@ def store_readme(
         return readme_file
 
 
+def store_dependencies(
+    session: Session,
+    repo_id: str,
+    dependencies: list[DependencyData],
+    branch_name: Optional[str] = None,
+    analyzed_at: Optional[datetime] = None,
+) -> list[Dependency]:
+    """
+    Store dependencies for a repository.
+
+    This function performs an upsert operation, replacing existing dependencies
+    for the repository/branch combination with the new set.
+
+    Args:
+        session: Database session.
+        repo_id: Repository identifier.
+        dependencies: List of DependencyData to store.
+        branch_name: Branch name (optional).
+        analyzed_at: Timestamp for the analysis (defaults to now).
+
+    Returns:
+        List of stored Dependency instances.
+    """
+    if analyzed_at is None:
+        analyzed_at = datetime.now(UTC)
+
+    # Find branch_id if branch_name is provided
+    branch_id = None
+    if branch_name:
+        branch = (
+            session.query(Branch)
+            .filter_by(repo_id=repo_id, branch_name=branch_name)
+            .first()
+        )
+        if branch:
+            branch_id = branch.branch_id
+
+    # Delete existing dependencies for this repo/branch
+    delete_query = session.query(Dependency).filter(
+        Dependency.repo_id == repo_id,
+        Dependency.branch_id == branch_id,
+    )
+    delete_query.delete(synchronize_session=False)
+
+    # Store new dependencies
+    stored_deps = []
+    for dep_data in dependencies:
+        dep = Dependency(
+            repo_id=repo_id,
+            branch_id=branch_id,
+            package_name=dep_data.package_name,
+            version=dep_data.version,
+            ecosystem=dep_data.ecosystem,
+            is_dev_dependency=dep_data.is_dev_dependency,
+            analyzed_at=analyzed_at,
+        )
+        session.add(dep)
+        stored_deps.append(dep)
+
+    return stored_deps
+
+
 def get_extraction_summary(session: Session) -> dict:
     """
     Get summary counts of all extracted data.
@@ -641,4 +705,5 @@ def get_extraction_summary(session: Session) -> dict:
         "pull_requests": session.query(PullRequest).count(),
         "contributors": session.query(Contributor).count(),
         "readme_files": session.query(ReadmeFile).count(),
+        "dependencies": session.query(Dependency).count(),
     }
