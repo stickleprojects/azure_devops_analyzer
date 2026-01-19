@@ -17,20 +17,22 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 
 ### Primary Objectives
 
-| ID   | Objective                       | Success Criteria                                                                 |
-| ---- | ------------------------------- | -------------------------------------------------------------------------------- |
-| BO-1 | Improve code quality visibility | 90% of repositories analyzed weekly with quality metrics available in dashboards |
-| BO-2 | Reduce security vulnerabilities | Identify and flag 100% of known CVEs in dependencies within 24 hours of scan     |
-| BO-3 | Increase development efficiency | Provide actionable insights on PR patterns and contributor activity              |
-| BO-4 | Enable data-driven decisions    | Dashboards accessible to all stakeholders with real-time metrics                 |
+| ID   | Objective                       | Success Criteria                                                                   |
+| ---- | ------------------------------- | ---------------------------------------------------------------------------------- |
+| BO-1 | Improve code quality visibility | 90% of repositories analyzed weekly with quality metrics available in dashboards   |
+| BO-2 | Reduce security vulnerabilities | Identify and flag 100% of known CVEs in dependencies within 24 hours of scan       |
+| BO-3 | Increase development efficiency | Provide actionable insights on PR patterns and contributor activity                |
+| BO-4 | Enable data-driven decisions    | Dashboards accessible to all stakeholders with real-time metrics                   |
+| BO-5 | Track library health            | Comprehensive visibility into EOL and vulnerability status across all dependencies |
 
 ### Secondary Objectives
 
-| ID   | Objective                  | Success Criteria                                                 |
-| ---- | -------------------------- | ---------------------------------------------------------------- |
-| BO-5 | Support multiple platforms | Full feature parity between Azure DevOps and GitHub integrations |
-| BO-6 | Automate reporting         | Scheduled analysis runs without manual intervention              |
-| BO-7 | Track trends over time     | Historical data retained for minimum 2 years for trend analysis  |
+| ID   | Objective                  | Success Criteria                                                   |
+| ---- | -------------------------- | ------------------------------------------------------------------ |
+| BO-6 | Support multiple platforms | Full feature parity between Azure DevOps and GitHub integrations   |
+| BO-7 | Automate reporting         | Scheduled analysis runs without manual intervention                |
+| BO-8 | Track trends over time     | Historical data retained for minimum 2 years for trend analysis    |
+| BO-9 | Establish tech strategy    | Quarterly tech radar published with organizational recommendations |
 
 ## Stakeholders
 
@@ -79,73 +81,97 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 | FR-4.3 | System shall provide remediation guidance (fixed version)                       | High     | fixed_in_version populated when available       |
 | FR-4.4 | System shall track vulnerability publication and modification dates             | Medium   | Timestamps recorded for vulnerability lifecycle |
 
-### FR-5: Code Quality Analysis
+### FR-5: Dependency Vulnerability and EOL Tracking Dashboard
+
+| ID     | Requirement                                                                                 | Priority | Acceptance Criteria                                                   |
+| ------ | ------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------- |
+| FR-5.1 | System shall provide a comprehensive dashboard showing all dependencies across repositories | High     | Dashboard aggregates unique libraries and their usage patterns        |
+| FR-5.2 | System shall display dependency versions, EOL status, and vulnerability counts per library  | High     | Library cards show current version, EOL date, and CVE count           |
+| FR-5.3 | System shall allow filtering dashboard by organization, team, service, and repository       | High     | Filter controls enable drill-down from portfolio to repository level  |
+| FR-5.4 | System shall highlight libraries with critical vulnerabilities or upcoming EOL dates        | High     | Visual indicators (badges/colors) for Critical CVEs and EOL < 90 days |
+| FR-5.5 | System shall show which repositories depend on each library                                 | Medium   | Repository list with version information for each dependency          |
+| FR-5.6 | System shall track library adoption trends (how many repos using over time)                 | Medium   | Historical adoption curve available for each library                  |
+| FR-5.7 | System shall integrate EOL data from endoflife.date and vulnerability data from OSV.dev     | High     | Data sources continuously synchronized                                |
+
+### FR-6: Thoughtworks Tech Radar Publication
+
+| ID     | Requirement                                                                                       | Priority | Acceptance Criteria                                                              |
+| ------ | ------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------- |
+| FR-6.1 | System shall generate a Thoughtworks Tech Radar based on actual library usage across organization | High     | Radar generated in JSON format compatible with Thoughtworks Radar viewer         |
+| FR-6.2 | System shall categorize libraries into Thoughtworks Tech Radar rings (Adopt, Trial, Assess, Hold) | High     | Categorization based on adoption metrics and organizational recommendations      |
+| FR-6.3 | System shall populate radar with organization's actual technology stack from dependency analysis  | High     | All detected libraries with 2+ repositories appear on radar                      |
+| FR-6.4 | System shall include Thoughtworks recommended libraries as potential Trial/Assess options         | Medium   | Recommended libraries highlighted separately with rationale                      |
+| FR-6.5 | System shall display radar with configurable move history and publication timeline                | Medium   | Radar shows technology migrations and categorization changes over time           |
+| FR-6.6 | System shall provide endpoint to publish/export radar for sharing with stakeholders               | High     | REST API endpoint available; HTML visualization compatible with standard viewers |
+| FR-6.7 | System shall track blips with metadata (adoption date, vulnerability status, EOL impact)          | Medium   | Each technology entry includes context-specific metadata                         |
+
+### FR-7: Code Quality Analysis
 
 | ID     | Requirement                                                                    | Priority | Acceptance Criteria                               |
 | ------ | ------------------------------------------------------------------------------ | -------- | ------------------------------------------------- |
-| FR-5.1 | System shall calculate code complexity metrics                                 | High     | Complexity scores available per repository/branch |
-| FR-5.2 | System shall identify code issues by category (bug, vulnerability, code smell) | High     | Issues categorized and counted by severity        |
-| FR-5.3 | System shall calculate maintainability index                                   | Medium   | Index calculated using industry-standard formula  |
-| FR-5.4 | System shall track test coverage percentage                                    | Medium   | Coverage data integrated from test runs           |
-| FR-5.5 | System shall estimate technical debt in time units                             | Medium   | Debt expressed in minutes for remediation effort  |
+| FR-7.1 | System shall calculate code complexity metrics                                 | High     | Complexity scores available per repository/branch |
+| FR-7.2 | System shall identify code issues by category (bug, vulnerability, code smell) | High     | Issues categorized and counted by severity        |
+| FR-7.3 | System shall calculate maintainability index                                   | Medium   | Index calculated using industry-standard formula  |
+| FR-7.4 | System shall track test coverage percentage                                    | Medium   | Coverage data integrated from test runs           |
+| FR-7.5 | System shall estimate technical debt in time units                             | Medium   | Debt expressed in minutes for remediation effort  |
 
-### FR-6: Contributor Analytics
+### FR-8: Contributor Analytics
 
 | ID     | Requirement                                                              | Priority | Acceptance Criteria                             |
 | ------ | ------------------------------------------------------------------------ | -------- | ----------------------------------------------- |
-| FR-6.1 | System shall track unique contributors per repository                    | High     | Contributors identified by email                |
-| FR-6.2 | System shall calculate contributor metrics (commits, lines changed, PRs) | High     | Metrics aggregated by configurable time periods |
-| FR-6.3 | System shall track commit patterns (frequency, message quality)          | Medium   | Commit message quality scored                   |
-| FR-6.4 | System shall track active days per contributor                           | Medium   | Active days counted per period                  |
+| FR-8.1 | System shall track unique contributors per repository                    | High     | Contributors identified by email                |
+| FR-8.2 | System shall calculate contributor metrics (commits, lines changed, PRs) | High     | Metrics aggregated by configurable time periods |
+| FR-8.3 | System shall track commit patterns (frequency, message quality)          | Medium   | Commit message quality scored                   |
+| FR-8.4 | System shall track active days per contributor                           | Medium   | Active days counted per period                  |
 
-### FR-7: Pull Request Analysis
+### FR-9: Pull Request Analysis
 
 | ID     | Requirement                                                                 | Priority | Acceptance Criteria                                     |
 | ------ | --------------------------------------------------------------------------- | -------- | ------------------------------------------------------- |
-| FR-7.1 | System shall track PR lifecycle (created, updated, merged, closed)          | High     | All PR state transitions captured with timestamps       |
-| FR-7.2 | System shall calculate PR size metrics (files changed, lines added/removed) | High     | Size categorization (small, medium, large, extra_large) |
-| FR-7.3 | System shall track review activity (reviewers, votes, comments)             | High     | Review data linked to contributors                      |
-| FR-7.4 | System shall identify PR quality issues                                     | Medium   | Issue flags populated for problematic PRs               |
+| FR-9.1 | System shall track PR lifecycle (created, updated, merged, closed)          | High     | All PR state transitions captured with timestamps       |
+| FR-9.2 | System shall calculate PR size metrics (files changed, lines added/removed) | High     | Size categorization (small, medium, large, extra_large) |
+| FR-9.3 | System shall track review activity (reviewers, votes, comments)             | High     | Review data linked to contributors                      |
+| FR-9.4 | System shall identify PR quality issues                                     | Medium   | Issue flags populated for problematic PRs               |
 
-### FR-8: Repository Summarization
+### FR-10: Repository Summarization
 
-| ID     | Requirement                                              | Priority | Acceptance Criteria                              |
-| ------ | -------------------------------------------------------- | -------- | ------------------------------------------------ |
-| FR-8.1 | System shall generate AI-powered repository summaries    | Medium   | Summary, purpose, and target audience documented |
-| FR-8.2 | System shall extract and index README content            | Medium   | Full-text search available on README content     |
-| FR-8.3 | System shall track which AI model generated each summary | Low      | Model identifier stored with summary             |
+| ID      | Requirement                                              | Priority | Acceptance Criteria                              |
+| ------- | -------------------------------------------------------- | -------- | ------------------------------------------------ |
+| FR-10.1 | System shall generate AI-powered repository summaries    | Medium   | Summary, purpose, and target audience documented |
+| FR-10.2 | System shall extract and index README content            | Medium   | Full-text search available on README content     |
+| FR-10.3 | System shall track which AI model generated each summary | Low      | Model identifier stored with summary             |
 
-### FR-9: Visualization and Reporting
+### FR-11: Visualization and Reporting
 
-| ID     | Requirement                                                           | Priority | Acceptance Criteria                                 |
-| ------ | --------------------------------------------------------------------- | -------- | --------------------------------------------------- |
-| FR-9.1 | System shall provide Grafana dashboards for all metrics               | High     | Dashboards cover all metric categories              |
-| FR-9.2 | System shall support time-range filtering on all visualizations       | High     | Users can select custom date ranges                 |
-| FR-9.3 | System shall support drill-down from organization to repository level | Medium   | Hierarchical navigation available                   |
-| FR-9.4 | System shall provide security-focused dashboard views                 | High     | Vulnerability and EOL metrics prominently displayed |
+| ID      | Requirement                                                           | Priority | Acceptance Criteria                                 |
+| ------- | --------------------------------------------------------------------- | -------- | --------------------------------------------------- |
+| FR-11.1 | System shall provide Grafana dashboards for all metrics               | High     | Dashboards cover all metric categories              |
+| FR-11.2 | System shall support time-range filtering on all visualizations       | High     | Users can select custom date ranges                 |
+| FR-11.3 | System shall support drill-down from organization to repository level | Medium   | Hierarchical navigation available                   |
+| FR-11.4 | System shall provide security-focused dashboard views                 | High     | Vulnerability and EOL metrics prominently displayed |
 
-### FR-10: Service-Repository Mapping
+### FR-12: Service-Repository Mapping
 
 | ID      | Requirement                                                                       | Priority | Acceptance Criteria                                                                            |
 | ------- | --------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
-| FR-10.1 | System shall support defining services with name, purpose, and CMDB identifier    | High     | Services can be created with all required attributes                                           |
-| FR-10.2 | System shall support many-to-many relationships between repositories and services | High     | A repository can belong to zero or more services; a service can have zero or more repositories |
-| FR-10.3 | System shall track which repositories contribute to each service                  | High     | Service composition queryable showing all associated repositories                              |
-| FR-10.4 | System shall aggregate metrics at the service level                               | Medium   | Dashboard views available showing combined metrics for all repositories in a service           |
-| FR-10.5 | System shall support repositories belonging to multiple services                  | Medium   | Cross-service repository contributions tracked without duplication                             |
+| FR-12.1 | System shall support defining services with name, purpose, and CMDB identifier    | High     | Services can be created with all required attributes                                           |
+| FR-12.2 | System shall support many-to-many relationships between repositories and services | High     | A repository can belong to zero or more services; a service can have zero or more repositories |
+| FR-12.3 | System shall track which repositories contribute to each service                  | High     | Service composition queryable showing all associated repositories                              |
+| FR-12.4 | System shall aggregate metrics at the service level                               | Medium   | Dashboard views available showing combined metrics for all repositories in a service           |
+| FR-12.5 | System shall support repositories belonging to multiple services                  | Medium   | Cross-service repository contributions tracked without duplication                             |
 
-### FR-11: Team Management and Contributor Linking
+### FR-13: Team Management and Contributor Linking
 
-| ID      | Requirement                                                                           | Priority | Acceptance Criteria                                                                          |
-| ------- | ------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------- |
-| FR-11.1 | System shall support defining teams with name, description, and optional CMDB link    | High     | Teams can be created with all required attributes                                            |
-| FR-11.2 | System shall support many-to-many relationships between contributors and teams        | High     | A contributor can belong to zero or more teams; a team can have zero or more contributors    |
-| FR-11.3 | System shall track team membership with effective dates (start/end)                   | Medium   | Historical team membership queryable for past periods                                        |
-| FR-11.4 | System shall support team hierarchy (parent/child teams)                              | Low      | Nested teams with aggregated metrics at parent level                                         |
-| FR-11.5 | System shall aggregate contributor metrics at the team level                          | High     | Team-level totals for commits, PRs, reviews, lines changed                                   |
-| FR-11.6 | System shall provide Individual Contributor Dashboard                                 | Medium   | Dashboard showing personal commits, PRs authored, reviews given across all repositories      |
-| FR-11.7 | System shall display team member aggregates on Team Overview dashboard                | Medium   | Team Overview shows per-member stats (commits, PRs, reviews) with drill-down to contributor  |
-| FR-11.8 | System shall support filtering dashboards by team                                     | Medium   | All relevant dashboards can be filtered to show only team members' activity                  |
+| ID      | Requirement                                                                        | Priority | Acceptance Criteria                                                                         |
+| ------- | ---------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------- |
+| FR-13.1 | System shall support defining teams with name, description, and optional CMDB link | High     | Teams can be created with all required attributes                                           |
+| FR-13.2 | System shall support many-to-many relationships between contributors and teams     | High     | A contributor can belong to zero or more teams; a team can have zero or more contributors   |
+| FR-13.3 | System shall track team membership with effective dates (start/end)                | Medium   | Historical team membership queryable for past periods                                       |
+| FR-13.4 | System shall support team hierarchy (parent/child teams)                           | Low      | Nested teams with aggregated metrics at parent level                                        |
+| FR-13.5 | System shall aggregate contributor metrics at the team level                       | High     | Team-level totals for commits, PRs, reviews, lines changed                                  |
+| FR-13.6 | System shall provide Individual Contributor Dashboard                              | Medium   | Dashboard showing personal commits, PRs authored, reviews given across all repositories     |
+| FR-13.7 | System shall display team member aggregates on Team Overview dashboard             | Medium   | Team Overview shows per-member stats (commits, PRs, reviews) with drill-down to contributor |
+| FR-13.8 | System shall support filtering dashboards by team                                  | Medium   | All relevant dashboards can be filtered to show only team members' activity                 |
 
 ## Non-Functional Requirements
 
@@ -247,24 +273,25 @@ The following items are explicitly excluded from this project:
 
 ## Glossary
 
-| Term       | Definition                                                                                 |
-| ---------- | ------------------------------------------------------------------------------------------ |
-| CMDB       | Configuration Management Database - centralized repository for IT asset information        |
-| CVE        | Common Vulnerabilities and Exposures - standardized vulnerability identifier               |
-| EOL        | End of Life - software version no longer receiving updates                                 |
-| Hypertable | TimescaleDB concept for time-series partitioned tables                                     |
-| PAT        | Personal Access Token - authentication credential for API access                           |
-| PR         | Pull Request - code change proposal for review                                             |
-| SDLC       | Software Development Life Cycle                                                            |
-| Service    | A logical grouping of one or more repositories that together deliver a business capability |
+| Term       | Definition                                                                                  |
+| ---------- | ------------------------------------------------------------------------------------------- |
+| CMDB       | Configuration Management Database - centralized repository for IT asset information         |
+| CVE        | Common Vulnerabilities and Exposures - standardized vulnerability identifier                |
+| EOL        | End of Life - software version no longer receiving updates                                  |
+| Hypertable | TimescaleDB concept for time-series partitioned tables                                      |
+| PAT        | Personal Access Token - authentication credential for API access                            |
+| PR         | Pull Request - code change proposal for review                                              |
+| SDLC       | Software Development Life Cycle                                                             |
+| Service    | A logical grouping of one or more repositories that together deliver a business capability  |
 | Team       | A group of contributors who work together, used for aggregating metrics and filtering views |
 
 ## Revision History
 
-| Version | Date       | Author | Changes                                                  |
-| ------- | ---------- | ------ | -------------------------------------------------------- |
-| 1.0     | 2026-01-17 | System | Initial draft based on README and documentation analysis |
-| 1.1     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking     |
+| Version | Date       | Author | Changes                                                                     |
+| ------- | ---------- | ------ | --------------------------------------------------------------------------- |
+| 1.0     | 2026-01-17 | System | Initial draft based on README and documentation analysis                    |
+| 1.1     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking                        |
+| 1.2     | 2026-01-19 | System | Added FR-5: Dependency EOL/Vulnerability Dashboard, FR-6: Tech Radar Export |
 
 ## Approval
 

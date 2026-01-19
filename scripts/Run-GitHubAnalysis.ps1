@@ -67,8 +67,11 @@ $ProjectRoot = Split-Path -Parent $ScriptRoot
 $EnvFile = Join-Path $ProjectRoot ".env"
 $SchemaFile = Join-Path $ProjectRoot "database\schema.sql"
 # Resolve any environment variable references in the token
-if ($GitHubToken -and $GitHubToken.Contains('%')) {
+if ($GitHubToken -and ($GitHubToken.Contains('%') -or $GitHubToken.Contains('$'))) {
+    # Handle both Windows (%VAR%) and Unix ($VAR) style env vars
     $githubtoken = [Environment]::ExpandEnvironmentVariables($GitHubToken)
+    # For Unix-style $VAR, use PowerShell's variable expansion
+    $githubtoken = $ExecutionContext.InvokeCommand.ExpandString($githubtoken)
 }
 else {
     $githubtoken = $GitHubToken
