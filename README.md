@@ -7,6 +7,7 @@ This system analyzes repositories from multiple platforms (Azure DevOps and GitH
 ## Key Features
 
 - **Multi-language support**: Detects and analyzes code in various programming languages
+- **Dependency extraction**: Parses manifest files from 7 ecosystems (PyPI, npm, Maven, NuGet, Go, RubyGems, Cargo)
 - **Security scanning**: Identifies vulnerabilities in dependencies and code
 - **Organization-wide security dashboard**: Tracks vulnerabilities and EOL dependencies across all repositories with drilldown capabilities
 - **Code quality analysis**: Static analysis for best practices and structural issues

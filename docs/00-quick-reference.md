@@ -44,6 +44,12 @@ Azure DevOps/GitHub → Python Extractors → Analyzers → PostgreSQL → Grafa
 - **Repository Metadata**: Size, issue counts, license information, archive status, visibility
 - **Timestamps**: Last push, last update, creation date
 
+### Dependency Analysis
+- **Multi-Ecosystem Support**: PyPI, npm, Maven, NuGet, Go, RubyGems, Cargo
+- **Version Tracking**: Current version extracted from manifest files
+- **Dependency Classification**: Production vs development dependencies
+- **Manifest Files**: requirements.txt, package.json, pom.xml, *.csproj, go.mod, Gemfile, Cargo.toml
+
 ### Code Quality Indicators
 - **Commit Verification**: GPG signature status and verification reasons
 - **Repository Health**: Open issue counts, repository size metrics

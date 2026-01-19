@@ -20,9 +20,11 @@ from src.database.storage import (
     store_commit,
     store_pull_request,
     store_readme,
+    store_dependencies,
     update_repository_analyzed_timestamp,
     get_extraction_summary,
 )
+from src.analyzers.dependency_analyzer import DependencyAnalyzer
 from src.extractors.github.extractor import GitHubExtractor
 
 logger = logging.getLogger(__name__)
@@ -36,6 +38,7 @@ class ExtractionLimits:
     max_commits: int = 50
     max_pull_requests: int = 20
     min_scan_interval_hours: int = 6
+    extract_dependencies: bool = True
 
 
 class GitHubAnalysisWorkflow:
@@ -172,6 +175,10 @@ class GitHubAnalysisWorkflow:
         self._process_commits(repo_data)
         self._process_pull_requests(repo_data)
 
+        # Extract dependencies
+        if self.limits.extract_dependencies:
+            self._process_dependencies(repo_data)
+
         # Update timestamp
         with session_scope() as session:
             update_repository_analyzed_timestamp(session, repo_data.repo_id)
@@ -250,6 +257,47 @@ class GitHubAnalysisWorkflow:
         except Exception as e:
             logger.warning("      Failed to fetch PRs: %s", e)
 
+    def _process_dependencies(self, repo_data):
+        """Extract and store dependencies for a repository."""
+        try:
+            analyzer = DependencyAnalyzer()
+            result = analyzer.analyze(
+                self.extractor,
+                repo_data.repo_id,
+                branch=repo_data.default_branch,
+            )
+
+            if result.dependencies:
+                logger.info(
+                    "      Found %d dependencies from %d ecosystems",
+                    result.total_dependencies,
+                    len(result.ecosystems),
+                )
+
+                with session_scope() as session:
+                    store_dependencies(
+                        session,
+                        repo_data.repo_id,
+                        result.dependencies,
+                        branch_name=repo_data.default_branch,
+                        analyzed_at=result.analyzed_at,
+                    )
+                    logger.info(
+                        "      Stored %d dependencies (%d dev, %d prod)",
+                        result.total_dependencies,
+                        result.dev_dependencies,
+                        result.prod_dependencies,
+                    )
+            else:
+                logger.info("      No dependencies found")
+
+            if result.parse_errors:
+                for error in result.parse_errors[:3]:
+                    logger.warning("      Parse error: %s", error)
+
+        except Exception as e:
+            logger.warning("      Failed to extract dependencies: %s", e)
+
     def _get_summary(self) -> dict:
         """Get extraction summary counts."""
         with session_scope() as session:
@@ -283,4 +331,5 @@ def print_extraction_summary(summary: dict) -> None:
     print(f"Commits:        {summary['commits']}")
     print(f"Pull Requests:  {summary['pull_requests']}")
     print(f"Contributors:   {summary['contributors']}")
+    print(f"Dependencies:   {summary.get('dependencies', 0)}")
     print("=" * 50)

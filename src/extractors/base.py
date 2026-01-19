@@ -26,6 +26,17 @@ class RepositoryMetadata:
 
 
 @dataclass
+class DependencyData:
+    """Dependency information extracted from manifest files."""
+    package_name: str
+    ecosystem: str  # pypi, npm, maven, nuget, go, rubygems, cargo
+    version: Optional[str] = None
+    is_dev_dependency: bool = False
+    source_file: str = ""
+    version_constraint: Optional[str] = None
+
+
+@dataclass
 class OrganizationData:
     """Organization/account data from the platform."""
     name: str

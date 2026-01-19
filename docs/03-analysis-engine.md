@@ -19,20 +19,71 @@ The Analysis Engine processes raw data from Azure DevOps to generate actionable 
 
 **Purpose**: Identify libraries, versions, and security vulnerabilities
 
-#### Package File Parsers
+**Status**: ✅ Extraction implemented, ⏳ Vulnerability scanning pending
 
-Parsers extract dependency information from standard manifest files:
+#### Architecture
 
-- **Python**: `requirements.txt`, `Pipfile`
-- **Node.js**: `package.json`
-- **Java**: `pom.xml`
-- **.NET**: `.csproj`
+The dependency analysis system uses a modular parser framework:
 
-#### Vulnerability Scanning
+```
+src/analyzers/
+├── dependency_analyzer.py      # Main analyzer orchestrating file discovery and parsing
+└── parsers/
+    ├── base.py                 # ManifestParser ABC + ParserRegistry
+    ├── python_parser.py        # PyPI ecosystem
+    ├── nodejs_parser.py        # npm ecosystem
+    ├── java_parser.py          # Maven ecosystem
+    ├── dotnet_parser.py        # NuGet ecosystem
+    ├── go_parser.py            # Go modules
+    ├── ruby_parser.py          # RubyGems ecosystem
+    └── rust_parser.py          # Cargo ecosystem
+```
+
+#### Supported Ecosystems
+
+| Ecosystem | Manifest Files                                               | Parser                |
+| --------- | ------------------------------------------------------------ | --------------------- |
+| PyPI      | `requirements.txt`, `pyproject.toml`, `Pipfile`              | `PythonParser`        |
+| npm       | `package.json`                                               | `NodeJsParser`        |
+| Maven     | `pom.xml`                                                    | `JavaParser`          |
+| NuGet     | `*.csproj`, `packages.config`                                | `DotNetParser`        |
+| Go        | `go.mod`                                                     | `GoParser`            |
+| RubyGems  | `Gemfile`                                                    | `RubyParser`          |
+| Cargo     | `Cargo.toml`                                                 | `RustParser`          |
+
+#### Key Features
+
+- **Pluggable Parser Registry**: New parsers can be added via `@ParserRegistry.register` decorator
+- **Version Extraction**: Parses version constraints (`^1.0`, `>=2.0,<3.0`, `~=1.5`) to extract actual versions
+- **Dev Dependency Detection**: Identifies dev dependencies from:
+  - File names (`requirements-dev.txt`, `dev-requirements.txt`)
+  - Sections (`[dev-dependencies]`, `devDependencies`)
+  - Package indicators (test frameworks, linters)
+- **Deduplication**: Same package from multiple files is deduplicated, preferring prod over dev
+- **Property Substitution**: Maven property references (`${version.spring}`) are resolved
+
+#### Usage Example
+
+```python
+from src.analyzers import DependencyAnalyzer
+from src.extractors.github.extractor import GitHubExtractor
+
+extractor = GitHubExtractor()
+analyzer = DependencyAnalyzer()
+
+result = analyzer.analyze(extractor, "owner/repo", branch="main")
+
+print(f"Found {result.total_dependencies} dependencies")
+print(f"Ecosystems: {result.ecosystems}")
+for dep in result.dependencies:
+    print(f"  {dep.package_name}: {dep.version} ({dep.ecosystem})")
+```
+
+#### Vulnerability Scanning (Not Yet Implemented)
 
 Queries the **OSV.dev API** to check identified packages and versions against known vulnerability databases. It normalizes severity scores (CVSS) to a standard scale (CRITICAL, HIGH, MEDIUM, LOW).
 
-#### End-of-Life Detection
+#### End-of-Life Detection (Not Yet Implemented)
 
 Checks the **endoflife.date API** to determine if the package version is no longer supported.
 
@@ -87,7 +138,7 @@ The orchestration layer coordinates the execution of all analysis modules, ensur
 ## Checklist
 
 - [ ] Language detection configured (Linguist or file extension fallback)
-- [ ] Dependency parsers implemented for target ecosystems
+- [x] Dependency parsers implemented for target ecosystems (7 ecosystems: PyPI, npm, Maven, NuGet, Go, RubyGems, Cargo)
 - [ ] OSV.dev API integration for vulnerability scanning
 - [ ] endoflife.date API integration for EOL detection
 - [ ] SonarQube or linter integration for code quality
