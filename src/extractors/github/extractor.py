@@ -207,8 +207,8 @@ class GitHubExtractor(RepositoryExtractor):
                     files_changed=stats.total if stats else None,
                     lines_added=stats.additions if stats else None,
                     lines_removed=stats.deletions if stats else None,
-                    is_verified=getattr(c.commit, 'verification', {}).get('verified', None) if hasattr(c.commit, 'verification') else None,
-                    verification_reason=getattr(c.commit, 'verification', {}).get('reason', None) if hasattr(c.commit, 'verification') else None,
+                    is_verified=c.commit.verification.verified if c.commit.verification else None,
+                    verification_reason=c.commit.verification.reason if c.commit.verification else None,
                 )
             )
             count += 1

@@ -1,0 +1,17 @@
+FROM postgres:16-alpine
+
+WORKDIR /migrations
+
+# Install bash for the migration script
+RUN apk add --no-cache bash
+
+# Copy database schema and migrations
+COPY database/schema.sql ./schema.sql
+COPY database/migrations/ ./migrations/
+
+# Copy the migration runner script
+COPY scripts/run_migrations.sh ./run_migrations.sh
+RUN chmod +x ./run_migrations.sh
+
+# Run migrations when container starts
+ENTRYPOINT ["./run_migrations.sh"]

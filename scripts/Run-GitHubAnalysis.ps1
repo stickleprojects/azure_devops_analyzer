@@ -23,6 +23,10 @@
 .PARAMETER SkipInfrastructure
     Skip starting Docker containers (useful if they're already running).
 
+.PARAMETER RunDirect
+    Run extraction directly without using Celery workers. By default, extraction
+    is submitted to Celery for distributed processing and can be monitored in Flower.
+
 .PARAMETER TearDown
     Stop and remove all containers and volumes after analysis.
 
@@ -33,7 +37,7 @@
     .\Run-GitHubAnalysis.ps1 -GitHubToken "ghp_xxxx" -GitHubUser "myusername"
 
 .EXAMPLE
-    .\Run-GitHubAnalysis.ps1 -GitHubOrg "my-organization"
+    .\Run-GitHubAnalysis.ps1 -GitHubOrg "my-organization" -RunDirect
 
 .EXAMPLE
     $env:GITHUB_TOKEN = "ghp_xxxx"; .\Run-GitHubAnalysis.ps1 -GitHubUser "myusername"
@@ -52,6 +56,9 @@ param(
 
     [Parameter()]
     [switch]$SkipInfrastructure,
+
+    [Parameter()]
+    [switch]$RunDirect,
 
     [Parameter()]
     [switch]$TearDown
@@ -292,11 +299,22 @@ function Start-Infrastructure {
     try {
         # Pull latest images
         Write-Info "Pulling Docker images..."
-        Run-DockerCompose -Arguments @("pull", "timescaledb", "rabbitmq", "flower", "grafana") 2>&1 | Out-Null
+        $services = @("timescaledb", "rabbitmq", "flower", "grafana")
+        if (-not $RunDirect) {
+            $services += "celery-worker"
+        }
+        Run-DockerCompose -Arguments (@("pull") + $services) 2>&1 | Out-Null
 
-        # Start infrastructure services only (not the app services yet)
-        Write-Info "Starting TimescaleDB, RabbitMQ, Flower, and Grafana..."
-        Run-DockerCompose -Arguments @("up", "-d", "timescaledb", "rabbitmq", "flower", "grafana") 2>&1 | Out-Null
+        # Start infrastructure services
+        Write-Info "Starting services..."
+        if ($RunDirect) {
+            Write-Info "  - Running in DIRECT mode (no Celery workers)"
+            Run-DockerCompose -Arguments @("up", "-d", "timescaledb", "rabbitmq", "flower", "grafana") 2>&1 | Out-Null
+        }
+        else {
+            Write-Info "  - Running in CELERY mode with worker monitoring"
+            Run-DockerCompose -Arguments @("up", "-d", "timescaledb", "rabbitmq", "flower", "grafana", "celery-worker") 2>&1 | Out-Null
+        }
 
         # Wait for services to be healthy
         Write-Info "Waiting for services to be healthy..."
@@ -340,11 +358,11 @@ function Start-Infrastructure {
     }
 }
 
-# Initialize database schema
+# Initialize database with Docker migrations
 function Initialize-Database {
-    Write-Step "Initializing database schema..."
+    Write-Step "Initializing database schema and migrations..."
 
-    # Load environment variables
+    # Load environment variables from .env file
     $envVars = @{}
     Get-Content $EnvFile | ForEach-Object {
         if ($_ -match '^([^#=]+)=(.*)$') {
@@ -352,36 +370,24 @@ function Initialize-Database {
         }
     }
 
-    $pgUser = $envVars["POSTGRES_USER"]
-    $pgDb = $envVars["POSTGRES_DB"]
+    # Start the migration service via docker-compose
+    Write-Info "Starting database migration service..."
+    
+    try {
+        # Run the migration service
+        Run-DockerCompose -Arguments @("run", "--rm", "db-migrations") 2>&1 | Out-Null
 
-    # Check if schema already exists
-    $checkQuery = "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'organizations';"
-    $result = docker exec analyzer-timescaledb psql -U $pgUser -d $pgDb -t -c $checkQuery 2>$null
-
-    if ($result -and $result.Trim() -gt 0) {
-        Write-Info "Database schema already exists"
-        return
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Migration service completed with warnings (this may be OK if migrations already applied)"
+        }
+        else {
+            Write-Success "Database schema and migrations initialized successfully"
+        }
     }
-
-    # Copy schema file to container and execute
-    Write-Info "Creating database schema..."
-
-    if (-not (Test-Path $SchemaFile)) {
-        Write-Error "Schema file not found: $SchemaFile"
+    catch {
+        Write-Warning "Error running migrations: $_"
+        Write-Info "This may be OK if migrations are already applied"
     }
-
-    # Copy schema to container
-    docker cp $SchemaFile analyzer-timescaledb:/tmp/schema.sql
-
-    # Execute schema
-    docker exec analyzer-timescaledb psql -U $pgUser -d $pgDb -f /tmp/schema.sql 2>&1 | Out-Null
-
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Some schema statements may have warnings (this is often OK for IF NOT EXISTS clauses)"
-    }
-
-    Write-Success "Database schema initialized"
 }
 
 # Run the GitHub analysis
@@ -394,16 +400,30 @@ function Start-Analysis {
         Write-Info "Building application image..."
         Run-DockerCompose -Arguments @("build", "scheduler") 2>&1 | Out-Null
 
-        # Run the extraction using the external Python script
-        Write-Info "Starting repository extraction (this may take a while for large accounts)..."
+        if ($RunDirect) {
+            # Run extraction directly (synchronous)
+            Write-Info "Starting repository extraction in DIRECT mode (synchronous)..."
+            Run-DockerCompose -Arguments @("run", "--rm", "scheduler", "python", "/app/scripts/run_extraction.py")
 
-        Run-DockerCompose -Arguments @("run", "--rm", "scheduler", "python", "/app/scripts/run_extraction.py")
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Extraction completed with some warnings"
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "Extraction completed with some warnings"
+            }
+            else {
+                Write-Success "Extraction completed successfully"
+            }
         }
         else {
-            Write-Success "Extraction completed successfully"
+            # Submit extraction task to Celery (asynchronous)
+            Write-Info "Submitting extraction task to Celery workers..."
+            Run-DockerCompose -Arguments @("run", "--rm", "scheduler", "python", "/app/scripts/submit_extraction_task.py")
+
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Failed to submit extraction task"
+            }
+            else {
+                Write-Success "Extraction task submitted successfully"
+                Write-Info "Task is now being processed by Celery workers"
+            }
         }
     }
     finally {
@@ -415,7 +435,18 @@ function Start-Analysis {
 function Show-AccessInfo {
     Write-Step "Analysis complete! Access your data:"
 
+    $modeInfo = if ($RunDirect) {
+        "DIRECT mode - extraction ran synchronously"
+    }
+    else {
+        "CELERY mode - extraction submitted to background workers"
+    }
+
     Write-Host @"
+
+ EXECUTION MODE:
+ ---------------
+ $modeInfo
 
  SERVICES AVAILABLE:
  -------------------
@@ -458,9 +489,13 @@ function Show-AccessInfo {
  1. Open Grafana at http://localhost:3000 (admin/admin) to view dashboards
  2. Connect a SQL client to explore raw data if needed
  3. Run scheduled analysis with: docker compose up -d
- 4. Check Flower at http://localhost:5555 to monitor background tasks
-
 "@ -ForegroundColor Gray
+
+    if (-not $RunDirect) {
+        Write-Host " 4. Monitor task progress in Flower at http://localhost:5555" -ForegroundColor Gray
+    }
+
+    Write-Host "" -ForegroundColor Gray
 }
 
 # Tear down infrastructure

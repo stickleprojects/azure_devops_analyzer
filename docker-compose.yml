@@ -25,6 +25,27 @@ services:
       - analyzer-network
 
   # ===========================================
+  # Database Migrations - Schema initialization and updates
+  # Handles: Schema creation, migration application, idempotent updates
+  # ===========================================
+  db-migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrations
+    container_name: analyzer-db-migrations
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+    networks:
+      - analyzer-network
+
+  # ===========================================
   # RabbitMQ - Message broker for Celery
   # Used for: Task queue, job distribution to workers
   # ===========================================
@@ -80,6 +101,8 @@ services:
       - ./src:/app/src:ro
       - ./config:/app/config:ro
     depends_on:
+      db-migrations:
+        condition: service_completed_successfully
       timescaledb:
         condition: service_healthy
       rabbitmq:
@@ -97,7 +120,7 @@ services:
       dockerfile: Dockerfile
     container_name: analyzer-celery-worker
     restart: unless-stopped
-    command: celery -A src.tasks worker --loglevel=${LOG_LEVEL:-INFO} --concurrency=${CELERY_WORKER_CONCURRENCY:-4}
+    command: celery -A src.scheduler.celery_app worker --loglevel=${LOG_LEVEL:-INFO} --concurrency=${CELERY_WORKER_CONCURRENCY:-4}
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -121,6 +144,8 @@ services:
       - ./src:/app/src:ro
       - ./config:/app/config:ro
     depends_on:
+      db-migrations:
+        condition: service_completed_successfully
       timescaledb:
         condition: service_healthy
       rabbitmq:
@@ -140,7 +165,7 @@ services:
       dockerfile: Dockerfile
     container_name: analyzer-celery-beat
     restart: unless-stopped
-    command: celery -A src.tasks beat --loglevel=${LOG_LEVEL:-INFO}
+    command: celery -A src.scheduler.celery_app beat --loglevel=${LOG_LEVEL:-INFO}
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -153,6 +178,8 @@ services:
       - ./src:/app/src:ro
       - ./config:/app/config:ro
     depends_on:
+      db-migrations:
+        condition: service_completed_successfully
       timescaledb:
         condition: service_healthy
       rabbitmq:
