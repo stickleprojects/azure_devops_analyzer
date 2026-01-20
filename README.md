@@ -19,17 +19,18 @@ This system analyzes repositories from multiple platforms (Azure DevOps and GitH
 
 ## Documentation Structure
 
-### System Documentation
-- [01-architecture.md](docs/01-architecture.md) - System architecture and component overview
-- [02-data-extraction.md](docs/02-data-extraction.md) - Azure DevOps API integration details
-- [03-analysis-engine.md](docs/03-analysis-engine.md) - Code analysis and metrics calculation
-- [04-data-storage.md](docs/04-data-storage.md) - Database schema and storage strategy
-- [05-orchestration.md](docs/05-orchestration.md) - Job scheduling and workflow management
-- [06-visualization.md](docs/06-visualization.md) - Grafana dashboard configuration
-- [07-implementation-plan.md](docs/07-implementation-plan.md) - Phased implementation roadmap
-- [08-technology-stack.md](docs/08-technology-stack.md) - Technologies and tools used
+### How to navigate
+
+- [docs/README.md](docs/README.md) — entry point with role-based navigation across strategy, architecture, operations, and implementation
+- [docs/01-strategy/](docs/01-strategy/) — business requirements, status, and project rules
+- [docs/02-architecture/](docs/02-architecture/) — system design, stack, data flow, storage, orchestration
+- [docs/03-operations/](docs/03-operations/) — deployment plan, visualization, session continuity
+- [docs/04-implementation/README.md](docs/04-implementation/README.md) — implementation backlog and future work
+  - [docs/04-implementation/parallelization-plan.md](docs/04-implementation/parallelization-plan.md) — multi-worker strategy and rate limiting
+  - [docs/04-implementation/infrastructure-options.md](docs/04-implementation/infrastructure-options.md) — Docker Compose vs Kubernetes evaluation
 
 ### AI Agent Guides
+
 The `agents/` directory contains comprehensive guides for AI-driven development across all stages of the SDLC:
 
 - [00-documentation-standards.md](agents/00-documentation-standards.md) - **START HERE** - Standards for documentation and code examples
@@ -49,7 +50,9 @@ The AI agent guides in the `agents/` directory follow best practices for AI-driv
 ### How to Use the Guides
 
 #### 1. **Sequential Workflow**
+
 Follow the guides in order for new projects:
+
 ```
 Requirements → Architecture → Implementation → Testing → Code Review → Deployment
 ```
@@ -57,27 +60,32 @@ Requirements → Architecture → Implementation → Testing → Code Review →
 Each stage builds upon the previous one, with clear handoff checklists to ensure nothing is missed.
 
 #### 2. **For AI Assistants**
+
 When working with an AI assistant (like Claude, GPT-4, etc.):
 
 **Option A: Provide as Context**
+
 ```
 "I'm implementing a new feature. Please review the implementation guide
 at agents/03-implementation.md and follow those best practices."
 ```
 
 **Option B: Reference Specific Sections**
+
 ```
 "Review the security implementation section in the implementation guide
 and check if my code follows those patterns."
 ```
 
 **Option C: Use for Code Review**
+
 ```
 "Use the code review checklist from agents/05-code-review.md to review
 this pull request."
 ```
 
 #### 3. **For Human Developers**
+
 - **Before starting**: Read the relevant guide to understand best practices
 - **During development**: Reference specific sections as needed
 - **Code review**: Use checklists to ensure completeness
@@ -86,36 +94,42 @@ this pull request."
 ### Best Practices for AI-Assisted Development
 
 #### When Gathering Requirements
+
 1. Load `agents/01-requirements-gathering.md` into your AI context
 2. Have the AI ask clarifying questions following the guide's patterns
 3. Ensure all non-functional requirements are captured
 4. Document using the provided templates
 
 #### When Designing Architecture
+
 1. Reference `agents/02-architecture-and-design.md`
 2. Create Architecture Decision Records (ADRs) for major decisions
 3. Consider trade-offs explicitly
 4. Document technology choices with rationale
 
 #### When Implementing
+
 1. Follow clean code principles from `agents/03-implementation.md`
 2. Check security patterns before writing authentication/authorization code
 3. Use the anti-patterns section to avoid common mistakes
 4. Write self-documenting code with meaningful names
 
 #### When Testing
+
 1. Follow the testing pyramid from `agents/04-testing.md`
 2. Write tests before or alongside implementation
 3. Use provided patterns for different test types
 4. Ensure tests are fast, independent, and deterministic
 
 #### When Reviewing Code
+
 1. Use the comprehensive checklist from `agents/05-code-review.md`
 2. Provide constructive feedback using the provided labels
 3. Focus on critical security and correctness issues first
 4. Acknowledge good practices in the code
 
 #### When Deploying
+
 1. Follow deployment strategies from `agents/06-deployment-and-operations.md`
 2. Set up monitoring and observability before deploying
 3. Have rollback plans ready
@@ -124,7 +138,9 @@ this pull request."
 ### Integration with Development Tools
 
 #### IDE Integration
+
 Add agent guides as workspace snippets or quick reference:
+
 ```json
 // .vscode/settings.json
 {
@@ -136,16 +152,21 @@ Add agent guides as workspace snippets or quick reference:
 ```
 
 #### CI/CD Integration
+
 Reference guides in pull request templates:
+
 ```markdown
 ## Code Review Checklist
+
 - [ ] Follows implementation best practices (agents/03-implementation.md)
 - [ ] Tests added per testing guide (agents/04-testing.md)
 - [ ] Security checklist reviewed (agents/05-code-review.md)
 ```
 
 #### Git Commit Hooks
+
 Use guides to validate commits:
+
 ```bash
 # .git/hooks/pre-commit
 # Check if code follows implementation patterns
@@ -201,7 +222,7 @@ All agent guides follow these core principles:
 
 ## Quick Start
 
-See [07-implementation-plan.md](docs/07-implementation-plan.md) for the phased implementation approach.
+Start with [docs/README.md](docs/README.md) for role-based navigation, then review [docs/04-implementation/README.md](docs/04-implementation/README.md) for the current backlog and future work.
 
 ## Requirements
 
