@@ -9,10 +9,8 @@
             "type": "PowerShell",
             "request": "launch",
             "script": "${workspaceFolder}/Start-RepoAnalysis.ps1",
-            "args": [
-                "-GitHubToken",
-                "%REPO_ANALYZER_GITHUB_TOKEN%"
-            ]
+            "cwd": "${workspaceFolder}",
+            "args": []
         },
         {
             "name": "PowerShell Launch Current File",

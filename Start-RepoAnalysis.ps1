@@ -1,24 +1,14 @@
 <#
 .SYNOPSIS
-    Bootstraps and runs GitHub analysis via Docker Compose (env setup, infra, migrations, extraction).
+    Bootstraps and runs repository analysis via Docker Compose (env setup, infra, migrations, extraction).
 
 .DESCRIPTION
     This script:
-    1. Validates prerequisites (Docker, GitHub token)
-    2. Creates/updates the .env file with your configuration
+    1. Validates prerequisites (Docker)
+    2. Creates/updates the .env file with your configuration (prompts for credentials)
     3. Starts the required Docker services (TimescaleDB, RabbitMQ)
     4. Initializes the database schema
-    5. Runs the GitHub repository extractor against your personal repos
-
-.PARAMETER GitHubToken
-    Your GitHub Personal Access Token (classic) with 'repo' scope.
-    Can also be set via GITHUB_TOKEN environment variable.
-
-.PARAMETER GitHubUser
-    Your GitHub username. If not provided, the script will attempt to detect it from the token.
-
-.PARAMETER GitHubOrg
-    Optional GitHub organization to analyze instead of personal repos.
+    5. Runs the repository extractor for GitHub/Azure DevOps
 
 .PARAMETER SkipInfrastructure
     Skip starting Docker containers (useful if they're already running).
@@ -30,30 +20,20 @@
 .PARAMETER TearDown
     Stop and remove all containers and volumes after analysis.
 
-.PARAMETER Verbose
-    Enable verbose output for debugging.
+.PARAMETER RegenerateEnv
+    Force regeneration of .env file, prompting for all values.
 
 .EXAMPLE
-    .\Start-RepoAnalysis.ps1 -GitHubToken "ghp_xxxx" -GitHubUser "myusername"
+    .\Start-RepoAnalysis.ps1 -RegenerateEnv
 
 .EXAMPLE
-    .\Start-RepoAnalysis.ps1 -GitHubOrg "my-organization" -RunDirect
+    .\Start-RepoAnalysis.ps1 -RunDirect
 
 .EXAMPLE
-    $env:GITHUB_TOKEN = "ghp_xxxx"; .\Start-RepoAnalysis.ps1 -GitHubUser "myusername"
+    .\Start-RepoAnalysis.ps1 -SkipInfrastructure -RunDirect
 #>
 
-[CmdletBinding()]
 param(
-    [Parameter()]
-    [string]$GitHubToken = $env:GITHUB_TOKEN,
-
-    [Parameter()]
-    [string]$GitHubUser = $env:GITHUB_USER,
-
-    [Parameter()]
-    [string]$GitHubOrg = $env:GITHUB_ORG,
-
     [Parameter()]
     [switch]$SkipInfrastructure,
 
@@ -61,296 +41,103 @@ param(
     [switch]$RunDirect,
 
     [Parameter()]
-    [switch]$TearDown
+    [switch]$TearDown,
+
+    [Parameter()]
+    [switch]$RegenerateEnv
 )
 
-# Strict mode for better error handling
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-# Script configuration
-$ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$ProjectRoot = $ScriptRoot
-$EnvFile = Join-Path $ProjectRoot ".env"
-$SchemaFile = Join-Path $ProjectRoot "database\schema.sql"
-# Resolve any environment variable references in the token
-if ($GitHubToken -and ($GitHubToken.Contains('%') -or $GitHubToken.Contains('$'))) {
-    # Handle both Windows (%VAR%) and Unix ($VAR) style env vars
-    $githubtoken = [Environment]::ExpandEnvironmentVariables($GitHubToken)
-    # For Unix-style $VAR, use PowerShell's variable expansion
-    $githubtoken = $ExecutionContext.InvokeCommand.ExpandString($githubtoken)
-}
-else {
-    $githubtoken = $GitHubToken
-}
+# Import modules
+$libPath = Join-Path $PSScriptRoot "startup-scripts" "lib"
+. (Join-Path $libPath "Constants.ps1")
+. (Join-Path $libPath "OutputHelpers.ps1")
+. (Join-Path $libPath "EnvironmentHelpers.ps1")
+. (Join-Path $libPath "DockerHelpers.ps1")
+. (Join-Path $libPath "EnvFileHelpers.ps1")
 
-# Color output helpers
-function Write-Step {
-    param([string]$Message)
-    Write-Host "`n==> " -ForegroundColor Cyan -NoNewline
-    Write-Host $Message -ForegroundColor White
-}
+# Orchestration functions
 
-function Write-Success {
-    param([string]$Message)
-    Write-Host "[OK] " -ForegroundColor Green -NoNewline
-    Write-Host $Message
-}
-
-function Write-Warning {
-    param([string]$Message)
-    Write-Host "[WARN] " -ForegroundColor Yellow -NoNewline
-    Write-Host $Message
-}
-
-function Write-Error {
-    param([string]$Message)
-    Write-Host "[ERROR] " -ForegroundColor Red -NoNewline
-    Write-Host $Message
-    exit 1
-}
-
-function Write-Info {
-    param([string]$Message)
-    Write-Host "[INFO] " -ForegroundColor Blue -NoNewline
-    Write-Host $Message
-}
-
-# Banner
-function Show-Banner {
-    Write-Host @"
-
- ____                        _
-|  _ \ ___ _ __   ___       / \   _ __   __ _ _ __ _   _
-| |_) / _ \ '_ \ / _ \     / _ \ | '_ \ / _` | '__| | | |
-|  _ <  __/ |_) | (_) |   / ___ \| | | | (_| | |  | |_| |
-|_| \_\___| .__/ \___/   /_/   \_\_| |_|\__,_|_|   \__, |
-          |_|            GitHub Repository Analyzer|___/
-
-"@ -ForegroundColor Cyan
-}
-
-# Check prerequisites
-function Test-Prerequisites {
-    Write-Step "Checking prerequisites..."
-
-    # Check Docker
-    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-        Write-Error "Docker is not installed or not in PATH. Please install Docker Desktop."
-    }
-
-    # Check if Docker daemon is running
-    try {
-        $null = docker info 2>&1
-        Write-Success "Docker is running"
-    }
-    catch {
-        Write-Error "Docker daemon is not running. Please start Docker Desktop."
-    }
-
-    # Check docker compose (v2)
-    if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-        Write-Error "Docker is not installed. Please install Docker."
-        return
-    }
-
-    try {
-        $null = docker compose version 2>&1
-        Write-Success "Docker Compose v2 is available"
-        $script:ComposeCommand = "docker compose"
-    }
-    catch {
-        Write-Error "Docker Compose v2 is not available. Please ensure Docker Desktop or Docker Compose v2 is installed."
-        return
-    }
-
-    # Check GitHub token
-    if ([string]::IsNullOrEmpty($GitHubToken)) {
-        Write-Error @"
-GitHub token is required. Provide it via:
-  - Parameter: -GitHubToken "ghp_xxxx"
-  - Environment variable: `$env:GITHUB_TOKEN = "ghp_xxxx"
-
-Create a token at: https://github.com/settings/tokens
-Required scopes: repo (Full control of private repositories)
-"@
-    }
-    Write-Success "GitHub token provided"
-
-    # Validate token and get username if needed
-    if ([string]::IsNullOrEmpty($GitHubUser) -and [string]::IsNullOrEmpty($GitHubOrg)) {
-        Write-Info "Detecting GitHub username from token..."
-        try {
-            $headers = @{
-                "Authorization" = "Bearer $GitHubToken"
-                "Accept"        = "application/vnd.github.v3+json"
-                "User-Agent"    = "RepoAnalyzer-PowerShell"
-            }
-            $response = Invoke-RestMethod -Uri "https://api.github.com/user" -Headers $headers -Method Get
-            $script:GitHubUser = $response.login
-            Write-Success "Detected GitHub user: $($script:GitHubUser)"
-        }
-        catch {
-            Write-Error "Failed to validate GitHub token. Please check your token and try again."
-        }
-    }
-}
-
-# Create or update .env file
 function Initialize-Environment {
     Write-Step "Configuring environment..."
-
-    # Generate secure passwords
-    $postgresPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 24 | ForEach-Object { [char]$_ })
-    $rabbitmqPassword = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 24 | ForEach-Object { [char]$_ })
-
-    # Check if .env exists and has GitHub config
-    $existingEnv = @{}
-    if (Test-Path $EnvFile) {
-        Get-Content $EnvFile | ForEach-Object {
-            if ($_ -match '^([^#=]+)=(.*)$') {
-                $existingEnv[$matches[1].Trim()] = $matches[2].Trim()
-            }
-        }
-        Write-Info "Found existing .env file"
-
-        # Preserve existing passwords if set
-        if ($existingEnv.ContainsKey("POSTGRES_PASSWORD") -and $existingEnv["POSTGRES_PASSWORD"] -ne "changeme_secure_password") {
-            $postgresPassword = $existingEnv["POSTGRES_PASSWORD"]
-        }
-        if ($existingEnv.ContainsKey("RABBITMQ_DEFAULT_PASS") -and $existingEnv["RABBITMQ_DEFAULT_PASS"] -ne "changeme_rabbitmq_password") {
-            $rabbitmqPassword = $existingEnv["RABBITMQ_DEFAULT_PASS"]
-        }
+    $success = New-EnvFile `
+        -Force:$RegenerateEnv `
+        -EnvFile $script:EnvFile `
+        -EnvExampleFile $script:EnvExampleFile
+    
+    if (-not $success) {
+        return $false
     }
 
-    # Build environment content
-    $envContent = @"
-# ===========================================
-# Repository Analyzer - Environment Variables
-# ===========================================
-# Auto-generated by Start-RepoAnalysis.ps1 on $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
+    Write-Info "Validating required credentials..."
+    if (-not (Test-RequiredEnvVars -EnvFile $script:EnvFile)) {
+        Write-Error "Environment validation failed. Please configure valid credentials."
+        return $false
+    }
 
-# -----------------
-# PostgreSQL/TimescaleDB Configuration
-# -----------------
-POSTGRES_USER=analyzer
-POSTGRES_PASSWORD=$postgresPassword
-POSTGRES_DB=repo_analyzer
-POSTGRES_HOST=timescaledb
-POSTGRES_PORT=5432
-
-# TimescaleDB specific
-TIMESCALEDB_TELEMETRY=off
-
-# -----------------
-# RabbitMQ Configuration
-# -----------------
-RABBITMQ_DEFAULT_USER=analyzer
-RABBITMQ_DEFAULT_PASS=$rabbitmqPassword
-RABBITMQ_HOST=rabbitmq
-RABBITMQ_PORT=5672
-RABBITMQ_MANAGEMENT_PORT=15672
-
-# Celery broker URL
-CELERY_BROKER_URL=amqp://analyzer:$rabbitmqPassword@rabbitmq:5672//
-
-# -----------------
-# GitHub Configuration
-# -----------------
-GITHUB_TOKEN=$GitHubToken
-GITHUB_ORG=$GitHubOrg
-GITHUB_USER=$GitHubUser
-
-# -----------------
-# Application Configuration
-# -----------------
-LOG_LEVEL=INFO
-CELERY_WORKER_CONCURRENCY=4
-
-# -----------------
-# Azure DevOps Configuration (not used for GitHub-only analysis)
-# -----------------
-AZURE_DEVOPS_ORG_URL=
-AZURE_DEVOPS_PAT=
-
-# -----------------
-# Backup Configuration (optional)
-# -----------------
-AZURE_STORAGE_CONNECTION_STRING=
-AZURE_BACKUP_CONTAINER=database-backups
-"@
-
-    # Write .env file
-    $envContent | Out-File -FilePath $EnvFile -Encoding utf8 -Force
-    Write-Success "Environment file created/updated: $EnvFile"
+    Write-Info "Resolving and exporting environment variables..."
+    if (-not (Export-ResolvedEnvVars -EnvFile $script:EnvFile)) {
+        Write-Error "Failed to resolve environment variable references. See warnings above."
+        return $false
+    }
+    
+    return $true
 }
 
-# Helper to run docker compose commands
-function Run-DockerCompose {
-    param([string[]]$Arguments)
-    & docker compose @Arguments
-}
-
-# Start Docker infrastructure
 function Start-Infrastructure {
     Write-Step "Starting Docker infrastructure..."
 
-    Push-Location $ProjectRoot
+    Push-Location $script:ProjectRoot
     try {
-        # Pull latest images
         Write-Info "Pulling Docker images..."
-        $services = @("timescaledb", "rabbitmq", "flower", "grafana")
+        $services = $script:DockerServices.Core
         if (-not $RunDirect) {
-            $services += "celery-worker"
+            $services += $script:DockerServices.Worker
         }
         Run-DockerCompose -Arguments (@("pull") + $services) 2>&1 | Out-Null
 
-        # Start infrastructure services
         Write-Info "Starting services..."
         if ($RunDirect) {
             Write-Info "  - Running in DIRECT mode (no Celery workers)"
-            Run-DockerCompose -Arguments @("up", "-d", "timescaledb", "rabbitmq", "flower", "grafana") 2>&1 | Out-Null
+            Run-DockerCompose -Arguments @("up", "-d") + $script:DockerServices.Core 2>&1 | Out-Null
         }
         else {
             Write-Info "  - Running in CELERY mode with worker monitoring"
-            Run-DockerCompose -Arguments @("up", "-d", "timescaledb", "rabbitmq", "flower", "grafana", "celery-worker") 2>&1 | Out-Null
+            $allServices = $script:DockerServices.Core + $script:DockerServices.Worker
+            Run-DockerCompose -Arguments (@("up", "-d") + $allServices) 2>&1 | Out-Null
         }
 
-        # Wait for services to be healthy
         Write-Info "Waiting for services to be healthy..."
+        Wait-ForHealthy -ContainerName "analyzer-timescaledb" -MaxRetries $script:MaxHealthCheckRetries -Interval $script:HealthCheckInterval | Out-Null
+        Wait-ForHealthy -ContainerName "analyzer-rabbitmq" -MaxRetries $script:MaxHealthCheckRetries -Interval $script:HealthCheckInterval | Out-Null
+    }
+    finally {
+        Pop-Location
+    }
+}
 
-        $maxRetries = 30
-        $retryCount = 0
+function Initialize-Database {
+    Write-Step "Initializing database schema and migrations..."
 
-        # Wait for TimescaleDB
-        while ($retryCount -lt $maxRetries) {
-            $health = docker inspect --format='{{.State.Health.Status}}' analyzer-timescaledb 2>$null
-            if ($health -eq "healthy") {
-                Write-Success "TimescaleDB is healthy"
-                break
+    Push-Location $script:ProjectRoot
+    try {
+        Write-Info "Starting database migration service..."
+        
+        try {
+            Run-DockerCompose -Arguments @("run", "--rm", $script:DockerServices.Migration) 2>&1 | Out-Null
+
+            if ($LASTEXITCODE -ne 0) {
+                Write-Warning "Migration service completed with warnings (this may be OK if migrations already applied)"
             }
-            $retryCount++
-            Write-Host "." -NoNewline
-            Start-Sleep -Seconds 2
-        }
-        if ($retryCount -ge $maxRetries) {
-            Write-Error "TimescaleDB failed to become healthy"
-        }
-
-        # Wait for RabbitMQ
-        $retryCount = 0
-        while ($retryCount -lt $maxRetries) {
-            $health = docker inspect --format='{{.State.Health.Status}}' analyzer-rabbitmq 2>$null
-            if ($health -eq "healthy") {
-                Write-Success "RabbitMQ is healthy"
-                break
+            else {
+                Write-Success "Database schema and migrations initialized successfully"
             }
-            $retryCount++
-            Write-Host "." -NoNewline
-            Start-Sleep -Seconds 2
         }
-        if ($retryCount -ge $maxRetries) {
-            Write-Error "RabbitMQ failed to become healthy"
+        catch {
+            Write-Warning "Error running migrations: $_"
+            Write-Info "This may be OK if migrations are already applied"
         }
     }
     finally {
@@ -358,52 +145,17 @@ function Start-Infrastructure {
     }
 }
 
-# Initialize database with Docker migrations
-function Initialize-Database {
-    Write-Step "Initializing database schema and migrations..."
-
-    # Load environment variables from .env file
-    $envVars = @{}
-    Get-Content $EnvFile | ForEach-Object {
-        if ($_ -match '^([^#=]+)=(.*)$') {
-            $envVars[$matches[1].Trim()] = $matches[2].Trim()
-        }
-    }
-
-    # Start the migration service via docker-compose
-    Write-Info "Starting database migration service..."
-    
-    try {
-        # Run the migration service
-        Run-DockerCompose -Arguments @("run", "--rm", "db-migrations") 2>&1 | Out-Null
-
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Migration service completed with warnings (this may be OK if migrations already applied)"
-        }
-        else {
-            Write-Success "Database schema and migrations initialized successfully"
-        }
-    }
-    catch {
-        Write-Warning "Error running migrations: $_"
-        Write-Info "This may be OK if migrations are already applied"
-    }
-}
-
-# Run the GitHub analysis
 function Start-Analysis {
-    Write-Step "Running GitHub repository analysis..."
+    Write-Step "Running repository analysis..."
 
-    Push-Location $ProjectRoot
+    Push-Location $script:ProjectRoot
     try {
-        # Build the application image
         Write-Info "Building application image..."
-        Run-DockerCompose -Arguments @("build", "scheduler") 2>&1 | Out-Null
+        Run-DockerCompose -Arguments @("build", $script:DockerServices.Scheduler) 2>&1 | Out-Null
 
         if ($RunDirect) {
-            # Run extraction directly (synchronous)
             Write-Info "Starting repository extraction in DIRECT mode (synchronous)..."
-            Run-DockerCompose -Arguments @("run", "--rm", "scheduler", "python", "/app/scripts/run_extraction.py")
+            Run-DockerCompose -Arguments @("run", "--rm", $script:DockerServices.Scheduler, "python", "/app/scripts/run_extraction.py")
 
             if ($LASTEXITCODE -ne 0) {
                 Write-Warning "Extraction completed with some warnings"
@@ -413,9 +165,8 @@ function Start-Analysis {
             }
         }
         else {
-            # Submit extraction task to Celery (asynchronous)
             Write-Info "Submitting extraction task to Celery workers..."
-            Run-DockerCompose -Arguments @("run", "--rm", "scheduler", "python", "/app/scripts/submit_extraction_task.py")
+            Run-DockerCompose -Arguments @("run", "--rm", $script:DockerServices.Scheduler, "python", "/app/scripts/submit_extraction_task.py")
 
             if ($LASTEXITCODE -ne 0) {
                 Write-Error "Failed to submit extraction task"
@@ -431,7 +182,6 @@ function Start-Analysis {
     }
 }
 
-# Show access information
 function Show-AccessInfo {
     Write-Step "Analysis complete! Access your data:"
 
@@ -452,9 +202,9 @@ function Show-AccessInfo {
  -------------------
  TimescaleDB:     localhost:5432
  RabbitMQ:        localhost:5672
- RabbitMQ UI:     http://localhost:15672
- Flower UI:       http://localhost:5555  (task monitoring)
- Grafana UI:      http://localhost:3000  (admin/admin)
+ RabbitMQ UI:     $($script:RabbitmqManagementUrl)
+ Flower UI:       $($script:FlowerUrl) (task monitoring)
+ Grafana UI:      $($script:GrafanaUrl) (admin/admin)
 
  DATABASE CONNECTION:
  --------------------
@@ -486,23 +236,22 @@ function Show-AccessInfo {
 
  NEXT STEPS:
  -----------
- 1. Open Grafana at http://localhost:3000 (admin/admin) to view dashboards
+ 1. Open Grafana at $($script:GrafanaUrl) to view dashboards
  2. Connect a SQL client to explore raw data if needed
  3. Run scheduled analysis with: docker compose up -d
 "@ -ForegroundColor Gray
 
     if (-not $RunDirect) {
-        Write-Host " 4. Monitor task progress in Flower at http://localhost:5555" -ForegroundColor Gray
+        Write-Host " 4. Monitor task progress in Flower at $($script:FlowerUrl)" -ForegroundColor Gray
     }
 
     Write-Host "" -ForegroundColor Gray
 }
 
-# Tear down infrastructure
 function Stop-Infrastructure {
     Write-Step "Tearing down infrastructure..."
 
-    Push-Location $ProjectRoot
+    Push-Location $script:ProjectRoot
     try {
         Run-DockerCompose -Arguments @("down", "-v") 2>&1 | Out-Null
         Write-Success "Infrastructure stopped and volumes removed"
@@ -512,40 +261,37 @@ function Stop-Infrastructure {
     }
 }
 
-# Main execution
 function Main {
-    Show-Banner
+    try {
+        Show-Banner
 
-    # Validate prerequisites
-    Test-Prerequisites
+        if (-not (Test-DockerPrerequisites)) {
+            Write-Error "Docker prerequisites not met"
+            exit 1
+        }
 
-    # Initialize environment
-    Initialize-Environment
+        if (-not (Initialize-Environment)) {
+            Write-Error "Failed to initialize environment"
+            exit 1
+        }
 
-    if (-not $SkipInfrastructure) {
-        # Start Docker services
-        Start-Infrastructure
+        if (-not $SkipInfrastructure) {
+            Start-Infrastructure
+            Initialize-Database
+        }
 
-        # Initialize database
-        Initialize-Database
+        Start-Analysis
+        Show-AccessInfo
+
+        if ($TearDown) {
+            Stop-Infrastructure
+        }
     }
-
-    # Run analysis
-    Start-Analysis
-
-    # Show access info
-    Show-AccessInfo
-
-    # Optionally tear down
-    if ($TearDown) {
-        Stop-Infrastructure
+    catch {
+        Write-Error "Script failed: $_`n$($_.Exception.StackTrace)"
+        exit 1
     }
 }
 
-# Run main
-try {
-    Main
-}
-catch {
-    Write-Error "Script failed: $_"
-}
+# Execute
+Main
