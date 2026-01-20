@@ -17,6 +17,14 @@ This system analyzes repositories from multiple platforms (Azure DevOps and GitH
 - **Incremental updates**: Efficiently refreshes data as changes occur
 - **Grafana dashboards**: Rich visualizations for all metrics
 
+## Local Repository Analysis Quickstart
+
+Run the PowerShell helper to bootstrap the Docker stack, create `.env`, apply migrations, and start extraction:
+
+- PowerShell (Windows/macOS/Linux): `pwsh ./Start-RepoAnalysis.ps1 -RegenerateEnv`
+
+See [Start-RepoAnalysis.ps1](Start-RepoAnalysis.ps1#L1-L50) for parameters and examples.
+
 ## Documentation Structure
 
 ### How to navigate

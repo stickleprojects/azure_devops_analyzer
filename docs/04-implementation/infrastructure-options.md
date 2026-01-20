@@ -140,7 +140,7 @@ The system is designed for **distributed, stateless worker processing**:
 
 **Stick with Docker Compose** while implementing the rate limiter and multi-worker orchestration:
 
-- Deploy 5 Celery workers via `docker-compose scale celery-worker=5`
+- Deploy 5 Celery workers via `docker compose scale celery-worker=5`
 - Add Redis service to compose for rate limit coordination
 - Complete Celery Flower monitoring and task routing
 - Run on single host or Docker Swarm in Azure Container Instances
@@ -164,8 +164,8 @@ The system is designed for **distributed, stateless worker processing**:
 
 ## 6. Key Decision Criteria (To Be Validated)
 
-| Criterion                   | Importance | Current Status                     |
-| --------------------------- | ---------- | ---------------------------------- |
+| Criterion                   | Importance | Current Status                    |
+| --------------------------- | ---------- | --------------------------------- |
 | Horizontal worker scaling   | Critical   | ✅ Both support; K8s automatic     |
 | Single-host or multi-host   | Critical   | ❓ To be determined                |
 | HA for databases            | High       | ❓ Docker Compose limited          |
@@ -210,13 +210,13 @@ The system is designed for **distributed, stateless worker processing**:
 
 ```bash
 # Scale workers to 5 instances
-docker-compose up -d --scale celery-worker=5
+docker compose up -d --scale celery-worker=5
 
 # View worker status
-docker-compose logs -f celery-worker
+docker compose logs -f celery-worker
 
 # Redeploy with new image
-docker-compose pull && docker-compose up -d --no-deps --build celery-worker
+docker compose pull && docker compose up -d --no-deps --build celery-worker
 ```
 
 ### Kubernetes Command Examples (Future)
