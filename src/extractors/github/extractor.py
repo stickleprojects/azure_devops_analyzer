@@ -2,6 +2,8 @@
 GitHub repository extractor implementation.
 """
 
+import logging
+import time
 from datetime import datetime
 from typing import Optional
 
@@ -13,6 +15,7 @@ from src.extractors.github.client import (
     get_organization_name,
     get_user_name,
 )
+from src.config.github import GitHubExtractorConfig
 from src.extractors.base import (
     Platform,
     RepositoryExtractor,
@@ -31,15 +34,25 @@ from src.extractors.base import (
 class GitHubExtractor(RepositoryExtractor):
     """Extractor for GitHub repositories."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        config: Optional[GitHubExtractorConfig] = None,
+    ):
         self._client = None
         self._org_name = get_organization_name()
         self._user_name = get_user_name()
+        self.config = config or GitHubExtractorConfig.from_env()
+        self._logger = logging.getLogger(__name__)
 
     @property
     def client(self):
         if self._client is None:
             self._client = get_github_client()
+            # Ensure paginated calls use the configured page size
+            try:
+                self._client.per_page = self.config.page_size
+            except Exception:
+                pass
         return self._client
 
     @property
@@ -107,21 +120,32 @@ class GitHubExtractor(RepositoryExtractor):
     def get_repositories(
         self,
         organization: str,
-        project: Optional[str] = None
+        project: Optional[str] = None,
     ) -> list[RepositoryData]:
-        """List repositories for an organization or user."""
-        repos = []
+        """List repositories for an organization or user with pagination and rate limiting."""
+        repos: list[RepositoryData] = []
+
+        gh_repos = None
+        org_name = organization
 
         try:
-            # Try as organization first
             org = self.client.get_organization(organization)
-            gh_repos = org.get_repos()
-        except GithubException:
-            # Fall back to user
-            user = self.client.get_user()
-            gh_repos = user.get_repos( visibility="all")
+            gh_repos = org.get_repos(type="all", per_page=self.config.page_size)
+        except GithubException as exc:
+            # Fall back to a user with the provided name; only use the auth user if name is empty
+            try:
+                user = self.client.get_user(organization) if organization else self.client.get_user()
+                gh_repos = user.get_repos(visibility="all", per_page=self.config.page_size)
+                org_name = user.login
+            except GithubException as inner_exc:
+                self._logger.warning("Failed to list repos for %s: %s", organization, inner_exc)
+                return []
+            else:
+                self._logger.info("Falling back to user scope for %s (%s)", organization, exc)
 
-        for r in gh_repos:
+        paginated_repos = self._safe_paginated_list(gh_repos, limit=self.config.max_items_per_list)
+
+        for r in paginated_repos:
             repos.append(
                 RepositoryData(
                     repo_id=f"{r.owner.login}/{r.name}",
@@ -130,8 +154,8 @@ class GitHubExtractor(RepositoryExtractor):
                     default_branch=r.default_branch,
                     platform=Platform.GITHUB,
                     platform_repo_id=r.id,
-                    project_name=organization,
-                    organization_name=organization,
+                    project_name=org_name,
+                    organization_name=org_name,
                     created_at=r.created_at,
                     # Security and code quality metrics
                     is_private=r.private,
@@ -183,15 +207,10 @@ class GitHubExtractor(RepositoryExtractor):
         if until:
             kwargs["until"] = until
 
-        commits = repo.get_commits(**kwargs)
+        commits = repo.get_commits(per_page=self.config.page_size, **kwargs)
 
         result = []
-        count = 0
-        for c in commits:
-            if limit and count >= limit:
-                break
-
-            # Get commit stats (requires additional API call)
+        for c in self._safe_paginated_list(commits, limit=limit or self.config.max_items_per_list):
             stats = c.stats if c.stats else None
 
             result.append(
@@ -211,7 +230,6 @@ class GitHubExtractor(RepositoryExtractor):
                     verification_reason=c.commit.verification.reason if c.commit.verification else None,
                 )
             )
-            count += 1
 
         return result
 
@@ -220,6 +238,7 @@ class GitHubExtractor(RepositoryExtractor):
         repo_id: str,
         status: Optional[str] = None,
         since: Optional[datetime] = None,
+        limit: Optional[int] = None,
     ) -> list[PullRequestData]:
         """Get pull requests with reviews and comments."""
         repo = self._get_repo(repo_id)
@@ -231,10 +250,10 @@ class GitHubExtractor(RepositoryExtractor):
         elif status in ("merged", "closed"):
             state = "closed"
 
-        prs = repo.get_pulls(state=state, sort="updated", direction="desc")
+        prs = repo.get_pulls(state=state, sort="updated", direction="desc", per_page=self.config.page_size)
 
         result = []
-        for pr in prs:
+        for pr in self._safe_paginated_list(prs, limit=limit or self.config.max_items_per_list):
             # Filter merged vs closed if needed
             if status == "merged" and not pr.merged:
                 continue
@@ -373,6 +392,55 @@ class GitHubExtractor(RepositoryExtractor):
             pass
 
         return comments
+
+    def _safe_paginated_list(self, paginated, limit: Optional[int] = None):
+        """Iterate a PyGithub PaginatedList with basic rate-limit backoff and bounds."""
+        items = []
+        max_items = limit or self.config.max_items_per_list
+        retries = 0
+
+        iterator = iter(paginated)
+        while True:
+            try:
+                item = next(iterator)
+            except StopIteration:
+                break
+            except GithubException as exc:
+                if self._is_rate_limited(exc) and retries < self.config.max_retries:
+                    sleep_for = self._rate_limit_sleep_seconds(exc)
+                    self._logger.info("Hit GitHub rate limit, sleeping %.1fs before retry", sleep_for)
+                    time.sleep(sleep_for)
+                    retries += 1
+                    continue
+                raise
+
+            items.append(item)
+            if max_items and len(items) >= max_items:
+                break
+
+        return items
+
+    @staticmethod
+    def _is_rate_limited(exc: GithubException) -> bool:
+        """Detect GitHub rate limit responses (HTTP 403 with rate-limit headers)."""
+        try:
+            return getattr(exc, "status", None) == 403
+        except Exception:
+            return False
+
+    def _rate_limit_sleep_seconds(self, exc: GithubException) -> float:
+        """Compute a backoff duration using X-RateLimit-Reset when available."""
+        headers = getattr(exc, "headers", {}) or {}
+        reset_raw = headers.get("X-RateLimit-Reset") or headers.get("x-ratelimit-reset")
+        if reset_raw:
+            try:
+                reset_epoch = int(reset_raw)
+                now = int(time.time())
+                wait = max(reset_epoch - now, self.backoff_seconds)
+                return min(wait, self.max_backoff_seconds)
+            except Exception:
+                pass
+        return min(self.config.backoff_seconds, self.config.max_backoff_seconds)
 
     def get_file_tree(
         self,
