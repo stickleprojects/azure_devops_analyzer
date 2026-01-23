@@ -27,12 +27,16 @@ See [Start-RepoAnalysis.ps1](Start-RepoAnalysis.ps1#L1-L50) for parameters and e
 
 ## Documentation Structure
 
+### Development Progress
+
+- **[PROGRESS.md](PROGRESS.md)** — Session-by-session development log with key findings and technical insights
+
 ### How to navigate
 
 - [docs/README.md](docs/README.md) — entry point with role-based navigation across strategy, architecture, operations, and implementation
 - [docs/01-strategy/](docs/01-strategy/) — business requirements, status, and project rules
 - [docs/02-architecture/](docs/02-architecture/) — system design, stack, data flow, storage, orchestration
-- [docs/03-operations/](docs/03-operations/) — deployment plan, visualization, session continuity
+- [docs/03-operations/](docs/03-operations/) — deployment plan, visualization, session continuity, **critical GitHub API findings**
 - [docs/04-implementation/README.md](docs/04-implementation/README.md) — implementation backlog and future work
   - [docs/04-implementation/parallelization-plan.md](docs/04-implementation/parallelization-plan.md) — multi-worker strategy and rate limiting
   - [docs/04-implementation/infrastructure-options.md](docs/04-implementation/infrastructure-options.md) — Docker Compose vs Kubernetes evaluation

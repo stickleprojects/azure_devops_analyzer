@@ -2,3 +2,13 @@
 /.pytest_cache
 .env
 __pycache__
+venv
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/

@@ -4,7 +4,10 @@ Welcome to the **Repository Analysis System** documentation. This folder contain
 
 ## Quick Navigation
 
-### 📋 [01-strategy/](01-strategy/) — Business & Planning
+### � [PROGRESS.md](PROGRESS.md) — Development Progress Log
+_Session-by-session log of development activities, key findings, and technical insights_
+
+### �📋 [01-strategy/](01-strategy/) — Business & Planning
 
 _For understanding what we're building and why_
 
@@ -38,6 +41,8 @@ _For getting the system running and maintaining it_
 - [visualization.md](03-operations/visualization.md) — Grafana dashboards, metrics, visualization design
 - [deployment-plan.md](03-operations/deployment-plan.md) — Implementation timeline, phases, checklist
 - [session-continuity.md](03-operations/session-continuity.md) — Session management, context tracking, reproducibility
+- [github-config-env-loading.md](03-operations/github-config-env-loading.md) — Environment variable loading with indirect resolution
+- [github-config-refactoring.md](03-operations/github-config-refactoring.md) — Configuration refactoring summary
 
 **Start here if you're**: DevOps engineer, system operator, deploying to production
 

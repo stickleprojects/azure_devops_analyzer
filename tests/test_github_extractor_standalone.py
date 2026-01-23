@@ -29,10 +29,8 @@ import pytest
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from dotenv import load_dotenv
-
-# Load .env at module level
-load_dotenv()
+# Note: Environment variables are loaded by tests/conftest.py
+# which runs before test collection, ensuring .env.resolved is loaded
 
 
 class TestGetRepositoriesPrivateRepos:
@@ -88,6 +86,7 @@ class TestGetRepositoriesPrivateRepos:
 
         # Mock get_user to return a user with repos
         mock_user = Mock()
+        mock_user.login = "testuser"
         mock_user.get_repos.return_value = mock_repos
         mock_client.get_user.return_value = mock_user
 
@@ -95,7 +94,7 @@ class TestGetRepositoriesPrivateRepos:
         extractor = GitHubExtractor()
         extractor._client = mock_client
 
-        # Call get_repositories for a user (not an org)
+        # Call get_repositories for a user (authenticated user scenario)
         repos = extractor.get_repositories("testuser")
 
         # Verify we got both repos
@@ -104,7 +103,7 @@ class TestGetRepositoriesPrivateRepos:
         assert "public-repo" in repo_names
         assert "private-repo" in repo_names
 
-        # Verify get_repos was called with visibility="all"
+        # Verify get_repos was called with visibility="all" (authenticated user)
         mock_user.get_repos.assert_called_once_with(visibility="all")
 
     def test_get_repositories_org_does_not_use_visibility_param(self):
@@ -157,6 +156,17 @@ class TestGetRepositoriesLive:
         """Load environment variables."""
         self.github_token = os.environ.get("GITHUB_TOKEN")
         self.github_user = os.environ.get("GITHUB_USER")
+        self.github_org = os.environ.get("GITHUB_ORG")
+        
+        # Skip tests if credentials are not configured
+        if not self.github_token:
+            pytest.skip("GITHUB_TOKEN must be set in .env for live tests")
+        
+        if not self.github_user and not self.github_org:
+            pytest.skip("Either GITHUB_USER or GITHUB_ORG must be set in .env for live tests")
+        
+        # Use whichever is set
+        self.target_account = self.github_user or self.github_org
 
     def test_extractor_returns_azure_devops_analyzer_repo(self):
         """
@@ -169,10 +179,11 @@ class TestGetRepositoriesLive:
         extractor = GitHubExtractor()
 
         print(f"\n{'='*60}")
-        print(f"Testing get_repositories for user: {self.github_user}")
+        print(f"Testing get_repositories for: {self.target_account}")
+        print(f"Type: {'User' if self.github_user else 'Organization'}")
         print(f"{'='*60}")
 
-        repos = extractor.get_repositories(self.github_user)
+        repos = extractor.get_repositories(self.target_account)
         repo_names = [r.name for r in repos]
 
         print(f"\nExtractor returned {len(repos)} repositories:")
@@ -217,9 +228,9 @@ class TestGetRepositoriesLive:
             print(f"   Owner: {repo.owner.login}")
 
         # Method 2: Try to get repo directly
-        print(f"\n2. client.get_repo('{self.github_user}/azure_devops_analyzer'):")
+        print(f"\n2. client.get_repo('{self.target_account}/azure_devops_analyzer'):")
         try:
-            repo = client.get_repo(f"{self.github_user}/azure_devops_analyzer")
+            repo = client.get_repo(f"{self.target_account}/azure_devops_analyzer")
             print(f"   Found! Private: {repo.private}, Owner: {repo.owner.login}")
         except Exception as e:
             print(f"   Error: {e}")
@@ -238,13 +249,13 @@ class TestGetRepositoriesLive:
         client = Github(auth=auth)
 
         print(f"\n{'='*60}")
-        print(f"Debugging extractor code path for: {self.github_user}")
+        print(f"Debugging extractor code path for: {self.target_account}")
         print(f"{'='*60}")
 
         # Check if user is treated as org or user
-        print(f"\n1. Is '{self.github_user}' an organization?")
+        print(f"\n1. Is '{self.target_account}' an organization?")
         try:
-            org = client.get_organization(self.github_user)
+            org = client.get_organization(self.target_account)
             print(f"   YES - get_organization succeeded")
             print(f"   Org repos count: {org.get_repos().totalCount}")
         except GithubException as e:
@@ -255,7 +266,7 @@ class TestGetRepositoriesLive:
         print(f"\n2. client.get_user() (no args - authenticated user):")
         auth_user = client.get_user()
         print(f"   Login: {auth_user.login}")
-        print(f"   Same as GITHUB_USER? {auth_user.login == self.github_user}")
+        print(f"   Same as target account? {auth_user.login == self.target_account}")
 
         # Compare repo counts
         print(f"\n3. Comparing repo retrieval methods:")

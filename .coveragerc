@@ -1,0 +1,57 @@
+[run]
+# Measure coverage for source code
+source = src/
+
+# Omit test files, migrations, and __pycache__
+omit =
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */migrations/*
+    */venv/*
+    */env/*
+    */.venv/*
+
+# Enable branch coverage (measures if both True and False branches tested)
+branch = True
+
+[report]
+# Show lines that aren't covered in the report
+show_missing = True
+
+# Ignore specific lines from coverage
+exclude_lines =
+    # Standard pragma
+    pragma: no cover
+    
+    # Don't complain about missing debug-only code
+    def __repr__
+    
+    # Don't complain if tests don't hit defensive assertion code
+    raise AssertionError
+    raise NotImplementedError
+    
+    # Don't complain if non-runnable code isn't run
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    
+    # Don't complain about abstract methods
+    @abstractmethod
+    @abc.abstractmethod
+    
+    # Don't complain about pass statements
+    pass
+
+# Set precision for coverage percentages
+precision = 2
+
+# Sort coverage report by percentage covered
+sort = Cover
+
+[html]
+# Directory for HTML coverage reports
+directory = htmlcov
+
+[xml]
+# File for XML coverage reports (for CI/CD integration)
+output = coverage.xml

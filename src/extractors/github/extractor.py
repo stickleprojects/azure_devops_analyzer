@@ -1,5 +1,20 @@
 """
 GitHub repository extractor implementation.
+
+Key API Behavior Note:
+    When fetching repositories via GitHub's REST API, there is a critical distinction:
+    
+    - Authenticated user endpoint (client.get_user() with no args):
+      Returns ALL accessible repos including private ones.
+      Use visibility="all" parameter.
+      
+    - Named user endpoint (client.get_user('username')):
+      Returns ONLY public repos, even if the username matches the authenticated user.
+      Use type="all" parameter (but still only gets public repos).
+    
+    This implementation detects when the requested username matches the authenticated user
+    and automatically uses the authenticated endpoint to ensure private repositories are
+    included in the results.
 """
 
 import logging
@@ -38,16 +53,16 @@ class GitHubExtractor(RepositoryExtractor):
         self,
         config: Optional[GitHubExtractorConfig] = None,
     ):
-        self._client = None
-        self._org_name = get_organization_name()
-        self._user_name = get_user_name()
         self.config = config or GitHubExtractorConfig.from_env()
+        self._client = None
+        self._org_name = self.config.organization
+        self._user_name = self.config.user
         self._logger = logging.getLogger(__name__)
 
     @property
     def client(self):
         if self._client is None:
-            self._client = get_github_client()
+            self._client = get_github_client(config=self.config)
             # Ensure paginated calls use the configured page size
             try:
                 self._client.per_page = self.config.page_size
@@ -130,12 +145,29 @@ class GitHubExtractor(RepositoryExtractor):
 
         try:
             org = self.client.get_organization(organization)
-            gh_repos = org.get_repos(type="all", per_page=self.config.page_size)
+            gh_repos = org.get_repos(type="all")
         except GithubException as exc:
-            # Fall back to a user with the provided name; only use the auth user if name is empty
+            # Fall back to a user with the provided name
+            # CRITICAL: GitHub API behavior for private repos
+            # - Authenticated endpoint: client.get_user() returns ALL repos (public + private)
+            # - Named user endpoint: client.get_user('name') returns ONLY public repos
+            # We must detect if 'organization' is the authenticated user and use the right endpoint
             try:
-                user = self.client.get_user(organization) if organization else self.client.get_user()
-                gh_repos = user.get_repos(visibility="all", per_page=self.config.page_size)
+                if organization:
+                    # Check if requested user is the authenticated user
+                    auth_user = self.client.get_user()
+                    if auth_user.login.lower() == organization.lower():
+                        # Use authenticated user endpoint to get ALL repos including private
+                        user = auth_user
+                        gh_repos = user.get_repos(visibility="all")
+                    else:
+                        # Different user - can only see public repos
+                        user = self.client.get_user(organization)
+                        gh_repos = user.get_repos(type="all")
+                else:
+                    # No organization specified - get authenticated user's repos
+                    user = self.client.get_user()
+                    gh_repos = user.get_repos(visibility="all")
                 org_name = user.login
             except GithubException as inner_exc:
                 self._logger.warning("Failed to list repos for %s: %s", organization, inner_exc)
@@ -207,7 +239,7 @@ class GitHubExtractor(RepositoryExtractor):
         if until:
             kwargs["until"] = until
 
-        commits = repo.get_commits(per_page=self.config.page_size, **kwargs)
+        commits = repo.get_commits(**kwargs)
 
         result = []
         for c in self._safe_paginated_list(commits, limit=limit or self.config.max_items_per_list):
@@ -250,7 +282,7 @@ class GitHubExtractor(RepositoryExtractor):
         elif status in ("merged", "closed"):
             state = "closed"
 
-        prs = repo.get_pulls(state=state, sort="updated", direction="desc", per_page=self.config.page_size)
+        prs = repo.get_pulls(state=state, sort="updated", direction="desc")
 
         result = []
         for pr in self._safe_paginated_list(prs, limit=limit or self.config.max_items_per_list):
