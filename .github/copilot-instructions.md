@@ -1,5 +1,174 @@
 # GitHub Copilot Instructions for azure_devops_analyzer
 
+## Architecture Guardian - AUTOMATIC VALIDATION
+
+**CRITICAL**: Before implementing ANY code changes, automatically validate against architectural boundaries defined in `agents/02a-architecture-guardian.md`.
+
+### Automatic Guardian Checks Required For:
+1. **Component boundary changes** - New files in extractors/, analyzers/, workflows/, database/
+2. **Database schema changes** - Modifications to schema.sql, migrations/, or database/storage.py
+3. **Cross-cutting concerns** - Logging, caching, auth, error handling, configuration
+4. **New dependencies** - Additions to requirements.txt or docker-compose.yml
+5. **Interface changes** - Modifications to base classes or public APIs
+
+### Guardian Validation Process:
+```
+BEFORE implementing:
+1. Identify affected architectural layers
+2. Check against boundary rules in 02a-architecture-guardian.md
+3. Evaluate impact: LOW/MEDIUM/HIGH
+4. If boundary violation detected → STOP and present alternatives
+5. If flagged → Present options to user before proceeding
+6. If approved → Proceed with implementation
+```
+
+### Protected Architectural Boundaries:
+- **Extractors**: Platform-isolated, no analysis logic, no direct DB writes
+- **Analyzers**: Platform-agnostic, return data structures only
+- **Database layer**: ONLY module for DB operations (storage.py)
+- **Workflows**: Orchestration only, delegates to extractors/analyzers
+- **Cross-cutting concerns**: Must live in utils/, not in business logic
+
+### When Changes Are Flagged:
+Present this format to user:
+```
+⚠️ ARCHITECTURE REVIEW REQUIRED
+
+Proposed Change: [description]
+Affected Components: [list]
+Boundary Concern: [specific violation]
+Recommended Alternative: [suggestion]
+
+Options:
+1. Implement recommended alternative (maintains architecture)
+2. Proceed as-is (accept architectural debt)
+3. Discuss architectural redesign
+
+Which would you prefer?
+```
+
+### Auto-Approve Criteria (No Guardian Check Needed):
+- Bug fixes within single function (no interface changes)
+- Test additions (see Test Guardian for test modifications)
+- Documentation updates
+- Code formatting/linting
+- Internal refactoring within one module (no external API changes)
+
+## Test Guardian - AUTOMATIC VALIDATION
+
+**CRITICAL**: Before modifying ANY tests, automatically validate against test integrity rules defined in `agents/04a-test-guardian.md`.
+
+### The Iron Rule
+**If a test fails after implementation changes, the implementation is probably wrong, not the test.**
+
+### Automatic Test Guardian Checks Required For:
+1. **Test assertion changes** - Modified expected values, relaxed constraints
+2. **Test deletions** - Removed test cases or disabled tests
+3. **Test scope changes** - Modified mock behavior, changed test data
+4. **Implementation with failing tests** - Tests must pass or be fixed first
+
+### Test Guardian Validation Process:
+```
+WHEN modifying tests:
+1. Identify TEST TYPE (contract vs implementation - see below)
+2. CONTRACT tests → STRICT protection (business requirements)
+3. IMPLEMENTATION tests → FLEXIBLE (technical details can evolve)
+4. If test failing after implementation → FIX IMPLEMENTATION, not test
+5. For new features → Write CONTRACT tests FIRST (should fail before implementation)
+6. For bug fixes → Add regression test FIRST (should fail before fix)
+7. For refactoring → Tests should NOT need changes (behavior unchanged)
+```
+
+### Test Organization (CRITICAL - Read First):
+**We distinguish two test types with different rules:**
+
+#### CONTRACT Tests (Business Requirements) - STRICT
+- **Location**: `tests/contract/` or named `test_contract_*`
+- **Purpose**: Define WHAT system should do (business behavior)
+- **Docstring**: Start with `"""CONTRACT: ...`
+- **Protection**: CANNOT change without documented requirement change + approval
+- **Examples**: API contracts, business rules, user-facing behavior
+- **If it fails**: FIX IMPLEMENTATION - contract defines requirements
+
+#### IMPLEMENTATION Tests (Technical Details) - FLEXIBLE
+- **Location**: `tests/implementation/` or named `test_impl_*`  
+- **Purpose**: Validate HOW system does it (technical mechanisms)
+- **Docstring**: Start with `"""IMPLEMENTATION: ...`
+- **Protection**: CAN change with implementation (if contracts still pass)
+- **Examples**: Pagination, rate limiting, caching, retry logic, connection pooling
+- **If it fails**: May fix test if implementation strategy changed
+
+**Decision Rule**: *"If implementation changes completely but behavior stays same, should this test still pass?"*
+- YES → CONTRACT test (strict)
+- NO → IMPLEMENTATION test (flexible)
+
+**See [docs/03-operations/test-organization.md](docs/03-operations/test-organization.md) for complete guide.**
+
+### Protected Test Principles:
+- **Tests define the contract** - Implementation must satisfy tests
+- **Test-first approach** - Write failing tests before implementing
+- **Regression protection** - Add test before fixing bug
+- **No assertion weakening** - Don't relax expectations to pass
+- **No test disabling** - Fix implementation or requirement, not test
+
+### When Test Changes Are Flagged:
+
+**For CONTRACT Test Changes:**
+```
+🛑 CONTRACT TEST MODIFICATION BLOCKED
+
+Test: [test name]
+Type: CONTRACT (business requirement)
+Change: [what changed]
+
+CONTRACT TESTS DEFINE BUSINESS REQUIREMENTS.
+Changes require documented requirement change + stakeholder approval.
+
+CRITICAL QUESTIONS:
+1. Why did business requirement change?
+2. Should implementation be fixed instead?
+3. Is there an ADR for this change?
+
+Options:
+1. Fix implementation to match contract (tests are correct)
+2. Document requirement change + update ALL related contracts
+3. Create separate IMPLEMENTATION test if this is technical detail
+
+Which would you prefer?
+```
+
+**For IMPLEMENTATION Test Changes:**
+```
+⚠️ IMPLEMENTATION TEST MODIFICATION
+
+Test: [test name]
+Type: IMPLEMENTATION (technical detail)
+Change: [what changed]
+
+IMPLEMENTATION TESTS can evolve with code.
+
+Validation:
+✓ Contract tests still pass?
+✓ Technical reason documented?
+✓ No business behavior impact?
+
+Approved if above criteria met.
+```
+
+### Auto-Approve Test Changes:
+- Adding new test cases (not modifying existing)
+- Improving test structure/readability (assertions unchanged)
+- Test infrastructure improvements (fixtures, helpers)
+- Better assertion messages
+- Test documentation
+
+### 🛑 BLOCK These Test Changes:
+- Changing assertion expected values without requirement documentation
+- Removing test cases without explanation
+- Skipping/disabling tests to make build pass
+- Relaxing error handling checks
+- Weakening validation constraints
+
 ## Project-Specific Conventions
 
 ### Docker

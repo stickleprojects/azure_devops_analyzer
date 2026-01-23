@@ -120,6 +120,7 @@ def get_or_create_team(
             organization_id=organization.organization_id,
             name=team_name,
             description=description,
+            created_at=datetime.now(UTC),
         )
         session.add(team)
         session.flush()
