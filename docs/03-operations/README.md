@@ -15,14 +15,14 @@ This folder contains documentation for deploying, running, and maintaining the R
 
 ## Quick Links
 
-| Document                          | Focus                                  | For                            |
-| --------------------------------- | -------------------------------------- | ------------------------------ |
-| visualization.md                  | Grafana setup, dashboards              | DevOps, dashboarding           |
-| deployment-plan.md                | Rollout strategy, timeline             | Deployment, project management |
-| session-continuity.md             | Context persistence                    | Reproducibility, debugging     |
-| github-config-env-loading.md      | Environment variable resolution        | Configuration, security        |
-| github-config-refactoring.md      | Configuration centralization           | Code maintainability           |
-| github-private-repos-finding.md   | ⚠️ GitHub API private repo behavior    | Critical implementation detail |
+| Document                        | Focus                              | For                            |
+| ------------------------------- | ---------------------------------- | ------------------------------ |
+| visualization.md                | Grafana setup, dashboards          | DevOps, dashboarding           |
+| deployment-plan.md              | Rollout strategy, timeline         | Deployment, project management |
+| session-continuity.md           | Context persistence                | Reproducibility, debugging     |
+| github-config-env-loading.md    | Environment variable resolution    | Configuration, security        |
+| github-config-refactoring.md    | Configuration centralization       | Code maintainability           |
+| github-private-repos-finding.md | ⚠️ GitHub API private repo behavior | Critical implementation detail |
 
 ## Recommended Reading Order
 
