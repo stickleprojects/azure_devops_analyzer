@@ -35,6 +35,7 @@ def sample_repository_data(
     name: str = "test-repo",
     url: str = "https://github.com/test-org/test-repo",
     default_branch: str = "main",
+    platform: Platform = Platform.GITHUB,
     team_name: str | None = None,
     is_private: bool = False,
     is_archived: bool = False,
@@ -45,6 +46,7 @@ def sample_repository_data(
         name=name,
         url=url,
         default_branch=default_branch,
+        platform=platform,
         team_name=team_name,
         platform_repo_id=12345,
         created_at=datetime(2025, 1, 1, 0, 0, 0, tzinfo=UTC),
@@ -66,6 +68,8 @@ def sample_commit_data(
     sha: str = "abc123def456",
     author_email: str = "developer@example.com",
     author_name: str = "Developer",
+    committer_email: str | None = None,
+    committer_name: str | None = None,
     message: str = "Test commit",
     commit_date: datetime | None = None,
     lines_added: int = 10,
@@ -75,11 +79,18 @@ def sample_commit_data(
     """Standard commit for testing."""
     if commit_date is None:
         commit_date = datetime(2026, 1, 1, 10, 0, 0, tzinfo=UTC)
+    # Default committer to author if not provided
+    if committer_email is None:
+        committer_email = author_email
+    if committer_name is None:
+        committer_name = author_name
     
     return CommitData(
         sha=sha,
         author_email=author_email,
         author_name=author_name,
+        committer_email=committer_email,
+        committer_name=committer_name,
         message=message,
         commit_date=commit_date,
         lines_added=lines_added,
@@ -103,8 +114,9 @@ def sample_branch_data(
 
 def sample_pull_request_data(
     pr_number: int = 1,
+    platform_pr_id: str | None = None,
     title: str = "Test Pull Request",
-    state: str = "open",
+    status: str = "open",
     author_email: str = "developer@example.com",
     author_name: str = "Developer",
     source_branch: str = "feature-branch",
@@ -116,12 +128,15 @@ def sample_pull_request_data(
     """Standard pull request for testing."""
     if created_at is None:
         created_at = datetime(2026, 1, 1, 10, 0, 0, tzinfo=UTC)
+    if platform_pr_id is None:
+        platform_pr_id = f"pr-{pr_number}"
     
     return PullRequestData(
         pr_number=pr_number,
+        platform_pr_id=platform_pr_id,
         title=title,
         description="Test description",
-        state=state,
+        status=status,
         author_email=author_email,
         author_name=author_name,
         source_branch=source_branch,
@@ -132,10 +147,6 @@ def sample_pull_request_data(
         closed_at=closed_at,
         lines_added=50,
         lines_removed=20,
-        commits_count=3,
-        comments_count=2,
-        review_comments_count=1,
-        is_draft=False,
     )
 
 

@@ -350,7 +350,7 @@ class TestPullRequestStorage:
         assert pr.repo_id == repo.repo_id
         assert pr.pr_number == 1
         assert pr.title == "Test Pull Request"
-        assert pr.state == "open"
+        assert pr.status == "open"
         assert pr.source_branch == "feature-branch"
         assert pr.target_branch == "main"
         assert pr.author_id is not None

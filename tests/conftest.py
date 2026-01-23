@@ -10,6 +10,9 @@ def pytest_configure(config):
     
     This ensures that .env.resolved (or .env) is loaded for all tests,
     including when running from VS Code's test runner.
+    
+    For database tests: Override POSTGRES_HOST from .env.test if it exists,
+    to connect to localhost when running tests on host machine.
     """
     # Import here to avoid circular dependencies
     project_root = Path(__file__).parent.parent
@@ -28,6 +31,19 @@ def pytest_configure(config):
     elif env_regular.exists():
         load_env_file(env_regular, override=True)
         env_file_used = env_regular
+    
+    # Load test-specific overrides from .env.test (for database host, etc.)
+    env_test = project_root / ".env.test"
+    if env_test.exists():
+        print(f"\n✓ Loading test overrides from {env_test.name}")
+        with open(env_test) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, value = line.split("=", 1)
+                    os.environ[key] = value
+                    if key == "POSTGRES_HOST":
+                        print(f"  Overriding {key}={value} for test database")
     
     # Debug: verify GITHUB_TOKEN is set
     github_token = os.environ.get("GITHUB_TOKEN")
