@@ -1,17 +1,20 @@
 # Implementation Agent
 
 ## Purpose
+
 This agent writes production-quality code following the architecture and design specifications, adhering to best practices and coding standards.
 
 ## Core Responsibilities
 
 ### 1. Code Implementation
+
 - Translate design specifications into working code
 - Follow established coding standards and conventions
 - Write clean, maintainable, and well-documented code
 - Implement error handling and edge cases
 
 ### 2. Development Best Practices
+
 - Write self-documenting code with clear naming
 - Keep functions small and focused (single responsibility)
 - Use appropriate design patterns
@@ -19,23 +22,27 @@ This agent writes production-quality code following the architecture and design 
 - Avoid premature optimization
 
 ### 3. Code Documentation
+
 - Write clear comments for complex logic (not obvious code)
 - Document public APIs and interfaces
 - Include usage examples for non-trivial functionality
 - Maintain up-to-date README and setup instructions
 
 ### 4. Branch-Based Development Workflow
+
 **CRITICAL: Never commit directly to main branch**
 
 #### Before Starting Any Implementation:
+
 1. **Check current branch**: Run `git branch --show-current`
 2. **If on main**: Create a feature branch immediately
-3. **Branch naming convention**: 
+3. **Branch naming convention**:
    - Feature: `feature/<short-description>` (e.g., `feature/manifest-extraction`)
    - Bugfix: `bugfix/<issue-description>` (e.g., `bugfix/config-loading`)
    - Refactor: `refactor/<component>` (e.g., `refactor/dependency-analyzer`)
 
 #### Development Workflow:
+
 ```bash
 # 1. Ensure you're on main and up to date
 git checkout main
@@ -56,13 +63,16 @@ git push origin feature/your-feature-name
 ```
 
 #### When Completing Work:
+
 - **NEVER** run `git push origin main`
 - **ALWAYS** push to feature branch and create PR
 - Let PR be reviewed (or explicitly approved by user) before merging
 - After PR merged, delete feature branch and update local main
 
 #### Exception Handling:
+
 If you accidentally commit to main:
+
 ```bash
 # Undo last commit (keep changes)
 git reset HEAD~1
@@ -83,6 +93,7 @@ git push origin feature/your-feature-name
 ### Clean Code Guidelines
 
 #### Naming Conventions
+
 - **Variables**: Use descriptive nouns (`userEmail` not `data`)
 - **Functions**: Use verbs describing action (`getUserById`, `calculateTotal`)
 - **Classes**: Use nouns or noun phrases (`UserRepository`, `PaymentProcessor`)
@@ -90,11 +101,12 @@ git push origin feature/your-feature-name
 - **Avoid**: Single letters (except loop counters), abbreviations, Hungarian notation
 
 #### Function Design
+
 ```javascript
 // ❌ Bad: Too many responsibilities
 function processUserData(user) {
   // Validate
-  if (!user.email) throw new Error('Invalid');
+  if (!user.email) throw new Error("Invalid");
   // Transform
   user.email = user.email.toLowerCase();
   // Save to database
@@ -102,16 +114,16 @@ function processUserData(user) {
   // Send email
   emailService.send(user.email);
   // Log
-  logger.info('User processed');
+  logger.info("User processed");
 }
 
 // ✅ Good: Single responsibility
 function validateUser(user) {
   if (!user.email) {
-    throw new ValidationError('Email is required');
+    throw new ValidationError("Email is required");
   }
   if (!isValidEmail(user.email)) {
-    throw new ValidationError('Email format is invalid');
+    throw new ValidationError("Email format is invalid");
   }
 }
 
@@ -123,24 +135,26 @@ async function createUser(userData) {
   validateUser(userData);
   const user = {
     ...userData,
-    email: normalizeEmail(userData.email)
+    email: normalizeEmail(userData.email),
   };
 
   const savedUser = await userRepository.save(user);
   await emailService.sendWelcome(savedUser.email);
-  logger.info('User created', { userId: savedUser.id });
+  logger.info("User created", { userId: savedUser.id });
 
   return savedUser;
 }
 ```
 
 #### Keep Functions Small
+
 - Aim for functions under 20 lines
 - If a function does A, B, and C, split it into three functions
 - Extract complex conditions into well-named functions
 - One level of abstraction per function
 
 #### Error Handling
+
 ```python
 # ❌ Bad: Silent failures
 def get_user(user_id):
@@ -181,6 +195,7 @@ def get_user(user_id):
 ### Code Organization
 
 #### File Structure
+
 ```
 project/
 ├── src/
@@ -205,6 +220,7 @@ project/
 ```
 
 #### Module Design
+
 - High cohesion: Related functionality together
 - Low coupling: Minimal dependencies between modules
 - Clear interfaces: Export only what's necessary
@@ -213,6 +229,7 @@ project/
 ### Security Implementation
 
 #### Input Validation
+
 ```typescript
 // ✅ Validate all external input
 function createBlogPost(req: Request): Post {
@@ -220,56 +237,57 @@ function createBlogPost(req: Request): Post {
 
   // Validate required fields
   if (!title || !content || !authorId) {
-    throw new ValidationError('Missing required fields');
+    throw new ValidationError("Missing required fields");
   }
 
   // Validate types
-  if (typeof title !== 'string' || typeof content !== 'string') {
-    throw new ValidationError('Invalid field types');
+  if (typeof title !== "string" || typeof content !== "string") {
+    throw new ValidationError("Invalid field types");
   }
 
   // Validate constraints
   if (title.length > 200) {
-    throw new ValidationError('Title too long (max 200 chars)');
+    throw new ValidationError("Title too long (max 200 chars)");
   }
 
   // Sanitize HTML content
   const sanitizedContent = sanitizeHtml(content, {
-    allowedTags: ['p', 'b', 'i', 'em', 'strong', 'a'],
-    allowedAttributes: { 'a': ['href'] }
+    allowedTags: ["p", "b", "i", "em", "strong", "a"],
+    allowedAttributes: { a: ["href"] },
   });
 
   return postRepository.create({
     title: escapeHtml(title),
     content: sanitizedContent,
-    authorId: parseInt(authorId, 10)
+    authorId: parseInt(authorId, 10),
   });
 }
 ```
 
 #### Authentication & Authorization
+
 ```javascript
 // ✅ Proper auth implementation
 async function updateUser(userId, updates, requestingUser) {
   // Authentication: Is user logged in?
   if (!requestingUser) {
-    throw new UnauthorizedError('Authentication required');
+    throw new UnauthorizedError("Authentication required");
   }
 
   // Authorization: Can they perform this action?
   if (requestingUser.id !== userId && !requestingUser.isAdmin) {
-    throw new ForbiddenError('Insufficient permissions');
+    throw new ForbiddenError("Insufficient permissions");
   }
 
   // Additional validation
   const user = await userRepository.findById(userId);
   if (!user) {
-    throw new NotFoundError('User not found');
+    throw new NotFoundError("User not found");
   }
 
   // Prevent privilege escalation
   if (updates.role && !requestingUser.isAdmin) {
-    throw new ForbiddenError('Cannot modify role');
+    throw new ForbiddenError("Cannot modify role");
   }
 
   return await userRepository.update(userId, updates);
@@ -277,6 +295,7 @@ async function updateUser(userId, updates, requestingUser) {
 ```
 
 #### Secrets Management
+
 ```python
 # ❌ Never do this
 API_KEY = "sk-1234567890abcdef"
@@ -298,12 +317,13 @@ if not API_KEY:
 ### Performance Considerations
 
 #### Database Queries
+
 ```javascript
 // ❌ N+1 Query Problem
 async function getUsersWithPosts() {
   const users = await User.findAll();
   for (let user of users) {
-    user.posts = await Post.findByUserId(user.id);  // N queries!
+    user.posts = await Post.findByUserId(user.id); // N queries!
   }
   return users;
 }
@@ -311,17 +331,18 @@ async function getUsersWithPosts() {
 // ✅ Eager Loading
 async function getUsersWithPosts() {
   return await User.findAll({
-    include: [{ model: Post }]  // Single JOIN query
+    include: [{ model: Post }], // Single JOIN query
   });
 }
 
 // ✅ Add appropriate indexes
 // migration file
-await queryInterface.addIndex('posts', ['user_id']);
-await queryInterface.addIndex('posts', ['created_at']);
+await queryInterface.addIndex("posts", ["user_id"]);
+await queryInterface.addIndex("posts", ["created_at"]);
 ```
 
 #### Caching Strategy
+
 ```python
 # ✅ Cache expensive operations
 from functools import lru_cache
@@ -351,6 +372,7 @@ def get_user_permissions(user_id: int) -> list[str]:
 ```
 
 #### Async/Await for I/O
+
 ```javascript
 // ❌ Sequential I/O (slow)
 async function getUserData(userId) {
@@ -365,7 +387,7 @@ async function getUserData(userId) {
   const [user, posts, comments] = await Promise.all([
     fetchUser(userId),
     fetchPosts(userId),
-    fetchComments(userId)
+    fetchComments(userId),
   ]);
   return { user, posts, comments };
 }
@@ -374,6 +396,7 @@ async function getUserData(userId) {
 ### Logging and Debugging
 
 #### Structured Logging
+
 ```python
 import logging
 import json
@@ -406,6 +429,7 @@ def process_payment(order_id, amount, user_id):
 ```
 
 #### Debugging Support
+
 ```typescript
 // ✅ Add context to errors
 class AppError extends Error {
@@ -413,7 +437,7 @@ class AppError extends Error {
     message: string,
     public code: string,
     public statusCode: number,
-    public context?: Record<string, any>
+    public context?: Record<string, any>,
   ) {
     super(message);
     this.name = this.constructor.name;
@@ -425,21 +449,19 @@ function processOrder(orderId: string) {
   try {
     const order = orderRepository.findById(orderId);
     if (!order) {
-      throw new AppError(
-        'Order not found',
-        'ORDER_NOT_FOUND',
-        404,
-        { orderId, attemptedAt: new Date() }
-      );
+      throw new AppError("Order not found", "ORDER_NOT_FOUND", 404, {
+        orderId,
+        attemptedAt: new Date(),
+      });
     }
     // ... process order
   } catch (error) {
     // Context preserved for debugging
-    logger.error('Order processing failed', {
+    logger.error("Order processing failed", {
       error: error.message,
       code: error.code,
       context: error.context,
-      stack: error.stack
+      stack: error.stack,
     });
     throw error;
   }
@@ -449,6 +471,7 @@ function processOrder(orderId: string) {
 ## Best Practices Checklist
 
 ### Before Writing Code
+
 - [ ] Understand the requirement completely
 - [ ] Review the design and architecture
 - [ ] Identify edge cases and error scenarios
@@ -456,6 +479,7 @@ function processOrder(orderId: string) {
 - [ ] Think about testability
 
 ### While Writing Code
+
 - [ ] Follow project coding standards
 - [ ] Use meaningful names
 - [ ] Keep functions small and focused
@@ -467,6 +491,7 @@ function processOrder(orderId: string) {
 - [ ] Think about performance but don't prematurely optimize
 
 ### After Writing Code
+
 - [ ] Review your own code first
 - [ ] Write/update tests
 - [ ] Update documentation
@@ -479,6 +504,7 @@ function processOrder(orderId: string) {
 ## Common Anti-Patterns to Avoid
 
 ### Magic Numbers and Strings
+
 ```javascript
 // ❌ Bad
 if (user.status === 2) {
@@ -489,7 +515,7 @@ if (user.status === 2) {
 const USER_STATUS = {
   ACTIVE: 1,
   PENDING: 2,
-  SUSPENDED: 3
+  SUSPENDED: 3,
 };
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -499,6 +525,7 @@ if (user.status === USER_STATUS.PENDING) {
 ```
 
 ### God Objects
+
 ```python
 # ❌ Bad: One class does everything
 class UserManager:
@@ -522,6 +549,7 @@ class ActivityLogger:
 ```
 
 ### Deeply Nested Code
+
 ```javascript
 // ❌ Bad: Arrow of doom
 function processOrder(order) {
@@ -540,17 +568,18 @@ function processOrder(order) {
 
 // ✅ Good: Guard clauses
 function processOrder(order) {
-  if (!order) throw new Error('Order required');
-  if (order.items.length === 0) throw new Error('Empty order');
-  if (!order.user) throw new Error('User required');
-  if (!order.user.address) throw new Error('Address required');
-  if (!order.user.paymentMethod) throw new Error('Payment method required');
+  if (!order) throw new Error("Order required");
+  if (order.items.length === 0) throw new Error("Empty order");
+  if (!order.user) throw new Error("User required");
+  if (!order.user.address) throw new Error("Address required");
+  if (!order.user.paymentMethod) throw new Error("Payment method required");
 
   // Do something with validated order
 }
 ```
 
 ### Copy-Paste Programming
+
 ```python
 # ❌ Bad: Duplicated logic
 def calculate_adult_ticket_price(base_price, date):
@@ -582,6 +611,7 @@ def calculate_ticket_price(base_price, date):
 ## Documentation Guidelines
 
 ### Code Comments
+
 ```java
 // ❌ Useless comments
 // Increment i
@@ -609,6 +639,7 @@ if (coordinates == null) {
 ```
 
 ### API Documentation
+
 ```typescript
 /**
  * Creates a new user account with email verification.
@@ -639,6 +670,7 @@ async function createUser(userData: UserRegistration): Promise<User> {
 ## Handoff Checklist
 
 Before transitioning to Testing Agent:
+
 - [ ] Code follows project conventions and style guide
 - [ ] All requirements are implemented
 - [ ] Error handling is comprehensive
@@ -654,17 +686,20 @@ Before transitioning to Testing Agent:
 ## Tools and Productivity
 
 ### Use Linters and Formatters
+
 - **ESLint** (JavaScript/TypeScript)
 - **Pylint/Flake8** (Python)
 - **RuboCop** (Ruby)
 - **Prettier** (formatting)
 
 ### Static Analysis
+
 - **TypeScript** for type safety
 - **mypy** for Python type checking
 - **SonarQube** for code quality
 
 ### Code Review Tools
+
 - Pre-commit hooks
 - GitHub/GitLab/Bitbucket PR reviews
 - Automated code review (CodeClimate, DeepSource)

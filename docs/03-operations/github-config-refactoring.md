@@ -9,6 +9,7 @@ Refactored GitHub configuration to eliminate direct `os.environ` reads and centr
 ### 1. Enhanced `GitHubExtractorConfig` (src/config/github.py)
 
 Added credential fields to the config dataclass:
+
 ```python
 @dataclass
 class GitHubExtractorConfig:
@@ -23,6 +24,7 @@ These fields are now populated from environment variables during `from_env()`.
 ### 2. Updated `get_github_client()` (src/extractors/github/client.py)
 
 **Before:**
+
 ```python
 def get_github_client(env_file: Optional[str | Path] = None) -> Github:
     token = os.environ.get("GITHUB_TOKEN")
@@ -30,6 +32,7 @@ def get_github_client(env_file: Optional[str | Path] = None) -> Github:
 ```
 
 **After:**
+
 ```python
 def get_github_client(
     config: Optional[GitHubExtractorConfig] = None,
@@ -55,6 +58,7 @@ def get_organization_name(config: Optional[GitHubExtractorConfig] = None) -> str
 ### 4. Updated `GitHubExtractor` (src/extractors/github/extractor.py)
 
 **Before:**
+
 ```python
 def __init__(self, config: Optional[GitHubExtractorConfig] = None):
     self._org_name = get_organization_name()
@@ -63,6 +67,7 @@ def __init__(self, config: Optional[GitHubExtractorConfig] = None):
 ```
 
 **After:**
+
 ```python
 def __init__(self, config: Optional[GitHubExtractorConfig] = None):
     self.config = config or GitHubExtractorConfig.from_env()
@@ -73,26 +78,31 @@ def __init__(self, config: Optional[GitHubExtractorConfig] = None):
 ## Benefits
 
 ### 1. **Centralized Configuration**
+
 - All GitHub-related configuration in one place
 - Single source of truth for credentials and settings
 - Easier to understand and maintain
 
 ### 2. **Better Testability**
+
 - Can pass mock config objects in tests
 - No need to manipulate `os.environ` in tests
 - More isolated and reliable tests
 
 ### 3. **Consistent Behavior**
+
 - All components use the same config instance
 - No risk of different parts reading different env values
 - Config is loaded once and reused
 
 ### 4. **Backward Compatible**
+
 - Existing code still works without changes
 - Helper functions still check `os.environ` as fallback
 - Gradual migration path available
 
 ### 5. **Indirect Variable Resolution**
+
 - Credentials like `GITHUB_TOKEN=$AZURE_VAULT_SECRET` are resolved automatically
 - Works seamlessly with `.env.resolved` files
 - No manual resolution needed
@@ -100,12 +110,14 @@ def __init__(self, config: Optional[GitHubExtractorConfig] = None):
 ## Usage Examples
 
 ### Basic Usage (Unchanged)
+
 ```python
 # Automatically loads from .env.resolved or .env
 extractor = GitHubExtractor()
 ```
 
 ### With Custom Config
+
 ```python
 config = GitHubExtractorConfig(
     token="ghp_custom_token",
@@ -116,12 +128,14 @@ extractor = GitHubExtractor(config=config)
 ```
 
 ### With Custom .env File
+
 ```python
 config = GitHubExtractorConfig.from_env(env_file="/path/to/test.env")
 extractor = GitHubExtractor(config=config)
 ```
 
 ### In Tests
+
 ```python
 def test_something():
     config = GitHubExtractorConfig(
@@ -155,6 +169,7 @@ The following files still use `os.environ` directly (non-GitHub related):
 ## Testing
 
 All tests pass (31 passed, 3 skipped):
+
 - ✅ 18 config tests including new credential fields
 - ✅ 2 extractor unit tests
 - ✅ 11 import/structure tests
