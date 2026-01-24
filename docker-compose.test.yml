@@ -82,9 +82,6 @@ services:
         pytest tests/contract/integration/ -v \
           -m 'not live_api' \
           --junit-xml=/app/test-results/junit.xml \
-          --cov=src \
-          --cov-report=html:/app/test-results/coverage \
-          --cov-report=term \
           --tb=short
     environment:
       # Test database connection (internal Docker network)
