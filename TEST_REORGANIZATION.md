@@ -11,7 +11,9 @@ Moved integration tests from `tests/integration/` to `tests/contract/integration
 ## Why This Change?
 
 ### Problem Identified
+
 Integration tests were placed in `tests/integration/` but they validate **business requirements**, not implementation details:
+
 - ✅ Data MUST reach PostgreSQL correctly (business requirement)
 - ✅ Enrichment MUST populate specific fields (business requirement)
 - ✅ Timestamps MUST be UTC-aware (business requirement)
@@ -20,7 +22,9 @@ Integration tests were placed in `tests/integration/` but they validate **busine
 These are CONTRACT tests, not IMPLEMENTATION tests.
 
 ### Solution Implemented
+
 Moved tests to `tests/contract/integration/` to:
+
 1. **Get Test Guardian protection** - Changes to these tests now require documented business requirement changes
 2. **Clarify intent** - Location makes it clear these are contract tests
 3. **Enforce discipline** - Cannot "fix tests to match broken implementation"
@@ -28,11 +32,13 @@ Moved tests to `tests/contract/integration/` to:
 ## Test Guardian Protection
 
 ### Before (tests/integration/)
+
 - ⚠️ No automatic Test Guardian recognition
 - ⚠️ Could modify test assertions without review
 - ⚠️ Risk of "fixing tests to match implementation"
 
 ### After (tests/contract/integration/)
+
 - ✅ Automatic Test Guardian protection
 - ✅ Test assertion changes flagged for review
 - ✅ Must document business requirement changes
@@ -45,6 +51,7 @@ Moved tests to `tests/contract/integration/` to:
 If you need to change an integration test assertion:
 
 **❌ NOT ALLOWED without justification:**
+
 ```python
 # tests/contract/integration/test_github_extraction_e2e.py
 - assert repo.created_at is not None
@@ -54,6 +61,7 @@ If you need to change an integration test assertion:
 **Test Guardian will flag:** "CONTRACT TEST MODIFICATION - Why did business requirement change?"
 
 **✅ MUST provide:**
+
 - Documented business requirement change
 - ADR if architectural decision involved
 - Stakeholder approval for contract change
@@ -69,13 +77,13 @@ When adding new integration tests:
 
 ## File Moves
 
-| Old Path | New Path |
-|----------|----------|
-| `tests/integration/__init__.py` | `tests/contract/integration/__init__.py` |
-| `tests/integration/conftest.py` | `tests/contract/integration/conftest.py` |
-| `tests/integration/test_github_extraction_e2e.py` | `tests/contract/integration/test_github_extraction_e2e.py` |
+| Old Path                                              | New Path                                                       |
+| ----------------------------------------------------- | -------------------------------------------------------------- |
+| `tests/integration/__init__.py`                       | `tests/contract/integration/__init__.py`                       |
+| `tests/integration/conftest.py`                       | `tests/contract/integration/conftest.py`                       |
+| `tests/integration/test_github_extraction_e2e.py`     | `tests/contract/integration/test_github_extraction_e2e.py`     |
 | `tests/integration/test_dependency_enrichment_e2e.py` | `tests/contract/integration/test_dependency_enrichment_e2e.py` |
-| `tests/integration/README.md` | `tests/contract/integration/README.md` |
+| `tests/integration/README.md`                         | `tests/contract/integration/README.md`                         |
 
 ## Updated Commands
 

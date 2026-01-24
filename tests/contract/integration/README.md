@@ -5,6 +5,7 @@ End-to-end tests that verify actual data flows through the complete pipeline.
 **Location:** `tests/contract/integration/`
 
 These tests are CONTRACT tests (not IMPLEMENTATION tests) because they validate **business requirements**:
+
 - ✅ Data must reach PostgreSQL correctly
 - ✅ Enrichment must populate specific fields
 - ✅ Timestamps must be UTC-aware

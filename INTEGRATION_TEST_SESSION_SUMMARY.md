@@ -91,7 +91,7 @@ pytest tests/contract/integration/ -m "live_api" -v
 | -------------------------------------------------------------------------- | ------------------------ |
 | [Integration Test Design](../04-implementation/integration-test-design.md) | Architecture & patterns  |
 | [Integration Test Setup](../04-implementation/integration-test-setup.md)   | Step-by-step setup guide |
-| [Integration Test README](../../tests/contract/integration/README.md)               | Test documentation       |
+| [Integration Test README](../../tests/contract/integration/README.md)      | Test documentation       |
 
 ## Test Markers
 

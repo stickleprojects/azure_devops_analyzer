@@ -326,6 +326,7 @@ class TestGitHubExtractionDataIntegrity:
         
         repo = Repository(
             repo_id="test/repo",
+            name="Test Repository",
             url="https://github.com/test/repo",
             created_at=datetime.now(timezone.utc)
         )
@@ -334,7 +335,7 @@ class TestGitHubExtractionDataIntegrity:
         
         commit = Commit(
             repo_id="test/repo",
-            sha="a" * 40,
+            commit_sha="a" * 40,
             message="Test commit",
             commit_date=datetime.now(timezone.utc)
         )
