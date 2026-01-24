@@ -16,8 +16,8 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from src.extractors.github.extractor import GitHubExtractor
-from src.database.models import Repository, Branch, Commit, Contributor
-from src.database.storage import store_commit
+from src.database.models import Repository, Branch, Commit, Contributor, RepositoryLanguage
+from src.database.storage import store_commit, store_languages
 
 
 def get_or_create_repository(extractor: GitHubExtractor, repo_id: str, session: Session) -> Repository:
@@ -413,3 +413,168 @@ class TestGitHubExtractionDataIntegrity:
             "Repository.created_at should be timezone-aware"
         assert stored_commit.commit_date.tzinfo is not None, \
             "Commit.commit_date should be timezone-aware"
+
+
+class TestGitHubLanguageDetection:
+    """GitHub language detection E2E tests."""
+    
+    @pytest.mark.integration
+    @pytest.mark.live_api
+    def test_extract_languages_from_repo(
+        self,
+        github_config,
+        test_session: Session
+    ):
+        """
+        CONTRACT: Language detection extracts and stores language statistics.
+        
+        Verify:
+        - Languages extracted from GitHub API
+        - Byte counts and percentages calculated correctly
+        - Data stored in repository_languages table
+        - Percentages sum to approximately 100%
+        """
+        # Setup
+        extractor = GitHubExtractor(config=github_config)
+        # Using Spoon-Knife as it has HTML and CSS files
+        repo_id = "octocat/Spoon-Knife"
+        
+        # Ensure repository exists
+        repo = get_or_create_repository(extractor, repo_id, test_session)
+        
+        # Act: Extract languages
+        languages = extractor.get_languages(repo_id)
+        
+        # Assert: Languages extracted
+        assert len(languages) > 0, f"No languages detected for {repo_id}"
+        
+        # Assert: Data structure is correct
+        for lang in languages:
+            assert lang.language is not None, "Language name should be present"
+            assert lang.byte_count > 0, "Byte count should be positive"
+            assert lang.percentage is not None, "Percentage should be calculated"
+            assert 0 <= lang.percentage <= 100, "Percentage should be between 0-100"
+        
+        # Assert: Percentages sum to approximately 100%
+        total_percentage = sum(lang.percentage for lang in languages)
+        assert 99.0 <= total_percentage <= 101.0, \
+            f"Total percentage should be ~100%, got {total_percentage}"
+        
+        # Assert: Languages sorted by byte count (descending)
+        byte_counts = [lang.byte_count for lang in languages]
+        assert byte_counts == sorted(byte_counts, reverse=True), \
+            "Languages should be sorted by byte count (descending)"
+        
+        # Act: Store languages in database
+        store_languages(test_session, repo.repo_id, languages)
+        test_session.commit()
+        
+        # Assert: Languages stored correctly
+        stored_languages = test_session.query(RepositoryLanguage).filter_by(
+            repo_id=repo.repo_id
+        ).all()
+        
+        assert len(stored_languages) == len(languages), \
+            f"Expected {len(languages)} languages stored, got {len(stored_languages)}"
+        
+        # Assert: Data integrity
+        for stored_lang in stored_languages:
+            assert stored_lang.language is not None
+            assert stored_lang.byte_count > 0
+            assert stored_lang.percentage is not None
+            assert stored_lang.analyzed_at is not None
+            assert stored_lang.analyzed_at.tzinfo is not None, \
+                "analyzed_at should be timezone-aware"
+    
+    @pytest.mark.integration
+    @pytest.mark.live_api
+    def test_language_detection_no_languages(
+        self,
+        github_config,
+        test_session: Session
+    ):
+        """
+        CONTRACT: Repositories with no detectable languages return empty list.
+        
+        This is valid for repos that only contain non-code files
+        (documentation, configuration, etc.).
+        
+        Note: octocat/Hello-World is a test repo with no code files.
+        """
+        # Setup
+        extractor = GitHubExtractor(config=github_config)
+        
+        # Using Hello-World which has no code files
+        repo_id = "octocat/Hello-World"
+        
+        # Act
+        languages = extractor.get_languages(repo_id)
+        
+        # Assert: Empty list is valid for repos with no code
+        assert isinstance(languages, list)
+        # Hello-World should have no languages
+        assert len(languages) == 0, \
+            f"Expected no languages for {repo_id}, got {languages}"
+    
+    @pytest.mark.integration
+    def test_language_storage_time_series(
+        self,
+        github_config,
+        test_session: Session
+    ):
+        """
+        CONTRACT: Language data can be stored multiple times for time-series tracking.
+        
+        Verify:
+        - Multiple language snapshots can be stored
+        - analyzed_at timestamps distinguish snapshots
+        - TimescaleDB hypertable accepts data
+        """
+        from datetime import timedelta, UTC
+        
+        # Create test repository
+        repo = Repository(
+            repo_id="test/language-repo",
+            name="Language Test Repo",
+            url="https://github.com/test/language-repo"
+        )
+        test_session.add(repo)
+        test_session.commit()
+        
+        # Store first snapshot
+        from src.extractors.base import LanguageData
+        
+        languages_v1 = [
+            LanguageData(language="Python", byte_count=10000, percentage=100.0),
+        ]
+        now = datetime.now(UTC)
+        store_languages(test_session, repo.repo_id, languages_v1, analyzed_at=now)
+        test_session.commit()
+        
+        # Store second snapshot (1 hour later)
+        languages_v2 = [
+            LanguageData(language="Python", byte_count=8000, percentage=80.0),
+            LanguageData(language="JavaScript", byte_count=2000, percentage=20.0),
+        ]
+        later = now + timedelta(hours=1)
+        store_languages(test_session, repo.repo_id, languages_v2, analyzed_at=later)
+        test_session.commit()
+        
+        # Assert: Both snapshots stored
+        all_snapshots = test_session.query(RepositoryLanguage).filter_by(
+            repo_id=repo.repo_id
+        ).order_by(RepositoryLanguage.analyzed_at).all()
+        
+        assert len(all_snapshots) == 3, \
+            f"Expected 3 language records (1 + 2), got {len(all_snapshots)}"
+        
+        # Assert: First snapshot
+        first_snapshot = [s for s in all_snapshots if s.analyzed_at == now]
+        assert len(first_snapshot) == 1
+        assert first_snapshot[0].language == "Python"
+        
+        # Assert: Second snapshot
+        second_snapshot = [s for s in all_snapshots if s.analyzed_at == later]
+        assert len(second_snapshot) == 2
+        lang_names = {s.language for s in second_snapshot}
+        assert lang_names == {"Python", "JavaScript"}
