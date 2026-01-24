@@ -107,9 +107,18 @@ def integration_test_engine(test_database_url):
     
     # Cleanup: Drop all tables
     logger.info("Cleaning up test database...")
-    Base.metadata.drop_all(engine)
-    engine.dispose()
-    logger.info("✓ Test database cleanup complete")
+    try:
+        # Drop entire schema to avoid FK dependency errors during teardown
+        with engine.begin() as conn:
+            conn.execute(text("DROP SCHEMA public CASCADE;"))
+            conn.execute(text("CREATE SCHEMA public;"))
+        logger.info("✓ Dropped and recreated public schema")
+    except Exception as e:
+        logger.warning(f"Schema drop failed, falling back to metadata drop: {e}")
+        Base.metadata.drop_all(engine)
+    finally:
+        engine.dispose()
+        logger.info("✓ Test database cleanup complete")
 
 
 @pytest.fixture

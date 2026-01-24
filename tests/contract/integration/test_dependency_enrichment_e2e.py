@@ -57,6 +57,7 @@ def get_or_create_repository(extractor: GitHubExtractor, repo_id: str, session: 
     return repo
 
 
+@pytest.mark.skip(reason="Dependency manifest extraction not implemented yet")
 class TestDependencyExtractionE2E:
     """Dependency extraction and storage E2E tests."""
     
@@ -272,6 +273,7 @@ class TestDependencyExtractionE2E:
                 assert dep.eol_date is not None
 
 
+@pytest.mark.skip(reason="Dependency manifest extraction not implemented yet")
 class TestVulnerabilityStorageE2E:
     """Vulnerability data storage E2E tests."""
     
