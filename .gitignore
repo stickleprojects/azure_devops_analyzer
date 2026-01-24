@@ -1,6 +1,7 @@
 /.venv-test
 /.pytest_cache
 .env
+.env.resolved
 __pycache__
 venv
 
