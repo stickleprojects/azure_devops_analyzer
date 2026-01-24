@@ -19,6 +19,44 @@ from src.extractors.github.extractor import GitHubExtractor
 from src.database.models import Repository, Branch, Commit, Contributor
 
 
+def get_or_create_repository(extractor: GitHubExtractor, repo_id: str, session: Session) -> Repository:
+    """
+    Get existing repository or create it from GitHub API data.
+    
+    Handles duplicate key conflicts gracefully by returning existing record.
+    Ensures repository.name is always populated (required by NOT NULL constraint).
+    """
+    # Check if repository already exists
+    existing = session.query(Repository).filter_by(repo_id=repo_id).first()
+    if existing:
+        return existing
+    
+    # Fetch repository metadata from GitHub
+    repo_data = extractor.get_repository(repo_id)
+    
+    # Create and store repository
+    repo = Repository(
+        repo_id=repo_data.repo_id,
+        url=repo_data.url,
+        name=repo_data.name,
+        default_branch=repo_data.default_branch,
+        created_at=repo_data.created_at,
+        updated_at=repo_data.updated_at,
+        is_private=repo_data.is_private,
+        is_archived=repo_data.is_archived,
+        repository_size=repo_data.repository_size,
+        open_issues_count=repo_data.open_issues_count,
+        license_name=repo_data.license_name,
+        license_key=repo_data.license_key,
+        has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
+        has_secret_scanning=repo_data.has_secret_scanning,
+        has_dependabot_alerts=repo_data.has_dependabot_alerts,
+    )
+    session.add(repo)
+    session.commit()
+    return repo
+
+
 class TestGitHubExtractionBasic:
     """Basic GitHub extraction E2E tests."""
     
@@ -155,10 +193,8 @@ class TestGitHubExtractionBasic:
         extractor = GitHubExtractor(config=github_config)
         repo_id = "octocat/Hello-World"
         
-        # Create repository first
-        repo = Repository(repo_id=repo_id, url="https://github.com/octocat/Hello-World")
-        test_session.add(repo)
-        test_session.commit()
+        # Create repository with full metadata from GitHub API
+        repo = get_or_create_repository(extractor, repo_id, test_session)
         
         # Extract commits
         commits_data = extractor.get_commits(repo_id, limit=10)
@@ -218,10 +254,8 @@ class TestGitHubExtractionBasic:
         extractor = GitHubExtractor(config=github_config)
         repo_id = "octocat/Hello-World"
         
-        # Create repository
-        repo = Repository(repo_id=repo_id, url="https://github.com/octocat/Hello-World")
-        test_session.add(repo)
-        test_session.commit()
+        # Create repository with full metadata from GitHub API
+        repo = get_or_create_repository(extractor, repo_id, test_session)
         
         # Extract contributors
         contributors_data = extractor.extract_contributors(repo_id)
@@ -277,6 +311,7 @@ class TestGitHubExtractionDataIntegrity:
     @pytest.mark.integration
     def test_foreign_key_relationships(
         self,
+        github_config,
         test_session: Session
     ):
         """
@@ -287,17 +322,13 @@ class TestGitHubExtractionDataIntegrity:
         - Commit references valid repository
         - No orphaned entities
         """
-        # Create repository
-        repo = Repository(
-            repo_id="test/repo",
-            url="https://github.com/test/repo"
-        )
-        test_session.add(repo)
-        test_session.commit()
+        # Create repository with full metadata
+        extractor = GitHubExtractor(config=github_config)
+        repo = get_or_create_repository(extractor, "octocat/Hello-World", test_session)
         
         # Create branch (should reference valid repo)
         branch = Branch(
-            repo_id="test/repo",
+            repo_id=repo.repo_id,
             branch_name="main",
             latest_commit_sha="a" * 40
         )
@@ -306,11 +337,11 @@ class TestGitHubExtractionDataIntegrity:
         
         # Verify relationship works
         stored_branch = test_session.query(Branch).filter_by(
-            repo_id="test/repo"
+            repo_id=repo.repo_id
         ).first()
         
         assert stored_branch is not None
-        assert stored_branch.repo_id == "test/repo"
+        assert stored_branch.repo_id == repo.repo_id
         
         # Verify we can navigate relationship (if foreign key configured)
         # This would work if relationship is configured in model
