@@ -501,40 +501,54 @@ You control the strictness by how you phrase your completion check request.
 
 ## Agent Workflow
 
-### Step-by-Step Process
+### Step-by-Step Process (User-Prompted)
+
+**Important:** This workflow requires explicit user interaction at each step. The agent does not run continuously or automatically monitor state.
 
 ```
-1. DETECT greeting/continuation phrase OR task completion signal
+1. USER PROMPT: Greeting or continuation phrase (e.g., "good morning", "let's continue")
    ↓
-2. IF greeting:
-     RESPOND with warm greeting
-     READ progress logs (PROGRESS.md, docs/PROGRESS.md)
-     CHECK git status
-     ANALYZE last session
-     PRESENT backlog or continuation options
-   
-   IF task completion signal:
-     VERIFY completion criteria
-     MARK task complete
-     UPDATE documentation
-     NOTIFY user
-     SUGGEST next task
+2. AGENT RESPONDS:
+   - Warm greeting
+   - READ progress logs (PROGRESS.md, docs/PROGRESS.md)
+   - CHECK git status
+   - ANALYZE last session
+   - PRESENT backlog or continuation options
    ↓
-3. WAIT for user selection or continue monitoring
+3. WAIT for user to select next action
    ↓
-4. IF user selects task:
-     CREATE todo item with manage_todo_list
-     BEGIN monitoring for completion
-     PROVIDE context restoration
-     GUIDE implementation
+4. USER PROMPT: Selects a task from backlog or requests specific work
    ↓
-5. CONTINUOUS LOOP (while task active):
-     MONITOR signals (tests, git, errors)
-     IF completion detected:
-       → Go to step 2 (task completion signal)
-     ELSE:
-       → Continue monitoring
+5. AGENT RESPONDS:
+   - CREATE todo item with manage_todo_list
+   - PROVIDE context restoration (files, docs, prerequisites)
+   - GUIDE implementation
+   ↓
+6. USER WORKS on implementation (Copilot assists as requested)
+   ↓
+7. USER PROMPT: Requests completion check (e.g., "is this task complete?")
+   ↓
+8. AGENT RESPONDS:
+   - CHECK test status (run tests if needed)
+   - CHECK git status (committed/staged?)
+   - CHECK todo list state
+   - EVALUATE completion criteria
+   ↓
+9. IF criteria met:
+     SUGGEST marking complete
+     WAIT for user approval
+     IF approved:
+       - MARK task complete in todo list
+       - UPDATE documentation (PROGRESS.md, requirements-status.md)
+       - SUGGEST next task from backlog
+     
+   IF criteria NOT met:
+     EXPLAIN what's missing
+     WAIT for user to address issues
+     (Return to step 7 when user requests another check)
 ```
+
+**Key Principle:** Each step requires explicit user action. The agent never automatically monitors, detects completion, or updates files without user approval.
 
 ## Integration with Other Agents
 
