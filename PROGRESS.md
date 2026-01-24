@@ -1,5 +1,52 @@
 # Development Progress Log
 
+## Session: 2026-01-24 (Continued) - Dependency Enrichment Workflow Integration
+
+### Summary
+Successfully integrated dependency enrichment into the GitHub extraction workflow. Dependencies are now automatically enriched with latest version information, EOL dates, and vulnerability data during extraction.
+
+### Problems Addressed
+
+1. **Enrichment Not Wired** - Enrichment infrastructure was built but not connected to extraction
+2. **No Real-World Testing** - Needed workflow integration tests to verify end-to-end behavior
+3. **Fallback Handling** - Need graceful degradation if enrichment APIs fail
+
+### Solutions Implemented
+
+#### 1. Workflow Integration (`src/workflows/github_analysis.py`)
+- Updated `_process_dependencies()` method to enable enrichment
+- Automatic use of `store_enriched_dependencies()` when enrichment succeeds
+- Graceful fallback to unenriched storage if enrichment fails
+- Enrichment error logging for debugging
+
+#### 2. Workflow Integration Tests (`tests/contract/test_workflow_enrichment_integration.py`)
+- ✅ Test enriched dependencies are used and stored correctly
+- ✅ Test fallback behavior when enrichment fails
+- ✅ Test that DependencyAnalyzer is initialized with `enrich=True`
+
+### Test Results
+✅ **3/3 workflow integration tests passing**
+
+### Files Modified/Created
+- `src/workflows/github_analysis.py` - Updated `_process_dependencies()` method
+- `tests/contract/test_workflow_enrichment_integration.py` - 3 integration tests
+
+### Key Features
+
+1. **Automatic Enrichment** - No configuration needed, happens during normal extraction
+2. **Graceful Degradation** - If OSV.dev or endoflife.date is down, extraction continues
+3. **Comprehensive Logging** - Enrichment status and errors logged for visibility
+4. **Performance** - Concurrent enrichment doesn't block extraction workflow
+
+### Workflow Behavior
+
+**Before:** Extract → Store basic dependency info
+**After:** Extract → Enrich (latest_version, eol_date, is_eol, has_vulnerabilities) → Store enriched data
+
+If enrichment fails → fallback to unenriched storage automatically
+
+---
+
 ## Session: 2026-01-24 - Dependency Analysis: OSV.dev & endoflife.date Integration
 
 ### Summary
