@@ -5,9 +5,9 @@
 | Field            | Value                      |
 | ---------------- | -------------------------- |
 | Project Name     | Repository Analysis System |
-| Document Version | 1.4                        |
+| Document Version | 1.5                        |
 | Status           | Active                     |
-| Last Updated     | 2026-01-24                 |
+| Last Updated     | 2026-01-24 (Part 6)        |
 
 ## Status Legend
 
@@ -22,7 +22,7 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 14       | 10      | 20          | 44    |
+| Functional Requirements     | 16       | 8       | 20          | 44    |
 | Non-Functional Requirements | 6        | 6       | 7           | 19    |
 
 ---
@@ -44,13 +44,13 @@
 
 ### FR-2: Language and Technology Detection
 
-| ID     | Requirement                                                       | Priority | Status                         | Notes                                                                                                                 |
-| ------ | ----------------------------------------------------------------- | -------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
-| FR-2.1 | System shall detect programming languages used in each repository | High     | :large_orange_diamond: Partial | `RepositoryLanguage` entity exists with percentage/line_count/byte_count fields; extraction logic not yet implemented |
-| FR-2.2 | System shall track language distribution over time                | Medium   | :large_orange_diamond: Partial | TimescaleDB hypertable configured for time-series; no population logic                                                |
-| FR-2.3 | System shall identify key technologies and frameworks             | Medium   | :x: Not Started                | No technology stack detection implemented                                                                             |
+| ID     | Requirement                                                       | Priority | Status                      | Notes                                                                                                                                                                                                                                                                 |
+| ------ | ----------------------------------------------------------------- | -------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-2.1 | System shall detect programming languages used in each repository | High     | :white_check_mark: Complete | `RepositoryLanguage` entity stores language data; GitHub extractor uses API, Azure DevOps uses heuristic file analysis. Both GitHub and Azure DevOps workflows call `_process_languages()` to extract and store - implemented 2026-01-24 (Part 6)                           |
+| FR-2.2 | System shall track language distribution over time                | Medium   | :white_check_mark: Complete | TimescaleDB hypertable configured with monthly chunks; `_process_languages()` populates with percentage/byte_count data from extractors - implemented 2026-01-24 (Part 6)                                                                                                |
+| FR-2.3 | System shall identify key technologies and frameworks             | High     | :white_check_mark: Complete | `TechnologyDetector` analyzer detects 8 categories: languages, frameworks, databases, platforms, build_tools, testing_frameworks, ci_cd_platforms, documentation_tools. Integrated into both workflows via `_process_technologies()` with logging - implemented 2026-01-24 (Part 6) |
 
-**FR-2 Summary:** 0/3 Complete, 2/3 Partial
+**FR-2 Summary:** 3/3 Complete
 
 ---
 

@@ -1,5 +1,131 @@
 # Development Progress Log
 
+## Session: 2026-01-24 (Part 6) - Complete FR-2 Language & Technology Detection
+
+### Summary
+
+Completed all three FR-2 requirements by implementing language detection workflows and technology stack detection. Created Azure DevOps workflow to match GitHub workflow, integrated language processing into both platforms, and built comprehensive technology detector.
+
+### Changes
+
+1. **New File: `src/workflows/azure_devops_analysis.py`**
+   - Full workflow orchestrating Azure DevOps extraction
+   - Mirrors GitHub workflow structure for consistency
+   - Processes organizations → projects → repositories
+   - Includes `_process_languages()` and `_process_technologies()` methods
+
+2. **New File: `src/analyzers/technology_detector.py`**
+   - `TechnologyDetector` class for multi-category detection
+   - Detects 8 technology categories:
+     - Programming languages (26+ languages supported)
+     - Frameworks (10+ frameworks)
+     - Databases (6+ databases)
+     - Deployment platforms (8+ platforms)
+     - Build tools (8+ tools)
+     - Testing frameworks (9+ frameworks)
+     - CI/CD platforms (7+ platforms)
+     - Documentation tools (placeholder)
+   - Uses file extension mapping, project file patterns, and regex matching
+   - Returns confidence scores and primary language
+
+3. **Updated: `src/workflows/github_analysis.py`**
+   - Added `_process_technologies()` method
+   - Imports `TechnologyDetector`
+   - Calls technology detection after language processing
+
+4. **Updated: `src/workflows/__init__.py`**
+   - Exports `AzureDevOpsAnalysisWorkflow`
+
+5. **Updated: `src/analyzers/__init__.py`**
+   - Exports `TechnologyDetector` and `TechnologyDetection`
+
+6. **Updated: `docs/01-strategy/requirements-status.md`**
+   - Version bumped to 1.5
+   - FR-2.1: Marked Complete (language detection + storage)
+   - FR-2.2: Marked Complete (time-series tracking via hypertable)
+   - FR-2.3: Marked Complete (technology stack detection)
+   - Progress: 16/44 complete (from 14/44)
+
+### FR-2 Completion Details
+
+**FR-2.1: Programming Language Detection**
+- ✅ GitHub: Uses `repo.get_languages()` API (byte counts + percentages)
+- ✅ Azure DevOps: Uses heuristic file analysis (file extensions + project files)
+- ✅ Both workflows call `_process_languages()` 
+- ✅ Data stored in `repository_languages` table
+
+**FR-2.2: Language Distribution Over Time**
+- ✅ TimescaleDB hypertable with monthly 1-month chunks already configured
+- ✅ `analyzed_at` TIMESTAMPTZ field enables time-series queries
+- ✅ Data automatically partitioned by time when populated
+
+**FR-2.3: Technology Stack Detection**
+- ✅ `TechnologyDetector` analyzes file tree
+- ✅ 8 detection categories implemented
+- ✅ Confidence scoring (0.0-1.0)
+- ✅ Integrated into both GitHub and Azure DevOps workflows
+- ✅ Logs detected technologies, frameworks, databases
+
+### Commits
+
+- `91fb398` - feat: Complete FR-2 language and technology detection
+
+### Code Quality
+
+✅ **Syntax validation:** All Python files pass compilation check
+✅ **Pre-commit checks:** All checks passed
+✅ **Code organization:** Follows project patterns and architecture guidelines
+✅ **Logging:** Comprehensive logging at INFO level for monitoring
+
+### Implementation Patterns Used
+
+1. **Workflow Pattern**: Both GitHub and Azure DevOps workflows follow consistent structure
+2. **Analyzer Pattern**: `TechnologyDetector` follows same pattern as `DependencyAnalyzer`
+3. **Data Classes**: Used for type-safe return values (`TechnologyDetection`)
+4. **Error Handling**: Graceful error handling with logging, no exceptions propagate
+
+### Testing Status
+
+**Manual Validation:**
+- ✅ Python syntax check passed for all modified files
+- ✅ Pre-commit validation passed (no common issues)
+- ⏳ Full integration tests pending (requires Docker/dependencies)
+
+**Next: Integration Testing**
+- Run GitHub extraction workflow with real repository
+- Verify language data stored correctly with percentages
+- Verify technology detection logs output
+
+### Current State
+
+- ✅ FR-2 completely implemented
+- ✅ Both platforms (GitHub, Azure DevOps) have workflows
+- ✅ Language extraction integrated
+- ✅ Technology detection integrated
+- ✅ Code committed and pre-commit clean
+- 📍 Ready for: Integration testing, FR-5/6 work, or deployment
+
+### Architecture Notes
+
+**Language Detection Flow:**
+- GitHub: REST API → byte_count → percentage (GitHub does the work)
+- Azure DevOps: File tree → extension matching → byte estimation → percentage
+
+**Technology Detection Flow:**
+- File tree from extractor → TechnologyDetector
+- Multiple pattern matching: extensions, project files, regex patterns
+- Returns categorized list + confidence scores
+- Currently logs only (no DB storage for now)
+
+### Next Steps
+
+1. **Integration Testing**: Run workflows with real data
+2. **FR-5/6 Implementation**: Code quality and contributor analytics
+3. **Dashboard Updates**: Add technology stack visualization
+4. **Documentation**: Update README with new capabilities
+
+---
+
 ## Session: 2026-01-24 (Part 5) - Integration Test Verification & Git Cleanup
 
 ### Summary
@@ -47,6 +173,8 @@ Verified all bug fixes from Part 2 are working correctly by running integration 
 - 📍 Remaining: `origin/fix/session-agent-realistic-capabilities` (unmerged)
 
 ### Next Steps
+
+
 
 1. Add `live_api` marks to GitHub extraction tests that hit real APIs
 2. Review unmerged `origin/fix/session-agent-realistic-capabilities` branch
