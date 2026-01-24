@@ -28,6 +28,9 @@ COMPOSE_FILE="docker-compose.test.yml"
 RESULTS_DIR="test-results"
 KEEP_DB=false
 RUN_LIVE_API=false
+ENV_FILE=".env"
+RESOLVED_ENV_FILE=".env.resolved"
+RESOLVE_SCRIPT="./scripts/resolve_env.sh"
 
 # Colors for output
 RED='\033[0;31m'
@@ -101,7 +104,7 @@ EOF
 cleanup() {
     if [ "$KEEP_DB" = false ]; then
         log_info "Cleaning up test environment..."
-        docker compose -f "$COMPOSE_FILE" down -v > /dev/null 2>&1 || true
+        docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" down -v > /dev/null 2>&1 || true
         log_success "Cleanup complete"
     else
         log_warning "Keeping test database (--keep-db flag set)"
@@ -146,6 +149,15 @@ done
 log_info "Starting integration test run..."
 echo
 
+# Always regenerate .env.resolved to ensure latest values are used
+if [ -x "$RESOLVE_SCRIPT" ]; then
+    log_info "Resolving environment variables from $ENV_FILE..."
+    bash "$RESOLVE_SCRIPT"
+    log_success "Environment resolved -> $RESOLVED_ENV_FILE"
+else
+    log_warning "resolve_env.sh not found; using existing $RESOLVED_ENV_FILE if present"
+fi
+
 # Check Docker is running
 if ! docker info > /dev/null 2>&1; then
     log_error "Docker is not running"
@@ -164,9 +176,9 @@ log_success "Docker Compose V2 available"
 
 # Load GitHub token from .env.resolved if not set
 if [ -z "$GITHUB_TOKEN" ]; then
-    if [ -f ".env.resolved" ]; then
-        log_info "Loading GITHUB_TOKEN from .env.resolved..."
-        export GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" .env.resolved | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+    if [ -f "$RESOLVED_ENV_FILE" ]; then
+        log_info "Loading GITHUB_TOKEN from $RESOLVED_ENV_FILE..."
+        export GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$RESOLVED_ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
     fi
 fi
 
@@ -194,7 +206,7 @@ if [ "$RUN_LIVE_API" = true ]; then
     
     # Modify command to run live_api tests
     TEST_EXIT_CODE=0
-    docker compose -f "$COMPOSE_FILE" run --rm test-runner \
+    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
         sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
                pytest tests/contract/integration/ -v \
                -m 'live_api' \
@@ -207,7 +219,7 @@ else
     
     # Run tests with exit code capture (only watch test-runner, not migrations)
     TEST_EXIT_CODE=0
-    docker compose -f "$COMPOSE_FILE" run --rm test-runner || TEST_EXIT_CODE=$?
+    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner || TEST_EXIT_CODE=$?
 fi
 
 echo
