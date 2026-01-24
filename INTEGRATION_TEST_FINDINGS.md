@@ -1,8 +1,10 @@
 # Integration Test Findings - 2026-01-24
 
+> **✅ RESOLVED** — All 3 bugs fixed in commit `0a1bf4a` (2026-01-24). See PROGRESS.md Part 2 for details.
+
 ## Summary
 
-Integration tests successfully executed and revealed **3 critical bugs** in the codebase:
+Integration tests successfully executed and revealed **3 critical bugs** in the codebase (all now fixed):
 
 1. **GitHubExtractor missing repository name extraction** (HIGH severity)
 2. **SQLAlchemy models losing timezone information** (MEDIUM severity)
@@ -214,9 +216,9 @@ Did you mean: 'extract_full_repository'?
 
 ## Next Steps
 
-1. Fix Bug #1 (repository name extraction) first - blocks all other tests
-2. Fix Bug #2 (timezone handling) - critical for data integrity
-3. Fix Bug #3 (test code) - enables full test suite
+1. ~~Fix Bug #1 (repository name extraction)~~ ✅ Fixed
+2. ~~Fix Bug #2 (timezone handling)~~ ✅ Fixed
+3. ~~Fix Bug #3 (test code)~~ ✅ Fixed
 4. Re-run all integration tests to verify fixes
 5. Consider running live_api tests if safe
 6. Document any additional findings

@@ -1,5 +1,31 @@
 # Development Progress Log
 
+## Session: 2026-01-24 (Part 4) - Progress & Documentation Cleanup
+
+### Summary
+
+Updated stale documentation to reflect work already completed. Fixed CLAUDE.md to ensure AI agents read `.ai/instructions.md` before responding to the first user message (session continuity triggers were not firing due to bootstrapping order).
+
+### Changes
+
+1. **CLAUDE.md** - Added explicit instruction to read `.ai/instructions.md` on first message before responding
+2. **PROGRESS.md** - Updated stale "Next Steps" sections (bugs were already fixed in commit `0a1bf4a`)
+3. **requirements-status.md** - Updated OSV.dev and endoflife.date integration status, roadmap items, test coverage status
+
+### Current State
+
+- All 3 critical bugs from Part 2 are **fixed** (commit `0a1bf4a`)
+- Integration test infrastructure is working
+- AI agent instructions consolidated and bootstrapping fixed
+
+### Next Steps
+
+1. Re-run integration tests to confirm all pass after bug fixes
+2. Add `live_api` marks to GitHub extraction tests that hit real APIs
+3. Consider merging `feature/integration-tests` branch to `main`
+
+---
+
 ## Session: 2026-01-24 (Part 3) - Script Fixes & AI Instructions Consolidation
 
 ### Summary
@@ -46,7 +72,7 @@ Both `CLAUDE.md` and `.github/copilot-instructions.md` now reference this shared
 
 ### Next Steps
 
-1. Fix the 3 production bugs discovered in Part 2 (repository name, timezone, method name)
+1. ~~Fix the 3 production bugs discovered in Part 2~~ ✅ Fixed in commit `0a1bf4a`
 2. Re-run integration tests after fixes
 3. Add `live_api` marks to existing GitHub extraction tests that hit real APIs
 
@@ -65,7 +91,7 @@ Executed integration tests for the first time and discovered **3 critical produc
 **Tests Run**: 8 tests (excluding 3 live_api tests)  
 **Results**: 1 PASSED, 7 FAILED (failures due to real bugs, not test issues)
 
-### Bugs Discovered (Deferred for Later)
+### Bugs Discovered (✅ All Fixed in commit `0a1bf4a`)
 
 #### Bug #1: GitHubExtractor Missing Repository Name Extraction (HIGH SEVERITY)
 
@@ -98,11 +124,11 @@ Executed integration tests for the first time and discovered **3 critical produc
 3. **Critical bugs identified early** - Repository name NULL would cause production failures
 4. **Environment variable handling** - Fixed password mismatch (container vs .env.resolved)
 
-### Next Steps (Deferred)
+### Next Steps (✅ Resolved)
 
-1. Fix Bug #1: Add repository name extraction to GitHubExtractor
-2. Fix Bug #2: Add `DateTime(timezone=True)` to all model datetime fields
-3. Fix Bug #3: Update test method names to `extract_full_repository()`
+1. ~~Fix Bug #1: Add repository name extraction to GitHubExtractor~~ ✅
+2. ~~Fix Bug #2: Add `DateTime(timezone=True)` to all model datetime fields~~ ✅
+3. ~~Fix Bug #3: Update test method names to `extract_full_repository()`~~ ✅
 4. Re-run integration tests to verify fixes
 5. Execute live_api tests once safe tests pass
 
