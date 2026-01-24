@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from src.extractors.github.extractor import GitHubExtractor
 from src.database.models import Repository, Branch, Commit, Contributor
+from src.database.storage import store_commit
 
 
 def get_or_create_repository(extractor: GitHubExtractor, repo_id: str, session: Session) -> Repository:
@@ -61,6 +62,7 @@ class TestGitHubExtractionBasic:
     """Basic GitHub extraction E2E tests."""
     
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_extract_small_repo_stores_metadata(
         self,
         github_config,
@@ -117,6 +119,7 @@ class TestGitHubExtractionBasic:
         assert stored_repo.name == "Hello-World"
 
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_private_repo_flags_stored(
         self,
         github_config,
@@ -143,6 +146,7 @@ class TestGitHubExtractionBasic:
         assert repo.has_vulnerability_alerts is not None
     
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_extract_tracks_branches(
         self,
         github_config,
@@ -201,6 +205,7 @@ class TestGitHubExtractionBasic:
                 f"SHA contains invalid characters: {branch.latest_commit_sha}"
     
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_extract_tracks_commits(
         self,
         github_config,
@@ -225,24 +230,9 @@ class TestGitHubExtractionBasic:
         # Extract commits
         commits_data = extractor.get_commits(repo_id, limit=10)
         
-        # Store commits
+        # Store commits using the storage layer (handles email->contributor mapping)
         for commit_data in commits_data:
-            commit = Commit(
-                commit_sha=commit_data.sha,
-                repo_id=repo_id,
-                message=commit_data.message,
-                author_email=commit_data.author_email,
-                author_name=commit_data.author_name,
-                committer_email=commit_data.committer_email,
-                committer_name=commit_data.committer_name,
-                commit_date=commit_data.commit_date,
-                files_changed=commit_data.files_changed,
-                lines_added=commit_data.lines_added,
-                lines_removed=commit_data.lines_removed,
-                is_verified=commit_data.is_verified,
-                verification_reason=commit_data.verification_reason,
-            )
-            test_session.add(commit)
+            store_commit(test_session, repo_id, "main", commit_data)
         test_session.commit()
         
         # Assert: Commits stored correctly
@@ -254,8 +244,8 @@ class TestGitHubExtractionBasic:
             # Verify basic structure
             assert len(commit.commit_sha) == 40, f"Invalid SHA: {commit.commit_sha}"
             assert commit.message is not None
-            assert commit.author_email is not None
-            assert "@" in commit.author_email or commit.author_email == "unknown@github.com"
+            assert commit.author is not None, f"Commit {commit.commit_sha} has no author"
+            assert "@" in commit.author.email or commit.author.email == "unknown@github.com"
             
             # Verify timestamp is UTC-aware
             assert commit.commit_date is not None
@@ -263,6 +253,7 @@ class TestGitHubExtractionBasic:
                 f"Commit {commit.commit_sha} has naive (non-UTC) datetime"
     
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_extract_tracks_contributors(
         self,
         github_config,
@@ -336,6 +327,7 @@ class TestGitHubExtractionDataIntegrity:
             test_session.commit()
     
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_foreign_key_relationships(
         self,
         github_config,
