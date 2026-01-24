@@ -1,5 +1,148 @@
 # Development Progress Log
 
+## Session: 2026-01-24 (Part 8) - Cross-Platform Requirements Update
+
+### Summary
+
+Updated requirements documentation to mandate README extraction and repository metadata extraction for both GitHub and Azure DevOps platforms. Previously, these features were only implemented for GitHub and considered "not needed" for Azure DevOps. They are now required for platform parity.
+
+### Changes
+
+1. **Updated: `docs/01-strategy/requirements-status.md`** (v1.6 → v1.7)
+   - **Added FR-1.5:** Repository metadata extraction (team_name/service_name) - Priority: High, Status: Partial
+     - GitHub: ✅ Implemented via `.github/metadata.json`
+     - Azure DevOps: ❌ Required (needs `.azure/metadata.json` or equivalent)
+   - **Updated FR-8.2:** README extraction - Changed priority from Medium to High
+     - GitHub: ✅ Implemented via `get_readme_files()`
+     - Azure DevOps: ❌ Required (needs implementation)
+   - Updated "Platform-Specific Features" table to show README and metadata as ⚠️ Required for Azure DevOps
+   - Updated progress: 16 complete, 9 partial (was 8 partial), 20 not started, total 45 FRs (was 44)
+   - Added revision history v1.7
+
+2. **Updated: `docs/02-architecture/platform-parity.md`**
+   - Restructured "Platform-Specific Features" section into:
+     - "Features Required for Both Platforms" (README, metadata)
+     - "Platform-Unique Features" (GitHub security features only)
+   - Added implementation plans for Azure DevOps:
+     - README extraction: 2-4 hours estimated
+     - Metadata extraction: 2-3 hours estimated
+   - Updated conclusion to highlight outstanding cross-platform requirements
+   - Removed misleading "Azure DevOps Only" section (was empty)
+
+### Requirements Impact
+
+**New Cross-Platform Requirements:**
+
+- FR-1.5: Repository metadata extraction must work on both platforms
+- FR-8.2: README extraction must work on both platforms (priority increased to High)
+
+**Implementation Needed for Azure DevOps:**
+
+1. `get_readme_files()` method in `AzureDevOpsExtractor`
+2. `get_repository_metadata()` method in `AzureDevOpsExtractor`
+3. `_process_readme_files()` in `AzureDevOpsAnalysisWorkflow`
+4. Metadata processing in `_process_repository()` workflow
+
+**Estimated Total Effort:** 4-7 hours
+
+### Rationale
+
+README files and repository metadata are critical for:
+
+- Team/service mapping and organizational structure
+- Repository discovery and search
+- Documentation indexing
+- Cross-platform data consistency
+
+These features should not be platform-specific since both platforms support file access APIs.
+
+### Next Steps
+
+Once Azure DevOps implements README and metadata extraction:
+
+- Full platform parity achieved (FR-1 through FR-4 + FR-8.2)
+- Both platforms will have identical capabilities
+- Team/service dashboards can work across both platforms
+
+---
+
+## Session: 2026-01-24 (Part 7) - Platform Parity Documentation
+
+### Summary
+
+Confirmed and documented functional parity between Azure DevOps and GitHub implementations. Both platforms now have identical core extraction capabilities with comprehensive test coverage. Created detailed platform comparison documentation.
+
+### Changes
+
+1. **Updated: `docs/01-strategy/requirements-status.md`** (v1.5 → v1.6)
+   - Added comprehensive "Platform Parity Status" section
+   - Documented 12 shared core features across both platforms
+   - Listed platform-specific features (GitHub README/metadata/security)
+   - Detailed test coverage comparison: GitHub (14 tests) vs Azure DevOps (10 tests)
+   - Updated FR-1.1 notes to highlight platform parity achievement
+
+2. **New File: `docs/02-architecture/platform-parity.md`**
+   - Comprehensive platform comparison document
+   - Side-by-side extractor API comparison (10 methods)
+   - Workflow orchestration comparison with diagrams
+   - Language detection implementation differences (API vs heuristics)
+   - Shared technology detection (8 categories, 26+ languages)
+   - Dependency analysis (7 ecosystems, both platforms)
+   - Test coverage breakdown
+   - Platform-specific features documentation
+   - Database schema compatibility confirmation
+
+### Platform Parity Achievements
+
+**Identical Extractor APIs:**
+
+- ✅ `get_organizations()`, `get_projects()`, `get_repositories()`
+- ✅ `get_repository()`, `get_branches()`, `get_languages()`
+- ✅ `get_commits()`, `get_pull_requests()`
+- ✅ `get_file_tree()`, `get_file_content()`
+
+**Shared Implementations:**
+
+- ✅ Both use `TechnologyDetector` (8 categories, 26+ languages)
+- ✅ Both use `DependencyAnalyzer` (7 ecosystems)
+- ✅ Both use OSV.dev and endoflife.date enrichment
+- ✅ Both write to identical database schema
+- ✅ Both workflows follow same orchestration patterns
+
+**Test Coverage:**
+
+- ✅ GitHub: 14 integration tests
+- ✅ Azure DevOps: 10 integration tests
+- ✅ Shared: Cross-platform schema validation
+- ✅ Shared: Dependency enrichment E2E tests
+
+**Platform-Specific Features:**
+
+- GitHub only: README extraction, repository metadata, security features
+- Azure DevOps: Explicit project layer (org → project → repo)
+
+### Validation
+
+Confirmed functional parity by comparing:
+
+1. ✅ Extractor method signatures (10 methods match exactly)
+2. ✅ Workflow processing steps (identical except README/metadata)
+3. ✅ Data models (shared `src/extractors/models.py`)
+4. ✅ Storage layer (unified `src/database/storage.py`)
+5. ✅ Analyzer usage (both use same analyzers)
+6. ✅ Test coverage (both platforms fully tested)
+
+### Next Steps
+
+Platform implementation is complete for core features (FR-1 through FR-4). Ready to proceed with:
+
+- Additional functional requirements (FR-5+)
+- Dashboard development
+- Performance optimization
+- Monitoring and observability
+
+---
+
 ## Session: 2026-01-24 (Part 6) - Complete FR-2 Language & Technology Detection
 
 ### Summary
@@ -49,17 +192,20 @@ Completed all three FR-2 requirements by implementing language detection workflo
 ### FR-2 Completion Details
 
 **FR-2.1: Programming Language Detection**
+
 - ✅ GitHub: Uses `repo.get_languages()` API (byte counts + percentages)
 - ✅ Azure DevOps: Uses heuristic file analysis (file extensions + project files)
-- ✅ Both workflows call `_process_languages()` 
+- ✅ Both workflows call `_process_languages()`
 - ✅ Data stored in `repository_languages` table
 
 **FR-2.2: Language Distribution Over Time**
+
 - ✅ TimescaleDB hypertable with monthly 1-month chunks already configured
 - ✅ `analyzed_at` TIMESTAMPTZ field enables time-series queries
 - ✅ Data automatically partitioned by time when populated
 
 **FR-2.3: Technology Stack Detection**
+
 - ✅ `TechnologyDetector` analyzes file tree
 - ✅ 8 detection categories implemented
 - ✅ Confidence scoring (0.0-1.0)
@@ -87,11 +233,13 @@ Completed all three FR-2 requirements by implementing language detection workflo
 ### Testing Status
 
 **Manual Validation:**
+
 - ✅ Python syntax check passed for all modified files
 - ✅ Pre-commit validation passed (no common issues)
 - ⏳ Full integration tests pending (requires Docker/dependencies)
 
 **Next: Integration Testing**
+
 - Run GitHub extraction workflow with real repository
 - Verify language data stored correctly with percentages
 - Verify technology detection logs output
@@ -108,10 +256,12 @@ Completed all three FR-2 requirements by implementing language detection workflo
 ### Architecture Notes
 
 **Language Detection Flow:**
+
 - GitHub: REST API → byte_count → percentage (GitHub does the work)
 - Azure DevOps: File tree → extension matching → byte estimation → percentage
 
 **Technology Detection Flow:**
+
 - File tree from extractor → TechnologyDetector
 - Multiple pattern matching: extensions, project files, regex patterns
 - Returns categorized list + confidence scores
@@ -173,8 +323,6 @@ Verified all bug fixes from Part 2 are working correctly by running integration 
 - 📍 Remaining: `origin/fix/session-agent-realistic-capabilities` (unmerged)
 
 ### Next Steps
-
-
 
 1. Add `live_api` marks to GitHub extraction tests that hit real APIs
 2. Review unmerged `origin/fix/session-agent-realistic-capabilities` branch

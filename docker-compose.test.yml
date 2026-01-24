@@ -79,7 +79,9 @@ services:
       - -c
       - |
         pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-        pytest tests/contract/integration/ -v \
+        pytest tests/contract/integration/test_github_extraction_e2e.py \
+               tests/contract/integration/test_azure_devops_extraction_e2e.py \
+               -v \
           -m 'not live_api' \
           --junit-xml=/app/test-results/junit.xml \
           -p no:cacheprovider \

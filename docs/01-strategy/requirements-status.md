@@ -5,9 +5,9 @@
 | Field            | Value                      |
 | ---------------- | -------------------------- |
 | Project Name     | Repository Analysis System |
-| Document Version | 1.5                        |
+| Document Version | 1.7                        |
 | Status           | Active                     |
-| Last Updated     | 2026-01-24 (Part 6)        |
+| Last Updated     | 2026-01-24 (Part 8)        |
 
 ## Status Legend
 
@@ -18,12 +18,56 @@
 | Not Started | :x:                    | Not yet implemented                        |
 | N/A         | :black_square_button:  | Not applicable or out of scope             |
 
+## Platform Parity Status
+
+### Core Extraction Features (Both Platforms)
+
+| Feature               | GitHub      | Azure DevOps | Notes                                                      |
+| --------------------- | ----------- | ------------ | ---------------------------------------------------------- |
+| Organizations         | ✅ Complete | ✅ Complete  | Both support multi-org extraction                          |
+| Projects              | ✅ Complete | ✅ Complete  | GitHub uses owner/org, Azure DevOps uses explicit projects |
+| Repositories          | ✅ Complete | ✅ Complete  | Full metadata including size, visibility, archive status   |
+| Branches              | ✅ Complete | ✅ Complete  | Branch name, commit SHA, protection status                 |
+| Commits               | ✅ Complete | ✅ Complete  | Author, message, timestamp, parents, GPG verification      |
+| Pull Requests         | ✅ Complete | ✅ Complete  | Reviews, comments, state, merge status                     |
+| Languages             | ✅ Complete | ✅ Complete  | GitHub via API, Azure DevOps via file analysis             |
+| Technology Detection  | ✅ Complete | ✅ Complete  | Both use `TechnologyDetector` with file tree analysis      |
+| File Tree             | ✅ Complete | ✅ Complete  | Full repo file structure for analysis                      |
+| File Content          | ✅ Complete | ✅ Complete  | Read specific files for dependency/README extraction       |
+| Dependencies          | ✅ Complete | ✅ Complete  | Both support 7 ecosystems via `DependencyAnalyzer`         |
+| Dependency Enrichment | ✅ Complete | ✅ Complete  | OSV.dev and endoflife.date integration                     |
+
+### Platform-Specific Features
+
+| Feature             | GitHub         | Azure DevOps   | Notes                                                                                                                                     |
+| ------------------- | -------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| README Extraction   | ✅ Implemented | ⚠️ Required    | **Both platforms must extract README files.** GitHub: implemented. Azure DevOps: needs implementation via file content API.               |
+| Repository Metadata | ✅ Implemented | ⚠️ Required    | **Both platforms must extract metadata.** GitHub: `.github/metadata.json`. Azure DevOps: needs equivalent (e.g., `.azure/metadata.json`). |
+| Security Features   | ✅ Implemented | N/A            | GitHub-specific: vulnerability alerts, secret scanning, Dependabot (Azure DevOps has different security model)                            |
+| GPG Verification    | ✅ Implemented | ✅ Implemented | Both track commit signature verification                                                                                                  |
+
+### Test Coverage (Both Platforms)
+
+| Test Suite                | GitHub          | Azure DevOps    | Location                                              |
+| ------------------------- | --------------- | --------------- | ----------------------------------------------------- |
+| Repository Extraction E2E | 14 tests        | 10 tests        | `tests/contract/integration/test_*_extraction_e2e.py` |
+| Language Detection        | ✅ 3 tests      | ✅ 2 tests      | Validates storage, time-series, and accuracy          |
+| Technology Detection      | ✅ 3 tests      | ✅ 3 tests      | Validates detection logic and structure               |
+| Database Schema           | ✅ Shared tests | ✅ Shared tests | `test_both_platforms_same_database_schema()`          |
+| Dependency Enrichment     | ✅ Shared tests | ✅ Shared tests | `test_dependency_enrichment_e2e.py`                   |
+
+**Conclusion:** Azure DevOps and GitHub have **functional parity** for all core features (FR-1 through FR-4). Platform-specific features (README, metadata) are implemented only where the platform provides native support.
+
+---
+
 ## Implementation Progress Summary
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 16       | 8       | 20          | 44    |
+| Functional Requirements     | 16       | 9       | 20          | 45    |
 | Non-Functional Requirements | 6        | 6       | 7           | 19    |
+
+**Note:** FR-1.5 and FR-8.2 updated to reflect cross-platform requirements for README and metadata extraction.
 
 ---
 
@@ -31,23 +75,24 @@
 
 ### FR-1: Repository Discovery and Tracking
 
-| ID     | Requirement                                                                       | Priority | Status                      | Notes                                                                                               |
-| ------ | --------------------------------------------------------------------------------- | -------- | --------------------------- | --------------------------------------------------------------------------------------------------- |
-| FR-1.1 | System shall discover all repositories within configured organizations            | High     | :white_check_mark: Complete | Azure DevOps and GitHub extractors implemented in [extractors/](../src/extractors/)                 |
-| FR-1.2 | System shall track repository metadata (name, URL, default branch, creation date) | High     | :white_check_mark: Complete | `Repository` entity captures all metadata - [entities/repository.py](../src/entities/repository.py) |
-| FR-1.3 | System shall support marking repositories as active/inactive                      | Medium   | :white_check_mark: Complete | `is_active` flag on Repository entity                                                               |
-| FR-1.4 | System shall track multiple branches per repository                               | High     | :white_check_mark: Complete | `Branch` entity with full tracking - [entities/branch.py](../src/entities/branch.py)                |
+| ID     | Requirement                                                                       | Priority | Status                         | Notes                                                                                                                                                                                                                                                  |
+| ------ | --------------------------------------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-1.1 | System shall discover all repositories within configured organizations            | High     | :white_check_mark: Complete    | **Platform Parity**: Azure DevOps and GitHub extractors implemented with identical API surface in [extractors/](../src/extractors/). Both platforms support: organizations, projects, repositories, branches, commits, PRs, languages, and file trees. |
+| FR-1.2 | System shall track repository metadata (name, URL, default branch, creation date) | High     | :white_check_mark: Complete    | `Repository` entity captures all metadata - [entities/repository.py](../src/entities/repository.py)                                                                                                                                                    |
+| FR-1.3 | System shall support marking repositories as active/inactive                      | Medium   | :white_check_mark: Complete    | `is_active` flag on Repository entity                                                                                                                                                                                                                  |
+| FR-1.4 | System shall track multiple branches per repository                               | High     | :white_check_mark: Complete    | `Branch` entity with full tracking - [entities/branch.py](../src/entities/branch.py)                                                                                                                                                                   |
+| FR-1.5 | System shall extract repository metadata from metadata files                      | High     | :large_orange_diamond: Partial | Repository has `team_name` and `service_name` fields. **GitHub**: ✅ Implemented via `.github/metadata.json`. **Azure DevOps**: ❌ Needs implementation (e.g., `.azure/metadata.json`).                                                                |
 
-**FR-1 Summary:** 4/4 Complete
+**FR-1 Summary:** 4/5 Complete, 1/5 Partial
 
 ---
 
 ### FR-2: Language and Technology Detection
 
-| ID     | Requirement                                                       | Priority | Status                      | Notes                                                                                                                                                                                                                                                                 |
-| ------ | ----------------------------------------------------------------- | -------- | --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-2.1 | System shall detect programming languages used in each repository | High     | :white_check_mark: Complete | `RepositoryLanguage` entity stores language data; GitHub extractor uses API, Azure DevOps uses heuristic file analysis. Both GitHub and Azure DevOps workflows call `_process_languages()` to extract and store - implemented 2026-01-24 (Part 6)                           |
-| FR-2.2 | System shall track language distribution over time                | Medium   | :white_check_mark: Complete | TimescaleDB hypertable configured with monthly chunks; `_process_languages()` populates with percentage/byte_count data from extractors - implemented 2026-01-24 (Part 6)                                                                                                |
+| ID     | Requirement                                                       | Priority | Status                      | Notes                                                                                                                                                                                                                                                                               |
+| ------ | ----------------------------------------------------------------- | -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-2.1 | System shall detect programming languages used in each repository | High     | :white_check_mark: Complete | `RepositoryLanguage` entity stores language data; GitHub extractor uses API, Azure DevOps uses heuristic file analysis. Both GitHub and Azure DevOps workflows call `_process_languages()` to extract and store - implemented 2026-01-24 (Part 6)                                   |
+| FR-2.2 | System shall track language distribution over time                | Medium   | :white_check_mark: Complete | TimescaleDB hypertable configured with monthly chunks; `_process_languages()` populates with percentage/byte_count data from extractors - implemented 2026-01-24 (Part 6)                                                                                                           |
 | FR-2.3 | System shall identify key technologies and frameworks             | High     | :white_check_mark: Complete | `TechnologyDetector` analyzer detects 8 categories: languages, frameworks, databases, platforms, build_tools, testing_frameworks, ci_cd_platforms, documentation_tools. Integrated into both workflows via `_process_technologies()` with logging - implemented 2026-01-24 (Part 6) |
 
 **FR-2 Summary:** 3/3 Complete
@@ -125,11 +170,11 @@
 
 ### FR-8: Repository Summarization
 
-| ID     | Requirement                                              | Priority | Status                         | Notes                                                                                              |
-| ------ | -------------------------------------------------------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------- |
-| FR-8.1 | System shall generate AI-powered repository summaries    | Medium   | :large_orange_diamond: Partial | `RepositorySummary` entity with summary, purpose, target_audience fields; AI integration not wired |
-| FR-8.2 | System shall extract and index README content            | Medium   | :large_orange_diamond: Partial | `ReadmeFile` entity exists; full-text search index defined; extraction not implemented             |
-| FR-8.3 | System shall track which AI model generated each summary | Low      | :white_check_mark: Complete    | `model_used` field on RepositorySummary entity                                                     |
+| ID     | Requirement                                              | Priority | Status                         | Notes                                                                                                                                                       |
+| ------ | -------------------------------------------------------- | -------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-8.1 | System shall generate AI-powered repository summaries    | Medium   | :large_orange_diamond: Partial | `RepositorySummary` entity with summary, purpose, target_audience fields; AI integration not wired                                                          |
+| FR-8.2 | System shall extract and index README content            | High     | :large_orange_diamond: Partial | `ReadmeFile` entity exists; full-text search index defined. **GitHub**: ✅ Implemented via `get_readme_files()`. **Azure DevOps**: ❌ Needs implementation. |
+| FR-8.3 | System shall track which AI model generated each summary | Low      | :white_check_mark: Complete    | `model_used` field on RepositorySummary entity                                                                                                              |
 
 **FR-8 Summary:** 1/3 Complete, 2/3 Partial
 
@@ -234,12 +279,12 @@
 
 ### NFR-5: Maintainability
 
-| ID      | Requirement            | Target                                  | Status                         | Notes                                        |
-| ------- | ---------------------- | --------------------------------------- | ------------------------------ | -------------------------------------------- |
-| NFR-5.1 | Code quality standards | Pre-commit hooks (black, flake8, mypy)  | :large_orange_diamond: Partial | Dependencies exist; hooks not configured     |
+| ID      | Requirement            | Target                                  | Status                         | Notes                                                                      |
+| ------- | ---------------------- | --------------------------------------- | ------------------------------ | -------------------------------------------------------------------------- |
+| NFR-5.1 | Code quality standards | Pre-commit hooks (black, flake8, mypy)  | :large_orange_diamond: Partial | Dependencies exist; hooks not configured                                   |
 | NFR-5.2 | Test coverage          | Minimum 80%                             | :large_orange_diamond: Partial | Unit, contract, and integration tests implemented; coverage % not measured |
-| NFR-5.3 | Documentation          | All modules documented                  | :large_orange_diamond: Partial | Some docstrings present; incomplete coverage |
-| NFR-5.4 | Logging                | Structured logging with correlation IDs | :white_check_mark: Complete    | Structlog configured                         |
+| NFR-5.3 | Documentation          | All modules documented                  | :large_orange_diamond: Partial | Some docstrings present; incomplete coverage                               |
+| NFR-5.4 | Logging                | Structured logging with correlation IDs | :white_check_mark: Complete    | Structlog configured                                                       |
 
 **NFR-5 Summary:** 1/4 Complete, 3/4 Partial
 
@@ -258,13 +303,13 @@
 
 ## External Dependencies Status
 
-| ID  | Dependency           | Integration Status             | Notes                                   |
-| --- | -------------------- | ------------------------------ | --------------------------------------- |
-| D-1 | Azure DevOps API     | :white_check_mark: Integrated  | Full extractor implementation           |
-| D-2 | GitHub API           | :white_check_mark: Integrated  | Full extractor implementation           |
-| D-3 | OSV.dev API          | :white_check_mark: Integrated  | OSVClient implemented in `src/analyzers/osv_client.py`; enrichment wired into workflow - 2026-01-24 |
+| ID  | Dependency           | Integration Status             | Notes                                                                                                     |
+| --- | -------------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| D-1 | Azure DevOps API     | :white_check_mark: Integrated  | Full extractor implementation                                                                             |
+| D-2 | GitHub API           | :white_check_mark: Integrated  | Full extractor implementation                                                                             |
+| D-3 | OSV.dev API          | :white_check_mark: Integrated  | OSVClient implemented in `src/analyzers/osv_client.py`; enrichment wired into workflow - 2026-01-24       |
 | D-4 | endoflife.date API   | :white_check_mark: Integrated  | EndOfLifeClient implemented in `src/analyzers/eol_client.py`; enrichment wired into workflow - 2026-01-24 |
-| D-5 | Anthropic/OpenAI API | :large_orange_diamond: Partial | SDK dependencies installed; not wired   |
+| D-5 | Anthropic/OpenAI API | :large_orange_diamond: Partial | SDK dependencies installed; not wired                                                                     |
 
 ---
 
@@ -318,10 +363,13 @@
 
 ## Revision History
 
-| Version | Date       | Author | Changes                                                                                                               |
-| ------- | ---------- | ------ | --------------------------------------------------------------------------------------------------------------------- |
-| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                                                  |
-| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation                            |
-| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started)                            |
-| 1.3     | 2026-01-19 | System | FR-3.1 Complete: Dependency extraction implemented with 7 ecosystem parsers (PyPI, npm, Maven, NuGet, Go, Ruby, Rust) |
-| 1.4     | 2026-01-24 | System | D-3, D-4 Integrated: OSV.dev and endoflife.date APIs wired into enrichment workflow; NFR-5.2 updated to Partial (tests exist); roadmap updated |
+| Version | Date       | Author | Changes                                                                                                                                                                                             |
+| ------- | ---------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                                                                                                                                |
+| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation                                                                                                          |
+| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started)                                                                                                          |
+| 1.3     | 2026-01-19 | System | FR-3.1 Complete: Dependency extraction implemented with 7 ecosystem parsers (PyPI, npm, Maven, NuGet, Go, Ruby, Rust)                                                                               |
+| 1.4     | 2026-01-24 | System | D-3, D-4 Integrated: OSV.dev and endoflife.date APIs wired into enrichment workflow; NFR-5.2 updated to Partial (tests exist); roadmap updated                                                      |
+| 1.5     | 2026-01-24 | System | FR-2 Complete: Language and technology detection implemented for both platforms; added platform parity comparison                                                                                   |
+| 1.6     | 2026-01-24 | System | Added comprehensive platform parity documentation; confirmed functional parity for FR-1 through FR-4                                                                                                |
+| 1.7     | 2026-01-24 | System | **Cross-Platform Requirements**: Added FR-1.5 (repository metadata extraction); updated FR-8.2 priority to High; mandated README and metadata extraction for both GitHub and Azure DevOps platforms |

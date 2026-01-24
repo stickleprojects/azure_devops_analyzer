@@ -7,7 +7,7 @@ by analyzing file extensions, configuration files, and dependencies.
 
 from dataclasses import dataclass
 from typing import Optional, List, Dict, Set
-from datetime import datetime
+from datetime import datetime, UTC
 
 
 @dataclass
@@ -320,7 +320,7 @@ class TechnologyDetector:
             overall_confidence=overall_conf,
             all_technologies=all_tech,
             primary_language=primary_lang,
-            analyzed_at=datetime.utcnow()
+            analyzed_at=datetime.now(UTC)
         )
 
     def _detect_languages(
