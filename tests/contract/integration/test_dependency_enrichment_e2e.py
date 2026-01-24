@@ -42,16 +42,32 @@ class TestDependencyExtractionE2E:
         # Setup
         repo_id = "octocat/Hello-World"
         
+        # Extract repository metadata
+        extractor = GitHubExtractor(config=github_config)
+        repo_data = extractor.get_repository(repo_id)
+        
         # Create repository record
         repo = Repository(
-            repo_id=repo_id,
-            url="https://github.com/octocat/Hello-World"
+            repo_id=repo_data.repo_id,
+            url=repo_data.url,
+            name=repo_data.name,
+            default_branch=repo_data.default_branch,
+            created_at=repo_data.created_at,
+            updated_at=repo_data.updated_at,
+            is_private=repo_data.is_private,
+            is_archived=repo_data.is_archived,
+            repository_size=repo_data.repository_size,
+            open_issues_count=repo_data.open_issues_count,
+            license_name=repo_data.license_name,
+            license_key=repo_data.license_key,
+            has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
+            has_secret_scanning=repo_data.has_secret_scanning,
+            has_dependabot_alerts=repo_data.has_dependabot_alerts,
         )
         test_session.add(repo)
         test_session.commit()
         
         # Extract manifests
-        extractor = GitHubExtractor(config=github_config)
         manifests = extractor.extract_manifests(repo_id)
         
         # Parse dependencies
@@ -116,15 +132,31 @@ class TestDependencyExtractionE2E:
         # Setup
         repo_id = "octocat/Hello-World"
         
+        # Extract repository metadata
+        extractor = GitHubExtractor(config=github_config)
+        repo_data = extractor.get_repository(repo_id)
+        
         repo = Repository(
-            repo_id=repo_id,
-            url="https://github.com/octocat/Hello-World"
+            repo_id=repo_data.repo_id,
+            url=repo_data.url,
+            name=repo_data.name,
+            default_branch=repo_data.default_branch,
+            created_at=repo_data.created_at,
+            updated_at=repo_data.updated_at,
+            is_private=repo_data.is_private,
+            is_archived=repo_data.is_archived,
+            repository_size=repo_data.repository_size,
+            open_issues_count=repo_data.open_issues_count,
+            license_name=repo_data.license_name,
+            license_key=repo_data.license_key,
+            has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
+            has_secret_scanning=repo_data.has_secret_scanning,
+            has_dependabot_alerts=repo_data.has_dependabot_alerts,
         )
         test_session.add(repo)
         test_session.commit()
         
         # Extract and enrich
-        extractor = GitHubExtractor(config=github_config)
         manifests = extractor.extract_manifests(repo_id)
         
         analyzer = DependencyAnalyzer(enrich=True)  # Enable enrichment
@@ -195,15 +227,31 @@ class TestDependencyExtractionE2E:
         # Setup
         repo_id = "octocat/Hello-World"
         
+        # Extract repository metadata
+        extractor = GitHubExtractor(config=github_config)
+        repo_data = extractor.get_repository(repo_id)
+        
         repo = Repository(
-            repo_id=repo_id,
-            url="https://github.com/octocat/Hello-World"
+            repo_id=repo_data.repo_id,
+            url=repo_data.url,
+            name=repo_data.name,
+            default_branch=repo_data.default_branch,
+            created_at=repo_data.created_at,
+            updated_at=repo_data.updated_at,
+            is_private=repo_data.is_private,
+            is_archived=repo_data.is_archived,
+            repository_size=repo_data.repository_size,
+            open_issues_count=repo_data.open_issues_count,
+            license_name=repo_data.license_name,
+            license_key=repo_data.license_key,
+            has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
+            has_secret_scanning=repo_data.has_secret_scanning,
+            has_dependabot_alerts=repo_data.has_dependabot_alerts,
         )
         test_session.add(repo)
         test_session.commit()
         
         # Extract and enrich
-        extractor = GitHubExtractor(config=github_config)
         manifests = extractor.extract_manifests(repo_id)
         
         analyzer = DependencyAnalyzer(enrich=True)
@@ -272,15 +320,32 @@ class TestVulnerabilityStorageE2E:
         # Setup
         repo_id = "octocat/Hello-World"
         
+        # Extract repository metadata
+        extractor = GitHubExtractor(config=github_config)
+        repo_data = extractor.get_repository(repo_id)
+        
+        # Store in database
         repo = Repository(
-            repo_id=repo_id,
-            url="https://github.com/octocat/Hello-World"
+            repo_id=repo_data.repo_id,
+            url=repo_data.url,
+            name=repo_data.name,
+            default_branch=repo_data.default_branch,
+            created_at=repo_data.created_at,
+            updated_at=repo_data.updated_at,
+            is_private=repo_data.is_private,
+            is_archived=repo_data.is_archived,
+            repository_size=repo_data.repository_size,
+            open_issues_count=repo_data.open_issues_count,
+            license_name=repo_data.license_name,
+            license_key=repo_data.license_key,
+            has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
+            has_secret_scanning=repo_data.has_secret_scanning,
+            has_dependabot_alerts=repo_data.has_dependabot_alerts,
         )
         test_session.add(repo)
         test_session.commit()
         
         # Extract, enrich, and get vulnerabilities
-        extractor = GitHubExtractor(config=github_config)
         manifests = extractor.extract_manifests(repo_id)
         
         analyzer = DependencyAnalyzer(enrich=True)
