@@ -61,7 +61,6 @@ def get_or_create_repository(extractor: GitHubExtractor, repo_id: str, session: 
     return repo
 
 
-@pytest.mark.skip(reason="Dependency manifest extraction not implemented yet")
 class TestDependencyExtractionE2E:
     """Dependency extraction and storage E2E tests."""
     
@@ -90,19 +89,15 @@ class TestDependencyExtractionE2E:
         extractor = GitHubExtractor(config=github_config)
         repo = get_or_create_repository(extractor, repo_id, test_session)
         
-        # Extract manifests
-        manifests = extractor.extract_manifests(repo_id)
-        
-        # Parse dependencies
+        # Parse dependencies using DependencyAnalyzer
         analyzer = DependencyAnalyzer(enrich=False)  # No enrichment for this test
         dependencies = []
         
-        for manifest in manifests:
-            try:
-                result = analyzer.analyze(manifest)
-                dependencies.extend(result.dependencies)
-            except Exception as e:
-                pytest.skip(f"Failed to parse manifest: {e}")
+        try:
+            result = analyzer.analyze(extractor, repo_id, branch=repo.default_branch)
+            dependencies = result.dependencies
+        except Exception as e:
+            pytest.skip(f"Failed to parse manifests: {e}")
         
         # Store dependencies
         if dependencies:
@@ -160,18 +155,14 @@ class TestDependencyExtractionE2E:
         repo = get_or_create_repository(extractor, repo_id, test_session)
         
         # Extract and enrich
-        manifests = extractor.extract_manifests(repo_id)
-        
         analyzer = DependencyAnalyzer(enrich=True)  # Enable enrichment
         enriched_deps = []
         
-        for manifest in manifests:
-            try:
-                result = analyzer.analyze(manifest)
-                if result.enriched_dependencies:
-                    enriched_deps.extend(result.enriched_dependencies)
-            except Exception as e:
-                pytest.skip(f"Enrichment failed (API issue?): {e}")
+        try:
+            result = analyzer.analyze(extractor, repo_id, branch=repo.default_branch)
+            enriched_deps = result.enriched_dependencies or []
+        except Exception as e:
+            pytest.skip(f"Enrichment failed (API issue?): {e}")
         
         # Store enriched dependencies
         if enriched_deps:
@@ -235,18 +226,14 @@ class TestDependencyExtractionE2E:
         repo = get_or_create_repository(extractor, repo_id, test_session)
         
         # Extract and enrich
-        manifests = extractor.extract_manifests(repo_id)
-        
         analyzer = DependencyAnalyzer(enrich=True)
         enriched_deps = []
         
-        for manifest in manifests:
-            try:
-                result = analyzer.analyze(manifest)
-                if result.enriched_dependencies:
-                    enriched_deps.extend(result.enriched_dependencies)
-            except Exception as e:
-                pytest.skip(f"Enrichment failed: {e}")
+        try:
+            result = analyzer.analyze(extractor, repo_id, branch=repo.default_branch)
+            enriched_deps = result.enriched_dependencies or []
+        except Exception as e:
+            pytest.skip(f"Enrichment failed: {e}")
         
         # Store
         if enriched_deps:
@@ -278,7 +265,6 @@ class TestDependencyExtractionE2E:
                 assert dep.eol_date is not None
 
 
-@pytest.mark.skip(reason="Dependency manifest extraction not implemented yet")
 class TestVulnerabilityStorageE2E:
     """Vulnerability data storage E2E tests."""
     
@@ -309,37 +295,33 @@ class TestVulnerabilityStorageE2E:
         repo = get_or_create_repository(extractor, repo_id, test_session)
         
         # Extract, enrich, and get vulnerabilities
-        manifests = extractor.extract_manifests(repo_id)
-        
         analyzer = DependencyAnalyzer(enrich=True)
         all_vulns = []
         
-        for manifest in manifests:
-            try:
-                result = analyzer.analyze(manifest)
-                if result.enriched_dependencies:
-                    for dep in result.enriched_dependencies:
-                        if dep.vulnerabilities:
-                            all_vulns.extend(dep.vulnerabilities)
-            except Exception as e:
-                pytest.skip(f"Enrichment failed: {e}")
+        try:
+            result = analyzer.analyze(extractor, repo_id, branch=repo.default_branch)
+            if result.enriched_dependencies:
+                for dep in result.enriched_dependencies:
+                    if dep.vulnerabilities:
+                        all_vulns.extend(dep.vulnerabilities)
+        except Exception as e:
+            pytest.skip(f"Enrichment failed: {e}")
         
         # Store vulnerabilities
         if all_vulns:
             # First store dependencies
-            for manifest in manifests:
-                try:
-                    result = analyzer.analyze(manifest)
-                    for dep in result.enriched_dependencies or []:
-                        db_dep = Dependency(
-                            repo_id=repo_id,
-                            package_name=dep.package_name,
-                            ecosystem=dep.ecosystem,
-                            version_requested=dep.version_requested,
-                        )
-                        test_session.add(db_dep)
-                except:
-                    pass
+            try:
+                result = analyzer.analyze(extractor, repo_id, branch=repo.default_branch)
+                for dep in result.enriched_dependencies or []:
+                    db_dep = Dependency(
+                        repo_id=repo_id,
+                        package_name=dep.package_name,
+                        ecosystem=dep.ecosystem,
+                        version_requested=dep.version_requested,
+                    )
+                    test_session.add(db_dep)
+            except:
+                pass
             test_session.commit()
             
             # Then store vulnerabilities

@@ -11,6 +11,7 @@ from azure.devops.v7_1.git.models import (
     GitQueryCommitsCriteria,
 )
 
+from src.config.azure_devops import AzureDevOpsExtractorConfig
 from src.extractors.azure_devops.client import get_git_client, get_core_client
 from src.extractors.base import (
     Platform,
@@ -31,21 +32,22 @@ from src.extractors.base import (
 class AzureDevOpsExtractor(RepositoryExtractor):
     """Extractor for Azure DevOps repositories."""
 
-    def __init__(self):
+    def __init__(self, config: Optional[AzureDevOpsExtractorConfig] = None):
+        self.config = config or AzureDevOpsExtractorConfig.from_env()
         self._git_client = None
         self._core_client = None
-        self._org_url = os.environ.get("AZURE_DEVOPS_ORG_URL", "")
+        self._org_url = self.config.org_url or ""
 
     @property
     def git_client(self):
         if self._git_client is None:
-            self._git_client = get_git_client()
+            self._git_client = get_git_client(self.config)
         return self._git_client
 
     @property
     def core_client(self):
         if self._core_client is None:
-            self._core_client = get_core_client()
+            self._core_client = get_core_client(self.config)
         return self._core_client
 
     @property
@@ -122,13 +124,173 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         Get programming language statistics for a repository.
         
         Note: Azure DevOps REST API does not provide built-in language statistics.
-        This would require analyzing the file tree or using an external service.
-        Returns empty list for now.
+        This implementation uses heuristics based on common project files and
+        file extensions to estimate language usage.
         """
         from src.extractors.base import LanguageData
         
-        # TODO: Implement file-tree-based language detection for Azure DevOps
-        return []
+        # Get file tree
+        files = self.get_file_tree(repo_id)
+        if not files:
+            return []
+        
+        # Count files by language
+        language_counts: dict[str, int] = {}
+        
+        for file_item in files:
+            if file_item.is_directory:
+                continue
+            
+            path = file_item.path.lower()
+            filename = os.path.basename(path)
+            
+            # Check for project/configuration files (weighted higher)
+            if filename in self._PROJECT_FILE_MAP:
+                lang = self._PROJECT_FILE_MAP[filename]
+                language_counts[lang] = language_counts.get(lang, 0) + 10
+            
+            # Check file extensions
+            elif "." in filename:
+                ext = filename.rsplit(".", 1)[-1]
+                if ext in self._EXTENSION_MAP:
+                    lang = self._EXTENSION_MAP[ext]
+                    language_counts[lang] = language_counts.get(lang, 0) + 1
+        
+        if not language_counts:
+            return []
+        
+        # Convert counts to LanguageData with percentages
+        total_count = sum(language_counts.values())
+        languages = []
+        
+        for lang, count in language_counts.items():
+            # Estimate byte count (rough approximation)
+            byte_count = count * 1000  # Assume average file size
+            percentage = round((count / total_count) * 100, 2)
+            
+            languages.append(
+                LanguageData(
+                    language=lang,
+                    byte_count=byte_count,
+                    percentage=percentage,
+                )
+            )
+        
+        # Sort by byte count descending
+        languages.sort(key=lambda x: x.byte_count, reverse=True)
+        return languages
+    
+    # Language detection mappings
+    _PROJECT_FILE_MAP = {
+        # .NET
+        ".csproj": "C#",
+        ".vbproj": "Visual Basic .NET",
+        ".fsproj": "F#",
+        "packages.config": "C#",
+        
+        # Python
+        "requirements.txt": "Python",
+        "setup.py": "Python",
+        "pyproject.toml": "Python",
+        "pipfile": "Python",
+        "poetry.lock": "Python",
+        
+        # JavaScript/TypeScript
+        "package.json": "JavaScript",
+        "tsconfig.json": "TypeScript",
+        "yarn.lock": "JavaScript",
+        "package-lock.json": "JavaScript",
+        
+        # Java
+        "pom.xml": "Java",
+        "build.gradle": "Java",
+        "build.gradle.kts": "Kotlin",
+        "settings.gradle": "Java",
+        
+        # Ruby
+        "gemfile": "Ruby",
+        "gemfile.lock": "Ruby",
+        
+        # Go
+        "go.mod": "Go",
+        "go.sum": "Go",
+        
+        # Rust
+        "cargo.toml": "Rust",
+        "cargo.lock": "Rust",
+        
+        # PHP
+        "composer.json": "PHP",
+        "composer.lock": "PHP",
+        
+        # Others
+        "makefile": "Makefile",
+        "dockerfile": "Dockerfile",
+        "vagrantfile": "Ruby",
+    }
+    
+    _EXTENSION_MAP = {
+        # Programming languages
+        "cs": "C#",
+        "vb": "Visual Basic .NET",
+        "fs": "F#",
+        "py": "Python",
+        "js": "JavaScript",
+        "jsx": "JavaScript",
+        "ts": "TypeScript",
+        "tsx": "TypeScript",
+        "java": "Java",
+        "kt": "Kotlin",
+        "rb": "Ruby",
+        "go": "Go",
+        "rs": "Rust",
+        "php": "PHP",
+        "c": "C",
+        "cpp": "C++",
+        "cc": "C++",
+        "cxx": "C++",
+        "h": "C",
+        "hpp": "C++",
+        "swift": "Swift",
+        "m": "Objective-C",
+        "mm": "Objective-C++",
+        "scala": "Scala",
+        "clj": "Clojure",
+        "ex": "Elixir",
+        "exs": "Elixir",
+        "erl": "Erlang",
+        "hrl": "Erlang",
+        "hs": "Haskell",
+        "lua": "Lua",
+        "pl": "Perl",
+        "r": "R",
+        "dart": "Dart",
+        
+        # Web/Markup
+        "html": "HTML",
+        "htm": "HTML",
+        "css": "CSS",
+        "scss": "SCSS",
+        "sass": "Sass",
+        "less": "Less",
+        "vue": "Vue",
+        
+        # Data/Config
+        "json": "JSON",
+        "xml": "XML",
+        "yaml": "YAML",
+        "yml": "YAML",
+        "toml": "TOML",
+        
+        # Shell
+        "sh": "Shell",
+        "bash": "Shell",
+        "ps1": "PowerShell",
+        "psm1": "PowerShell",
+        
+        # SQL
+        "sql": "SQL",
+    }
 
     def get_commits(
         self,

@@ -15,6 +15,7 @@ from dotenv import load_dotenv
 
 from src.database.models import Base
 from src.config.github import GitHubExtractorConfig
+from src.config.azure_devops import AzureDevOpsExtractorConfig
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,20 @@ def github_config(env_setup):
         return config
     except Exception as e:
         pytest.skip(f"Failed to load GitHub config: {e}")
+
+
+@pytest.fixture(scope="session")
+def azure_config(env_setup):
+    """Load Azure DevOps API configuration from environment."""
+    try:
+        config = AzureDevOpsExtractorConfig.from_env()
+        if not config.pat:
+            pytest.skip("AZURE_DEVOPS_PAT not configured")
+        if not config.org_url:
+            pytest.skip("AZURE_DEVOPS_ORG_URL not configured")
+        return config
+    except Exception as e:
+        pytest.skip(f"Failed to load Azure DevOps config: {e}")
 
 
 # ============================================================================

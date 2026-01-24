@@ -20,6 +20,7 @@ from src.extractors.base import (
     PRCommentData,
     ContributorData,
     FileTreeItem,
+    ManifestFileData,
 )
 from src.extractors.factory import get_extractor
 
@@ -37,5 +38,6 @@ __all__ = [
     "PRCommentData",
     "ContributorData",
     "FileTreeItem",
+    "ManifestFileData",
     "get_extractor",
 ]

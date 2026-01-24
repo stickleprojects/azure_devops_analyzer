@@ -4,17 +4,23 @@ Azure DevOps API client configuration and authentication.
 
 import os
 from functools import lru_cache
+from typing import Optional
 
 from azure.devops.connection import Connection
 from msrest.authentication import BasicAuthentication
 
+from src.config.azure_devops import AzureDevOpsExtractorConfig
+
 
 @lru_cache(maxsize=1)
-def get_connection() -> Connection:
+def get_connection(config: Optional[AzureDevOpsExtractorConfig] = None) -> Connection:
     """
     Get authenticated Azure DevOps connection.
 
-    Uses environment variables:
+    Args:
+        config: Optional AzureDevOpsExtractorConfig. If not provided, loads from environment.
+
+    Uses environment variables (if config not provided):
     - AZURE_DEVOPS_ORG_URL: Organization URL (e.g., https://dev.azure.com/myorg)
     - AZURE_DEVOPS_PAT: Personal Access Token
 
@@ -22,27 +28,31 @@ def get_connection() -> Connection:
         Authenticated Connection object.
 
     Raises:
-        ValueError: If required environment variables are not set.
+        ValueError: If required configuration is not set.
     """
-    org_url = os.environ.get("AZURE_DEVOPS_ORG_URL")
-    pat = os.environ.get("AZURE_DEVOPS_PAT")
+    if config is None:
+        config = AzureDevOpsExtractorConfig.from_env()
+    
+    org_url = config.org_url
+    pat = config.pat
 
     if not org_url:
-        raise ValueError("AZURE_DEVOPS_ORG_URL environment variable not set")
+        raise ValueError("AZURE_DEVOPS_ORG_URL not configured")
     if not pat:
-        raise ValueError("AZURE_DEVOPS_PAT environment variable not set")
+        raise ValueError("AZURE_DEVOPS_PAT not configured")
 
     credentials = BasicAuthentication("", pat)
     return Connection(base_url=org_url, creds=credentials)
 
 
-def get_git_client():
+def get_git_client(config: Optional[AzureDevOpsExtractorConfig] = None):
     """Get the Git client for repository operations."""
-    connection = get_connection()
+    connection = get_connection(config)
     return connection.clients.get_git_client()
 
 
-def get_core_client():
+def get_core_client(config: Optional[AzureDevOpsExtractorConfig] = None):
     """Get the Core client for project operations."""
-    connection = get_connection()
+    connection = get_connection(config)
     return connection.clients.get_core_client()
+

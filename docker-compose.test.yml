@@ -95,6 +95,7 @@ services:
       
       # GitHub token for tests (from host environment)
       GITHUB_TOKEN: ${GITHUB_TOKEN}
+      GITHUB_PRIVATE_REPO: ${GITHUB_PRIVATE_REPO}
       
       # Test configuration
       LOG_LEVEL: DEBUG

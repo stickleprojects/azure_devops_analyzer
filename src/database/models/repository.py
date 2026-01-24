@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from src.database.models.commit import Commit
     from src.database.models.contributor import ContributorMetric
     from src.database.models.dependency import Dependency
-    from src.database.models.language import RepositoryLanguage
+    from src.database.models.repository_language import RepositoryLanguage
     from src.database.models.organization import Project
     from src.database.models.pull_request import PullRequest
     from src.database.models.quality import CodeIssue, CodeQualityMetric

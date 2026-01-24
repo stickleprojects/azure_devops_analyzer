@@ -149,6 +149,14 @@ class PullRequestData:
 
 
 @dataclass
+class ManifestFileData:
+    """Manifest file content and metadata for dependency analysis."""
+    file_path: str  # Path within repository (e.g., "requirements.txt", "src/package.json")
+    content: str  # File content with normalized line endings (LF)
+    ecosystem: Optional[str] = None  # Ecosystem hint (pypi, npm, maven, etc.)
+
+
+@dataclass
 class ReadmeData:
     """README file content and metadata."""
     file_path: str
@@ -379,6 +387,132 @@ class RepositoryExtractor(ABC):
             File content as string, or None if not found.
         """
         pass
+
+    def extract_manifests(
+        self,
+        repo_id: str,
+        branch: Optional[str] = None
+    ) -> list[ManifestFileData]:
+        """
+        Extract manifest files from a repository for dependency analysis.
+        
+        Searches the repository file tree for known dependency manifest files
+        (requirements.txt, package.json, pom.xml, *.csproj, etc.) and retrieves
+        their contents with normalized line endings (LF).
+        
+        Args:
+            repo_id: Repository identifier.
+            branch: Branch to scan (defaults to default branch).
+        
+        Returns:
+            List of manifest files with content and metadata.
+        """
+        from fnmatch import fnmatch
+        
+        # Known manifest file patterns
+        # These match the SUPPORTED_FILES from all parsers
+        manifest_patterns = [
+            # Python
+            "requirements.txt",
+            "*requirements*.txt",  # requirements-dev.txt, dev-requirements.txt, etc.
+            "pyproject.toml",
+            "Pipfile",
+            "Pipfile.lock",
+            # Node.js
+            "package.json",
+            "package-lock.json",
+            "yarn.lock",
+            # Java
+            "pom.xml",
+            "build.gradle",
+            "build.gradle.kts",
+            # .NET
+            "*.csproj",
+            "*.vbproj",
+            "*.fsproj",
+            "packages.config",
+            # Go
+            "go.mod",
+            "go.sum",
+            # Ruby
+            "Gemfile",
+            "Gemfile.lock",
+            # Rust
+            "Cargo.toml",
+            "Cargo.lock",
+        ]
+        
+        file_tree = self.get_file_tree(repo_id, branch)
+        manifest_files = []
+        
+        for item in file_tree:
+            if item.is_directory:
+                continue
+            
+            file_name = item.path.split('/')[-1]
+            
+            # Check if this file matches any manifest pattern
+            is_manifest = any(
+                fnmatch(file_name, pattern)
+                for pattern in manifest_patterns
+            )
+            
+            if is_manifest:
+                content = self.get_file_content(repo_id, item.path, branch)
+                if content:
+                    # Normalize line endings to LF (Unix style)
+                    # This ensures consistent parsing across Windows/Linux environments
+                    normalized_content = content.replace('\r\n', '\n').replace('\r', '\n')
+                    
+                    manifest_files.append(
+                        ManifestFileData(
+                            file_path=item.path,
+                            content=normalized_content,
+                            ecosystem=self._infer_ecosystem(file_name)
+                        )
+                    )
+        
+        return manifest_files
+
+    @staticmethod
+    def _infer_ecosystem(file_name: str) -> Optional[str]:
+        """
+        Infer the ecosystem from the manifest file name.
+        
+        Args:
+            file_name: Name of the manifest file.
+        
+        Returns:
+            Ecosystem identifier (pypi, npm, maven, etc.) or None.
+        """
+        ecosystem_map = {
+            "requirements.txt": "pypi",
+            "pyproject.toml": "pypi",
+            "Pipfile": "pypi",
+            "package.json": "npm",
+            "pom.xml": "maven",
+            ".csproj": "nuget",
+            ".vbproj": "nuget",
+            ".fsproj": "nuget",
+            "packages.config": "nuget",
+            "go.mod": "go",
+            "Gemfile": "rubygems",
+            "Cargo.toml": "cargo",
+        }
+        
+        # Exact match
+        if file_name in ecosystem_map:
+            return ecosystem_map[file_name]
+        
+        # Check file extensions
+        if file_name.endswith((".csproj", ".vbproj", ".fsproj")):
+            return "nuget"
+        
+        # Check patterns for Python requirements
+        if "requirements" in file_name.lower() and file_name.endswith(".txt"):
+            return "pypi"
+        
+        return None
 
     def get_readme_files(
         self,

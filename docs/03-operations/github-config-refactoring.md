@@ -140,9 +140,11 @@ The following files still use `os.environ` directly (non-GitHub related):
    - `DATABASE_URL`, `POSTGRES_HOST`, `POSTGRES_PORT`, etc.
    - Consider creating `DatabaseConfig` class
 
-2. **src/extractors/azure_devops/** - Azure DevOps configuration
-   - `AZURE_DEVOPS_ORG_URL`, `AZURE_DEVOPS_PAT`
-   - Consider creating `AzureDevOpsConfig` class
+2. **src/extractors/azure_devops/** - Azure DevOps configuration ✅ **COMPLETED**
+   - Created `AzureDevOpsExtractorConfig` class in `src/config/azure_devops.py`
+   - Supports `.env` file loading with indirect variable resolution
+   - Uses `AZURE_DEVOPS_PAT`, `AZURE_DEVOPS_ORG_URL`, `AZURE_PAGE_SIZE`, etc.
+   - Test fixtures created: `azure_config` for both unit and integration tests
 
 3. **src/scheduler/celery_app.py** - Celery broker configuration
    - Could be moved to a `CeleryConfig` class

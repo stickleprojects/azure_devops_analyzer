@@ -9,7 +9,7 @@ from src.database.models.branch_metric import BranchMetric
 from src.database.models.commit import Commit
 from src.database.models.contributor import Contributor, ContributorMetric
 from src.database.models.dependency import Dependency, Vulnerability
-from src.database.models.language import RepositoryLanguage
+from src.database.models.repository_language import RepositoryLanguage
 from src.database.models.organization import Organization, Project
 from src.database.models.pull_request import PRComment, PRReview, PullRequest
 from src.database.models.quality import CodeIssue, CodeQualityMetric
