@@ -11,7 +11,6 @@ Tests verify:
 - Database constraints enforced
 """
 
-import os
 import pytest
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -128,7 +127,7 @@ class TestGitHubExtractionBasic:
         Requires GITHUB_PRIVATE_REPO env var pointing to an accessible private repo.
         """
 
-        private_repo_id = os.getenv("GITHUB_PRIVATE_REPO")
+        private_repo_id = github_config.private_repo
         if not private_repo_id:
             pytest.skip("GITHUB_PRIVATE_REPO not configured for private repo test")
 
