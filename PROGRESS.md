@@ -21,8 +21,9 @@ Verified all bug fixes from Part 2 are working correctly by running integration 
 ### Test Results
 
 ✅ **All 9 integration tests passing:**
+
 - Dependency storage and upserts
-- Enriched dependency handling  
+- Enriched dependency handling
 - Vulnerability storage and cascade deletes
 - **Repository constraints** (validates Bug #1 fix - name extraction)
 - **Timezone handling** (validates Bug #2 fix - timestamptz)
@@ -30,9 +31,11 @@ Verified all bug fixes from Part 2 are working correctly by running integration 
 ### Git Repository Cleanup
 
 **Created alias:** `git delete-merged-branches`
+
 - Deletes merged local branches while protecting main/develop/production/master
 
 **Deleted branches:**
+
 - Local: `feature/integration-tests`, `feature/restructure-remove-usingclaude`
 - Remote: `origin/copilot/sub-pr-6`, `origin/feature/restructure-remove-usingclaude`, `origin/feature/tests-phase1-database-storage`
 
@@ -103,6 +106,7 @@ Also removed the stale-file check (`if [ ! -f .env.resolved ]`) so the script al
 #### 3. Shared AI Instructions (.ai/instructions.md)
 
 Created `.ai/instructions.md` as a single source of truth for AI agent behavior:
+
 - Session continuity (greeting triggers, progress analysis, backlog)
 - Architecture guardian (boundary validation)
 - Test guardian (iron rule, contract vs implementation tests)
