@@ -10,7 +10,7 @@ from typing import Optional
 from src.config.github import load_env_file, _find_project_root, _get_env_int, _get_env_float
 
 
-@dataclass
+@dataclass(frozen=True)
 class AzureDevOpsExtractorConfig:
     """Configuration for AzureDevOpsExtractor pagination and backoff."""
 
@@ -19,6 +19,8 @@ class AzureDevOpsExtractorConfig:
     max_retries: int = 3
     backoff_seconds: float = 2.0
     max_backoff_seconds: float = 60.0
+    # Feature flags
+    fetch_pr_file_metrics: bool = True  # Extra API calls per PR for file count
     # Credentials
     pat: Optional[str] = None
     org_url: Optional[str] = None
@@ -56,6 +58,9 @@ class AzureDevOpsExtractorConfig:
             max_retries=_get_env_int("AZURE_MAX_RETRIES", cls.max_retries),
             backoff_seconds=_get_env_float("AZURE_BACKOFF_SECONDS", cls.backoff_seconds),
             max_backoff_seconds=_get_env_float("AZURE_MAX_BACKOFF_SECONDS", cls.max_backoff_seconds),
+            fetch_pr_file_metrics=os.environ.get(
+                "AZURE_FETCH_PR_FILE_METRICS", "true"
+            ).lower() == "true",
             pat=os.environ.get("AZURE_DEVOPS_PAT"),
             org_url=os.environ.get("AZURE_DEVOPS_ORG_URL"),
             organization=os.environ.get("AZURE_DEVOPS_ORG"),

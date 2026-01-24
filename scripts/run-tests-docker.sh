@@ -66,22 +66,24 @@ show_help() {
     cat << EOF
 Integration Test Runner - Docker Compose
 
-Runs integration tests in fully isolated Docker environment with dedicated test database.
+Runs integration tests for GitHub AND Azure DevOps extraction in fully isolated 
+Docker environment with dedicated test database.
 
 USAGE:
     $0 [OPTIONS]
 
 OPTIONS:
     --live-api      Run live API tests (tests marked with @pytest.mark.live_api)
+                    Includes both GitHub and Azure DevOps platform tests
     --keep-db       Keep test database after run (for debugging)
     --no-cleanup    Don't clean up containers after run
     --help          Show this help message
 
 EXAMPLES:
-    # Run all integration tests (excluding live API tests)
+    # Run all GitHub and Azure DevOps integration tests (excluding live API)
     $0
 
-    # Run only live API tests
+    # Run only live API tests for both GitHub and Azure DevOps
     $0 --live-api
 
     # Keep database for debugging
@@ -90,13 +92,28 @@ EXAMPLES:
     # Run tests without cleanup (inspect containers after)
     $0 --no-cleanup
 
+WHAT GETS TESTED:
+    GitHub Platform:
+    - Repository extraction and metadata storage
+    - Branch and commit tracking
+    - Language detection (via GitHub API)
+    - Technology stack detection
+
+    Azure DevOps Platform:
+    - Repository extraction and metadata storage
+    - Branch and commit tracking
+    - Language detection (via file heuristics)
+    - Technology stack detection
+
 REQUIREMENTS:
     - Docker and Docker Compose installed
+    - GITHUB_TOKEN environment variable set (for GitHub tests)
+    - AZURE_DEVOPS_PAT and AZURE_DEVOPS_ORG_URL (for Azure DevOps tests, optional)
 
 OUTPUT:
     Test results saved to: $RESULTS_DIR/
     - junit.xml - Test results in JUnit format
-    - coverage/ - HTML coverage report
+    - junit-live-api.xml - Live API test results (if --live-api used)
 EOF
 }
 
@@ -181,26 +198,36 @@ echo
 # Run Tests
 # =============================================================================
 if [ "$RUN_LIVE_API" = true ]; then
-    log_info "Running LIVE API tests (will hit real external APIs)..."
-    log_warning "This may be slow and count against API rate limits"
+    log_info "Running GitHub AND Azure DevOps tests with LIVE API..."
+    log_warning "This will hit real external APIs - may be slow and count against rate limits"
     echo
     
-    # Modify command to run live_api tests
+    # Run both GitHub and Azure DevOps tests with live_api marker
     TEST_EXIT_CODE=0
     docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
         sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-               pytest tests/contract/integration/ -v \
+               pytest tests/contract/integration/test_github_extraction_e2e.py \
+                      tests/contract/integration/test_azure_devops_extraction_e2e.py \
+                      -v \
                -m 'live_api' \
                --junit-xml=/app/test-results/junit-live-api.xml \
                --tb=short" || TEST_EXIT_CODE=$?
 else
-    log_info "Running integration tests (excluding live API tests)..."
+    log_info "Running GitHub AND Azure DevOps integration tests (excluding live API)..."
     log_info "Use --live-api flag to run tests against real external APIs"
     echo
     
     # Run tests with exit code capture (only watch test-runner, not migrations)
     TEST_EXIT_CODE=0
-    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner || TEST_EXIT_CODE=$?
+    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
+        sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
+               pytest tests/contract/integration/test_github_extraction_e2e.py \
+                      tests/contract/integration/test_azure_devops_extraction_e2e.py \
+                      -v \
+               -m 'not live_api' \
+               --junit-xml=/app/test-results/junit.xml \
+               -p no:cacheprovider \
+               --tb=short" || TEST_EXIT_CODE=$?
 fi
 
 echo

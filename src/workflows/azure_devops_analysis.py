@@ -1,8 +1,8 @@
 """
-GitHub repository analysis workflow.
+Azure DevOps repository analysis workflow.
 
-Orchestrates the extraction and storage of GitHub repository data
-including organizations, repositories, branches, commits, and pull requests.
+Orchestrates the extraction and storage of Azure DevOps repository data
+including organizations, projects, repositories, branches, commits, and pull requests.
 """
 
 import logging
@@ -19,7 +19,6 @@ from src.database.storage import (
     store_branch,
     store_commit,
     store_pull_request,
-    store_readme,
     store_dependencies,
     store_enriched_dependencies,
     update_repository_analyzed_timestamp,
@@ -27,7 +26,7 @@ from src.database.storage import (
 )
 from src.analyzers.dependency_analyzer import DependencyAnalyzer
 from src.analyzers.technology_detector import TechnologyDetector
-from src.extractors.github.extractor import GitHubExtractor
+from src.extractors.azure_devops.extractor import AzureDevOpsExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -43,44 +42,46 @@ class ExtractionLimits:
     extract_dependencies: bool = True
 
 
-class GitHubAnalysisWorkflow:
+class AzureDevOpsAnalysisWorkflow:
     """
-    Workflow for extracting and storing GitHub repository data.
+    Workflow for extracting and storing Azure DevOps repository data.
 
     This class orchestrates the full extraction process:
-    1. Fetch organizations/users
-    2. Create organization and project records
-    3. Fetch repositories for each org/user
-    4. For each repository:
+    1. Fetch organization
+    2. Fetch projects for the organization
+    3. Create organization and project records
+    4. Fetch repositories for each project
+    5. For each repository:
        - Store repository metadata
        - Fetch and store branches
+       - Fetch and store language statistics
        - Fetch and store commits
        - Fetch and store pull requests with reviews and comments
     """
 
     def __init__(
         self,
-        extractor: Optional[GitHubExtractor] = None,
+        extractor: Optional[AzureDevOpsExtractor] = None,
         limits: Optional[ExtractionLimits] = None,
     ):
         """
         Initialize the workflow.
 
         Args:
-            extractor: GitHubExtractor instance (created if not provided).
+            extractor: AzureDevOpsExtractor instance (created if not provided).
             limits: Extraction limits configuration.
         """
-        self.extractor = extractor or GitHubExtractor()
+        self.extractor = extractor or AzureDevOpsExtractor()
         self.limits = limits or ExtractionLimits()
 
     def run(self) -> dict:
         """
-        Execute the full GitHub analysis workflow.
+        Execute the full Azure DevOps analysis workflow.
 
         Returns:
             Summary dictionary with extraction counts.
         """
-        logger.info("Starting GitHub analysis workflow")
+        logger.info("Starting Azure DevOps analysis workflow")
 
         orgs = self._fetch_organizations()
 
@@ -91,14 +92,14 @@ class GitHubAnalysisWorkflow:
         return self._get_summary()
 
     def _fetch_organizations(self):
-        """Fetch organizations/users from GitHub."""
-        logger.info("Fetching organizations/users...")
+        """Fetch organizations from Azure DevOps."""
+        logger.info("Fetching organizations...")
         orgs = self.extractor.get_organizations()
-        logger.info("Found %d organizations/users", len(orgs))
+        logger.info("Found %d organizations", len(orgs))
         return orgs
 
     def _process_organization(self, org_data):
-        """Process a single organization and its repositories."""
+        """Process a single organization and its projects."""
         logger.info("Processing: %s", org_data.name)
 
         with session_scope() as session:
@@ -109,27 +110,48 @@ class GitHubAnalysisWorkflow:
             else:
                 logger.info("  Organization exists: %s", org_data.name)
 
-            project = store_project(
-                session,
-                org,
-                org_data.name,
-                f"GitHub repositories for {org_data.name}",
+        self._process_projects(org_data)
+
+    def _process_projects(self, org_data):
+        """Fetch and process all projects for an organization."""
+        logger.info("  Fetching projects for %s...", org_data.name)
+        projects = self.extractor.get_projects(org_data.name)
+        logger.info("  Found %d projects", len(projects))
+
+        for project_data in projects:
+            self._process_project(org_data, project_data)
+
+    def _process_project(self, org_data, project_data):
+        """Process a single project and its repositories."""
+        logger.info("    Processing project: %s", project_data.name)
+
+        with session_scope() as session:
+            org = (
+                session.query(Organization)
+                .filter(
+                    Organization.name == org_data.name,
+                    Organization.platform == org_data.platform.value,
+                )
+                .first()
             )
 
-        self._process_repositories(org_data)
+            project = store_project(session, org, project_data.name, project_data.description)
+            logger.info("      Stored project: %s", project_data.name)
 
-    def _process_repositories(self, org_data):
-        """Fetch and process all repositories for an organization."""
-        logger.info("  Fetching repositories for %s...", org_data.name)
-        repos = self.extractor.get_repositories(org_data.name)
-        logger.info("  Found %d repositories", len(repos))
+        self._process_repositories(org_data, project_data.name)
+
+    def _process_repositories(self, org_data, project_name):
+        """Fetch and process all repositories for a project."""
+        logger.info("      Fetching repositories for %s...", project_name)
+        repos = self.extractor.get_repositories(org_data.name, project=project_name)
+        logger.info("      Found %d repositories", len(repos))
 
         for repo_data in repos:
             self._process_repository(org_data, repo_data)
 
     def _process_repository(self, org_data, repo_data):
         """Process a single repository."""
-        logger.info("    Processing repo: %s", repo_data.name)
+        logger.info("        Processing repo: %s", repo_data.name)
 
         # Check if repo was recently scanned
         with session_scope() as session:
@@ -139,22 +161,11 @@ class GitHubAnalysisWorkflow:
                 self.limits.min_scan_interval_hours,
             ):
                 logger.info(
-                    "      Skipping %s - scanned within last %d hours",
+                    "          Skipping %s - scanned within last %d hours",
                     repo_data.name,
                     self.limits.min_scan_interval_hours,
                 )
                 return
-
-        # Get repository metadata (team_name, service_name)
-        try:
-            metadata = self.extractor.get_repository_metadata(repo_data.repo_id)
-            if metadata:
-                repo_data.team_name = metadata.team_name
-                repo_data.service_name = metadata.service_name
-                logger.info("      Found metadata: team=%s, service=%s", 
-                          repo_data.team_name, repo_data.service_name)
-        except Exception as e:
-            logger.warning("      Failed to fetch repository metadata: %s", e)
 
         # Store repository
         with session_scope() as session:
@@ -164,18 +175,18 @@ class GitHubAnalysisWorkflow:
                 .filter(
                     Organization.name == org_data.name,
                     Organization.platform == org_data.platform.value,
+                    Project.name == repo_data.project_name,
                 )
                 .first()
             )
 
             repo = store_repository(session, project, repo_data)
-            logger.info("      Stored repository: %s", repo_data.name)
+            logger.info("          Stored repository: %s", repo_data.name)
 
         # Process repository contents
         self._process_branches(repo_data)
         self._process_languages(repo_data)
         self._process_technologies(repo_data)
-        self._process_readme_files(repo_data)
         self._process_commits(repo_data)
         self._process_pull_requests(repo_data)
 
@@ -186,26 +197,26 @@ class GitHubAnalysisWorkflow:
         # Update timestamp
         with session_scope() as session:
             update_repository_analyzed_timestamp(session, repo_data.repo_id)
-            logger.info("      Updated last_analyzed_at for %s", repo_data.name)
+            logger.info("          Updated last_analyzed_at for %s", repo_data.name)
 
     def _process_branches(self, repo_data):
         """Fetch and store branches for a repository."""
         try:
             branches = self.extractor.get_branches(repo_data.repo_id)
-            logger.info("      Found %d branches", len(branches))
+            logger.info("          Found %d branches", len(branches))
 
             with session_scope() as session:
                 for branch_data in branches[: self.limits.max_branches]:
                     store_branch(session, repo_data.repo_id, branch_data)
 
         except Exception as e:
-            logger.warning("      Failed to fetch branches: %s", e)
+            logger.warning("          Failed to fetch branches: %s", e)
 
     def _process_languages(self, repo_data):
         """Fetch and store language statistics for a repository."""
         try:
             languages = self.extractor.get_languages(repo_data.repo_id)
-            logger.info("      Found %d languages", len(languages))
+            logger.info("          Found %d languages", len(languages))
 
             if languages:
                 with session_scope() as session:
@@ -217,10 +228,10 @@ class GitHubAnalysisWorkflow:
                         f"{lang.language} ({lang.percentage:.1f}%)"
                         for lang in languages[:3]
                     )
-                    logger.info("      Top languages: %s", top_langs)
+                    logger.info("          Top languages: %s", top_langs)
 
         except Exception as e:
-            logger.warning("      Failed to fetch languages: %s", e)
+            logger.warning("          Failed to fetch languages: %s", e)
 
     def _process_technologies(self, repo_data):
         """Detect and log technology stack for a repository."""
@@ -228,7 +239,7 @@ class GitHubAnalysisWorkflow:
             # Get file tree to detect technologies
             file_tree = self.extractor.get_file_tree(repo_data.repo_id)
             if not file_tree:
-                logger.info("      No file tree available for technology detection")
+                logger.info("          No file tree available for technology detection")
                 return
             
             # Extract file names from tree
@@ -239,30 +250,17 @@ class GitHubAnalysisWorkflow:
             tech_detection = detector.detect(file_names)
             
             if tech_detection.all_technologies:
-                logger.info("      Detected %d technologies", len(tech_detection.all_technologies))
-                logger.info("      Primary language: %s", tech_detection.primary_language)
+                logger.info("          Detected %d technologies", len(tech_detection.all_technologies))
+                logger.info("          Primary language: %s", tech_detection.primary_language)
                 
                 if tech_detection.frameworks:
-                    logger.info("      Frameworks: %s", ", ".join(tech_detection.frameworks[:3]))
+                    logger.info("          Frameworks: %s", ", ".join(tech_detection.frameworks[:3]))
                 
                 if tech_detection.databases:
-                    logger.info("      Databases: %s", ", ".join(tech_detection.databases[:2]))
+                    logger.info("          Databases: %s", ", ".join(tech_detection.databases[:2]))
 
         except Exception as e:
-            logger.warning("      Failed to detect technologies: %s", e)
-
-    def _process_readme_files(self, repo_data):
-        """Fetch and store README files for a repository."""
-        try:
-            readme_files = self.extractor.get_readme_files(repo_data.repo_id)
-            logger.info("      Found %d README files", len(readme_files))
-
-            with session_scope() as session:
-                for readme_data in readme_files:
-                    store_readme(session, repo_data.repo_id, readme_data)
-
-        except Exception as e:
-            logger.warning("      Failed to fetch README files: %s", e)
+            logger.warning("          Failed to detect technologies: %s", e)
 
     def _process_commits(self, repo_data):
         """Fetch and store commits for a repository."""
@@ -271,7 +269,7 @@ class GitHubAnalysisWorkflow:
                 repo_data.repo_id,
                 limit=self.limits.max_commits,
             )
-            logger.info("      Found %d recent commits", len(commits))
+            logger.info("          Found %d recent commits", len(commits))
 
             with session_scope() as session:
                 stored_count = 0
@@ -286,17 +284,17 @@ class GitHubAnalysisWorkflow:
                         stored_count += 1
 
                 if stored_count > 0:
-                    logger.info("      Stored %d new commits", stored_count)
+                    logger.info("          Stored %d new commits", stored_count)
 
         except Exception as e:
-            logger.warning("      Failed to fetch commits: %s", e)
+            logger.warning("          Failed to fetch commits: %s", e)
 
     def _process_pull_requests(self, repo_data):
         """Fetch and store pull requests for a repository."""
         try:
             prs = self.extractor.get_pull_requests(repo_data.repo_id)
             prs = prs[: self.limits.max_pull_requests]
-            logger.info("      Found %d pull requests", len(prs))
+            logger.info("          Found %d pull requests", len(prs))
 
             with session_scope() as session:
                 stored_count = 0
@@ -306,10 +304,10 @@ class GitHubAnalysisWorkflow:
                         stored_count += 1
 
                 if stored_count > 0:
-                    logger.info("      Stored %d new pull requests", stored_count)
+                    logger.info("          Stored %d new pull requests", stored_count)
 
         except Exception as e:
-            logger.warning("      Failed to fetch PRs: %s", e)
+            logger.warning("          Failed to fetch PRs: %s", e)
 
     def _process_dependencies(self, repo_data):
         """Extract and store dependencies for a repository."""
@@ -323,7 +321,7 @@ class GitHubAnalysisWorkflow:
 
             if result.dependencies:
                 logger.info(
-                    "      Found %d dependencies from %d ecosystems",
+                    "          Found %d dependencies from %d ecosystems",
                     result.total_dependencies,
                     len(result.ecosystems),
                 )
@@ -332,7 +330,7 @@ class GitHubAnalysisWorkflow:
                     # Use enriched dependencies if available, otherwise fall back to unenriched
                     if result.enriched_dependencies:
                         logger.info(
-                            "      Enriching %d dependencies (latest versions, EOL, vulnerabilities)",
+                            "          Enriching %d dependencies (latest versions, EOL, vulnerabilities)",
                             len(result.enriched_dependencies),
                         )
                         store_enriched_dependencies(
@@ -353,7 +351,7 @@ class GitHubAnalysisWorkflow:
                         )
                     
                     logger.info(
-                        "      Stored %d dependencies (%d dev, %d prod)",
+                        "          Stored %d dependencies (%d dev, %d prod)",
                         result.total_dependencies,
                         result.dev_dependencies,
                         result.prod_dependencies,
@@ -361,18 +359,18 @@ class GitHubAnalysisWorkflow:
                     
                     if result.enrichment_errors:
                         logger.warning(
-                            "      Enrichment warnings: %s",
+                            "          Enrichment warnings: %s",
                             "; ".join(result.enrichment_errors),
                         )
             else:
-                logger.info("      No dependencies found")
+                logger.info("          No dependencies found")
 
             if result.parse_errors:
                 for error in result.parse_errors[:3]:
-                    logger.warning("      Parse error: %s", error)
+                    logger.warning("          Parse error: %s", error)
 
         except Exception as e:
-            logger.warning("      Failed to extract dependencies: %s", e)
+            logger.warning("          Failed to extract dependencies: %s", e)
 
     def _get_summary(self) -> dict:
         """Get extraction summary counts."""
@@ -380,14 +378,14 @@ class GitHubAnalysisWorkflow:
             return get_extraction_summary(session)
 
 
-def run_github_extraction() -> dict:
+def run_azure_devops_extraction() -> dict:
     """
-    Convenience function to run GitHub extraction workflow.
+    Convenience function to run Azure DevOps extraction workflow.
 
     Returns:
         Summary dictionary with extraction counts.
     """
-    workflow = GitHubAnalysisWorkflow()
+    workflow = AzureDevOpsAnalysisWorkflow()
     return workflow.run()
 
 
@@ -402,6 +400,7 @@ def print_extraction_summary(summary: dict) -> None:
     print("EXTRACTION SUMMARY")
     print("=" * 50)
     print(f"Organizations:  {summary['organizations']}")
+    print(f"Projects:       {summary['projects']}")
     print(f"Repositories:   {summary['repositories']}")
     print(f"Branches:       {summary['branches']}")
     print(f"Commits:        {summary['commits']}")

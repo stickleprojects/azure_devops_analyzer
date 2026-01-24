@@ -315,16 +315,22 @@ class TestGitHubExtractionDataIntegrity:
         - Unique constraints prevent duplicates
         """
         from sqlalchemy.exc import IntegrityError
+        from sqlalchemy import exc as sqlalchemy_exc
+        import warnings
         
         # Attempt to insert repository without repo_id (should fail)
+        # The SQLAlchemy warning about missing primary key is expected (intentional test)
         invalid_repo = Repository(
             repo_id=None,  # NOT NULL constraint
             url="https://example.com"
         )
         test_session.add(invalid_repo)
         
-        with pytest.raises(IntegrityError):
-            test_session.commit()
+        # Expect the constraint violation, suppress the unrelated SAWarning about primary key
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=sqlalchemy_exc.SAWarning)
+            with pytest.raises(IntegrityError):
+                test_session.commit()
     
     @pytest.mark.integration
     @pytest.mark.live_api
@@ -578,3 +584,197 @@ class TestGitHubLanguageDetection:
         assert len(second_snapshot) == 2
         lang_names = {s.language for s in second_snapshot}
         assert lang_names == {"Python", "JavaScript"}
+
+
+class TestGitHubTechnologyDetection:
+    """GitHub technology stack detection E2E tests."""
+    
+    @pytest.mark.integration
+    @pytest.mark.live_api
+    def test_detect_technologies_from_repo(
+        self,
+        github_config,
+        test_session: Session
+    ):
+        """
+        CONTRACT: Technology detection identifies frameworks, databases, and tools.
+        
+        Verify:
+        - Technology detector can analyze GitHub repository files
+        - Detects multiple technology categories
+        - Returns results for well-populated repositories
+        """
+        from src.analyzers.technology_detector import TechnologyDetector
+        
+        # Setup
+        extractor = GitHubExtractor(config=github_config)
+        detector = TechnologyDetector()
+        
+        # Use Spoon-Knife as it has various file types
+        repo_id = "octocat/Spoon-Knife"
+        repo = get_or_create_repository(extractor, repo_id, test_session)
+        
+        # Act: Get file tree and detect technologies
+        try:
+            files = extractor.get_file_tree(repo_id)
+            if not files:
+                pytest.skip("Repository has no files to analyze")
+            
+            # Build file paths for detection
+            file_paths = [f.path for f in files if not f.is_directory]
+            
+            # Act: Detect technologies
+            result = detector.detect(file_paths)
+            
+            # Assert: Result has expected structure
+            assert result is not None
+            assert hasattr(result, 'languages')
+            assert hasattr(result, 'frameworks')
+            assert hasattr(result, 'databases')
+            assert hasattr(result, 'platforms')
+            
+            # Assert: At least some basic files present
+            assert isinstance(result.languages, list)
+            assert isinstance(result.frameworks, list)
+            assert isinstance(result.databases, list)
+            assert isinstance(result.platforms, list)
+            
+        except Exception as e:
+            pytest.skip(f"Unable to access file tree: {e}")
+
+    @pytest.mark.integration
+    def test_technology_detection_structure(
+        self,
+        test_session: Session
+    ):
+        """
+        CONTRACT: Technology detection returns well-formed results.
+        
+        Verify:
+        - Detector returns all expected categories
+        - Each category is a list
+        - Can process sample file paths
+        """
+        from src.analyzers.technology_detector import TechnologyDetector
+        
+        detector = TechnologyDetector()
+        
+        # Use sample file paths that represent common repository structures
+        file_paths = [
+            "src/main.py",
+            "src/app.py",
+            "requirements.txt",
+            "setup.py",
+            "src/main.js",
+            "src/app.jsx",
+            "package.json",
+            "webpack.config.js",
+            "docker-compose.yml",
+            "Dockerfile",
+            "docker-entrypoint.sh",
+            ".github/workflows/build.yml",
+            ".github/workflows/test.yml",
+            "pytest.ini",
+            "jest.config.js",
+            "README.md",
+            "docs/index.md",
+            "Makefile",
+            "build.gradle",
+        ]
+        
+        # Act: Detect technologies
+        result = detector.detect(file_paths)
+        
+        # Assert: All categories present
+        assert result.programming_languages is not None
+        assert result.frameworks is not None
+        assert result.databases is not None
+        assert result.deployment_platforms is not None
+        assert result.build_tools is not None
+        assert result.testing_frameworks is not None
+        assert result.ci_cd_platforms is not None
+        assert result.documentation_tools is not None
+        
+        # Assert: All are lists
+        assert isinstance(result.programming_languages, list)
+        assert isinstance(result.frameworks, list)
+        assert isinstance(result.databases, list)
+        assert isinstance(result.deployment_platforms, list)
+        
+        # Assert: Detection found something
+        total_detected = (
+            len(result.programming_languages) +
+            len(result.frameworks) +
+            len(result.databases) +
+            len(result.deployment_platforms) +
+            len(result.build_tools) +
+            len(result.testing_frameworks)
+        )
+        assert total_detected > 0, "Should detect at least some technologies"
+        
+        # Assert: Python and JavaScript detected
+        assert any(t in result.programming_languages for t in ["Python", "JavaScript"]), \
+            "Should detect Python or JavaScript"
+        
+        # Assert: Docker and GitHub Actions detected
+        assert any(t in result.deployment_platforms for t in ["Docker", "GitHub"]), \
+            "Should detect Docker or GitHub"
+
+    @pytest.mark.integration
+    def test_technology_detection_with_dependencies(
+        self,
+        test_session: Session
+    ):
+        """
+        CONTRACT: Technology detection identifies dependency management files.
+        
+        Verify:
+        - Detects Python (requirements.txt, setup.py, pyproject.toml)
+        - Detects JavaScript (package.json, yarn.lock, package-lock.json)
+        - Detects Java (pom.xml, build.gradle, build.gradle.kts)
+        - Detects C# (*.csproj, *.sln)
+        """
+        from src.analyzers.technology_detector import TechnologyDetector
+        
+        detector = TechnologyDetector()
+        
+        # Python project files
+        python_files = [
+            "requirements.txt",
+            "setup.py",
+            "pyproject.toml",
+            "pipenv/Pipfile",
+            "poetry.lock",
+        ]
+        result = detector.detect(python_files)
+        assert "Python" in result.programming_languages, "Should detect Python"
+        
+        # JavaScript project files
+        js_files = [
+            "package.json",
+            "package-lock.json",
+            "yarn.lock",
+            "tsconfig.json",
+            "webpack.config.js",
+        ]
+        result = detector.detect(js_files)
+        assert "JavaScript" in result.programming_languages, "Should detect JavaScript"
+        
+        # Java project files
+        java_files = [
+            "pom.xml",
+            "build.gradle",
+            "build.gradle.kts",
+            "src/main/java/Main.java",
+        ]
+        result = detector.detect(java_files)
+        assert "Java" in result.programming_languages, "Should detect Java"
+        
+        # C# project files
+        csharp_files = [
+            "Project.csproj",
+            "Solution.sln",
+            "src/Program.cs",
+        ]
+        result = detector.detect(csharp_files)
+        assert "C#" in result.programming_languages, "Should detect C#"

@@ -15,7 +15,14 @@
       "Bash(wc:*)",
       "Bash(jq:*)",
       "Bash(find:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(pip show:*)",
+      "Bash(pip install:*)",
+      "Bash(bash scripts/run-tests-docker.sh:*)",
+      "Bash(docker info:*)",
+      "Bash(docker version:*)",
+      "Bash(docker.exe version:*)",
+      "Bash(docker.exe compose:*)"
     ]
   }
 }

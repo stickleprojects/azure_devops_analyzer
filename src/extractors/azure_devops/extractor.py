@@ -1,14 +1,27 @@
 """
 Azure DevOps repository extractor implementation.
+
+API Limitations (vs GitHub):
+- CommitData.lines_added/lines_removed: Not available. The Azure DevOps API only
+  provides file change type counts (Edit/Add/Delete), not line-level statistics.
+  Getting line counts would require fetching full diffs per commit.
+- PullRequestData.lines_added/lines_removed: Not available from the iterations API.
+  Only file count can be determined from iteration changes.
+- PRReviewData.review_date: Approximated with current time. Azure DevOps does not
+  expose vote timestamps on reviewers.
 """
 
+import logging
 import os
+import time
 from datetime import datetime
 from typing import Optional
 
+from azure.devops.exceptions import AzureDevOpsServiceError
 from azure.devops.v7_1.git.models import (
     GitPullRequestSearchCriteria,
     GitQueryCommitsCriteria,
+    GitVersionDescriptor,
 )
 
 from src.config.azure_devops import AzureDevOpsExtractorConfig
@@ -24,8 +37,8 @@ from src.extractors.base import (
     PullRequestData,
     PRReviewData,
     PRCommentData,
-    ContributorData,
     FileTreeItem,
+    LanguageData,
 )
 
 
@@ -37,6 +50,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         self._git_client = None
         self._core_client = None
         self._org_url = self.config.org_url or ""
+        self._logger = logging.getLogger(__name__)
 
     @property
     def git_client(self):
@@ -54,6 +68,47 @@ class AzureDevOpsExtractor(RepositoryExtractor):
     def platform(self) -> Platform:
         return Platform.AZURE_DEVOPS
 
+    # ── Rate Limiting ─────────────────────────────────────────────────
+
+    def _api_call_with_retry(self, api_callable, *args, **kwargs):
+        """
+        Execute an Azure DevOps API call with retry and exponential backoff.
+
+        Retries on HTTP 429 (throttled) responses up to config.max_retries times.
+        """
+        last_exception = None
+        for attempt in range(self.config.max_retries + 1):
+            try:
+                return api_callable(*args, **kwargs)
+            except AzureDevOpsServiceError as e:
+                last_exception = e
+                if self._is_throttled(e) and attempt < self.config.max_retries:
+                    sleep_time = min(
+                        self.config.backoff_seconds * (2 ** attempt),
+                        self.config.max_backoff_seconds,
+                    )
+                    self._logger.warning(
+                        "Azure DevOps API throttled (attempt %d/%d), sleeping %.1fs",
+                        attempt + 1, self.config.max_retries, sleep_time,
+                    )
+                    time.sleep(sleep_time)
+                else:
+                    raise
+        raise last_exception
+
+    @staticmethod
+    def _is_throttled(exc: AzureDevOpsServiceError) -> bool:
+        """Detect Azure DevOps rate limit (HTTP 429) responses."""
+        status_code = getattr(exc, "status_code", None)
+        if status_code == 429:
+            return True
+        inner = getattr(exc, "inner_exception", None)
+        if inner and getattr(inner, "status_code", None) == 429:
+            return True
+        return False
+
+    # ── Organizations & Projects ──────────────────────────────────────
+
     def get_organizations(self) -> list[OrganizationData]:
         """Return the configured organization."""
         org_name = self._org_url.rstrip("/").split("/")[-1]
@@ -67,7 +122,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
 
     def get_projects(self, organization: str) -> list[ProjectData]:
         """List all projects in the organization."""
-        projects = self.core_client.get_projects()
+        projects = self._api_call_with_retry(self.core_client.get_projects)
         return [
             ProjectData(
                 name=p.name,
@@ -77,6 +132,8 @@ class AzureDevOpsExtractor(RepositoryExtractor):
             for p in projects
         ]
 
+    # ── Repositories ──────────────────────────────────────────────────
+
     def get_repositories(
         self,
         organization: str,
@@ -84,32 +141,77 @@ class AzureDevOpsExtractor(RepositoryExtractor):
     ) -> list[RepositoryData]:
         """List repositories, optionally filtered by project."""
         if project:
-            repos = self.git_client.get_repositories(project=project)
+            repos = self._api_call_with_retry(
+                self.git_client.get_repositories, project=project
+            )
         else:
-            # Get repos from all projects
             repos = []
-            projects = self.core_client.get_projects()
+            projects = self._api_call_with_retry(self.core_client.get_projects)
             for p in projects:
-                project_repos = self.git_client.get_repositories(project=p.name)
+                project_repos = self._api_call_with_retry(
+                    self.git_client.get_repositories, project=p.name
+                )
                 repos.extend(project_repos)
 
-        return [
-            RepositoryData(
-                repo_id=str(r.id),
-                name=r.name,
-                url=r.web_url or r.remote_url,
-                default_branch=self._normalize_branch(r.default_branch),
-                platform=Platform.AZURE_DEVOPS,
-                project_name=r.project.name if r.project else None,
-                organization_name=organization,
-                created_at=None,  # Azure DevOps doesn't expose this directly
+        return [self._build_repository_data(r, organization) for r in repos]
+
+    def get_repository(self, repo_id: str) -> RepositoryData:
+        """Get a specific repository by ID."""
+        try:
+            repo = self._api_call_with_retry(
+                self.git_client.get_repository, repository_id=repo_id
             )
-            for r in repos
-        ]
+            org_name = self._org_url.rstrip("/").split("/")[-1]
+            return self._build_repository_data(repo, org_name)
+        except Exception as e:
+            raise ValueError(f"Repository {repo_id} not found: {e}")
+
+    def _build_repository_data(self, repo, organization: str) -> RepositoryData:
+        """Build RepositoryData from an Azure DevOps GitRepository object."""
+        return RepositoryData(
+            repo_id=str(repo.id),
+            name=repo.name,
+            url=repo.web_url or repo.remote_url,
+            default_branch=self._normalize_branch(repo.default_branch),
+            platform=Platform.AZURE_DEVOPS,
+            platform_repo_id=None,
+            project_name=repo.project.name if repo.project else None,
+            organization_name=organization,
+            created_at=None,
+            is_private=self._infer_visibility(repo),
+            is_archived=getattr(repo, "is_disabled", None),
+            repository_size=getattr(repo, "size", None),
+            open_issues_count=None,  # Requires WorkItem API (different client)
+            license_name=None,  # Not available in Azure DevOps API
+            license_key=None,
+            has_vulnerability_alerts=None,  # GitHub-specific
+            has_secret_scanning=None,  # GitHub-specific
+            has_dependabot_alerts=None,  # GitHub-specific
+            pushed_at=None,  # Not directly available
+            updated_at=None,  # Not directly available
+        )
+
+    @staticmethod
+    def _infer_visibility(repo) -> Optional[bool]:
+        """
+        Infer repository privacy from project visibility.
+
+        Azure DevOps repos inherit visibility from their project.
+        Project visibility: 0=private, 1=organization, 2=public.
+        """
+        if repo.project:
+            visibility = getattr(repo.project, "visibility", None)
+            if visibility is not None:
+                return visibility != 2  # True if not public
+        return None
+
+    # ── Branches ──────────────────────────────────────────────────────
 
     def get_branches(self, repo_id: str) -> list[BranchData]:
         """Get all branches for a repository."""
-        branches = self.git_client.get_branches(repository_id=repo_id)
+        branches = self._api_call_with_retry(
+            self.git_client.get_branches, repository_id=repo_id
+        )
         return [
             BranchData(
                 name=self._normalize_branch(b.name),
@@ -119,55 +221,50 @@ class AzureDevOpsExtractor(RepositoryExtractor):
             for b in branches
         ]
 
-    def get_languages(self, repo_id: str) -> list["LanguageData"]:
+    # ── Languages ─────────────────────────────────────────────────────
+
+    def get_languages(self, repo_id: str) -> list[LanguageData]:
         """
         Get programming language statistics for a repository.
-        
+
         Note: Azure DevOps REST API does not provide built-in language statistics.
         This implementation uses heuristics based on common project files and
         file extensions to estimate language usage.
         """
-        from src.extractors.base import LanguageData
-        
-        # Get file tree
         files = self.get_file_tree(repo_id)
         if not files:
             return []
-        
-        # Count files by language
+
         language_counts: dict[str, int] = {}
-        
+
         for file_item in files:
             if file_item.is_directory:
                 continue
-            
+
             path = file_item.path.lower()
             filename = os.path.basename(path)
-            
+
             # Check for project/configuration files (weighted higher)
             if filename in self._PROJECT_FILE_MAP:
                 lang = self._PROJECT_FILE_MAP[filename]
                 language_counts[lang] = language_counts.get(lang, 0) + 10
-            
+
             # Check file extensions
             elif "." in filename:
                 ext = filename.rsplit(".", 1)[-1]
                 if ext in self._EXTENSION_MAP:
                     lang = self._EXTENSION_MAP[ext]
                     language_counts[lang] = language_counts.get(lang, 0) + 1
-        
+
         if not language_counts:
             return []
-        
-        # Convert counts to LanguageData with percentages
+
         total_count = sum(language_counts.values())
         languages = []
-        
+
         for lang, count in language_counts.items():
-            # Estimate byte count (rough approximation)
-            byte_count = count * 1000  # Assume average file size
+            byte_count = count * 1000  # Rough approximation
             percentage = round((count / total_count) * 100, 2)
-            
             languages.append(
                 LanguageData(
                     language=lang,
@@ -175,11 +272,10 @@ class AzureDevOpsExtractor(RepositoryExtractor):
                     percentage=percentage,
                 )
             )
-        
-        # Sort by byte count descending
+
         languages.sort(key=lambda x: x.byte_count, reverse=True)
         return languages
-    
+
     # Language detection mappings
     _PROJECT_FILE_MAP = {
         # .NET
@@ -187,48 +283,40 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         ".vbproj": "Visual Basic .NET",
         ".fsproj": "F#",
         "packages.config": "C#",
-        
         # Python
         "requirements.txt": "Python",
         "setup.py": "Python",
         "pyproject.toml": "Python",
         "pipfile": "Python",
         "poetry.lock": "Python",
-        
         # JavaScript/TypeScript
         "package.json": "JavaScript",
         "tsconfig.json": "TypeScript",
         "yarn.lock": "JavaScript",
         "package-lock.json": "JavaScript",
-        
         # Java
         "pom.xml": "Java",
         "build.gradle": "Java",
         "build.gradle.kts": "Kotlin",
         "settings.gradle": "Java",
-        
         # Ruby
         "gemfile": "Ruby",
         "gemfile.lock": "Ruby",
-        
         # Go
         "go.mod": "Go",
         "go.sum": "Go",
-        
         # Rust
         "cargo.toml": "Rust",
         "cargo.lock": "Rust",
-        
         # PHP
         "composer.json": "PHP",
         "composer.lock": "PHP",
-        
         # Others
         "makefile": "Makefile",
         "dockerfile": "Dockerfile",
         "vagrantfile": "Ruby",
     }
-    
+
     _EXTENSION_MAP = {
         # Programming languages
         "cs": "C#",
@@ -265,7 +353,6 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         "pl": "Perl",
         "r": "R",
         "dart": "Dart",
-        
         # Web/Markup
         "html": "HTML",
         "htm": "HTML",
@@ -274,23 +361,22 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         "sass": "Sass",
         "less": "Less",
         "vue": "Vue",
-        
         # Data/Config
         "json": "JSON",
         "xml": "XML",
         "yaml": "YAML",
         "yml": "YAML",
         "toml": "TOML",
-        
         # Shell
         "sh": "Shell",
         "bash": "Shell",
         "ps1": "PowerShell",
         "psm1": "PowerShell",
-        
         # SQL
         "sql": "SQL",
     }
+
+    # ── Commits ───────────────────────────────────────────────────────
 
     def get_commits(
         self,
@@ -304,7 +390,9 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         search_criteria = GitQueryCommitsCriteria()
 
         if branch:
-            search_criteria.item_version = {"version": branch, "versionType": "branch"}
+            search_criteria.item_version = GitVersionDescriptor(
+                version=branch, version_type="branch"
+            )
         if since:
             search_criteria.from_date = since.isoformat()
         if until:
@@ -312,7 +400,8 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         if limit:
             search_criteria.top = limit
 
-        commits = self.git_client.get_commits(
+        commits = self._api_call_with_retry(
+            self.git_client.get_commits,
             repository_id=repo_id,
             search_criteria=search_criteria,
         )
@@ -327,12 +416,16 @@ class AzureDevOpsExtractor(RepositoryExtractor):
                 committer_name=c.committer.name if c.committer else None,
                 commit_date=c.author.date if c.author else datetime.utcnow(),
                 parent_shas=[p for p in (c.parents or [])],
-                files_changed=c.change_counts.get("Edit", 0) if c.change_counts else None,
-                lines_added=None,  # Requires additional API call
-                lines_removed=None,
+                files_changed=(
+                    sum(c.change_counts.values()) if c.change_counts else None
+                ),
+                lines_added=None,  # Not available from Azure DevOps API
+                lines_removed=None,  # Would require fetching full diffs
             )
             for c in commits
         ]
+
+    # ── Pull Requests ─────────────────────────────────────────────────
 
     def get_pull_requests(
         self,
@@ -349,23 +442,44 @@ class AzureDevOpsExtractor(RepositoryExtractor):
             search_criteria.status = "completed"
         elif status == "closed":
             search_criteria.status = "abandoned"
-        # "all" or None returns all statuses
 
-        prs = self.git_client.get_pull_requests(
+        prs = self._api_call_with_retry(
+            self.git_client.get_pull_requests,
             repository_id=repo_id,
             search_criteria=search_criteria,
         )
 
         result = []
         for pr in prs:
-            # Get reviews (votes)
-            reviews = self._get_pr_reviews(repo_id, pr.pull_request_id)
-
-            # Get comments
-            comments = self._get_pr_comments(repo_id, pr.pull_request_id)
-
-            # Map Azure status to standard status
             pr_status = self._map_pr_status(pr.status)
+
+            # Get reviews and comments in one pass (avoids duplicate get_threads call)
+            reviews, comments = self._get_pr_reviews_and_comments(
+                repo_id, pr.pull_request_id
+            )
+
+            # Get file metrics if enabled
+            files_changed, lines_added, lines_removed = self._get_pr_file_metrics(
+                repo_id, pr.pull_request_id
+            )
+
+            # Determine timestamps
+            created_at = pr.creation_date or datetime.utcnow()
+            closed_date = pr.closed_date
+
+            if pr_status == "merged":
+                merged_at = (
+                    getattr(pr, "completion_queue_time", None) or closed_date
+                )
+                closed_at = closed_date
+            elif pr_status == "closed":
+                merged_at = None
+                closed_at = closed_date
+            else:
+                merged_at = None
+                closed_at = None
+
+            updated_at = closed_date or created_at
 
             result.append(
                 PullRequestData(
@@ -375,13 +489,20 @@ class AzureDevOpsExtractor(RepositoryExtractor):
                     description=pr.description,
                     source_branch=self._normalize_branch(pr.source_ref_name),
                     target_branch=self._normalize_branch(pr.target_ref_name),
-                    author_email=pr.created_by.unique_name if pr.created_by else "",
-                    author_name=pr.created_by.display_name if pr.created_by else None,
+                    author_email=(
+                        pr.created_by.unique_name if pr.created_by else ""
+                    ),
+                    author_name=(
+                        pr.created_by.display_name if pr.created_by else None
+                    ),
                     status=pr_status,
-                    created_at=pr.creation_date or datetime.utcnow(),
-                    updated_at=None,
-                    merged_at=pr.closed_date if pr_status == "merged" else None,
-                    closed_at=pr.closed_date,
+                    created_at=created_at,
+                    updated_at=updated_at,
+                    merged_at=merged_at,
+                    closed_at=closed_at,
+                    files_changed=files_changed,
+                    lines_added=lines_added,
+                    lines_removed=lines_removed,
                     reviews=reviews,
                     comments=comments,
                 )
@@ -389,10 +510,121 @@ class AzureDevOpsExtractor(RepositoryExtractor):
 
         return result
 
-    def _get_pr_reviews(self, repo_id: str, pr_id: int) -> list[PRReviewData]:
-        """Get reviews (votes) for a pull request."""
+    def _get_pr_file_metrics(
+        self, repo_id: str, pr_id: int
+    ) -> tuple[int, int, int]:
+        """
+        Get file change count for a pull request via the iterations API.
+
+        Returns (files_changed, lines_added, lines_removed).
+        lines_added/lines_removed are always 0 (not available from this API).
+        """
+        if not self.config.fetch_pr_file_metrics:
+            return (0, 0, 0)
+
         try:
-            reviewers = self.git_client.get_pull_request_reviewers(
+            iterations = self._api_call_with_retry(
+                self.git_client.get_pull_request_iterations,
+                repository_id=repo_id,
+                pull_request_id=pr_id,
+            )
+
+            if not iterations:
+                return (0, 0, 0)
+
+            last_iteration_id = iterations[-1].id
+
+            changes = self._api_call_with_retry(
+                self.git_client.get_pull_request_iteration_changes,
+                repository_id=repo_id,
+                pull_request_id=pr_id,
+                iteration_id=last_iteration_id,
+            )
+
+            files_changed = 0
+            if changes and hasattr(changes, "change_entries") and changes.change_entries:
+                files_changed = len(changes.change_entries)
+
+            return (files_changed, 0, 0)
+
+        except Exception as e:
+            self._logger.debug("Failed to get PR %d file metrics: %s", pr_id, e)
+            return (0, 0, 0)
+
+    def _get_pr_reviews_and_comments(
+        self, repo_id: str, pr_id: int
+    ) -> tuple[list[PRReviewData], list[PRCommentData]]:
+        """
+        Get reviews and comments for a PR in one pass.
+
+        Fetches threads once, counts comments per reviewer, then builds
+        both PRReviewData (with comment_count) and PRCommentData lists.
+        """
+        # Fetch threads (used for both comments and reviewer comment counts)
+        try:
+            threads = self._api_call_with_retry(
+                self.git_client.get_threads,
+                repository_id=repo_id,
+                pull_request_id=pr_id,
+            )
+        except Exception:
+            threads = []
+
+        # Build comments and count per reviewer
+        comments = []
+        reviewer_comment_counts: dict[str, int] = {}
+
+        for thread in threads:
+            for c in (thread.comments or []):
+                if c.comment_type == "system":
+                    continue
+
+                author_email = c.author.unique_name if c.author else ""
+                if author_email:
+                    reviewer_comment_counts[author_email] = (
+                        reviewer_comment_counts.get(author_email, 0) + 1
+                    )
+
+                comments.append(
+                    PRCommentData(
+                        author_email=author_email,
+                        author_name=(
+                            c.author.display_name if c.author else None
+                        ),
+                        content=c.content or "",
+                        published_date=c.published_date or datetime.utcnow(),
+                        thread_id=str(thread.id) if thread.id else None,
+                        file_path=(
+                            thread.thread_context.file_path
+                            if thread.thread_context else None
+                        ),
+                        line_number=(
+                            thread.thread_context.right_file_start.line
+                            if thread.thread_context
+                            and thread.thread_context.right_file_start
+                            else None
+                        ),
+                        comment_type="text",
+                    )
+                )
+
+        # Build reviews with comment counts
+        reviews = self._build_reviews_with_counts(
+            repo_id, pr_id, reviewer_comment_counts
+        )
+
+        return reviews, comments
+
+    def _build_reviews_with_counts(
+        self,
+        repo_id: str,
+        pr_id: int,
+        comment_counts: dict[str, int],
+    ) -> list[PRReviewData]:
+        """Build review data with per-reviewer comment counts."""
+        try:
+            reviewers = self._api_call_with_retry(
+                self.git_client.get_pull_request_reviewers,
                 repository_id=repo_id,
                 pull_request_id=pr_id,
             )
@@ -403,48 +635,21 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         for r in reviewers:
             if r.vote != 0:  # Only include actual votes
                 state = self._map_vote_to_state(r.vote)
+                reviewer_email = r.unique_name or ""
                 reviews.append(
                     PRReviewData(
-                        reviewer_email=r.unique_name or "",
+                        reviewer_email=reviewer_email,
                         reviewer_name=r.display_name,
                         review_date=datetime.utcnow(),  # Azure doesn't expose vote date
                         state=state,
                         is_required=r.is_required or False,
+                        comment_count=comment_counts.get(reviewer_email, 0),
                     )
                 )
 
         return reviews
 
-    def _get_pr_comments(self, repo_id: str, pr_id: int) -> list[PRCommentData]:
-        """Get comments for a pull request."""
-        try:
-            threads = self.git_client.get_threads(
-                repository_id=repo_id,
-                pull_request_id=pr_id,
-            )
-        except Exception:
-            return []
-
-        comments = []
-        for thread in threads:
-            for c in (thread.comments or []):
-                if c.comment_type == "system":
-                    continue  # Skip system comments
-
-                comments.append(
-                    PRCommentData(
-                        author_email=c.author.unique_name if c.author else "",
-                        author_name=c.author.display_name if c.author else None,
-                        content=c.content or "",
-                        published_date=c.published_date or datetime.utcnow(),
-                        thread_id=str(thread.id) if thread.id else None,
-                        file_path=thread.thread_context.file_path if thread.thread_context else None,
-                        line_number=thread.thread_context.right_file_start.line if thread.thread_context and thread.thread_context.right_file_start else None,
-                        comment_type="text",
-                    )
-                )
-
-        return comments
+    # ── File Operations ───────────────────────────────────────────────
 
     def get_file_tree(
         self,
@@ -457,7 +662,8 @@ class AzureDevOpsExtractor(RepositoryExtractor):
             version_descriptor = {"version": branch, "versionType": "branch"}
 
         try:
-            items = self.git_client.get_items(
+            items = self._api_call_with_retry(
+                self.git_client.get_items,
                 repository_id=repo_id,
                 scope_path="/",
                 recursion_level="full",
@@ -470,7 +676,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
             FileTreeItem(
                 path=item.path,
                 is_directory=item.is_folder or False,
-                size=item.size if hasattr(item, 'size') else None,
+                size=item.size if hasattr(item, "size") else None,
             )
             for item in items
             if item.path != "/"
@@ -488,7 +694,8 @@ class AzureDevOpsExtractor(RepositoryExtractor):
             version_descriptor = {"version": branch, "versionType": "branch"}
 
         try:
-            stream = self.git_client.get_item_content(
+            stream = self._api_call_with_retry(
+                self.git_client.get_item_content,
                 repository_id=repo_id,
                 path=file_path,
                 version_descriptor=version_descriptor,
@@ -497,6 +704,8 @@ class AzureDevOpsExtractor(RepositoryExtractor):
             return content
         except Exception:
             return None
+
+    # ── Helpers ───────────────────────────────────────────────────────
 
     @staticmethod
     def _normalize_branch(ref_name: Optional[str]) -> str:

@@ -2,8 +2,8 @@ FROM postgres:16-alpine
 
 WORKDIR /migrations
 
-# Install bash for the migration script
-RUN apk add --no-cache bash
+# Install bash and required tools for migrations and SDK dependencies
+RUN apk add --no-cache bash gcc musl-dev libffi-dev openssl-dev python3-dev
 
 # Copy database schema and migrations
 COPY database/schema.sql ./schema.sql
