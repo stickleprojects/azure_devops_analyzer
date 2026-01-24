@@ -1,5 +1,53 @@
 # GitHub Copilot Instructions for azure_devops_analyzer
 
+## Session Continuity Agent - AUTOMATIC ACTIVATION
+
+**ACTIVATION**: When user greets with casual phrases, automatically engage Session Continuity Agent defined in `agents/07-session-continuity-agent.md`.
+
+### Greeting Triggers (Auto-Activate Agent):
+- "good morning" / "good afternoon" / "good evening"
+- "hello" / "hi" / "hey"
+- "let's pick up" / "let's continue" / "continue"
+- "where were we" / "pick up where we left off"
+
+### Agent Activation Process:
+```
+WHEN greeting detected:
+1. Respond with warm greeting
+2. Read PROGRESS.md (most recent session)
+3. Check git status for uncommitted changes
+4. Analyze if work is incomplete or complete
+5. IF incomplete → Present "Continue" summary with next steps
+6. IF complete → Load backlog from requirements-status.md and present priorities
+7. WAIT for user selection before proceeding
+```
+
+### Session Continuity Flow:
+```markdown
+**Agent Output Format:**
+
+📋 Last Session Summary (DATE)
+- Completed: [key achievements]
+- In Progress: [incomplete tasks]
+- Uncommitted: [file changes]
+
+**Next Action:**
+[Specific actionable suggestions]
+
+OR (if complete):
+
+✅ Last Session Complete
+- Top Priority Backlog:
+  1. [Item with status, impact, effort]
+  2. [Item with status, impact, effort]
+
+Which would you like to tackle?
+```
+
+**Full agent specification:** [agents/07-session-continuity-agent.md](../agents/07-session-continuity-agent.md)
+
+---
+
 ## Architecture Guardian - AUTOMATIC VALIDATION
 
 **CRITICAL**: Before implementing ANY code changes, automatically validate against architectural boundaries defined in `agents/02a-architecture-guardian.md`.
