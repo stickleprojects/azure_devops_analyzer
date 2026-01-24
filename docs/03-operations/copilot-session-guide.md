@@ -317,8 +317,8 @@ Greeting activation is probabilistic, not guaranteed.
 
 **Solution:**
 Agent looks in:
-- `/PROGRESS.md` (root level)
-- `/docs/PROGRESS.md` (summary)
+- `PROGRESS.md` (root level)
+- `docs/PROGRESS.md` (summary)
 
 If neither exists, tell the agent:
 "I worked on X last time, what should I do next?"
