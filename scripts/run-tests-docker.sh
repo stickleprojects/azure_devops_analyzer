@@ -208,6 +208,7 @@ if [ "$RUN_LIVE_API" = true ]; then
         sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
                pytest tests/contract/integration/test_github_extraction_e2e.py \
                       tests/contract/integration/test_azure_devops_extraction_e2e.py \
+                      tests/contract/integration/test_contributor_metrics_e2e.py \
                       -v \
                -m 'live_api' \
                --junit-xml=/app/test-results/junit-live-api.xml \
@@ -223,6 +224,7 @@ else
         sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
                pytest tests/contract/integration/test_github_extraction_e2e.py \
                       tests/contract/integration/test_azure_devops_extraction_e2e.py \
+                      tests/contract/integration/test_contributor_metrics_e2e.py \
                       -v \
                -m 'not live_api' \
                --junit-xml=/app/test-results/junit.xml \
