@@ -26,6 +26,7 @@ from src.database.storage import (
 )
 from src.analyzers.dependency_analyzer import DependencyAnalyzer
 from src.analyzers.technology_detector import TechnologyDetector
+from src.analyzers.contributor_analyzer import calculate_and_store_contributor_metrics
 from src.extractors.azure_devops.extractor import AzureDevOpsExtractor
 
 logger = logging.getLogger(__name__)
@@ -193,6 +194,9 @@ class AzureDevOpsAnalysisWorkflow:
         # Extract dependencies
         if self.limits.extract_dependencies:
             self._process_dependencies(repo_data)
+        
+        # Calculate contributor metrics
+        self._process_contributor_metrics(repo_data)
 
         # Update timestamp
         with session_scope() as session:
@@ -371,6 +375,42 @@ class AzureDevOpsAnalysisWorkflow:
 
         except Exception as e:
             logger.warning("          Failed to extract dependencies: %s", e)
+
+    def _process_contributor_metrics(self, repo_data):
+        """Calculate and store contributor metrics for the repository."""
+        try:
+            from datetime import datetime, UTC
+            
+            # Calculate metrics for the current month
+            now = datetime.now(UTC)
+            period_start = datetime(now.year, now.month, 1, tzinfo=UTC)
+            
+            # Calculate end of current month
+            if now.month == 12:
+                period_end = datetime(now.year + 1, 1, 1, tzinfo=UTC)
+            else:
+                period_end = datetime(now.year, now.month + 1, 1, tzinfo=UTC)
+            
+            with session_scope() as session:
+                metrics = calculate_and_store_contributor_metrics(
+                    session,
+                    repo_data.repo_id,
+                    period_start,
+                    period_end,
+                )
+                
+                if metrics:
+                    logger.info(
+                        "          Calculated contributor metrics for %d contributors (period: %s to %s)",
+                        len(metrics),
+                        period_start.strftime("%Y-%m-%d"),
+                        period_end.strftime("%Y-%m-%d"),
+                    )
+                else:
+                    logger.info("          No contributor activity in current period")
+                    
+        except Exception as e:
+            logger.warning("          Failed to calculate contributor metrics: %s", e)
 
     def _get_summary(self) -> dict:
         """Get extraction summary counts."""

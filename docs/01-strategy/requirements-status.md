@@ -5,9 +5,9 @@
 | Field            | Value                      |
 | ---------------- | -------------------------- |
 | Project Name     | Repository Analysis System |
-| Document Version | 1.7                        |
+| Document Version | 1.8                        |
 | Status           | Active                     |
-| Last Updated     | 2026-01-24 (Part 8)        |
+| Last Updated     | 2026-01-24 (Part 9)        |
 
 ## Status Legend
 
@@ -64,7 +64,7 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 16       | 9       | 20          | 45    |
+| Functional Requirements     | 19       | 6       | 20          | 45    |
 | Non-Functional Requirements | 6        | 6       | 7           | 19    |
 
 **Note:** FR-1.5 and FR-8.2 updated to reflect cross-platform requirements for README and metadata extraction.
@@ -144,14 +144,14 @@
 
 ### FR-6: Contributor Analytics
 
-| ID     | Requirement                                                     | Priority | Status                         | Notes                                                                                                                  |
-| ------ | --------------------------------------------------------------- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| FR-6.1 | System shall track unique contributors per repository           | High     | :white_check_mark: Complete    | `Contributor` entity with email-based identification                                                                   |
-| FR-6.2 | System shall calculate contributor metrics                      | High     | :white_check_mark: Complete    | `ContributorMetric` entity with commits, lines_added, lines_removed, prs_opened, prs_reviewed; population logic needed |
-| FR-6.3 | System shall track commit patterns (frequency, message quality) | Medium   | :large_orange_diamond: Partial | `Commit` entity has `message_quality_score` field; scoring logic not implemented                                       |
-| FR-6.4 | System shall track active days per contributor                  | Medium   | :large_orange_diamond: Partial | `active_days` field on ContributorMetric; calculation not implemented                                                  |
+| ID     | Requirement                                                     | Priority | Status                      | Notes                                                                                                                                                              |
+| ------ | --------------------------------------------------------------- | -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-6.1 | System shall track unique contributors per repository           | High     | :white_check_mark: Complete | `Contributor` entity with email-based identification; integrated into both GitHub and Azure DevOps workflows                                                       |
+| FR-6.2 | System shall calculate contributor metrics                      | High     | :white_check_mark: Complete | `ContributorMetric` entity with commits, lines_added, lines_removed, prs_opened, prs_reviewed; `calculate_and_store_contributor_metrics()` integrated - 2026-01-24 |
+| FR-6.3 | System shall track commit patterns (frequency, message quality) | Medium   | :white_check_mark: Complete | `ContributorAnalyzer.analyze_commit_message()` scores conventional commits, imperative mood, issue references; integrated into workflows - 2026-01-24              |
+| FR-6.4 | System shall track active days per contributor                  | Medium   | :white_check_mark: Complete | `active_days` calculated via `COUNT(DISTINCT date(commit_date))` in `ContributorAnalyzer.calculate_contributor_metrics()` - 2026-01-24                             |
 
-**FR-6 Summary:** 1/4 Complete, 3/4 Partial
+**FR-6 Summary:** 4/4 Complete
 
 ---
 
@@ -373,3 +373,4 @@
 | 1.5     | 2026-01-24 | System | FR-2 Complete: Language and technology detection implemented for both platforms; added platform parity comparison                                                                                   |
 | 1.6     | 2026-01-24 | System | Added comprehensive platform parity documentation; confirmed functional parity for FR-1 through FR-4                                                                                                |
 | 1.7     | 2026-01-24 | System | **Cross-Platform Requirements**: Added FR-1.5 (repository metadata extraction); updated FR-8.2 priority to High; mandated README and metadata extraction for both GitHub and Azure DevOps platforms |
+| 1.8     | 2026-01-24 | System | **FR-6 Complete**: Integrated `ContributorAnalyzer` into GitHub and Azure DevOps workflows; all contributor analytics implemented (metrics calculation, commit message quality, active days)        |
