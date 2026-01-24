@@ -1,18 +1,26 @@
 # GitHub Copilot Instructions for azure_devops_analyzer
 
-## Session Continuity Agent - AUTOMATIC ACTIVATION
+## Session Continuity Agent - BEST-EFFORT ACTIVATION
 
-**ACTIVATION**: When user greets with casual phrases, automatically engage Session Continuity Agent defined in `agents/07-session-continuity-agent.md`.
+**ACTIVATION**: When user greets with casual phrases, **attempt to engage** Session Continuity Agent defined in `agents/07-session-continuity-agent.md`.
 
-### Greeting Triggers (Auto-Activate Agent):
+**Note:** Greeting detection is probabilistic. If automatic activation doesn't occur, the user can explicitly request: "analyze last session" or "show backlog".
+
+### Greeting Triggers (Best-Effort Auto-Activate):
 - "good morning" / "good afternoon" / "good evening"
 - "hello" / "hi" / "hey"
 - "let's pick up" / "let's continue" / "continue"
 - "where were we" / "pick up where we left off"
 
+### Alternative Explicit Prompts (If Greeting Fails):
+- "analyze last session"
+- "show me the backlog"
+- "what should I work on?"
+- "where did I leave off?"
+
 ### Agent Activation Process:
 ```
-WHEN greeting detected:
+WHEN greeting detected OR explicit request:
 1. Respond with warm greeting
 2. Read PROGRESS.md (most recent session)
 3. Check git status for uncommitted changes
@@ -21,6 +29,16 @@ WHEN greeting detected:
 6. IF complete → Load backlog from requirements-status.md and present priorities
 7. WAIT for user selection before proceeding
 ```
+
+### Assisted Task Completion (User-Prompted):
+When user asks "is this task complete?", the agent checks:
+- Test status (all passing?)
+- Git status (committed/staged?)
+- Implementation status (complete?)
+- Suggests marking complete if criteria met
+- Updates documentation with user approval
+
+**Important:** Agent requires user interaction. No automatic background monitoring.
 
 ### Session Continuity Flow:
 ```markdown
@@ -45,6 +63,8 @@ Which would you like to tackle?
 ```
 
 **Full agent specification:** [agents/07-session-continuity-agent.md](../agents/07-session-continuity-agent.md)
+
+**User guide:** [docs/03-operations/copilot-session-guide.md](../docs/03-operations/copilot-session-guide.md) - Learn when and how to prompt the agent
 
 ---
 
