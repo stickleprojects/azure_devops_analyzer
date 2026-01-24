@@ -82,6 +82,7 @@ services:
         pytest tests/contract/integration/ -v \
           -m 'not live_api' \
           --junit-xml=/app/test-results/junit.xml \
+          -p no:cacheprovider \
           --tb=short
     environment:
       # Test database connection (internal Docker network)
