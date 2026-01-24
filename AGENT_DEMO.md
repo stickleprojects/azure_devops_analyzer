@@ -5,7 +5,7 @@ This document demonstrates how the Session Continuity Agent (defined in [agents/
 
 ---
 
-## Scenario 1: User Returns After Incomplete Work
+## Scenario 1: User Returns After Completed Work
 
 **User:** "good morning"
 
