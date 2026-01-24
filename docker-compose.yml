@@ -72,6 +72,7 @@ services:
   # ===========================================
   # Scheduler - APScheduler main process
   # Handles: Cron jobs, interval scheduling, job coordination
+  # Supports: Azure DevOps and GitHub extraction
   # ===========================================
   scheduler:
     build:
@@ -81,21 +82,27 @@ services:
     restart: unless-stopped
     command: python -m src.scheduler.main
     environment:
+      # Database configuration
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
+      # RabbitMQ/Celery configuration
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
       RABBITMQ_HOST: ${RABBITMQ_HOST}
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      # Azure DevOps SDK configuration
       AZURE_DEVOPS_ORG_URL: ${AZURE_DEVOPS_ORG_URL}
       AZURE_DEVOPS_PAT: ${AZURE_DEVOPS_PAT}
+      AZURE_DEVOPS_ORG_NAME: ${AZURE_DEVOPS_ORG_NAME}
+      # GitHub SDK configuration
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_ORG: ${GITHUB_ORG}
       GITHUB_USER: ${GITHUB_USER}
+      # Logging
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     volumes:
       - ./src:/app/src:ro
@@ -113,6 +120,7 @@ services:
   # ===========================================
   # Celery Worker - Distributed task execution
   # Handles: Repository extraction, analysis, storage tasks
+  # Supports: Azure DevOps and GitHub extraction
   # ===========================================
   celery-worker:
     build:
@@ -122,23 +130,30 @@ services:
     restart: unless-stopped
     command: celery -A src.scheduler.celery_app worker --loglevel=${LOG_LEVEL:-INFO} --concurrency=${CELERY_WORKER_CONCURRENCY:-4}
     environment:
+      # Database configuration
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
+      # RabbitMQ/Celery configuration
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
       RABBITMQ_HOST: ${RABBITMQ_HOST}
       RABBITMQ_PORT: ${RABBITMQ_PORT}
       CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      # Azure DevOps SDK configuration
       AZURE_DEVOPS_ORG_URL: ${AZURE_DEVOPS_ORG_URL}
       AZURE_DEVOPS_PAT: ${AZURE_DEVOPS_PAT}
+      AZURE_DEVOPS_ORG_NAME: ${AZURE_DEVOPS_ORG_NAME}
+      # GitHub SDK configuration
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_ORG: ${GITHUB_ORG}
       GITHUB_USER: ${GITHUB_USER}
+      # Azure Storage (for backups)
       AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING}
       AZURE_BACKUP_CONTAINER: ${AZURE_BACKUP_CONTAINER}
+      # Logging
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     volumes:
       - ./src:/app/src:ro

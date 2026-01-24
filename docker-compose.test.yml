@@ -93,9 +93,14 @@ services:
       POSTGRES_DB: analyzer_test
       POSTGRES_PORT: 5432
       
-      # GitHub token for tests (from host environment)
+      # GitHub SDK for tests (from host environment)
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       GITHUB_PRIVATE_REPO: ${GITHUB_PRIVATE_REPO}
+      
+      # Azure DevOps SDK for tests (optional, from host environment)
+      AZURE_DEVOPS_ORG_URL: ${AZURE_DEVOPS_ORG_URL}
+      AZURE_DEVOPS_PAT: ${AZURE_DEVOPS_PAT}
+      AZURE_DEVOPS_ORG_NAME: ${AZURE_DEVOPS_ORG_NAME}
       
       # Test configuration
       LOG_LEVEL: DEBUG
