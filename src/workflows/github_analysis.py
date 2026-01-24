@@ -21,6 +21,7 @@ from src.database.storage import (
     store_pull_request,
     store_readme,
     store_dependencies,
+    store_enriched_dependencies,
     update_repository_analyzed_timestamp,
     get_extraction_summary,
 )
@@ -260,7 +261,7 @@ class GitHubAnalysisWorkflow:
     def _process_dependencies(self, repo_data):
         """Extract and store dependencies for a repository."""
         try:
-            analyzer = DependencyAnalyzer()
+            analyzer = DependencyAnalyzer(enrich=True)
             result = analyzer.analyze(
                 self.extractor,
                 repo_data.repo_id,
@@ -275,19 +276,41 @@ class GitHubAnalysisWorkflow:
                 )
 
                 with session_scope() as session:
-                    store_dependencies(
-                        session,
-                        repo_data.repo_id,
-                        result.dependencies,
-                        branch_name=repo_data.default_branch,
-                        analyzed_at=result.analyzed_at,
-                    )
+                    # Use enriched dependencies if available, otherwise fall back to unenriched
+                    if result.enriched_dependencies:
+                        logger.info(
+                            "      Enriching %d dependencies (latest versions, EOL, vulnerabilities)",
+                            len(result.enriched_dependencies),
+                        )
+                        store_enriched_dependencies(
+                            session,
+                            repo_data.repo_id,
+                            result.enriched_dependencies,
+                            branch_name=repo_data.default_branch,
+                            analyzed_at=result.analyzed_at,
+                        )
+                    else:
+                        # Fallback to unenriched if enrichment failed
+                        store_dependencies(
+                            session,
+                            repo_data.repo_id,
+                            result.dependencies,
+                            branch_name=repo_data.default_branch,
+                            analyzed_at=result.analyzed_at,
+                        )
+                    
                     logger.info(
                         "      Stored %d dependencies (%d dev, %d prod)",
                         result.total_dependencies,
                         result.dev_dependencies,
                         result.prod_dependencies,
                     )
+                    
+                    if result.enrichment_errors:
+                        logger.warning(
+                            "      Enrichment warnings: %s",
+                            "; ".join(result.enrichment_errors),
+                        )
             else:
                 logger.info("      No dependencies found")
 

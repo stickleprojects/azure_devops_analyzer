@@ -56,12 +56,12 @@
 
 ### FR-3: Dependency Analysis
 
-| ID     | Requirement                                                              | Priority | Status                         | Notes                                                                                                                                                                                 |
-| ------ | ------------------------------------------------------------------------ | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-3.1 | System shall extract dependencies from package manifest files            | High     | :white_check_mark: Complete    | Parser framework with 7 ecosystem parsers: PyPI (requirements.txt, pyproject.toml, Pipfile), npm (package.json), Maven (pom.xml), NuGet (*.csproj, packages.config), Go, Ruby, Rust |
-| FR-3.2 | System shall identify current and latest versions of dependencies        | High     | :white_check_mark: Complete    | OSVClient queries OSV.dev for latest versions; integrated into DependencyEnricher - implemented 2026-01-24                                                                          |
-| FR-3.3 | System shall flag end-of-life (EOL) dependencies                         | High     | :white_check_mark: Complete    | EndOfLifeClient queries endoflife.date; populated with `eol_date` and `is_eol` fields - implemented 2026-01-24                                                                     |
-| FR-3.4 | System shall distinguish between production and development dependencies | Medium   | :white_check_mark: Complete    | `is_dev_dependency` field populated by parsers based on file names, sections, and package indicators                                                                                  |
+| ID     | Requirement                                                              | Priority | Status                      | Notes                                                                                                                                                                                |
+| ------ | ------------------------------------------------------------------------ | -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-3.1 | System shall extract dependencies from package manifest files            | High     | :white_check_mark: Complete | Parser framework with 7 ecosystem parsers: PyPI (requirements.txt, pyproject.toml, Pipfile), npm (package.json), Maven (pom.xml), NuGet (\*.csproj, packages.config), Go, Ruby, Rust |
+| FR-3.2 | System shall identify current and latest versions of dependencies        | High     | :white_check_mark: Complete | OSVClient queries OSV.dev for latest versions; integrated into DependencyEnricher - implemented 2026-01-24                                                                           |
+| FR-3.3 | System shall flag end-of-life (EOL) dependencies                         | High     | :white_check_mark: Complete | EndOfLifeClient queries endoflife.date; populated with `eol_date` and `is_eol` fields - implemented 2026-01-24                                                                       |
+| FR-3.4 | System shall distinguish between production and development dependencies | Medium   | :white_check_mark: Complete | `is_dev_dependency` field populated by parsers based on file names, sections, and package indicators                                                                                 |
 
 **FR-3 Summary:** 4/4 Complete
 
@@ -69,13 +69,13 @@
 
 ### FR-4: Security Vulnerability Scanning
 
-| ID     | Requirement                                                         | Priority | Status                         | Notes                                                                                                           |
-| ------ | ------------------------------------------------------------------- | -------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| FR-4.1 | System shall identify known vulnerabilities (CVEs) in dependencies  | Critical | :white_check_mark: Complete    | OSVClient extracts CVE/OSV IDs and vulnerability data from OSV.dev API - implemented 2026-01-24                 |
-| FR-4.2 | System shall classify vulnerabilities by severity                   | Critical | :white_check_mark: Complete    | `severity` enum (critical, high, medium, low) on Vulnerability entity; CVSS score mapping implemented           |
-| FR-4.3 | System shall provide remediation guidance (fixed version)           | High     | :white_check_mark: Complete    | `fixed_in_version` field on Vulnerability entity; extracted from OSV.dev data                                   |
-| FR-4.4 | System shall track vulnerability publication and modification dates | Medium   | :white_check_mark: Complete    | Schema has `published_at` and `modified_at` fields; populated from OSV.dev - implemented 2026-01-24             |
-| FR-4.5 | System shall track GitHub security features enabled per repository  | High     | :white_check_mark: Complete    | GitHub extractor captures vulnerability alerts, secret scanning, and Dependabot alerts - implemented 2026-01-18 |
+| ID     | Requirement                                                         | Priority | Status                      | Notes                                                                                                           |
+| ------ | ------------------------------------------------------------------- | -------- | --------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| FR-4.1 | System shall identify known vulnerabilities (CVEs) in dependencies  | Critical | :white_check_mark: Complete | OSVClient extracts CVE/OSV IDs and vulnerability data from OSV.dev API - implemented 2026-01-24                 |
+| FR-4.2 | System shall classify vulnerabilities by severity                   | Critical | :white_check_mark: Complete | `severity` enum (critical, high, medium, low) on Vulnerability entity; CVSS score mapping implemented           |
+| FR-4.3 | System shall provide remediation guidance (fixed version)           | High     | :white_check_mark: Complete | `fixed_in_version` field on Vulnerability entity; extracted from OSV.dev data                                   |
+| FR-4.4 | System shall track vulnerability publication and modification dates | Medium   | :white_check_mark: Complete | Schema has `published_at` and `modified_at` fields; populated from OSV.dev - implemented 2026-01-24             |
+| FR-4.5 | System shall track GitHub security features enabled per repository  | High     | :white_check_mark: Complete | GitHub extractor captures vulnerability alerts, secret scanning, and Dependabot alerts - implemented 2026-01-18 |
 
 **FR-4 Summary:** 5/5 Complete
 
@@ -292,6 +292,7 @@
 4. ~~Add drill-down navigation~~ ✅ Complete
 
 **Dashboards Implemented:**
+
 - Team Overview (`team-overview.json`)
 - Repository Overview (`repository-overview.json`)
 - Repository Deep-Dive (`repository-deep-dive.json`)
@@ -317,9 +318,9 @@
 
 ## Revision History
 
-| Version | Date       | Author | Changes                                                                                                                        |
-| ------- | ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                                                           |
-| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation                                     |
-| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started)                                     |
-| 1.3     | 2026-01-19 | System | FR-3.1 Complete: Dependency extraction implemented with 7 ecosystem parsers (PyPI, npm, Maven, NuGet, Go, Ruby, Rust)          |
+| Version | Date       | Author | Changes                                                                                                               |
+| ------- | ---------- | ------ | --------------------------------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                                                  |
+| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation                            |
+| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started)                            |
+| 1.3     | 2026-01-19 | System | FR-3.1 Complete: Dependency extraction implemented with 7 ecosystem parsers (PyPI, npm, Maven, NuGet, Go, Ruby, Rust) |

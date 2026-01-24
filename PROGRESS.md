@@ -3,6 +3,7 @@
 ## Session: 2026-01-24 - Dependency Analysis: OSV.dev & endoflife.date Integration
 
 ### Summary
+
 Implemented complete dependency enrichment pipeline integrating OSV.dev for vulnerability data and latest versions, and endoflife.date for end-of-life tracking. This fulfills FR-3.2 (latest versions) and FR-3.3 (EOL detection) requirements.
 
 ### Problems Addressed
@@ -16,6 +17,7 @@ Implemented complete dependency enrichment pipeline integrating OSV.dev for vuln
 ### Solutions Implemented
 
 #### 1. OSV.dev Client (`src/analyzers/osv_client.py`)
+
 - Full API integration with Open Source Vulnerabilities database
 - Supports all major ecosystems: PyPI, npm, Maven, NuGet, Go, RubyGems, Cargo
 - Extracts latest version information from vulnerability ranges
@@ -24,6 +26,7 @@ Implemented complete dependency enrichment pipeline integrating OSV.dev for vuln
 - Graceful error handling with logging for timeouts and API errors
 
 #### 2. endoflife.date Client (`src/analyzers/eol_client.py`)
+
 - Integration with endoflife.date API for software lifecycle data
 - Maps ecosystems to product names for correct API queries
 - Parses ISO format dates for EOL tracking
@@ -31,6 +34,7 @@ Implemented complete dependency enrichment pipeline integrating OSV.dev for vuln
 - Supports past/future EOL date detection
 
 #### 3. Dependency Enricher (`src/analyzers/dependency_enricher.py`)
+
 - Concurrent enrichment using ThreadPoolExecutor for performance
 - Processes multiple dependencies in parallel (configurable workers)
 - Combines data from both APIs
@@ -38,11 +42,13 @@ Implemented complete dependency enrichment pipeline integrating OSV.dev for vuln
 - Comprehensive error handling and logging
 
 #### 4. Database Integration (`src/database/storage.py`)
+
 - New `store_enriched_dependencies()` function
 - Stores all enriched fields: `latest_version`, `eol_date`, `is_eol`, `has_vulnerabilities`
 - Maintains backward compatibility with existing `store_dependencies()`
 
 #### 5. Analyzer Integration (`src/analyzers/dependency_analyzer.py`)
+
 - Added `enrich` parameter to DependencyAnalyzer
 - Optional enrichment flag (disabled by default for performance)
 - New `enriched_dependencies` list in DependencyAnalysisResult
@@ -73,6 +79,7 @@ Implemented complete dependency enrichment pipeline integrating OSV.dev for vuln
 ### Test Coverage
 
 All 13 contract tests passing:
+
 - ✓ OSV.dev client: severity mapping, vulnerability parsing, ecosystem handling
 - ✓ endoflife.date client: date parsing, EOL detection, version matching
 - ✓ Dependency enricher: single/multiple concurrent enrichment, error handling
@@ -99,6 +106,7 @@ All 13 contract tests passing:
 ## Session: 2026-01-23 - GitHub Configuration Refactoring & Critical API Fix
 
 ### Summary
+
 Major refactoring of GitHub configuration management and discovery of critical GitHub API behavior regarding private repository access.
 
 ### Problems Addressed
@@ -124,11 +132,13 @@ Major refactoring of GitHub configuration management and discovery of critical G
 ### Solutions Implemented
 
 #### 1. Environment & Testing Setup
+
 - Installed pytest 9.0.2 and all requirements (92 packages)
 - Configured venv activation for both bash and PowerShell
 - All 34 tests now passing (31 unit + 3 live integration)
 
 #### 2. Configuration Refactoring
+
 - **Created `load_env_file()` function** in `src/config/github.py`
   - Supports indirect variable resolution: `$VARIABLE_NAME` → actual value
   - Handles chained references: `A=$B`, `B=$C`, `C=value`
@@ -150,18 +160,20 @@ Major refactoring of GitHub configuration management and discovery of critical G
 
 **The Problem:**
 GitHub's REST API has non-obvious behavior - using a named user endpoint returns ONLY public repositories, even when:
+
 - You have valid authentication
 - The named user IS the authenticated user
 - You request `type="all"`
 
 **Root Cause:**
+
 ```python
 # ❌ Returns ONLY public repos (29 in our case)
 user = client.get_user('stickleprojects')  # Named user endpoint
 repos = user.get_repos(type="all")
 
 # ✅ Returns ALL repos including private (60 total)
-user = client.get_user()  # Authenticated user endpoint  
+user = client.get_user()  # Authenticated user endpoint
 repos = user.get_repos(visibility="all")
 ```
 
@@ -181,6 +193,7 @@ else:
 ```
 
 **Impact:**
+
 - **Before:** 29 repositories (public only)
 - **After:** 60 repositories (public + private) ✅
 - All private repos now correctly included in extraction
@@ -188,6 +201,7 @@ else:
 ### Files Created/Modified
 
 #### New Files
+
 - `docs/03-operations/github-config-env-loading.md` - Environment loading documentation
 - `docs/03-operations/github-config-refactoring.md` - Configuration refactoring guide
 - `docs/03-operations/github-private-repos-finding.md` - ⚠️ Critical API behavior documentation
@@ -195,6 +209,7 @@ else:
 - `PROGRESS.md` - This file
 
 #### Modified Files
+
 - `src/config/github.py` - Added load_env_file() and credential fields
 - `src/extractors/github/client.py` - Refactored to accept config parameter
 - `src/extractors/github/extractor.py` - **CRITICAL FIX** for private repo access
@@ -207,11 +222,12 @@ else:
 ### Verification
 
 All tests passing:
+
 ```bash
 # Unit tests
 pytest tests/test_github_config.py -v  # 18 passed
 
-# Integration tests  
+# Integration tests
 pytest tests/test_github_extractor_standalone.py::TestGetRepositoriesLive -v
 # 3 passed in 46.44s
 # - test_extractor_returns_azure_devops_analyzer_repo ✅ (60 repos including private)
