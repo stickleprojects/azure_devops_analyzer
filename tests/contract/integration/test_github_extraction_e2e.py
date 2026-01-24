@@ -41,24 +41,28 @@ class TestGitHubExtractionBasic:
         repo_id = "octocat/Hello-World"
         
         # Act: Extract repository metadata
-        repo_data = extractor.extract_repository(repo_id)
+        repos = extractor.get_repositories("")
+        repo_data = next((r for r in repos if r.repo_id == repo_id), None)
+        
+        assert repo_data is not None, f"Repository {repo_id} not found in extraction"
         
         # Store in database
         repo = Repository(
-            repo_id=repo_data["repo_id"],
-            url=repo_data["url"],
-            name=repo_data["name"],
-            created_at=repo_data.get("created_at"),
-            updated_at=repo_data.get("updated_at"),
-            description=repo_data.get("description"),
-            is_fork=repo_data.get("is_fork", False),
-            is_archived=repo_data.get("is_archived", False),
-            is_private=repo_data.get("is_private", False),
-            default_branch=repo_data.get("default_branch"),
-            size_kb=repo_data.get("size_kb"),
-            stars=repo_data.get("stars", 0),
-            watchers=repo_data.get("watchers", 0),
-            forks=repo_data.get("forks", 0),
+            repo_id=repo_data.repo_id,
+            url=repo_data.url,
+            name=repo_data.name,
+            created_at=repo_data.created_at,
+            updated_at=repo_data.updated_at,
+            is_archived=repo_data.is_archived,
+            is_private=repo_data.is_private,
+            default_branch=repo_data.default_branch,
+            repository_size=repo_data.repository_size,
+            open_issues_count=repo_data.open_issues_count,
+            license_name=repo_data.license_name,
+            license_key=repo_data.license_key,
+            has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
+            has_secret_scanning=repo_data.has_secret_scanning,
+            has_dependabot_alerts=repo_data.has_dependabot_alerts,
         )
         test_session.add(repo)
         test_session.commit()
@@ -94,25 +98,28 @@ class TestGitHubExtractionBasic:
         repo_id = "octocat/Hello-World"
         
         # Extract and store repository
-        repo_data = extractor.extract_repository(repo_id)
+        repos = extractor.get_repositories("")
+        repo_data = next((r for r in repos if r.repo_id == repo_id), None)
+        assert repo_data is not None, f"Repository {repo_id} not found"
+        
         repo = Repository(
             repo_id=repo_id,
-            url=repo_data["url"],
-            name=repo_data["name"],
-            default_branch=repo_data.get("default_branch"),
+            url=repo_data.url,
+            name=repo_data.name,
+            default_branch=repo_data.default_branch,
         )
         test_session.add(repo)
         test_session.commit()
         
         # Extract branch information
-        branches_data = extractor.extract_branches(repo_id)
+        branches_data = extractor.get_branches(repo_id)
         
         # Store branches
         for branch_data in branches_data:
             branch = Branch(
                 repo_id=repo_id,
-                branch_name=branch_data["branch_name"],
-                latest_commit_sha=branch_data["latest_commit_sha"],
+                branch_name=branch_data.name,
+                latest_commit_sha=branch_data.latest_commit_sha,
             )
             test_session.add(branch)
         test_session.commit()
@@ -156,20 +163,24 @@ class TestGitHubExtractionBasic:
         test_session.commit()
         
         # Extract commits
-        commits_data = extractor.extract_commits(repo_id, max_commits=10)
+        commits_data = extractor.get_commits(repo_id, limit=10)
         
         # Store commits
         for commit_data in commits_data:
             commit = Commit(
+                commit_sha=commit_data.sha,
                 repo_id=repo_id,
-                sha=commit_data["sha"],
-                message=commit_data.get("message", ""),
-                author_email=commit_data.get("author_email", "unknown@github.com"),
-                author_name=commit_data.get("author_name", "Unknown"),
-                commit_date=commit_data.get("commit_date"),
-                files_changed=commit_data.get("files_changed", 0),
-                additions=commit_data.get("additions", 0),
-                deletions=commit_data.get("deletions", 0),
+                message=commit_data.message,
+                author_email=commit_data.author_email,
+                author_name=commit_data.author_name,
+                committer_email=commit_data.committer_email,
+                committer_name=commit_data.committer_name,
+                commit_date=commit_data.commit_date,
+                files_changed=commit_data.files_changed,
+                lines_added=commit_data.lines_added,
+                lines_removed=commit_data.lines_removed,
+                is_verified=commit_data.is_verified,
+                verification_reason=commit_data.verification_reason,
             )
             test_session.add(commit)
         test_session.commit()
@@ -181,7 +192,7 @@ class TestGitHubExtractionBasic:
         
         for commit in commits:
             # Verify basic structure
-            assert len(commit.sha) == 40, f"Invalid SHA: {commit.sha}"
+            assert len(commit.commit_sha) == 40, f"Invalid SHA: {commit.commit_sha}"
             assert commit.message is not None
             assert commit.author_email is not None
             assert "@" in commit.author_email or commit.author_email == "unknown@github.com"
@@ -189,7 +200,7 @@ class TestGitHubExtractionBasic:
             # Verify timestamp is UTC-aware
             assert commit.commit_date is not None
             assert commit.commit_date.tzinfo is not None, \
-                f"Commit {commit.sha} has naive (non-UTC) datetime"
+                f"Commit {commit.commit_sha} has naive (non-UTC) datetime"
     
     @pytest.mark.integration
     def test_extract_tracks_contributors(

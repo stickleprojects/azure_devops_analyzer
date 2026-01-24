@@ -5,7 +5,7 @@ Repository summary and README models.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -31,7 +31,7 @@ class RepositorySummary(Base):
     purpose: Mapped[Optional[str]] = mapped_column(Text)
     key_technologies: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
     target_audience: Mapped[Optional[str]] = mapped_column(Text)
-    generated_at: Mapped[datetime] = mapped_column(nullable=False)
+    generated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     generated_by: Mapped[Optional[str]] = mapped_column(String(100))
 
     # Relationships
@@ -60,7 +60,7 @@ class ReadmeFile(Base):
     content: Mapped[Optional[str]] = mapped_column(Text)
     summary: Mapped[Optional[str]] = mapped_column(Text)
     word_count: Mapped[Optional[int]] = mapped_column(Integer)
-    analyzed_at: Mapped[Optional[datetime]] = mapped_column()
+    analyzed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     # Scope and context fields
     scope_type: Mapped[Optional[str]] = mapped_column(String(50))  # repository, module, package, component

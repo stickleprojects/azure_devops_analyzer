@@ -5,7 +5,7 @@ Dependency and Vulnerability models.
 from datetime import date, datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, Date, ForeignKey, String, Text
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -39,7 +39,7 @@ class Dependency(Base):
     has_vulnerabilities: Mapped[bool] = mapped_column(Boolean, default=False)
     is_eol: Mapped[bool] = mapped_column(Boolean, default=False)
     eol_date: Mapped[Optional[date]] = mapped_column(Date)
-    analyzed_at: Mapped[datetime] = mapped_column(nullable=False)
+    analyzed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     # Relationships
     repository: Mapped["Repository"] = relationship(back_populates="dependencies")
@@ -63,8 +63,8 @@ class Vulnerability(Base, TimestampMixin):
     severity: Mapped[str] = mapped_column(String(20), nullable=False)
     summary: Mapped[Optional[str]] = mapped_column(Text)
     description: Mapped[Optional[str]] = mapped_column(Text)
-    published_date: Mapped[Optional[datetime]] = mapped_column()
-    modified_date: Mapped[Optional[datetime]] = mapped_column()
+    published_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    modified_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     fixed_in_version: Mapped[Optional[str]] = mapped_column(String(100))
     references: Mapped[Optional[dict]] = mapped_column(JSONB)
 
