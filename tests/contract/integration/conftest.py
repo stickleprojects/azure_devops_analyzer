@@ -142,13 +142,12 @@ def cleanup_database(test_session):
     # Delete in reverse order to respect FK constraints
     try:
         from src.database.models import (
-            Vulnerability, Dependency, SecurityFeature,
+            Vulnerability, Dependency,
             Commit, Contributor, Branch, Repository
         )
         
         test_session.query(Vulnerability).delete()
         test_session.query(Dependency).delete()
-        test_session.query(SecurityFeature).delete()
         test_session.query(Commit).delete()
         test_session.query(Contributor).delete()
         test_session.query(Branch).delete()
