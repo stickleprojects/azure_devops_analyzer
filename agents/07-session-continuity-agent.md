@@ -284,7 +284,7 @@ CONTINUOUS MONITORING (every 30 seconds when active task exists):
    - If task marked "completed" manually → Signal D
 
 4. CHECK conversation context
-   - User states: "done", "finished", "completed", "working" → Signal E
+   - User states: "done", "finished", "completed" → Signal E
 
 5. EVALUATE completion
    - If 2+ signals detected → Trigger completion check
