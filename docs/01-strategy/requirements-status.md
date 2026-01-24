@@ -5,9 +5,9 @@
 | Field            | Value                      |
 | ---------------- | -------------------------- |
 | Project Name     | Repository Analysis System |
-| Document Version | 1.0                        |
+| Document Version | 1.4                        |
 | Status           | Active                     |
-| Last Updated     | 2026-01-19                 |
+| Last Updated     | 2026-01-24                 |
 
 ## Status Legend
 
@@ -22,8 +22,8 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 12       | 12      | 20          | 44    |
-| Non-Functional Requirements | 5        | 5       | 7           | 17    |
+| Functional Requirements     | 14       | 10      | 20          | 44    |
+| Non-Functional Requirements | 6        | 6       | 7           | 19    |
 
 ---
 
@@ -56,28 +56,28 @@
 
 ### FR-3: Dependency Analysis
 
-| ID     | Requirement                                                              | Priority | Status                         | Notes                                                                                                                                                                                 |
-| ------ | ------------------------------------------------------------------------ | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-3.1 | System shall extract dependencies from package manifest files            | High     | :white_check_mark: Complete    | Parser framework with 7 ecosystem parsers: PyPI (requirements.txt, pyproject.toml, Pipfile), npm (package.json), Maven (pom.xml), NuGet (*.csproj, packages.config), Go, Ruby, Rust |
-| FR-3.2 | System shall identify current and latest versions of dependencies        | High     | :large_orange_diamond: Partial | Version extraction implemented from manifest files; `latest_version` lookup via external API not yet implemented                                                                     |
-| FR-3.3 | System shall flag end-of-life (EOL) dependencies                         | High     | :large_orange_diamond: Partial | Schema has `eol_date` field; endoflife.date API integration not implemented                                                                                                           |
-| FR-3.4 | System shall distinguish between production and development dependencies | Medium   | :white_check_mark: Complete    | `is_dev_dependency` field populated by parsers based on file names, sections, and package indicators                                                                                  |
+| ID     | Requirement                                                              | Priority | Status                      | Notes                                                                                                                                                                                |
+| ------ | ------------------------------------------------------------------------ | -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-3.1 | System shall extract dependencies from package manifest files            | High     | :white_check_mark: Complete | Parser framework with 7 ecosystem parsers: PyPI (requirements.txt, pyproject.toml, Pipfile), npm (package.json), Maven (pom.xml), NuGet (\*.csproj, packages.config), Go, Ruby, Rust |
+| FR-3.2 | System shall identify current and latest versions of dependencies        | High     | :white_check_mark: Complete | OSVClient queries OSV.dev for latest versions; integrated into DependencyEnricher - implemented 2026-01-24                                                                           |
+| FR-3.3 | System shall flag end-of-life (EOL) dependencies                         | High     | :white_check_mark: Complete | EndOfLifeClient queries endoflife.date; populated with `eol_date` and `is_eol` fields - implemented 2026-01-24                                                                       |
+| FR-3.4 | System shall distinguish between production and development dependencies | Medium   | :white_check_mark: Complete | `is_dev_dependency` field populated by parsers based on file names, sections, and package indicators                                                                                 |
 
-**FR-3 Summary:** 2/4 Complete, 2/4 Partial
+**FR-3 Summary:** 4/4 Complete
 
 ---
 
 ### FR-4: Security Vulnerability Scanning
 
-| ID     | Requirement                                                         | Priority | Status                         | Notes                                                                                                           |
-| ------ | ------------------------------------------------------------------- | -------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| FR-4.1 | System shall identify known vulnerabilities (CVEs) in dependencies  | Critical | :large_orange_diamond: Partial | `Vulnerability` entity with CVE/OSV ID fields; OSV.dev API not integrated                                       |
-| FR-4.2 | System shall classify vulnerabilities by severity                   | Critical | :white_check_mark: Complete    | `severity` enum (critical, high, medium, low) on Vulnerability entity                                           |
-| FR-4.3 | System shall provide remediation guidance (fixed version)           | High     | :white_check_mark: Complete    | `fixed_in_version` field on Vulnerability entity                                                                |
-| FR-4.4 | System shall track vulnerability publication and modification dates | Medium   | :large_orange_diamond: Partial | Schema has `published_at` and `modified_at` fields; not populated                                               |
-| FR-4.5 | System shall track GitHub security features enabled per repository  | High     | :white_check_mark: Complete    | GitHub extractor captures vulnerability alerts, secret scanning, and Dependabot alerts - implemented 2026-01-18 |
+| ID     | Requirement                                                         | Priority | Status                      | Notes                                                                                                           |
+| ------ | ------------------------------------------------------------------- | -------- | --------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| FR-4.1 | System shall identify known vulnerabilities (CVEs) in dependencies  | Critical | :white_check_mark: Complete | OSVClient extracts CVE/OSV IDs and vulnerability data from OSV.dev API - implemented 2026-01-24                 |
+| FR-4.2 | System shall classify vulnerabilities by severity                   | Critical | :white_check_mark: Complete | `severity` enum (critical, high, medium, low) on Vulnerability entity; CVSS score mapping implemented           |
+| FR-4.3 | System shall provide remediation guidance (fixed version)           | High     | :white_check_mark: Complete | `fixed_in_version` field on Vulnerability entity; extracted from OSV.dev data                                   |
+| FR-4.4 | System shall track vulnerability publication and modification dates | Medium   | :white_check_mark: Complete | Schema has `published_at` and `modified_at` fields; populated from OSV.dev - implemented 2026-01-24             |
+| FR-4.5 | System shall track GitHub security features enabled per repository  | High     | :white_check_mark: Complete | GitHub extractor captures vulnerability alerts, secret scanning, and Dependabot alerts - implemented 2026-01-18 |
 
-**FR-4 Summary:** 3/5 Complete, 2/5 Partial
+**FR-4 Summary:** 5/5 Complete
 
 ---
 
@@ -237,11 +237,11 @@
 | ID      | Requirement            | Target                                  | Status                         | Notes                                        |
 | ------- | ---------------------- | --------------------------------------- | ------------------------------ | -------------------------------------------- |
 | NFR-5.1 | Code quality standards | Pre-commit hooks (black, flake8, mypy)  | :large_orange_diamond: Partial | Dependencies exist; hooks not configured     |
-| NFR-5.2 | Test coverage          | Minimum 80%                             | :x: Not Started                | Test framework set up; no tests written      |
+| NFR-5.2 | Test coverage          | Minimum 80%                             | :large_orange_diamond: Partial | Unit, contract, and integration tests implemented; coverage % not measured |
 | NFR-5.3 | Documentation          | All modules documented                  | :large_orange_diamond: Partial | Some docstrings present; incomplete coverage |
 | NFR-5.4 | Logging                | Structured logging with correlation IDs | :white_check_mark: Complete    | Structlog configured                         |
 
-**NFR-5 Summary:** 1/4 Complete, 2/4 Partial, 1/4 Not Started
+**NFR-5 Summary:** 1/4 Complete, 3/4 Partial
 
 ---
 
@@ -262,8 +262,8 @@
 | --- | -------------------- | ------------------------------ | --------------------------------------- |
 | D-1 | Azure DevOps API     | :white_check_mark: Integrated  | Full extractor implementation           |
 | D-2 | GitHub API           | :white_check_mark: Integrated  | Full extractor implementation           |
-| D-3 | OSV.dev API          | :x: Not Integrated             | Vulnerability data source not connected |
-| D-4 | endoflife.date API   | :x: Not Integrated             | EOL detection not connected             |
+| D-3 | OSV.dev API          | :white_check_mark: Integrated  | OSVClient implemented in `src/analyzers/osv_client.py`; enrichment wired into workflow - 2026-01-24 |
+| D-4 | endoflife.date API   | :white_check_mark: Integrated  | EndOfLifeClient implemented in `src/analyzers/eol_client.py`; enrichment wired into workflow - 2026-01-24 |
 | D-5 | Anthropic/OpenAI API | :large_orange_diamond: Partial | SDK dependencies installed; not wired   |
 
 ---
@@ -274,13 +274,13 @@
 
 1. Implement language detection from repository file trees
 2. ~~Implement dependency extraction from package manifests~~ ✅ Complete (7 ecosystems)
-3. Connect OSV.dev API for vulnerability scanning
+3. ~~Connect OSV.dev API for vulnerability scanning~~ ✅ Complete (OSVClient + DependencyEnricher)
 4. Implement contributor metrics calculation from commits/PRs
 
 ### Phase 2: Quality & Security (High Priority)
 
 1. Integrate code quality analysis (pylint, bandit)
-2. Connect endoflife.date API for EOL tracking
+2. ~~Connect endoflife.date API for EOL tracking~~ ✅ Complete (EndOfLifeClient + DependencyEnricher)
 3. Implement PR quality issue detection
 4. Calculate commit message quality scores
 
@@ -292,6 +292,7 @@
 4. ~~Add drill-down navigation~~ ✅ Complete
 
 **Dashboards Implemented:**
+
 - Team Overview (`team-overview.json`)
 - Repository Overview (`repository-overview.json`)
 - Repository Deep-Dive (`repository-deep-dive.json`)
@@ -317,9 +318,10 @@
 
 ## Revision History
 
-| Version | Date       | Author | Changes                                                                                                                        |
-| ------- | ---------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                                                           |
-| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation                                     |
-| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started)                                     |
-| 1.3     | 2026-01-19 | System | FR-3.1 Complete: Dependency extraction implemented with 7 ecosystem parsers (PyPI, npm, Maven, NuGet, Go, Ruby, Rust)          |
+| Version | Date       | Author | Changes                                                                                                               |
+| ------- | ---------- | ------ | --------------------------------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                                                  |
+| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation                            |
+| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started)                            |
+| 1.3     | 2026-01-19 | System | FR-3.1 Complete: Dependency extraction implemented with 7 ecosystem parsers (PyPI, npm, Maven, NuGet, Go, Ruby, Rust) |
+| 1.4     | 2026-01-24 | System | D-3, D-4 Integrated: OSV.dev and endoflife.date APIs wired into enrichment workflow; NFR-5.2 updated to Partial (tests exist); roadmap updated |

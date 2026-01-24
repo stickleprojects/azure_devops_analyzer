@@ -25,6 +25,7 @@ from pathlib import Path
 from unittest.mock import Mock, patch, MagicMock
 
 import pytest
+from src.config.github import GitHubExtractorConfig
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -154,9 +155,11 @@ class TestGetRepositoriesLive:
     @pytest.fixture(autouse=True)
     def setup(self):
         """Load environment variables."""
-        self.github_token = os.environ.get("GITHUB_TOKEN")
-        self.github_user = os.environ.get("GITHUB_USER")
-        self.github_org = os.environ.get("GITHUB_ORG")
+        config = GitHubExtractorConfig.from_env()
+        self.github_token = config.token
+        self.github_user = config.user
+        self.github_org = config.organization
+        self.private_repo = config.private_repo
         
         # Skip tests if credentials are not configured
         if not self.github_token:
@@ -165,14 +168,17 @@ class TestGetRepositoriesLive:
         if not self.github_user and not self.github_org:
             pytest.skip("Either GITHUB_USER or GITHUB_ORG must be set in .env for live tests")
         
+        if not self.private_repo:
+            pytest.skip("GITHUB_PRIVATE_REPO must be set in .env for live tests")
+        
         # Use whichever is set
         self.target_account = self.github_user or self.github_org
 
-    def test_extractor_returns_azure_devops_analyzer_repo(self):
+    def test_extractor_returns_private_repo(self):
         """
-        Verify that the extractor returns the 'azure_devops_analyzer' repository.
+        Verify that the extractor returns the configured private repository.
 
-        This is a specific regression test for a known missing private repo.
+        This is a regression test for a previously missing private repo.
         """
         from src.extractors.github.extractor import GitHubExtractor
 
@@ -190,18 +196,17 @@ class TestGetRepositoriesLive:
         for name in sorted(repo_names):
             print(f"  - {name}")
 
-        # Check for the specific missing repo
-        assert "azure_devops_analyzer" in repo_names, (
-            f"Repository 'azure_devops_analyzer' not found in extractor results.\n"
+        # Check for the configured private repo
+        assert self.private_repo in repo_names, (
+            f"Repository '{self.private_repo}' not found in extractor results.\n"
             f"Returned repos: {sorted(repo_names)}"
         )
-        print(f"\n✓ 'azure_devops_analyzer' found in results")
+        print(f"\n✓ '{self.private_repo}' found in results")
 
-    def test_direct_api_finds_azure_devops_analyzer(self):
+    def test_direct_api_finds_private_repo(self):
         """
-        Verify that direct GitHub API calls can find 'azure_devops_analyzer'.
-
-        This test bypasses the extractor to confirm the repo exists and is accessible.
+        Verify that direct GitHub API calls can find the configured private repo.
+        This bypasses the extractor to confirm the repo exists and is accessible.
         """
         from github import Github, Auth
 
@@ -209,7 +214,7 @@ class TestGetRepositoriesLive:
         client = Github(auth=auth)
 
         print(f"\n{'='*60}")
-        print("Direct API: Finding 'azure_devops_analyzer'")
+        print(f"Direct API: Finding '{self.private_repo}'")
         print(f"{'='*60}")
 
         # Method 1: Authenticated user's repos
@@ -217,25 +222,25 @@ class TestGetRepositoriesLive:
         auth_user = client.get_user()
         all_repos = list(auth_user.get_repos(visibility="all"))
         repo_names = [r.name for r in all_repos]
-        found = "azure_devops_analyzer" in repo_names
+        found = self.private_repo in repo_names
 
         print(f"   Total repos: {len(all_repos)}")
-        print(f"   'azure_devops_analyzer' found: {found}")
+        print(f"   '{self.private_repo}' found: {found}")
 
         if found:
-            repo = next(r for r in all_repos if r.name == "azure_devops_analyzer")
+            repo = next(r for r in all_repos if r.name == self.private_repo)
             print(f"   Private: {repo.private}")
             print(f"   Owner: {repo.owner.login}")
 
         # Method 2: Try to get repo directly
-        print(f"\n2. client.get_repo('{self.target_account}/azure_devops_analyzer'):")
+        print(f"\n2. client.get_repo('{self.target_account}/{self.private_repo}'):")
         try:
-            repo = client.get_repo(f"{self.target_account}/azure_devops_analyzer")
+            repo = client.get_repo(f"{self.target_account}/{self.private_repo}")
             print(f"   Found! Private: {repo.private}, Owner: {repo.owner.login}")
         except Exception as e:
             print(f"   Error: {e}")
 
-        assert found, "azure_devops_analyzer not found via direct API call"
+        assert found, f"{self.private_repo} not found via direct API call"
 
     def test_debug_extractor_code_path(self):
         """

@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, Integer, Numeric, String
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.models.base import Base
@@ -25,8 +25,8 @@ class Contributor(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     name: Mapped[Optional[str]] = mapped_column(String(255))
-    first_seen_at: Mapped[Optional[datetime]] = mapped_column()
-    last_seen_at: Mapped[Optional[datetime]] = mapped_column()
+    first_seen_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_seen_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     # Relationships
     metrics: Mapped[list["ContributorMetric"]] = relationship(
@@ -69,8 +69,8 @@ class ContributorMetric(Base):
     contributor_id: Mapped[int] = mapped_column(
         ForeignKey("contributors.id", ondelete="CASCADE")
     )
-    period_start: Mapped[datetime] = mapped_column(primary_key=True)
-    period_end: Mapped[datetime] = mapped_column(nullable=False)
+    period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
+    period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     commit_count: Mapped[int] = mapped_column(Integer, default=0)
     lines_added: Mapped[int] = mapped_column(Integer, default=0)
     lines_removed: Mapped[int] = mapped_column(Integer, default=0)

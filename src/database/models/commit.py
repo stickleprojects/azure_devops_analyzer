@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -35,7 +35,7 @@ class Commit(Base):
     )
     message: Mapped[Optional[str]] = mapped_column(Text)
     message_quality_score: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2))
-    commit_date: Mapped[datetime] = mapped_column(nullable=False)
+    commit_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     parent_shas: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
     files_changed: Mapped[Optional[int]] = mapped_column(Integer)
     lines_added: Mapped[Optional[int]] = mapped_column(Integer)

@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.models.base import Base
@@ -32,7 +32,7 @@ class CodeQualityMetric(Base):
     branch_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("branches.branch_id", ondelete="CASCADE")
     )
-    timestamp: Mapped[datetime] = mapped_column(primary_key=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
     total_issues: Mapped[int] = mapped_column(Integer, default=0)
     critical_issues: Mapped[int] = mapped_column(Integer, default=0)
     high_issues: Mapped[int] = mapped_column(Integer, default=0)
@@ -68,8 +68,8 @@ class CodeIssue(Base):
     category: Mapped[Optional[str]] = mapped_column(String(100))
     rule_id: Mapped[Optional[str]] = mapped_column(String(100))
     message: Mapped[Optional[str]] = mapped_column(Text)
-    detected_at: Mapped[Optional[datetime]] = mapped_column()
-    resolved_at: Mapped[Optional[datetime]] = mapped_column()
+    detected_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     # Relationships
     repository: Mapped["Repository"] = relationship(back_populates="code_issues")

@@ -22,6 +22,7 @@ class GitHubExtractorConfig:
     token: Optional[str] = None
     organization: Optional[str] = None
     user: Optional[str] = None
+    private_repo: Optional[str] = None
 
     @classmethod
     def from_env(cls, env_file: Optional[str | Path] = None) -> "GitHubExtractorConfig":
@@ -57,6 +58,7 @@ class GitHubExtractorConfig:
             token=os.environ.get("GITHUB_TOKEN"),
             organization=os.environ.get("GITHUB_ORG"),
             user=os.environ.get("GITHUB_USER"),
+            private_repo=os.environ.get("GITHUB_PRIVATE_REPO"),
         )
 
 

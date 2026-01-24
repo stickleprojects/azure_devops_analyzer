@@ -5,7 +5,7 @@ Pull request, review, and comment models.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -38,10 +38,10 @@ class PullRequest(Base):
         ForeignKey("contributors.id")
     )
     status: Mapped[Optional[str]] = mapped_column(String(50))
-    created_at: Mapped[datetime] = mapped_column(nullable=False)
-    updated_at: Mapped[Optional[datetime]] = mapped_column()
-    merged_at: Mapped[Optional[datetime]] = mapped_column()
-    closed_at: Mapped[Optional[datetime]] = mapped_column()
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    merged_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    closed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     files_changed: Mapped[int] = mapped_column(Integer, default=0)
     lines_added: Mapped[int] = mapped_column(Integer, default=0)
     lines_removed: Mapped[int] = mapped_column(Integer, default=0)
@@ -74,7 +74,7 @@ class PRReview(Base):
     reviewer_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("contributors.id")
     )
-    review_date: Mapped[datetime] = mapped_column(nullable=False)
+    review_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     vote: Mapped[Optional[int]] = mapped_column(Integer)
     is_required: Mapped[bool] = mapped_column(Boolean, default=False)
     comment_count: Mapped[int] = mapped_column(Integer, default=0)

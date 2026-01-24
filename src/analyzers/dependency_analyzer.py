@@ -13,6 +13,7 @@ from typing import Optional
 
 from src.extractors.base import DependencyData, RepositoryExtractor
 from src.analyzers.parsers import ParserRegistry
+from src.analyzers.dependency_enricher import DependencyEnricher, EnrichedDependency
 
 logger = logging.getLogger(__name__)
 
@@ -24,10 +25,12 @@ class DependencyAnalysisResult:
     repo_id: str
     branch: Optional[str]
     dependencies: list[DependencyData]
-    analyzed_at: datetime
+    enriched_dependencies: list[EnrichedDependency] = field(default_factory=list)
+    analyzed_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     files_scanned: int = 0
     files_parsed: int = 0
     parse_errors: list[str] = field(default_factory=list)
+    enrichment_errors: list[str] = field(default_factory=list)
 
     @property
     def total_dependencies(self) -> int:
@@ -66,23 +69,35 @@ class DependencyAnalyzer:
     Uses the parser registry to find and parse manifest files across
     multiple ecosystems (Python, Node.js, Java, .NET, Go, Ruby, Rust).
 
+    Optionally enriches dependencies with external API data:
+    - Latest versions from OSV.dev
+    - EOL dates from endoflife.date
+    - Vulnerability information from OSV.dev
+
     Example:
         extractor = GitHubExtractor()
-        analyzer = DependencyAnalyzer()
+        analyzer = DependencyAnalyzer(enrich=True)
         result = analyzer.analyze(extractor, "owner/repo")
 
-        for dep in result.dependencies:
-            print(f"{dep.package_name}: {dep.version}")
+        for enriched_dep in result.enriched_dependencies:
+            print(f"{enriched_dep.package_name}: {enriched_dep.version}")
+            if enriched_dep.latest_version:
+                print(f"  Latest: {enriched_dep.latest_version}")
+            if enriched_dep.is_eol:
+                print(f"  EOL: {enriched_dep.eol_date}")
     """
 
-    def __init__(self, max_file_size: int = 1024 * 1024):
+    def __init__(self, max_file_size: int = 1024 * 1024, enrich: bool = False):
         """
         Initialize the dependency analyzer.
 
         Args:
             max_file_size: Maximum file size to parse (default 1MB).
+            enrich: Whether to enrich dependencies with external API data.
         """
         self.max_file_size = max_file_size
+        self.enrich = enrich
+        self.enricher = DependencyEnricher() if enrich else None
 
     def analyze(
         self,
@@ -146,6 +161,32 @@ class DependencyAnalyzer:
             result.total_dependencies,
             len(result.ecosystems),
         )
+
+        # Enrich dependencies if requested
+        if self.enrich and result.dependencies:
+            logger.info("Enriching dependencies for %s", repo_id)
+            try:
+                result.enriched_dependencies = self.enricher.enrich(result.dependencies)
+                logger.info(
+                    "Enriched %d dependencies for %s",
+                    len(result.enriched_dependencies),
+                    repo_id,
+                )
+            except Exception as e:
+                logger.error("Error enriching dependencies for %s: %s", repo_id, e)
+                result.enrichment_errors.append(f"Enrichment failed: {e}")
+                # Fall back to unenriched dependencies
+                result.enriched_dependencies = [
+                    EnrichedDependency(
+                        package_name=d.package_name,
+                        ecosystem=d.ecosystem,
+                        version=d.version,
+                        is_dev_dependency=d.is_dev_dependency,
+                        source_file=d.source_file,
+                        version_constraint=d.version_constraint,
+                    )
+                    for d in result.dependencies
+                ]
 
         return result
 

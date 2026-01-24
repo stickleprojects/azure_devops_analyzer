@@ -5,7 +5,7 @@ Repository and Branch models.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import BigInteger, Boolean, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.models.base import Base
@@ -40,8 +40,8 @@ class Repository(Base):
     url: Mapped[str] = mapped_column(Text, nullable=False)
     default_branch: Mapped[Optional[str]] = mapped_column(String(255))
     platform_repo_id: Mapped[Optional[int]] = mapped_column(BigInteger)
-    created_at: Mapped[Optional[datetime]] = mapped_column()
-    last_analyzed_at: Mapped[Optional[datetime]] = mapped_column()
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_analyzed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     
     # Security and code quality metrics
@@ -54,8 +54,8 @@ class Repository(Base):
     has_vulnerability_alerts: Mapped[Optional[bool]] = mapped_column(Boolean)
     has_secret_scanning: Mapped[Optional[bool]] = mapped_column(Boolean)
     has_dependabot_alerts: Mapped[Optional[bool]] = mapped_column(Boolean)
-    pushed_at: Mapped[Optional[datetime]] = mapped_column()
-    updated_at: Mapped[Optional[datetime]] = mapped_column()
+    pushed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     # Relationships
     project: Mapped[Optional["Project"]] = relationship(back_populates="repositories")
@@ -114,8 +114,8 @@ class Branch(Base):
     )
     branch_name: Mapped[str] = mapped_column(String(255), nullable=False)
     latest_commit_sha: Mapped[Optional[str]] = mapped_column(String(255))
-    created_at: Mapped[Optional[datetime]] = mapped_column()
-    last_analyzed_at: Mapped[Optional[datetime]] = mapped_column()
+    created_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    last_analyzed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Relationships

@@ -1,0 +1,156 @@
+# AI Agent Instructions
+
+This file contains tool-agnostic instructions for AI coding assistants working on this project. Both GitHub Copilot (`.github/copilot-instructions.md`) and Claude Code (`CLAUDE.md`) reference this file.
+
+---
+
+## Session Continuity Agent
+
+### Greeting Triggers (Auto-Activate):
+- "good morning" / "good afternoon" / "good evening"
+- "hello" / "hi" / "hey"
+- "let's pick up" / "let's continue" / "continue"
+- "where were we" / "pick up where we left off"
+
+### Explicit Triggers:
+- "analyze last session"
+- "show me the backlog"
+- "what should I work on?"
+- "where did I leave off?"
+
+### On Activation:
+1. Respond with a warm greeting
+2. Read `PROGRESS.md` (most recent session entry)
+3. Check `git status` for uncommitted changes
+4. Analyze if work is incomplete or complete
+5. If incomplete: present summary with next steps
+6. If complete: load backlog from `docs/01-strategy/requirements-status.md` and present priorities
+7. Wait for user selection before proceeding
+
+### Session Summary Format:
+
+**Incomplete work:**
+```
+Last Session Summary (DATE)
+- Completed: [key achievements]
+- In Progress: [incomplete tasks]
+- Uncommitted: [file changes]
+
+Next Action: [specific actionable suggestions]
+```
+
+**Complete work:**
+```
+Last Session Complete
+- Top Priority Backlog:
+  1. [Item with status, impact, effort]
+  2. [Item with status, impact, effort]
+
+Which would you like to tackle?
+```
+
+### Task Completion (User-Prompted):
+When user asks "is this task complete?", check:
+- Test status (all passing?)
+- Git status (committed/staged?)
+- Implementation status (complete?)
+- Suggest marking complete if criteria met
+- Update PROGRESS.md and requirements-status.md with user approval
+
+Full agent specification: `agents/07-session-continuity-agent.md`
+
+---
+
+## Architecture Guardian
+
+Before implementing ANY code changes, validate against architectural boundaries defined in `agents/02a-architecture-guardian.md`.
+
+### Check Required For:
+1. Component boundary changes - New files in extractors/, analyzers/, workflows/, database/
+2. Database schema changes - Modifications to schema.sql, migrations/, or database/storage.py
+3. Cross-cutting concerns - Logging, caching, auth, error handling, configuration
+4. New dependencies - Additions to requirements.txt or docker-compose.yml
+5. Interface changes - Modifications to base classes or public APIs
+
+### Protected Architectural Boundaries:
+- **Extractors**: Platform-isolated, no analysis logic, no direct DB writes
+- **Analyzers**: Platform-agnostic, return data structures only
+- **Database layer**: ONLY module for DB operations (storage.py)
+- **Workflows**: Orchestration only, delegates to extractors/analyzers
+- **Cross-cutting concerns**: Must live in utils/, not in business logic
+
+### When Changes Are Flagged:
+Present options to the user:
+1. Implement recommended alternative (maintains architecture)
+2. Proceed as-is (accept architectural debt)
+3. Discuss architectural redesign
+
+### Auto-Approve (No Guardian Check Needed):
+- Bug fixes within single function (no interface changes)
+- Test additions
+- Documentation updates
+- Code formatting/linting
+- Internal refactoring within one module (no external API changes)
+
+---
+
+## Test Guardian
+
+Before modifying ANY tests, validate against test integrity rules defined in `agents/04a-test-guardian.md`.
+
+### The Iron Rule
+**If a test fails after implementation changes, the implementation is probably wrong, not the test.**
+
+### Test Types:
+
+#### CONTRACT Tests (Business Requirements) - STRICT
+- **Location**: `tests/contract/` or named `test_contract_*`
+- **Docstring**: Start with `"""CONTRACT: ...`
+- **Protection**: CANNOT change without documented requirement change + approval
+- **If it fails**: FIX IMPLEMENTATION - contract defines requirements
+
+#### IMPLEMENTATION Tests (Technical Details) - FLEXIBLE
+- **Location**: `tests/implementation/` or named `test_impl_*`
+- **Docstring**: Start with `"""IMPLEMENTATION: ...`
+- **Protection**: CAN change with implementation (if contracts still pass)
+- **If it fails**: May fix test if implementation strategy changed
+
+### BLOCK These Test Changes:
+- Changing assertion expected values without requirement documentation
+- Removing test cases without explanation
+- Skipping/disabling tests to make build pass
+- Relaxing error handling checks
+- Weakening validation constraints
+
+---
+
+## Project Conventions
+
+### Docker
+- **ALWAYS use `docker compose`** (Docker Compose V2), NOT `docker-compose` (V1)
+
+### Environment Variables
+- The `.env` file supports indirect variable references like `$VARIABLE_NAME`
+- Use `./scripts/resolve_env.sh` to create `.env.resolved` with resolved values
+- When starting Docker services, use: `docker compose --env-file .env.resolved up -d`
+
+### Python
+- Python 3.12.4 managed via pyenv
+- Use type hints in Python code
+- Keep database operations in `src/database/storage.py`
+- Extractors go in `src/extractors/{platform}/`
+
+### Code Style
+- Follow existing patterns in the codebase
+- No unnecessary comments or docstrings on unchanged code
+
+### Testing
+- Test files in `tests/` directory
+- Integration tests: `tests/contract/integration/`
+- Run integration tests via: `./scripts/run-tests-docker.sh`
+- Run live API tests via: `./scripts/run-tests-docker.sh --live-api`
+
+### Key Files
+- `PROGRESS.md` - Detailed session-by-session development log
+- `docs/01-strategy/requirements-status.md` - Feature completion tracking
+- `agents/` - Agent specifications (architecture guardian, test guardian, etc.)

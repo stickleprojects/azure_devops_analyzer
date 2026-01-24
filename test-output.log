@@ -1,0 +1,59 @@
+[0;34mℹ[0m Starting integration test run...
+
+[0;32m✓[0m Docker is running
+[0;32m✓[0m Docker Compose V2 available
+[0;34mℹ[0m Loading GITHUB_TOKEN from .env.resolved...
+[0;32m✓[0m GitHub token loaded
+[0;32m✓[0m Test results directory: test-results/
+
+[0;34mℹ[0m Running integration tests (excluding live API tests)...
+[0;34mℹ[0m Use --live-api flag to run tests against real external APIs
+
+ Network analyzer-test-network Creating 
+ Network analyzer-test-network Created 
+ Container analyzer-test-db Creating 
+ Container analyzer-test-db Created 
+ Container analyzer-test-migrations Creating 
+ Container analyzer-test-migrations Created 
+ Container analyzer-test-db Starting 
+ Container analyzer-test-db Started 
+ Container analyzer-test-db Waiting 
+ Container analyzer-test-db Healthy 
+ Container analyzer-test-migrations Starting 
+ Container analyzer-test-migrations Started 
+ Container analyzer-test-db Waiting 
+ Container analyzer-test-migrations Waiting 
+ Container analyzer-test-db Healthy 
+ Container analyzer-test-migrations Exited 
+ Container azure-devops-analyzer-test-runner-run-4c8151d234ca Creating 
+ Container azure-devops-analyzer-test-runner-run-4c8151d234ca Created 
+Defaulting to user installation because normal site-packages is not writeable
+Requirement already satisfied: pytest in /usr/local/lib/python3.12/site-packages (9.0.2)
+Requirement already satisfied: pytest-cov in /usr/local/lib/python3.12/site-packages (7.0.0)
+Requirement already satisfied: pytest-asyncio in /usr/local/lib/python3.12/site-packages (1.3.0)
+Requirement already satisfied: pytest-mock in /usr/local/lib/python3.12/site-packages (3.15.1)
+Requirement already satisfied: iniconfig>=1.0.1 in /usr/local/lib/python3.12/site-packages (from pytest) (2.3.0)
+Requirement already satisfied: packaging>=22 in /usr/local/lib/python3.12/site-packages (from pytest) (25.0)
+Requirement already satisfied: pluggy<2,>=1.5 in /usr/local/lib/python3.12/site-packages (from pytest) (1.6.0)
+Requirement already satisfied: pygments>=2.7.2 in /usr/local/lib/python3.12/site-packages (from pytest) (2.19.2)
+Requirement already satisfied: coverage>=7.10.6 in /usr/local/lib/python3.12/site-packages (from coverage[toml]>=7.10.6->pytest-cov) (7.13.1)
+Requirement already satisfied: typing-extensions>=4.12 in /usr/local/lib/python3.12/site-packages (from pytest-asyncio) (4.15.0)
+
+[notice] A new release of pip is available: 25.0.1 -> 25.3
+[notice] To update, run: pip install --upgrade pip
+
+[OK] GITHUB_TOKEN loaded successfully from unknown
+  Token starts with: github_pat_11ACUN6LY...
+============================= test session starts ==============================
+platform linux -- Python 3.12.12, pytest-9.0.2, pluggy-1.6.0 -- /usr/local/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /app
+plugins: mock-3.15.1, asyncio-1.3.0, cov-7.0.0, anyio-4.12.1
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 11 items
+
+tests/contract/integration/test_dependency_enrichment_e2e.py::TestDependencyExtractionE2E::test_dependencies_extracted_and_stored FAILED [  9%]
+tests/contract/integration/test_dependency_enrichment_e2e.py::TestDependencyExtractionE2E::test_dependencies_enriched_with_latest_versions FAILED [ 18%]
+tests/contract/integration/test_dependency_enrichment_e2e.py::TestDependencyExtractionE2E::test_eol_detection_populated FAILED [ 27%]
+tests/contract/integration/test_dependency_enrichment_e2e.py::TestVulnerabilityStorageE2E::test_vulnerabilities_stored FAILED [ 36%]
+tests/contract/integration/test_github_extraction_e2e.py::TestGitHubExtractionBasic::test_extract_small_repo_stores_metadata 

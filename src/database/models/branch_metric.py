@@ -5,7 +5,7 @@ Branch metrics model (TimescaleDB hypertable).
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import ForeignKey, Integer
+from sqlalchemy import DateTime, ForeignKey, Integer
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.models.base import Base
@@ -28,7 +28,7 @@ class BranchMetric(Base):
     branch_id: Mapped[int] = mapped_column(
         ForeignKey("branches.branch_id", ondelete="CASCADE")
     )
-    timestamp: Mapped[datetime] = mapped_column(primary_key=True)
+    timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
     commit_count: Mapped[int] = mapped_column(Integer, default=0)
     unique_contributors: Mapped[int] = mapped_column(Integer, default=0)
     age_days: Mapped[int] = mapped_column(Integer, default=0)

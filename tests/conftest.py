@@ -35,7 +35,7 @@ def pytest_configure(config):
     # Load test-specific overrides from .env.test (for database host, etc.)
     env_test = project_root / ".env.test"
     if env_test.exists():
-        print(f"\n✓ Loading test overrides from {env_test.name}")
+        print(f"\n[TEST] Loading test overrides from {env_test.name}")
         with open(env_test) as f:
             for line in f:
                 line = line.strip()
@@ -48,8 +48,9 @@ def pytest_configure(config):
     # Debug: verify GITHUB_TOKEN is set
     github_token = os.environ.get("GITHUB_TOKEN")
     if not github_token:
-        print(f"\n⚠️ WARNING: GITHUB_TOKEN not set after loading {env_file_used}")
+        print(f"\n[WARN] WARNING: GITHUB_TOKEN not set after loading {env_file_used}")
         print(f"   File exists: {env_file_used and env_file_used.exists()}")
     else:
-        print(f"\n✓ GITHUB_TOKEN loaded successfully from {env_file_used.name if env_file_used else 'unknown'}")
+        print(f"\n[OK] GITHUB_TOKEN loaded successfully from {env_file_used.name if env_file_used else 'unknown'}")
         print(f"  Token starts with: {github_token[:20]}...")
+
