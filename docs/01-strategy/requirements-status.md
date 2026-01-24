@@ -7,7 +7,7 @@
 | Project Name     | Repository Analysis System |
 | Document Version | 1.0                        |
 | Status           | Active                     |
-| Last Updated     | 2026-01-19                 |
+| Last Updated     | 2026-01-24                 |
 
 ## Status Legend
 
@@ -22,7 +22,7 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 12       | 12      | 20          | 44    |
+| Functional Requirements     | 14       | 10      | 20          | 44    |
 | Non-Functional Requirements | 5        | 5       | 7           | 17    |
 
 ---
@@ -59,11 +59,11 @@
 | ID     | Requirement                                                              | Priority | Status                         | Notes                                                                                                                                                                                 |
 | ------ | ------------------------------------------------------------------------ | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR-3.1 | System shall extract dependencies from package manifest files            | High     | :white_check_mark: Complete    | Parser framework with 7 ecosystem parsers: PyPI (requirements.txt, pyproject.toml, Pipfile), npm (package.json), Maven (pom.xml), NuGet (*.csproj, packages.config), Go, Ruby, Rust |
-| FR-3.2 | System shall identify current and latest versions of dependencies        | High     | :large_orange_diamond: Partial | Version extraction implemented from manifest files; `latest_version` lookup via external API not yet implemented                                                                     |
-| FR-3.3 | System shall flag end-of-life (EOL) dependencies                         | High     | :large_orange_diamond: Partial | Schema has `eol_date` field; endoflife.date API integration not implemented                                                                                                           |
+| FR-3.2 | System shall identify current and latest versions of dependencies        | High     | :white_check_mark: Complete    | OSVClient queries OSV.dev for latest versions; integrated into DependencyEnricher - implemented 2026-01-24                                                                          |
+| FR-3.3 | System shall flag end-of-life (EOL) dependencies                         | High     | :white_check_mark: Complete    | EndOfLifeClient queries endoflife.date; populated with `eol_date` and `is_eol` fields - implemented 2026-01-24                                                                     |
 | FR-3.4 | System shall distinguish between production and development dependencies | Medium   | :white_check_mark: Complete    | `is_dev_dependency` field populated by parsers based on file names, sections, and package indicators                                                                                  |
 
-**FR-3 Summary:** 2/4 Complete, 2/4 Partial
+**FR-3 Summary:** 4/4 Complete
 
 ---
 
@@ -71,13 +71,13 @@
 
 | ID     | Requirement                                                         | Priority | Status                         | Notes                                                                                                           |
 | ------ | ------------------------------------------------------------------- | -------- | ------------------------------ | --------------------------------------------------------------------------------------------------------------- |
-| FR-4.1 | System shall identify known vulnerabilities (CVEs) in dependencies  | Critical | :large_orange_diamond: Partial | `Vulnerability` entity with CVE/OSV ID fields; OSV.dev API not integrated                                       |
-| FR-4.2 | System shall classify vulnerabilities by severity                   | Critical | :white_check_mark: Complete    | `severity` enum (critical, high, medium, low) on Vulnerability entity                                           |
-| FR-4.3 | System shall provide remediation guidance (fixed version)           | High     | :white_check_mark: Complete    | `fixed_in_version` field on Vulnerability entity                                                                |
-| FR-4.4 | System shall track vulnerability publication and modification dates | Medium   | :large_orange_diamond: Partial | Schema has `published_at` and `modified_at` fields; not populated                                               |
+| FR-4.1 | System shall identify known vulnerabilities (CVEs) in dependencies  | Critical | :white_check_mark: Complete    | OSVClient extracts CVE/OSV IDs and vulnerability data from OSV.dev API - implemented 2026-01-24                 |
+| FR-4.2 | System shall classify vulnerabilities by severity                   | Critical | :white_check_mark: Complete    | `severity` enum (critical, high, medium, low) on Vulnerability entity; CVSS score mapping implemented           |
+| FR-4.3 | System shall provide remediation guidance (fixed version)           | High     | :white_check_mark: Complete    | `fixed_in_version` field on Vulnerability entity; extracted from OSV.dev data                                   |
+| FR-4.4 | System shall track vulnerability publication and modification dates | Medium   | :white_check_mark: Complete    | Schema has `published_at` and `modified_at` fields; populated from OSV.dev - implemented 2026-01-24             |
 | FR-4.5 | System shall track GitHub security features enabled per repository  | High     | :white_check_mark: Complete    | GitHub extractor captures vulnerability alerts, secret scanning, and Dependabot alerts - implemented 2026-01-18 |
 
-**FR-4 Summary:** 3/5 Complete, 2/5 Partial
+**FR-4 Summary:** 5/5 Complete
 
 ---
 
