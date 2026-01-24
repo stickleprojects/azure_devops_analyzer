@@ -63,6 +63,7 @@ class TestDependencyExtractionE2E:
     
     @pytest.mark.integration
     @pytest.mark.slow
+    @pytest.mark.live_api
     def test_dependencies_extracted_and_stored(
         self,
         github_config,

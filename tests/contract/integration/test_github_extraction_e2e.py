@@ -62,6 +62,7 @@ class TestGitHubExtractionBasic:
     """Basic GitHub extraction E2E tests."""
     
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_extract_small_repo_stores_metadata(
         self,
         github_config,
@@ -118,6 +119,7 @@ class TestGitHubExtractionBasic:
         assert stored_repo.name == "Hello-World"
 
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_private_repo_flags_stored(
         self,
         github_config,
@@ -144,6 +146,7 @@ class TestGitHubExtractionBasic:
         assert repo.has_vulnerability_alerts is not None
     
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_extract_tracks_branches(
         self,
         github_config,
@@ -202,6 +205,7 @@ class TestGitHubExtractionBasic:
                 f"SHA contains invalid characters: {branch.latest_commit_sha}"
     
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_extract_tracks_commits(
         self,
         github_config,
@@ -249,6 +253,7 @@ class TestGitHubExtractionBasic:
                 f"Commit {commit.commit_sha} has naive (non-UTC) datetime"
     
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_extract_tracks_contributors(
         self,
         github_config,
@@ -322,6 +327,7 @@ class TestGitHubExtractionDataIntegrity:
             test_session.commit()
     
     @pytest.mark.integration
+    @pytest.mark.live_api
     def test_foreign_key_relationships(
         self,
         github_config,
