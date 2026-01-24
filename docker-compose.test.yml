@@ -1,0 +1,143 @@
+# =============================================================================
+# Docker Compose Test Environment
+# =============================================================================
+# Fully isolated integration test environment with dedicated test database.
+# This configuration creates a separate network and database instance to avoid
+# interfering with development or production services.
+#
+# Usage:
+#   ./scripts/run-tests-docker.sh
+#   
+# Or manually:
+#   docker compose -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from test-runner
+#   docker compose -f docker-compose.test.yml down -v
+#
+# Benefits:
+#   - Complete isolation from development environment
+#   - Clean database state for every test run
+#   - In-memory database for faster execution
+#   - Reproducible test results
+#   - CI/CD ready
+# =============================================================================
+
+services:
+  # ===========================================
+  # Test Database - Isolated PostgreSQL/TimescaleDB
+  # ===========================================
+  test-db:
+    image: timescale/timescaledb:latest-pg16
+    container_name: analyzer-test-db
+    environment:
+      POSTGRES_USER: test_analyzer
+      POSTGRES_PASSWORD: test_password_123
+      POSTGRES_DB: analyzer_test
+      TIMESCALEDB_TELEMETRY: off
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_analyzer -d analyzer_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - test-network
+    # Use tmpfs for in-memory database (faster, destroyed after run)
+    tmpfs:
+      - /var/lib/postgresql/data
+    # Uncomment for persistent test data debugging:
+    # volumes:
+    #   - test_db_data:/var/lib/postgresql/data
+
+  # ===========================================
+  # Test Migrations - Schema initialization
+  # ===========================================
+  test-migrations:
+    build:
+      context: .
+      dockerfile: Dockerfile.migrations
+    container_name: analyzer-test-migrations
+    environment:
+      POSTGRES_USER: test_analyzer
+      POSTGRES_PASSWORD: test_password_123
+      POSTGRES_DB: analyzer_test
+      POSTGRES_HOST: test-db
+      POSTGRES_PORT: 5432
+    depends_on:
+      test-db:
+        condition: service_healthy
+    networks:
+      - test-network
+
+  # ===========================================
+  # Integration Test Runner
+  # ===========================================
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: analyzer-test-runner
+    command: >
+      sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock &&
+             pytest tests/contract/integration/ -v 
+             -m 'not live_api' 
+             --junit-xml=/app/test-results/junit.xml 
+             --cov=src 
+             --cov-report=html:/app/test-results/coverage 
+             --cov-report=term
+             --tb=short"
+    environment:
+      # Test database connection (internal Docker network)
+      TEST_DATABASE_URL: postgresql://test_analyzer:test_password_123@test-db:5432/analyzer_test
+      POSTGRES_HOST: test-db
+      POSTGRES_USER: test_analyzer
+      POSTGRES_PASSWORD: test_password_123
+      POSTGRES_DB: analyzer_test
+      POSTGRES_PORT: 5432
+      
+      # GitHub token for tests (from host environment)
+      GITHUB_TOKEN: ${GITHUB_TOKEN}
+      
+      # Test configuration
+      LOG_LEVEL: DEBUG
+      PYTHONPATH: /app
+      PYTHONDONTWRITEBYTECODE: 1
+    volumes:
+      # Mount source code (read-only for safety)
+      - ./tests:/app/tests:ro
+      - ./src:/app/src:ro
+      - ./database:/app/database:ro
+      
+      # Export test results to host
+      - ./test-results:/app/test-results
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-migrations:
+        condition: service_completed_successfully
+    networks:
+      - test-network
+
+# =============================================================================
+# Optional: Live API Test Runner
+# =============================================================================
+# Uncomment to run tests that hit real external APIs (OSV.dev, endoflife.date)
+#
+#   test-runner-live-api:
+#     extends: test-runner
+#     container_name: analyzer-test-runner-live-api
+#     command: >
+#       sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock &&
+#              pytest tests/contract/integration/ -v 
+#              -m 'live_api' 
+#              --junit-xml=/app/test-results/junit-live-api.xml 
+#              --tb=short"
+
+# =============================================================================
+# Networks & Volumes
+# =============================================================================
+networks:
+  test-network:
+    driver: bridge
+    name: analyzer-test-network
+
+# Uncomment if you need persistent test data for debugging
+# volumes:
+#   test_db_data:

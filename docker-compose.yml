@@ -233,41 +233,6 @@ services:
     networks:
       - analyzer-network
 
-  # ===========================================
-  # Integration Test Runner
-  # Runs integration tests in isolated Docker environment
-  # Usage: docker compose --profile testing run --rm test-runner
-  # Note: Connects to existing timescaledb container on host network
-  # ===========================================
-  test-runner:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: analyzer-test-runner
-    command: >
-      sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock &&
-             pytest tests/contract/integration/ -v -m 'not live_api' 
-             --junit-xml=/app/test-results/junit.xml 
-             --tb=short"
-    environment:
-      # Test database URL connects to host's PostgreSQL
-      TEST_DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@host.docker.internal:5432/analyzer_test
-      GITHUB_TOKEN: ${GITHUB_TOKEN}
-      POSTGRES_HOST: host.docker.internal  # Connect to host machine
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: analyzer_test
-      LOG_LEVEL: DEBUG
-      PYTHONPATH: /app
-    volumes:
-      - ./tests:/app/tests:ro
-      - ./src:/app/src:ro
-      - ./test-results:/app/test-results  # Export test results
-    extra_hosts:
-      - "host.docker.internal:host-gateway"  # Enable host access
-    profiles:
-      - testing  # Only runs when explicitly called with --profile testing
-
 volumes:
   timescaledb_data:
     driver: local
