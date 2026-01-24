@@ -7,11 +7,13 @@ Adding comprehensive integration tests is a **HIGH-PRIORITY task** that should b
 ## Current Testing Status
 
 ### What We Have ✅
+
 - **13 enrichment contract tests** - All passing, mock-based
 - **3 workflow integration tests** - All passing, mock-based
 - **Unit test coverage** - Analyzers, parsers, clients tested in isolation
 
 ### What We're Missing ❌
+
 - **Live API testing** - No verification with real GitHub/OSV.dev credentials
 - **Database verification** - No confirmation actual data reaches PostgreSQL
 - **End-to-end workflow** - No validation of complete extraction → enrichment → storage pipeline
@@ -22,13 +24,13 @@ Adding comprehensive integration tests is a **HIGH-PRIORITY task** that should b
 
 ### Current Risk: HIGH
 
-| Scenario | Impact | Probability | Current Detection |
-|----------|--------|-------------|-------------------|
-| Dependency enrichment fails silently | Critical - EOL/vuln data missing | Medium | ❌ None (unit tests pass) |
-| Database schema mismatch | Critical - Data loss | Low | ❌ None (unit tests don't touch DB) |
-| GitHub API response format changes | High - Extraction breaks | Medium | ❌ None (mocks don't evolve) |
-| Timezone handling broken | High - Time-based queries fail | Low | ❌ None (unit tests don't validate UTC) |
-| Foreign key constraints violated | High - DB integrity | Low | ❌ None (unit tests mock DB) |
+| Scenario                             | Impact                           | Probability | Current Detection                       |
+| ------------------------------------ | -------------------------------- | ----------- | --------------------------------------- |
+| Dependency enrichment fails silently | Critical - EOL/vuln data missing | Medium      | ❌ None (unit tests pass)               |
+| Database schema mismatch             | Critical - Data loss             | Low         | ❌ None (unit tests don't touch DB)     |
+| GitHub API response format changes   | High - Extraction breaks         | Medium      | ❌ None (mocks don't evolve)            |
+| Timezone handling broken             | High - Time-based queries fail   | Low         | ❌ None (unit tests don't validate UTC) |
+| Foreign key constraints violated     | High - DB integrity              | Low         | ❌ None (unit tests mock DB)            |
 
 ### With Integration Tests: LOW
 
@@ -39,6 +41,7 @@ Integration tests would catch all above scenarios **before** reaching production
 ### Why Now? (vs. Later)
 
 **Option A: Implement Integration Tests First (Recommended)**
+
 - ✅ Catch issues early before more features built on broken foundation
 - ✅ Validate current extraction pipeline is correct
 - ✅ Establish testing patterns for future features
@@ -46,6 +49,7 @@ Integration tests would catch all above scenarios **before** reaching production
 - ⏱️ 8-10 hours investment
 
 **Option B: Defer to Later**
+
 - ❌ Risk silent data corruption undetected for months
 - ❌ Harder to retrofit integration tests after 5+ more features
 - ❌ May discover data issues too late for recovery
@@ -55,13 +59,13 @@ Integration tests would catch all above scenarios **before** reaching production
 
 ### Backlog Items Ranked by Strategic Value
 
-| Rank | Item | Impact | Risk Mitigation | Dependencies | Effort | Strategic Value |
-|------|------|--------|-----------------|--------------|--------|-----------------|
-| **1** | 🔴 **Integration Tests** | Critical | Validates entire pipeline | None | 8-10h | **HIGHEST** - Enables all features |
-| **2** | 🟡 **Dependency Data Persistence** (FR-4.1) | High | Verify vulnerabilities stored correctly | Needs integration tests | 3-4h | **HIGH** - Security critical |
-| **3** | 🟡 **Language Detection** (FR-2.1) | High | Quick win, enables dashboards | None | 1-2h | **MEDIUM** - Feature completion |
-| **4** | 🟡 **Code Quality Metrics** (FR-5.1-5.5) | Medium | Major feature, high complexity | Integration tests helpful | 8-10h | **MEDIUM** - Dashboard feature |
-| **5** | 🟢 **Security Dashboard** | Medium | Leverage existing data | Integration tests recommended | 4-6h | **MEDIUM** - Visualization |
+| Rank  | Item                                        | Impact   | Risk Mitigation                         | Dependencies                  | Effort | Strategic Value                    |
+| ----- | ------------------------------------------- | -------- | --------------------------------------- | ----------------------------- | ------ | ---------------------------------- |
+| **1** | 🔴 **Integration Tests**                    | Critical | Validates entire pipeline               | None                          | 8-10h  | **HIGHEST** - Enables all features |
+| **2** | 🟡 **Dependency Data Persistence** (FR-4.1) | High     | Verify vulnerabilities stored correctly | Needs integration tests       | 3-4h   | **HIGH** - Security critical       |
+| **3** | 🟡 **Language Detection** (FR-2.1)          | High     | Quick win, enables dashboards           | None                          | 1-2h   | **MEDIUM** - Feature completion    |
+| **4** | 🟡 **Code Quality Metrics** (FR-5.1-5.5)    | Medium   | Major feature, high complexity          | Integration tests helpful     | 8-10h  | **MEDIUM** - Dashboard feature     |
+| **5** | 🟢 **Security Dashboard**                   | Medium   | Leverage existing data                  | Integration tests recommended | 4-6h   | **MEDIUM** - Visualization         |
 
 ## Strategic Alignment
 
@@ -101,6 +105,7 @@ Phase 3: Intelligence (0% Started)
 ### Integration Testing (THIS TASK)
 
 **Pros:**
+
 - ✅ Critical for data integrity verification
 - ✅ Establishes testing patterns for all future features
 - ✅ Moderate effort (8-10 hours)
@@ -110,10 +115,12 @@ Phase 3: Intelligence (0% Started)
 - ✅ Enable confident onboarding of new features
 
 **Cons:**
+
 - ⏱️ 8-10 hour investment upfront
 - 🔄 Requires test PostgreSQL database setup
 
 **Risk of Skipping:**
+
 - 🔴 **CRITICAL** - Silent data corruption undetected
 - 🔴 New features built on potentially broken foundation
 - 🔴 Deployment risk extremely high
@@ -124,11 +131,13 @@ Phase 3: Intelligence (0% Started)
 ### Dependency Data Persistence (FR-4.1)
 
 **Pros:**
+
 - ✅ Quick implementation (3-4 hours)
 - ✅ Security-critical feature
 - ✅ Builds on completed enrichment work
 
 **Cons:**
+
 - ⚠️ Depends on integration tests for validation
 - 🔄 Need to be confident DB storage works first
 
@@ -139,11 +148,13 @@ Phase 3: Intelligence (0% Started)
 ### Repository Language Detection (FR-2.1)
 
 **Pros:**
+
 - ✅ Quick win (1-2 hours)
 - ✅ Enables language distribution dashboards
 - ✅ Uses GitHub API endpoint already available
 
 **Cons:**
+
 - ❌ No dependency on integration tests
 - 🟡 Lower strategic value vs. foundation
 
@@ -154,10 +165,12 @@ Phase 3: Intelligence (0% Started)
 ### Code Quality Metrics (FR-5.1-5.5)
 
 **Pros:**
+
 - ✅ Significant feature completion
 - ✅ Enables quality dashboards
 
 **Cons:**
+
 - 🔴 High complexity (8-10 hours)
 - ⚠️ Should have integration test pattern established first
 - 🔴 No benefit if data pipeline is broken
@@ -169,10 +182,12 @@ Phase 3: Intelligence (0% Started)
 ### Security Dashboard
 
 **Pros:**
+
 - ✅ Leverages existing enrichment data
 - ✅ High visibility feature
 
 **Cons:**
+
 - ⚠️ Depends on enriched data being correct (needs integration tests)
 - 🟡 Visualization-only, doesn't complete features
 
@@ -183,6 +198,7 @@ Phase 3: Intelligence (0% Started)
 ### Week 1 (Current): Integration Testing ⭐
 
 **Timeline: 8-10 hours**
+
 1. Set up integration test infrastructure (conftest.py, fixtures) - 2h
 2. Implement core E2E tests (extraction, enrichment, storage) - 4h
 3. Add CI/CD integration (GitHub Actions) - 2h
@@ -193,22 +209,26 @@ Phase 3: Intelligence (0% Started)
 ### Week 2 (Following): Build on Foundation
 
 **Option A: Quick Wins** (5-6 hours)
+
 - Language detection (1-2h)
 - Dependency data persistence (3-4h)
 
 **Option B: Major Features** (8-10 hours)
+
 - Code quality metrics engine
 - Now with integration test pattern established
 
 ## Metrics to Track
 
 ### Before Integration Tests
+
 - ✅ 16 unit/contract tests passing
 - ❌ 0 integration tests
 - ❌ No PostgreSQL data validation
 - ❌ No real credential validation
 
-### After Integration Tests  
+### After Integration Tests
+
 - ✅ 16+ unit/contract tests passing
 - ✅ 10+ integration tests passing
 - ✅ PostgreSQL data verified correct
@@ -218,6 +238,7 @@ Phase 3: Intelligence (0% Started)
 ## Risk Mitigation Strategy
 
 ### If We Skip Integration Tests
+
 ```
 Time: 0 hours (not done)
 Risk: 🔴 CRITICAL
@@ -226,6 +247,7 @@ Cost to Fix Later: 16+ hours (retrofit + debugging)
 ```
 
 ### If We Implement Integration Tests Now
+
 ```
 Time: 8-10 hours (upfront investment)
 Risk: 🟢 LOW
@@ -266,14 +288,15 @@ Cost to Fix Issues: 1-2 hours (caught early)
 ## Timeline Comparison
 
 ### Without Integration Tests
+
 - Week 1: Language Detection (1-2h) + Code Quality attempt (might fail) = risky
 - Week 2-3: Debug issues, discover data problems = costly
 - Week 4+: Retrofit tests, fix data issues = expensive recovery
 
 ### With Integration Tests (Recommended)
+
 - Week 1: Integration Tests (8-10h) = foundational confidence
 - Week 2: Language Detection (1-2h) + Persistence (3-4h) + tested validation = high quality
 - Week 3+: Build features on proven foundation = sustainable pace
 
 **Time investment same, but confidence and quality dramatically better.**
-
