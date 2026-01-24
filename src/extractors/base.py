@@ -249,6 +249,22 @@ class RepositoryExtractor(ABC):
         pass
 
     @abstractmethod
+    def get_repository(self, repo_id: str) -> RepositoryData:
+        """
+        Get a specific repository by ID.
+
+        Args:
+            repo_id: Repository identifier (e.g., 'owner/name' for GitHub).
+
+        Returns:
+            Repository metadata for the specified repository.
+
+        Raises:
+            ValueError: If repository not found.
+        """
+        pass
+
+    @abstractmethod
     def get_branches(self, repo_id: str) -> list[BranchData]:
         """
         Get all branches for a repository.

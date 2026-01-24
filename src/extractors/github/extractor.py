@@ -206,6 +206,47 @@ class GitHubExtractor(RepositoryExtractor):
 
         return repos
 
+    def get_repository(self, repo_id: str) -> RepositoryData:
+        """
+        Get a specific repository by ID.
+
+        Args:
+            repo_id: Repository identifier in format 'owner/name'.
+
+        Returns:
+            Repository metadata for the specified repository.
+
+        Raises:
+            ValueError: If repository not found.
+        """
+        try:
+            gh_repo = self.client.get_repo(repo_id)
+            
+            return RepositoryData(
+                repo_id=repo_id,
+                name=gh_repo.name,
+                url=gh_repo.html_url,
+                default_branch=gh_repo.default_branch,
+                platform=Platform.GITHUB,
+                platform_repo_id=gh_repo.id,
+                project_name=gh_repo.owner.login,
+                organization_name=gh_repo.owner.login,
+                created_at=gh_repo.created_at,
+                is_private=gh_repo.private,
+                is_archived=gh_repo.archived,
+                repository_size=gh_repo.size,
+                open_issues_count=gh_repo.open_issues_count,
+                license_name=gh_repo.license.name if gh_repo.license else None,
+                license_key=gh_repo.license.key if gh_repo.license else None,
+                has_vulnerability_alerts=getattr(gh_repo.security_and_analysis, 'vulnerability_alerts', {}).get('enabled', False) if hasattr(gh_repo, 'security_and_analysis') else None,
+                has_secret_scanning=getattr(gh_repo.security_and_analysis, 'secret_scanning', {}).get('enabled', False) if hasattr(gh_repo, 'security_and_analysis') else None,
+                has_dependabot_alerts=getattr(gh_repo.security_and_analysis, 'dependabot_security_updates', {}).get('enabled', False) if hasattr(gh_repo, 'security_and_analysis') else None,
+                pushed_at=gh_repo.pushed_at,
+                updated_at=gh_repo.updated_at,
+            )
+        except GithubException as exc:
+            raise ValueError(f"Repository not found: {repo_id}") from exc
+
     def get_branches(self, repo_id: str) -> list[BranchData]:
         """Get all branches for a repository."""
         repo = self._get_repo(repo_id)

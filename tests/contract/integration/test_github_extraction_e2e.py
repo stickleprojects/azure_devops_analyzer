@@ -41,8 +41,7 @@ class TestGitHubExtractionBasic:
         repo_id = "octocat/Hello-World"
         
         # Act: Extract repository metadata
-        repos = extractor.get_repositories("")
-        repo_data = next((r for r in repos if r.repo_id == repo_id), None)
+        repo_data = extractor.get_repository(repo_id)
         
         assert repo_data is not None, f"Repository {repo_id} not found in extraction"
         
@@ -98,8 +97,7 @@ class TestGitHubExtractionBasic:
         repo_id = "octocat/Hello-World"
         
         # Extract and store repository
-        repos = extractor.get_repositories("")
-        repo_data = next((r for r in repos if r.repo_id == repo_id), None)
+        repo_data = extractor.get_repository(repo_id)
         assert repo_data is not None, f"Repository {repo_id} not found"
         
         repo = Repository(
