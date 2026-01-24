@@ -74,15 +74,18 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: analyzer-test-runner
-    command: >
-      sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock &&
-             pytest tests/contract/integration/ -v 
-             -m 'not live_api' 
-             --junit-xml=/app/test-results/junit.xml 
-             --cov=src 
-             --cov-report=html:/app/test-results/coverage 
-             --cov-report=term
-             --tb=short"
+    command:
+      - sh
+      - -c
+      - |
+        pip install pytest pytest-cov pytest-asyncio pytest-mock && \
+        pytest tests/contract/integration/ -v \
+          -m 'not live_api' \
+          --junit-xml=/app/test-results/junit.xml \
+          --cov=src \
+          --cov-report=html:/app/test-results/coverage \
+          --cov-report=term \
+          --tb=short
     environment:
       # Test database connection (internal Docker network)
       TEST_DATABASE_URL: postgresql://test_analyzer:test_password_123@test-db:5432/analyzer_test
