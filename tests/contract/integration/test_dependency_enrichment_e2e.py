@@ -19,6 +19,44 @@ from src.analyzers.dependency_analyzer import DependencyAnalyzer
 from src.database.models import Repository, Dependency, Vulnerability
 
 
+def get_or_create_repository(extractor: GitHubExtractor, repo_id: str, session: Session) -> Repository:
+    """
+    Get existing repository or create it from GitHub API data.
+    
+    Handles duplicate key conflicts gracefully by returning existing record.
+    """
+    # Check if repository already exists
+    existing = session.query(Repository).filter_by(repo_id=repo_id).first()
+    if existing:
+        return existing
+    
+    # Fetch repository metadata from GitHub
+    repo_data = extractor.get_repository(repo_id)
+    
+    # Create and store repository
+    repo = Repository(
+        repo_id=repo_data.repo_id,
+        url=repo_data.url,
+        name=repo_data.name,
+        default_branch=repo_data.default_branch,
+        created_at=repo_data.created_at,
+        updated_at=repo_data.updated_at,
+        is_private=repo_data.is_private,
+        is_archived=repo_data.is_archived,
+        repository_size=repo_data.repository_size,
+        open_issues_count=repo_data.open_issues_count,
+        license_name=repo_data.license_name,
+        license_key=repo_data.license_key,
+        has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
+        has_secret_scanning=repo_data.has_secret_scanning,
+        has_dependabot_alerts=repo_data.has_dependabot_alerts,
+    )
+    session.add(repo)
+    session.commit()
+    
+    return repo
+
+
 class TestDependencyExtractionE2E:
     """Dependency extraction and storage E2E tests."""
     
@@ -44,28 +82,7 @@ class TestDependencyExtractionE2E:
         
         # Extract repository metadata
         extractor = GitHubExtractor(config=github_config)
-        repo_data = extractor.get_repository(repo_id)
-        
-        # Create repository record
-        repo = Repository(
-            repo_id=repo_data.repo_id,
-            url=repo_data.url,
-            name=repo_data.name,
-            default_branch=repo_data.default_branch,
-            created_at=repo_data.created_at,
-            updated_at=repo_data.updated_at,
-            is_private=repo_data.is_private,
-            is_archived=repo_data.is_archived,
-            repository_size=repo_data.repository_size,
-            open_issues_count=repo_data.open_issues_count,
-            license_name=repo_data.license_name,
-            license_key=repo_data.license_key,
-            has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
-            has_secret_scanning=repo_data.has_secret_scanning,
-            has_dependabot_alerts=repo_data.has_dependabot_alerts,
-        )
-        test_session.add(repo)
-        test_session.commit()
+        repo = get_or_create_repository(extractor, repo_id, test_session)
         
         # Extract manifests
         manifests = extractor.extract_manifests(repo_id)
@@ -134,27 +151,7 @@ class TestDependencyExtractionE2E:
         
         # Extract repository metadata
         extractor = GitHubExtractor(config=github_config)
-        repo_data = extractor.get_repository(repo_id)
-        
-        repo = Repository(
-            repo_id=repo_data.repo_id,
-            url=repo_data.url,
-            name=repo_data.name,
-            default_branch=repo_data.default_branch,
-            created_at=repo_data.created_at,
-            updated_at=repo_data.updated_at,
-            is_private=repo_data.is_private,
-            is_archived=repo_data.is_archived,
-            repository_size=repo_data.repository_size,
-            open_issues_count=repo_data.open_issues_count,
-            license_name=repo_data.license_name,
-            license_key=repo_data.license_key,
-            has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
-            has_secret_scanning=repo_data.has_secret_scanning,
-            has_dependabot_alerts=repo_data.has_dependabot_alerts,
-        )
-        test_session.add(repo)
-        test_session.commit()
+        repo = get_or_create_repository(extractor, repo_id, test_session)
         
         # Extract and enrich
         manifests = extractor.extract_manifests(repo_id)
@@ -229,27 +226,7 @@ class TestDependencyExtractionE2E:
         
         # Extract repository metadata
         extractor = GitHubExtractor(config=github_config)
-        repo_data = extractor.get_repository(repo_id)
-        
-        repo = Repository(
-            repo_id=repo_data.repo_id,
-            url=repo_data.url,
-            name=repo_data.name,
-            default_branch=repo_data.default_branch,
-            created_at=repo_data.created_at,
-            updated_at=repo_data.updated_at,
-            is_private=repo_data.is_private,
-            is_archived=repo_data.is_archived,
-            repository_size=repo_data.repository_size,
-            open_issues_count=repo_data.open_issues_count,
-            license_name=repo_data.license_name,
-            license_key=repo_data.license_key,
-            has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
-            has_secret_scanning=repo_data.has_secret_scanning,
-            has_dependabot_alerts=repo_data.has_dependabot_alerts,
-        )
-        test_session.add(repo)
-        test_session.commit()
+        repo = get_or_create_repository(extractor, repo_id, test_session)
         
         # Extract and enrich
         manifests = extractor.extract_manifests(repo_id)
@@ -322,28 +299,7 @@ class TestVulnerabilityStorageE2E:
         
         # Extract repository metadata
         extractor = GitHubExtractor(config=github_config)
-        repo_data = extractor.get_repository(repo_id)
-        
-        # Store in database
-        repo = Repository(
-            repo_id=repo_data.repo_id,
-            url=repo_data.url,
-            name=repo_data.name,
-            default_branch=repo_data.default_branch,
-            created_at=repo_data.created_at,
-            updated_at=repo_data.updated_at,
-            is_private=repo_data.is_private,
-            is_archived=repo_data.is_archived,
-            repository_size=repo_data.repository_size,
-            open_issues_count=repo_data.open_issues_count,
-            license_name=repo_data.license_name,
-            license_key=repo_data.license_key,
-            has_vulnerability_alerts=repo_data.has_vulnerability_alerts,
-            has_secret_scanning=repo_data.has_secret_scanning,
-            has_dependabot_alerts=repo_data.has_dependabot_alerts,
-        )
-        test_session.add(repo)
-        test_session.commit()
+        repo = get_or_create_repository(extractor, repo_id, test_session)
         
         # Extract, enrich, and get vulnerabilities
         manifests = extractor.extract_manifests(repo_id)
