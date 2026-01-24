@@ -172,6 +172,7 @@ class GitHubAnalysisWorkflow:
 
         # Process repository contents
         self._process_branches(repo_data)
+        self._process_languages(repo_data)
         self._process_readme_files(repo_data)
         self._process_commits(repo_data)
         self._process_pull_requests(repo_data)
@@ -197,6 +198,27 @@ class GitHubAnalysisWorkflow:
 
         except Exception as e:
             logger.warning("      Failed to fetch branches: %s", e)
+
+    def _process_languages(self, repo_data):
+        """Fetch and store language statistics for a repository."""
+        try:
+            languages = self.extractor.get_languages(repo_data.repo_id)
+            logger.info("      Found %d languages", len(languages))
+
+            if languages:
+                with session_scope() as session:
+                    from src.database.storage import store_languages
+                    store_languages(session, repo_data.repo_id, languages)
+                    
+                    # Log top 3 languages
+                    top_langs = ", ".join(
+                        f"{lang.language} ({lang.percentage:.1f}%)"
+                        for lang in languages[:3]
+                    )
+                    logger.info("      Top languages: %s", top_langs)
+
+        except Exception as e:
+            logger.warning("      Failed to fetch languages: %s", e)
 
     def _process_readme_files(self, repo_data):
         """Fetch and store README files for a repository."""

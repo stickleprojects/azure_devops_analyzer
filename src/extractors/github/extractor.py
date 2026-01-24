@@ -261,6 +261,48 @@ class GitHubExtractor(RepositoryExtractor):
             for b in branches
         ]
 
+    def get_languages(self, repo_id: str) -> list["LanguageData"]:
+        """
+        Get programming language statistics for a repository.
+        
+        Returns language data with byte counts and percentages.
+        GitHub API returns a dict of {language_name: byte_count}.
+        """
+        from src.extractors.base import LanguageData
+        
+        repo = self._get_repo(repo_id)
+        
+        try:
+            # GitHub returns dict of {language: byte_count}
+            languages_dict = repo.get_languages()
+            
+            if not languages_dict:
+                return []
+            
+            # Calculate total bytes for percentage calculation
+            total_bytes = sum(languages_dict.values())
+            
+            # Convert to list of LanguageData objects
+            result = []
+            for language, byte_count in languages_dict.items():
+                percentage = (byte_count / total_bytes * 100) if total_bytes > 0 else 0
+                result.append(
+                    LanguageData(
+                        language=language,
+                        byte_count=byte_count,
+                        percentage=round(percentage, 2)
+                    )
+                )
+            
+            # Sort by byte count descending
+            result.sort(key=lambda x: x.byte_count, reverse=True)
+            
+            return result
+            
+        except Exception as e:
+            self._logger.warning("Failed to get languages for %s: %s", repo_id, e)
+            return []
+
     def get_commits(
         self,
         repo_id: str,

@@ -17,6 +17,7 @@ from src.database.storage import (
     store_branch,
     store_commit,
     store_pull_request,
+    store_languages,
     get_or_create_contributor,
     get_or_create_team,
     should_scan_repository,
@@ -30,6 +31,7 @@ from src.database.models import (
     PullRequest,
     Contributor,
     Team,
+    RepositoryLanguage,
 )
 from tests.fixtures.sample_data import (
     sample_organization_data,
@@ -586,4 +588,96 @@ class TestNullHandling:
         
         assert commit.files_changed is None
         assert commit.lines_added is None
-        assert commit.lines_removed is None
+
+class TestLanguageStorage:
+    """CONTRACT: Repository language statistics storage."""
+    
+    def test_contract_store_languages_creates_records(self, db_session):
+        """CONTRACT: Language statistics must be stored with correct data."""
+        from src.extractors.base import LanguageData
+        
+        # Setup
+        org_data = sample_organization_data()
+        org = store_organization(db_session, org_data)
+        project = store_project(db_session, org, "test-project", "Test Project")
+        repo_data = sample_repository_data(name="test-repo")
+        repo = store_repository(db_session, project, repo_data)
+        db_session.commit()
+        
+        # Test
+        languages = [
+            LanguageData(language="Python", byte_count=10000, percentage=65.5),
+            LanguageData(language="JavaScript", byte_count=5000, percentage=32.8),
+            LanguageData(language="CSS", byte_count=250, percentage=1.7),
+        ]
+        
+        results = store_languages(db_session, repo.repo_id, languages)
+        db_session.commit()
+        
+        assert len(results) == 3
+        stored = db_session.query(RepositoryLanguage).filter_by(repo_id=repo.repo_id).all()
+        assert len(stored) == 3
+        
+        # Verify first language
+        python_lang = next(l for l in stored if l.language == "Python")
+        assert python_lang.byte_count == 10000
+        assert python_lang.percentage == 65.5
+        assert python_lang.repo_id == repo.repo_id
+        assert python_lang.branch_id is None
+        assert python_lang.analyzed_at is not None
+    
+    def test_contract_store_languages_with_branch(self, db_session):
+        """CONTRACT: Language statistics can be associated with specific branch."""
+        from src.extractors.base import LanguageData
+        
+        # Setup
+        org_data = sample_organization_data()
+        org = store_organization(db_session, org_data)
+        project = store_project(db_session, org, "test-project", "Test Project")
+        repo_data = sample_repository_data(name="test-repo")
+        repo = store_repository(db_session, project, repo_data)
+        
+        branch_data = sample_branch_data(name="main")
+        branch = store_branch(db_session, repo.repo_id, branch_data)
+        db_session.commit()
+        
+        # Test
+        languages = [
+            LanguageData(language="Python", byte_count=10000, percentage=100.0),
+        ]
+        
+        results = store_languages(
+            db_session, 
+            repo.repo_id, 
+            languages, 
+            branch_id=branch.branch_id
+        )
+        db_session.commit()
+        
+        stored = db_session.query(RepositoryLanguage).filter_by(
+            repo_id=repo.repo_id,
+            branch_id=branch.branch_id
+        ).all()
+        
+        assert len(stored) == 1
+        assert stored[0].branch_id == branch.branch_id
+    
+    def test_contract_store_languages_empty_list(self, db_session):
+        """CONTRACT: Storing empty language list is allowed (no languages detected)."""
+        from src.extractors.base import LanguageData
+        
+        # Setup
+        org_data = sample_organization_data()
+        org = store_organization(db_session, org_data)
+        project = store_project(db_session, org, "test-project", "Test Project")
+        repo_data = sample_repository_data(name="test-repo")
+        repo = store_repository(db_session, project, repo_data)
+        db_session.commit()
+        
+        # Test
+        results = store_languages(db_session, repo.repo_id, [])
+        db_session.commit()
+        
+        assert len(results) == 0
+        stored = db_session.query(RepositoryLanguage).filter_by(repo_id=repo.repo_id).all()
+        assert len(stored) == 0

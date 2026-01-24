@@ -68,6 +68,14 @@ class BranchData:
 
 
 @dataclass
+class LanguageData:
+    """Programming language statistics for a repository."""
+    language: str
+    byte_count: int
+    percentage: Optional[float] = None
+
+
+@dataclass
 class FileTreeItem:
     """File or directory in the repository tree."""
     path: str
@@ -274,6 +282,19 @@ class RepositoryExtractor(ABC):
 
         Returns:
             List of branch data.
+        """
+        pass
+
+    @abstractmethod
+    def get_languages(self, repo_id: str) -> list[LanguageData]:
+        """
+        Get programming language statistics for a repository.
+
+        Args:
+            repo_id: Repository identifier.
+
+        Returns:
+            List of language data with byte counts and percentages.
         """
         pass
 

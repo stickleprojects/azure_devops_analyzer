@@ -117,6 +117,19 @@ class AzureDevOpsExtractor(RepositoryExtractor):
             for b in branches
         ]
 
+    def get_languages(self, repo_id: str) -> list["LanguageData"]:
+        """
+        Get programming language statistics for a repository.
+        
+        Note: Azure DevOps REST API does not provide built-in language statistics.
+        This would require analyzing the file tree or using an external service.
+        Returns empty list for now.
+        """
+        from src.extractors.base import LanguageData
+        
+        # TODO: Implement file-tree-based language detection for Azure DevOps
+        return []
+
     def get_commits(
         self,
         repo_id: str,

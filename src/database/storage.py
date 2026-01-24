@@ -23,6 +23,7 @@ from src.database.models import (
     ReadmeFile,
     Team,
     Dependency,
+    RepositoryLanguage,
 )
 from src.extractors.base import (
     OrganizationData,
@@ -34,6 +35,7 @@ from src.extractors.base import (
     PRCommentData,
     ReadmeData,
     DependencyData,
+    LanguageData,
 )
 
 
@@ -305,6 +307,46 @@ def store_branch(
         branch.latest_commit_sha = branch_data.latest_commit_sha
 
     return branch
+
+
+def store_languages(
+    session: Session,
+    repo_id: str,
+    languages: list[LanguageData],
+    branch_id: Optional[int] = None,
+    analyzed_at: Optional[datetime] = None,
+) -> list[RepositoryLanguage]:
+    """
+    Store language statistics for a repository.
+
+    Args:
+        session: Database session.
+        repo_id: Repository ID.
+        languages: List of language data from extractor.
+        branch_id: Optional branch ID (None for repository-wide stats).
+        analyzed_at: Timestamp of analysis (defaults to now).
+
+    Returns:
+        List of created RepositoryLanguage instances.
+    """
+    if analyzed_at is None:
+        analyzed_at = datetime.now(UTC)
+
+    results = []
+    for lang_data in languages:
+        lang = RepositoryLanguage(
+            repo_id=repo_id,
+            branch_id=branch_id,
+            language=lang_data.language,
+            percentage=lang_data.percentage,
+            line_count=None,  # Not provided by GitHub API
+            byte_count=lang_data.byte_count,
+            analyzed_at=analyzed_at,
+        )
+        session.add(lang)
+        results.append(lang)
+
+    return results
 
 
 def store_commit(
