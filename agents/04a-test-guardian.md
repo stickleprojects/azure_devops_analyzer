@@ -12,6 +12,7 @@ The Guardian distinguishes between two test types with different protection leve
 - **Purpose**: Define WHAT the system should do (business behavior)
 - **Protection**: STRICT - changes require documented requirement changes
 - **Examples**: API contracts, business rules, user-facing behavior
+- **Includes**: Integration tests (`tests/contract/integration/`) validate end-to-end business requirements
 
 ### Implementation Tests (Technical Details)  
 - **Location**: `tests/implementation/` or named `test_impl_*`

@@ -82,7 +82,7 @@ Use small, public test repos to avoid rate limits and data contamination:
 ### Conftest.py Template
 
 ```python
-# tests/integration/conftest.py
+# tests/contract/integration/conftest.py
 
 import pytest
 import os
@@ -133,7 +133,7 @@ def test_session(integration_test_db):
 ### Test 1: GitHub Extraction End-to-End
 
 ```python
-# tests/integration/test_github_extraction_e2e.py
+# tests/contract/integration/test_github_extraction_e2e.py
 
 import pytest
 from src.workflows.github_analysis import GitHubAnalysisWorkflow
@@ -251,7 +251,7 @@ class TestGitHubExtractionE2E:
 ### Test 2: Dependency Enrichment E2E
 
 ```python
-# tests/integration/test_dependency_enrichment_e2e.py
+# tests/contract/integration/test_dependency_enrichment_e2e.py
 
 class TestDependencyEnrichmentE2E:
     """
@@ -384,7 +384,7 @@ class TestDependencyEnrichmentE2E:
 ### Test 3: Data Validation
 
 ```python
-# tests/integration/test_data_integrity_e2e.py
+# tests/contract/integration/test_data_integrity_e2e.py
 
 class TestDataIntegrity:
     """
@@ -464,22 +464,22 @@ source .env.test
 
 ```bash
 # Run all integration tests
-pytest tests/integration/ -v --tb=short
+pytest tests/contract/integration/ -v --tb=short
 
 # Run specific test
-pytest tests/integration/test_github_extraction_e2e.py -v
+pytest tests/contract/integration/test_github_extraction_e2e.py -v
 
 # Run with output
-pytest tests/integration/ -v -s
+pytest tests/contract/integration/ -v -s
 
 # Run with markers
-pytest tests/integration/ -m integration
+pytest tests/contract/integration/ -m integration
 ```
 
 ### Markers for Different Test Types
 
 ```python
-# tests/integration/conftest.py
+# tests/contract/integration/conftest.py
 
 def pytest_configure(config):
     config.addinivalue_line(
@@ -544,7 +544,7 @@ jobs:
         env:
           TEST_DATABASE_URL: postgresql://postgres:test_password@localhost/analyzer_test
           GITHUB_TOKEN: ${{ secrets.TEST_GITHUB_TOKEN }}
-        run: pytest tests/integration/ -v --tb=short --maxfail=3
+        run: pytest tests/contract/integration/ -v --tb=short --maxfail=3
 ```
 
 ## 7. TEST MAINTENANCE

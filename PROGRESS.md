@@ -15,9 +15,10 @@ Started implementation of integration test infrastructure on `feature/integratio
 
 ### Solutions Implemented
 
-#### 1. Integration Test Fixtures (`tests/integration/conftest.py`)
+#### 1. Integration Test Fixtures (`tests/contract/integration/conftest.py`)
 
 Complete pytest fixture setup including:
+
 - Database engine creation with schema initialization
 - Test session management with automatic cleanup
 - GitHub API configuration loading
@@ -26,6 +27,7 @@ Complete pytest fixture setup including:
 - Session-scoped fixtures for efficiency
 
 **Key Features:**
+
 - Automatic database cleanup after each test
 - Test database URL validation (safety checks)
 - Graceful skipping of tests if credentials missing
@@ -33,7 +35,8 @@ Complete pytest fixture setup including:
 
 #### 2. E2E Test Suites
 
-**GitHub Extraction E2E (`tests/integration/test_github_extraction_e2e.py`)**
+**GitHub Extraction E2E (`tests/contract/integration/test_github_extraction_e2e.py`)**
+
 - Repository metadata extraction
 - Branch tracking verification
 - Commit history validation
@@ -41,7 +44,8 @@ Complete pytest fixture setup including:
 - Database constraint enforcement
 - Timezone handling verification
 
-**Dependency Enrichment E2E (`tests/integration/test_dependency_enrichment_e2e.py`)**
+**Dependency Enrichment E2E (`tests/contract/integration/test_dependency_enrichment_e2e.py`)**
+
 - Manifest file parsing
 - Dependency extraction and storage
 - OSV.dev enrichment (latest versions)
@@ -51,23 +55,24 @@ Complete pytest fixture setup including:
 
 #### 3. Documentation
 
-- `tests/integration/README.md` - Complete test guide with examples
+- `tests/contract/integration/README.md` - Complete test guide with examples
 - `docs/04-implementation/integration-test-setup.md` - Step-by-step setup instructions
 - Troubleshooting sections for common issues
 - CI/CD GitHub Actions template
 
 ### Files Created
 
-- `tests/integration/__init__.py` - Package initialization
-- `tests/integration/conftest.py` - 200+ lines of fixtures
-- `tests/integration/test_github_extraction_e2e.py` - 300+ lines of E2E tests
-- `tests/integration/test_dependency_enrichment_e2e.py` - 250+ lines of enrichment tests
-- `tests/integration/README.md` - Integration test guide
+- `tests/contract/integration/__init__.py` - Package initialization
+- `tests/contract/integration/conftest.py` - 200+ lines of fixtures
+- `tests/contract/integration/test_github_extraction_e2e.py` - 300+ lines of E2E tests
+- `tests/contract/integration/test_dependency_enrichment_e2e.py` - 250+ lines of enrichment tests
+- `tests/contract/integration/README.md` - Integration test guide
 - `docs/04-implementation/integration-test-setup.md` - Setup and troubleshooting
 
 ### Test Coverage
 
 **GitHub Extraction Tests:**
+
 - ✅ Repository metadata storage
 - ✅ Branch tracking accuracy
 - ✅ Commit history extraction
@@ -76,6 +81,7 @@ Complete pytest fixture setup including:
 - ✅ Timezone handling (UTC-aware)
 
 **Dependency Enrichment Tests:**
+
 - ✅ Manifest parsing and dependency extraction
 - ✅ Latest version enrichment (OSV.dev)
 - ✅ EOL detection (endoflife.date)
@@ -84,6 +90,7 @@ Complete pytest fixture setup including:
 - ✅ Dev dependency classification
 
 **Data Integrity Tests:**
+
 - ✅ NOT NULL constraints
 - ✅ Foreign key relationships
 - ✅ Unique constraints
@@ -91,17 +98,18 @@ Complete pytest fixture setup including:
 
 ### Test Execution Markers
 
-| Marker | Purpose | Use Case |
-|--------|---------|----------|
-| `@pytest.mark.integration` | Integration test | All E2E tests |
-| `@pytest.mark.slow` | 30+ seconds | Skip in fast runs |
-| `@pytest.mark.live_api` | Uses live APIs | Skip in CI (rate limits) |
+| Marker                     | Purpose          | Use Case                 |
+| -------------------------- | ---------------- | ------------------------ |
+| `@pytest.mark.integration` | Integration test | All E2E tests            |
+| `@pytest.mark.slow`        | 30+ seconds      | Skip in fast runs        |
+| `@pytest.mark.live_api`    | Uses live APIs   | Skip in CI (rate limits) |
 
 **Example runs:**
+
 ```bash
-pytest tests/integration/ -v                          # All tests
-pytest tests/integration/ -m "not slow" -v            # Quick tests only
-pytest tests/integration/ -m "not live_api" -v        # Safe tests (no API)
+pytest tests/contract/integration/ -v                          # All tests
+pytest tests/contract/integration/ -m "not slow" -v            # Quick tests only
+pytest tests/contract/integration/ -m "not live_api" -v        # Safe tests (no API)
 ```
 
 ### Branch Status
@@ -113,14 +121,16 @@ pytest tests/integration/ -m "not live_api" -v        # Safe tests (no API)
 ### Next Steps for This Branch
 
 1. **Test Database Setup** (User responsibility)
+
    ```bash
    createdb analyzer_test
    export TEST_DATABASE_URL="postgresql://user:pass@localhost/analyzer_test"
    ```
 
 2. **Run Tests Against Infrastructure**
+
    ```bash
-   pytest tests/integration/ -m "not live_api" -v
+   pytest tests/contract/integration/ -m "not live_api" -v
    ```
 
 3. **Debug and Fix Issues**
@@ -141,21 +151,25 @@ pytest tests/integration/ -m "not live_api" -v        # Safe tests (no API)
 ### Architecture Decisions
 
 **1. Session-Scoped Database Engine**
+
 - Single engine for all tests (efficiency)
 - Schema created/dropped per session
 - Reduces setup/teardown overhead
 
 **2. Test-Scoped Session with Rollback**
+
 - Each test gets clean session
 - Automatic rollback after test
 - No manual cleanup needed
 
 **3. Fixture-Based Configuration**
+
 - Credentials loaded from environment
 - Tests skipped gracefully if config missing
 - No hardcoded test data
 
 **4. Live API Support**
+
 - Optional live API tests (marked)
 - Fallback to mocks available
 - Rate limit awareness built-in
@@ -163,6 +177,7 @@ pytest tests/integration/ -m "not live_api" -v        # Safe tests (no API)
 ### Key Design Patterns
 
 **Fixture Composition:**
+
 ```python
 def test_example(github_config, test_session):
     # github_config: API credentials (from env)
@@ -170,10 +185,11 @@ def test_example(github_config, test_session):
 ```
 
 **Test Structure (CONTRACT pattern):**
+
 ```python
 def test_feature(self, github_config, test_session):
     """CONTRACT: [What should happen]
-    
+
     Verify:
     - [Assertion 1]
     - [Assertion 2]
@@ -182,6 +198,7 @@ def test_feature(self, github_config, test_session):
 ```
 
 **Cleanup Automation:**
+
 ```python
 @pytest.fixture(autouse=True)
 def cleanup_database(test_session):
@@ -192,21 +209,25 @@ def cleanup_database(test_session):
 ### Testing Strategy
 
 **Phase 1 (Current):** Infrastructure
+
 - ✅ Fixtures for database access
 - ✅ E2E test templates
 - ✅ Documentation
 
 **Phase 2 (Next):** Execution
+
 - Run tests against actual database
 - Debug failures
 - Fix schema/import issues
 
 **Phase 3:** Validation
+
 - Verify enrichment data storage
 - Test live API calls
 - Confirm timezone handling
 
 **Phase 4:** CI/CD
+
 - GitHub Actions setup
 - Automated test runs
 - Coverage tracking
@@ -214,17 +235,20 @@ def cleanup_database(test_session):
 ### Risk Mitigation
 
 **Database Safety:**
+
 - Test database URL validation (must contain "test" or "dev")
 - Automatic cleanup between tests
 - Schema isolated per session
 
 **API Rate Limits:**
+
 - Live API tests marked separately
 - Can skip with `-m "not live_api"`
 - Mock fixtures available
 - Graceful failure handling
 
 **Test Isolation:**
+
 - Each test independent
 - No shared state
 - Clean session per test
