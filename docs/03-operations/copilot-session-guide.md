@@ -247,7 +247,7 @@ Agent: [Provides session summary as usual]
 
 1. **Don't expect automatic monitoring**
    - Agent can't check status every 30 seconds
-   - Must explicitly ask "is complete?"
+   - Must explicitly ask "is this task complete?"
 
 2. **Don't assume greeting always works**
    - If no response, try: "analyze session"
