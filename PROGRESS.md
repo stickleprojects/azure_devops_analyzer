@@ -1,5 +1,57 @@
 # Development Progress Log
 
+## Session: 2026-01-24 (Part 3) - Script Fixes & AI Instructions Consolidation
+
+### Summary
+
+Fixed two bugs in the environment variable resolution pipeline and consolidated AI agent instructions into a shared, tool-agnostic format.
+
+### Problems Addressed
+
+1. **resolve_env.sh not resolving GITHUB_TOKEN** - Script left `$REPO_ANALYZER_GITHUB_TOKEN` unresolved
+2. **Copilot and Claude Code instructions duplicated** - Same behavioral rules maintained in two separate files
+
+### Solutions Implemented
+
+#### 1. Fix: Windows Line Endings in .env (resolve_env.sh)
+
+The `.env` file has Windows (`\r\n`) line endings. The regex matching `$VARIABLE_NAME` failed because the value included a trailing `\r`. Added `\r` stripping to the read loop.
+
+#### 2. Fix: Non-Exported Shell Variables (run-tests-docker.sh)
+
+`REPO_ANALYZER_GITHUB_TOKEN` is set in the shell profile but not exported. Child processes spawned by `bash script.sh` don't inherit it. Changed to `( source "$RESOLVE_SCRIPT" )` which runs in a subshell with access to all current shell variables.
+
+Also removed the stale-file check (`if [ ! -f .env.resolved ]`) so the script always re-resolves from current environment.
+
+#### 3. Shared AI Instructions (.ai/instructions.md)
+
+Created `.ai/instructions.md` as a single source of truth for AI agent behavior:
+- Session continuity (greeting triggers, progress analysis, backlog)
+- Architecture guardian (boundary validation)
+- Test guardian (iron rule, contract vs implementation tests)
+- Project conventions (Docker, env vars, Python, testing)
+
+Both `CLAUDE.md` and `.github/copilot-instructions.md` now reference this shared file.
+
+### Files Created
+
+- `.ai/instructions.md` - Shared AI agent instructions
+- `CLAUDE.md` - Claude Code wrapper referencing shared instructions
+
+### Files Modified
+
+- `scripts/resolve_env.sh` - Added `\r` stripping for Windows line endings
+- `scripts/run-tests-docker.sh` - Always re-resolve; use subshell+source for variable access
+- `.github/copilot-instructions.md` - Slimmed to reference shared instructions
+
+### Next Steps
+
+1. Fix the 3 production bugs discovered in Part 2 (repository name, timezone, method name)
+2. Re-run integration tests after fixes
+3. Add `live_api` marks to existing GitHub extraction tests that hit real APIs
+
+---
+
 ## Session: 2026-01-24 (Part 2) - Integration Test Execution & Bug Discovery
 
 ### Summary

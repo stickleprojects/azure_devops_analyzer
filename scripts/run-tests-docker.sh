@@ -11,7 +11,7 @@
 #   ./scripts/run-tests-docker.sh --help       # Show help
 #
 # Environment Variables:
-#   GITHUB_TOKEN - GitHub API token (required, loaded from .env.resolved)
+#   .env file populated
 #
 # Exit Codes:
 #   0  - All tests passed
@@ -28,9 +28,13 @@ COMPOSE_FILE="docker-compose.test.yml"
 RESULTS_DIR="test-results"
 KEEP_DB=false
 RUN_LIVE_API=false
-ENV_FILE=".env"
-RESOLVED_ENV_FILE=".env.resolved"
-RESOLVE_SCRIPT="./scripts/resolve_env.sh"
+ENV_FILE=".env" #the env file has indirect references, so we need to resolve it
+
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="${PROJECT_ROOT}/.env"
+RESOLVED_ENV_FILE="${PROJECT_ROOT}/.env.resolved"
+RESOLVE_SCRIPT="${PROJECT_ROOT}/scripts/resolve_env.sh"
+
 
 # Colors for output
 RED='\033[0;31m'
@@ -86,13 +90,8 @@ EXAMPLES:
     # Run tests without cleanup (inspect containers after)
     $0 --no-cleanup
 
-ENVIRONMENT:
-    GITHUB_TOKEN - Required for GitHub API tests
-                   Auto-loaded from .env.resolved if available
-
 REQUIREMENTS:
     - Docker and Docker Compose installed
-    - .env.resolved file with GITHUB_TOKEN (or set in environment)
 
 OUTPUT:
     Test results saved to: $RESULTS_DIR/
@@ -146,17 +145,15 @@ done
 # =============================================================================
 # Pre-flight Checks
 # =============================================================================
+
+# Resolve environment variables (always re-resolve to pick up current environment)
+# Use subshell+source so the resolve script can access non-exported shell variables
+log_info "Resolving environment variables..."
+( source "$RESOLVE_SCRIPT" --quiet )
+
+
 log_info "Starting integration test run..."
 echo
-
-# Always regenerate .env.resolved to ensure latest values are used
-if [ -x "$RESOLVE_SCRIPT" ]; then
-    log_info "Resolving environment variables from $ENV_FILE..."
-    bash "$RESOLVE_SCRIPT"
-    log_success "Environment resolved -> $RESOLVED_ENV_FILE"
-else
-    log_warning "resolve_env.sh not found; using existing $RESOLVED_ENV_FILE if present"
-fi
 
 # Check Docker is running
 if ! docker info > /dev/null 2>&1; then
@@ -173,22 +170,6 @@ if ! docker compose version > /dev/null 2>&1; then
     exit 2
 fi
 log_success "Docker Compose V2 available"
-
-# Load GitHub token from .env.resolved if not set
-if [ -z "$GITHUB_TOKEN" ]; then
-    if [ -f "$RESOLVED_ENV_FILE" ]; then
-        log_info "Loading GITHUB_TOKEN from $RESOLVED_ENV_FILE..."
-        export GITHUB_TOKEN=$(grep "^GITHUB_TOKEN=" "$RESOLVED_ENV_FILE" | cut -d'=' -f2 | tr -d '"' | tr -d "'")
-    fi
-fi
-
-# Verify GitHub token is available
-if [ -z "$GITHUB_TOKEN" ]; then
-    log_error "GITHUB_TOKEN not found"
-    log_info "Set GITHUB_TOKEN environment variable or add to .env.resolved"
-    exit 2
-fi
-log_success "GitHub token loaded"
 
 # Create results directory
 mkdir -p "$RESULTS_DIR"
