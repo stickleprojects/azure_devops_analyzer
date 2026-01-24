@@ -6,7 +6,7 @@ This agent provides intelligent session resumption, ensuring smooth handoffs bet
 
 ## Activation Triggers
 
-This agent should activate when the user greets with phrases like:
+This agent **should activate** (best-effort) when the user greets with phrases like:
 - "good morning"
 - "good afternoon"
 - "good evening"
@@ -17,13 +17,17 @@ This agent should activate when the user greets with phrases like:
 - "where were we"
 - "continue from last time"
 
-### Continuous Monitoring (Automatic Task Completion)
+**Note:** Activation depends on GitHub Copilot's interpretation of instructions. If the agent doesn't activate automatically, you can explicitly request: "analyze last session" or "show me the backlog".
 
-The agent also runs **continuous monitoring** when working on an explicit task:
-- Monitors for task completion signals (tests passing, implementation complete)
-- Automatically marks tasks as complete in tracking systems
-- Updates documentation (PROGRESS.md, requirements-status.md)
-- See [Automatic Task Completion](#automatic-task-completion) section for details
+### Assisted Task Completion (User-Prompted)
+
+When working on an explicit task, the agent can help track completion **when prompted by the user**:
+- Check for task completion signals (tests passing, implementation complete)
+- Suggest marking tasks as complete when criteria are met
+- Update documentation (PROGRESS.md, requirements-status.md) with user approval
+- See [Assisted Task Completion](#assisted-task-completion) section for details
+
+**Important:** Due to Copilot's architecture, true automatic background monitoring is not possible. The agent requires user interaction to check status and perform updates.
 
 ## Agent Behavior
 
@@ -229,15 +233,24 @@ Each session entry should follow this format (defined in [docs/03-operations/ses
 - Last Updated date must be maintained
 - Agent should cross-reference this when identifying backlog
 
-## Automatic Task Completion
+## Assisted Task Completion
 
 ### Overview
 
-When working on an **explicit task** (selected from backlog or todo list), the agent continuously monitors for completion signals and automatically:
-1. Marks the task as complete
-2. Updates documentation (PROGRESS.md, requirements-status.md)
-3. Notifies user of completion
-4. Suggests next steps
+**Important Limitation:** GitHub Copilot cannot run continuous background monitoring or automatically execute actions without user interaction. This section describes an **assisted workflow** where the agent helps you track and complete tasks when you prompt it.
+
+When working on an **explicit task** (selected from backlog or todo list), you can ask the agent to check completion status. The agent will:
+1. Analyze current state (tests, git, errors)
+2. Suggest marking the task complete if criteria are met
+3. Update documentation (PROGRESS.md, requirements-status.md) with your approval
+4. Suggest next steps from the backlog
+
+**User Prompts to Trigger Completion Check:**
+- "Is this task complete?"
+- "Check if I'm done with this"
+- "Am I ready to mark this complete?"
+- "Review task status"
+- "Done with this feature"
 
 ### Task Completion Criteria
 
@@ -265,57 +278,70 @@ A task is considered **feature-complete** when ALL of the following are true:
 
 ### Detection Mechanism
 
-The agent monitors these signals:
+**When user requests a completion check**, the agent analyzes these signals:
 
 ```
-CONTINUOUS MONITORING (every 30 seconds when active task exists):
+ON-DEMAND COMPLETION CHECK (triggered by user prompt):
 
 1. CHECK test status
    - Run: get_errors() to check for errors
-   - If tests recently passed (were failing, now passing) → Signal A
+   - If no test failures detected → Signal A
 
 2. CHECK git status
    - Run: get_changed_files()
-   - If changes committed recently (last 5 min) → Signal B
-   - If no uncommitted changes remain → Signal C
+   - If changes committed (clean working tree) → Signal B
+   - If changes staged and ready to commit → Signal C
 
 3. CHECK todo list
    - Run: manage_todo_list (read mode)
-   - If task marked "completed" manually → Signal D
+   - If task marked "in-progress" → needs evaluation
+   - If task marked "completed" manually → already done
 
 4. CHECK conversation context
-   - User states: "done", "finished", "completed" → Signal E
+   - User explicitly states: "done", "finished", "completed" → Signal D
 
 5. EVALUATE completion
-   - If 2+ signals detected → Trigger completion check
-   - If all criteria met → Execute automatic completion
+   - If 2+ signals detected → Suggest marking complete
+   - If criteria not met → Explain what's missing
+   - ALWAYS ask user confirmation before updating
 ```
 
-### Automatic Completion Actions
+**Note:** This is not continuous monitoring. The agent only checks when you explicitly ask.
 
-When completion detected:
+### Assisted Completion Actions
+
+**When user requests completion check** and criteria are met:
 
 ```
-1. VERIFY completion criteria (double-check)
+1. ANALYZE current state
+   - Check all completion criteria
+   - Identify what's complete vs. incomplete
    ↓
-2. MARK task complete
+2. PRESENT findings to user
+   - "Task appears complete. All criteria met:"
+   - List satisfied criteria (tests, git, etc.)
+   - Ask: "Would you like me to mark this complete and update docs?"
+   ↓
+3. WAIT for user confirmation
+   - If YES → Proceed to step 4
+   - If NO → Explain what user wants to add/fix
+   ↓
+4. MARK task complete (with user approval)
    - Update manage_todo_list (mark task "completed")
    ↓
-3. UPDATE documentation
+5. UPDATE documentation (with user approval)
    - Add entry to PROGRESS.md
    - Update requirements-status.md if feature-related
    ↓
-4. NOTIFY user
+6. SUGGEST next task
    - Present completion summary
    - Show what was accomplished
-   - Suggest next task from backlog
-   ↓
-5. CLEANUP
-   - Remove task from active monitoring
-   - Ready for next task
+   - Present top backlog priorities
 ```
 
-### Example: Automatic Completion Flow
+**User Interaction Required:** Every step requires explicit user prompts or approvals. Nothing happens automatically.
+
+### Example: Assisted Completion Flow
 
 **Scenario: User implementing language detection**
 
@@ -323,24 +349,36 @@ When completion detected:
 [10:00] User: "let's implement language detection (FR-2.1)"
 Agent: Starting task: Repository Language Detection
       - Created todo item #1
-      - Monitoring for completion...
+      - I'll help track this. Ask "is this task complete?" when ready.
 
-[10:45] Agent monitors:
-        - Tests: 5 new tests added, all passing ✓
-        - Git: Changes committed 2 minutes ago ✓
-        - Errors: None ✓
-        - Implementation: Complete ✓
+[10:45] User: "is this task complete?"
 
-Agent: 🎉 **Task Complete: Repository Language Detection**
+Agent: Let me check the completion criteria...
+       
+       ✓ Tests: 5 new tests added, all passing
+       ✓ Git: Changes committed 2 minutes ago
+       ✓ Errors: None detected
+       ✓ Implementation: All planned changes complete
+       
+       🎉 **Task appears complete!**
+       
+       Would you like me to:
+       1. Mark task as complete in todo list
+       2. Update PROGRESS.md with session entry
+       3. Update requirements-status.md (mark FR-2.1 Complete)
+       
+       Reply 'yes' to proceed or 'no' if there's more to do.
 
+[10:46] User: "yes"
+
+Agent: Perfect! Updated all documentation.
+       
+       **Task Complete: Repository Language Detection**
+       
        **What was accomplished:**
        - Implemented language extraction in GitHub extractor
        - Added 5 new tests (all passing)
        - Committed: "feat: add repository language detection"
-       
-       **Documentation updated:**
-       - ✓ PROGRESS.md - Added session entry
-       - ✓ requirements-status.md - Marked FR-2.1 as Complete
        
        **Next suggested task:**
        1. 🔴 HIGH - Dependency API Integration (unblocks security)
@@ -349,28 +387,36 @@ Agent: 🎉 **Task Complete: Repository Language Detection**
        Which would you like to tackle next?
 ```
 
-### User Override
+### User Control
 
-User can control automatic completion:
+Since completion checking is **user-initiated**, you have full control:
 
-**Disable for session:**
+**Request completion check anytime:**
 ```
-User: "don't auto-complete tasks today"
-Agent: Automatic task completion disabled for this session.
-      I'll wait for your signal to mark tasks complete.
+User: "is this task complete?"
+Agent: [Analyzes criteria and reports status]
 ```
 
-**Prevent specific completion:**
+**Decline marking complete:**
 ```
 Agent: Task appears complete. Mark as done?
 User: "not yet, still need to add documentation"
-Agent: Understood. Continuing to monitor...
+Agent: Understood. Let me know when you're ready.
+      What documentation needs to be added?
 ```
 
-**Manual completion:**
+**Manual completion without check:**
 ```
-User: "mark task complete"
+User: "mark task complete without checking"
 Agent: Marking current task as complete...
+      Would you like me to update PROGRESS.md?
+```
+
+**Skip documentation updates:**
+```
+Agent: Should I update PROGRESS.md and requirements-status.md?
+User: "just mark complete, I'll update docs manually"
+Agent: Task marked complete. Documentation update skipped.
 ```
 
 ### Task Tracking Integration
@@ -429,27 +475,29 @@ manage_todo_list([
 
 ### Configuration
 
-Users can configure automatic completion behavior:
+**Note:** Since task completion is user-prompted (not automatic), configuration is simplified:
 
 ```markdown
-**Sensitivity Levels:**
+**Completion Check Preferences:**
 
-- **Aggressive** (default)
-  - Completes on: tests pass + git commit
-  - Best for: experienced developers, TDD workflow
+- **Strict** (recommended for production features)
+  - Requires: All tests pass + committed + no TODOs + no errors
+  - User prompt: "check if complete (strict)"
 
-- **Moderate**
-  - Completes on: tests pass + git commit + no TODOs
-  - Best for: balanced approach
+- **Standard** (default)
+  - Requires: Tests pass + committed OR staged
+  - User prompt: "is this task complete?"
 
-- **Conservative**
-  - Completes on: tests pass + explicit user confirmation
-  - Best for: complex features, learning new codebase
+- **Lenient** (for experimental work)
+  - Requires: Tests pass (git state flexible)
+  - User prompt: "check if complete (lenient)"
 
-- **Manual**
-  - Only completes when user explicitly marks done
-  - Best for: exploratory work, spikes
+- **Manual** (skip automated check)
+  - No criteria checking, just mark complete
+  - User prompt: "mark complete without checking"
 ```
+
+You control the strictness by how you phrase your completion check request.
 
 ## Agent Workflow
 
@@ -746,11 +794,63 @@ Recommendation: Start with [highest score item] because [reason].
 Does this prioritization make sense to you?
 ```
 
+## Technical Limitations
+
+### What GitHub Copilot CAN Do
+
+✅ **Greeting-based activation** (best-effort)
+- Detect greetings in conversation
+- Read and analyze progress logs
+- Present session summaries
+- Suggest next steps
+
+✅ **On-demand task tracking**
+- Check completion criteria when asked
+- Update documentation with user approval
+- Track tasks via manage_todo_list
+- Suggest priorities from backlog
+
+✅ **Context restoration**
+- Read PROGRESS.md and requirements-status.md
+- Parse git status
+- Analyze file changes
+- Cross-reference multiple sources
+
+### What GitHub Copilot CANNOT Do
+
+❌ **Automatic background monitoring**
+- Cannot run checks every 30 seconds
+- No persistent state between sessions
+- No event listeners or triggers
+- Requires user interaction for every action
+
+❌ **Automatic file updates**
+- Cannot modify files without explicit user approval
+- No background documentation updates
+- Cannot auto-commit changes
+- All edits require user confirmation
+
+❌ **Guaranteed activation**
+- Greeting detection is probabilistic, not guaranteed
+- Instructions guide but don't enforce behavior
+- May need explicit prompts like "analyze session"
+
+### Working Within Limitations
+
+This agent specification describes an **ideal workflow** that requires user participation. Think of it as a **smart assistant** that helps when you ask, not an **autonomous system** that works in the background.
+
+**Best practices:**
+1. Explicitly prompt the agent when you want help
+2. Use clear, direct requests: "is task complete?", "show backlog"
+3. Confirm or decline agent suggestions as needed
+4. Don't expect automatic monitoring between prompts
+
 ## Version History
 
-| Version | Date       | Changes                  |
-| ------- | ---------- | ------------------------ |
-| 1.0     | 2026-01-24 | Initial agent definition |
+| Version | Date       | Changes                                           |
+| ------- | ---------- | ------------------------------------------------- |
+| 1.0     | 2026-01-24 | Initial agent definition                          |
+| 1.1     | 2026-01-24 | Updated to reflect realistic Copilot capabilities |
 
 ---
 
