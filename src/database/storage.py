@@ -688,6 +688,77 @@ def store_dependencies(
     return stored_deps
 
 
+def store_enriched_dependencies(
+    session: Session,
+    repo_id: str,
+    enriched_dependencies: list,
+    branch_name: Optional[str] = None,
+    analyzed_at: Optional[datetime] = None,
+) -> list[Dependency]:
+    """
+    Store enriched dependencies for a repository.
+
+    This function stores dependencies with additional data from external APIs:
+    - latest_version from OSV.dev
+    - eol_date and is_eol from endoflife.date
+    - has_vulnerabilities and vulnerability metadata
+
+    Performs an upsert operation, replacing existing dependencies for the
+    repository/branch combination with the new set.
+
+    Args:
+        session: Database session.
+        repo_id: Repository identifier.
+        enriched_dependencies: List of EnrichedDependency objects.
+        branch_name: Branch name (optional).
+        analyzed_at: Timestamp for the analysis (defaults to now).
+
+    Returns:
+        List of stored Dependency instances.
+    """
+    if analyzed_at is None:
+        analyzed_at = datetime.now(UTC)
+
+    # Find branch_id if branch_name is provided
+    branch_id = None
+    if branch_name:
+        branch = (
+            session.query(Branch)
+            .filter_by(repo_id=repo_id, branch_name=branch_name)
+            .first()
+        )
+        if branch:
+            branch_id = branch.branch_id
+
+    # Delete existing dependencies for this repo/branch
+    delete_query = session.query(Dependency).filter(
+        Dependency.repo_id == repo_id,
+        Dependency.branch_id == branch_id,
+    )
+    delete_query.delete(synchronize_session=False)
+
+    # Store new enriched dependencies
+    stored_deps = []
+    for enriched_dep in enriched_dependencies:
+        dep = Dependency(
+            repo_id=repo_id,
+            branch_id=branch_id,
+            package_name=enriched_dep.package_name,
+            version=enriched_dep.version,
+            ecosystem=enriched_dep.ecosystem,
+            latest_version=enriched_dep.latest_version,
+            is_dev_dependency=enriched_dep.is_dev_dependency,
+            has_vulnerabilities=enriched_dep.has_vulnerabilities,
+            is_eol=enriched_dep.is_eol,
+            eol_date=enriched_dep.eol_date,
+            analyzed_at=analyzed_at,
+        )
+        session.add(dep)
+        stored_deps.append(dep)
+
+    return stored_deps
+
+
 def get_extraction_summary(session: Session) -> dict:
     """
     Get summary counts of all extracted data.

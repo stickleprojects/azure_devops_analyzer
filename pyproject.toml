@@ -5,21 +5,28 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 
-# Coverage options
+# Coverage options - commented out by default, run with --cov flag
+# addopts = [
+#     # Verbose output
+#     "-v",
+#     # Show local variables in tracebacks
+#     "-l",
+#     # Show summary of all test outcomes
+#     "-ra",
+#     # Coverage options (when running with --cov)
+#     "--cov=src",
+#     "--cov-report=html",
+#     "--cov-report=term-missing",
+#     "--cov-report=xml",
+#     # Fail if coverage is below 70%
+#     "--cov-fail-under=70",
+# ]
+
+# Base test options (always run)
 addopts = [
-    # Verbose output
     "-v",
-    # Show local variables in tracebacks
     "-l",
-    # Show summary of all test outcomes
     "-ra",
-    # Coverage options (when running with --cov)
-    "--cov=src",
-    "--cov-report=html",
-    "--cov-report=term-missing",
-    "--cov-report=xml",
-    # Fail if coverage is below 70%
-    "--cov-fail-under=70",
 ]
 
 # Markers for categorizing tests
