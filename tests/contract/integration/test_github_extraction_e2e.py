@@ -11,6 +11,7 @@ Tests verify:
 - Database constraints enforced
 """
 
+import os
 import pytest
 from datetime import datetime
 from sqlalchemy.orm import Session
@@ -115,6 +116,32 @@ class TestGitHubExtractionBasic:
         assert stored_repo.created_at.tzinfo is not None, "Timestamp should be UTC-aware"
         assert stored_repo.default_branch is not None
         assert stored_repo.name == "Hello-World"
+
+    @pytest.mark.integration
+    def test_private_repo_flags_stored(
+        self,
+        github_config,
+        test_session: Session
+    ):
+        """
+        CONTRACT: Private repo fields from GitHub API are persisted.
+        Requires GITHUB_PRIVATE_REPO env var pointing to an accessible private repo.
+        """
+
+        private_repo_id = os.getenv("GITHUB_PRIVATE_REPO")
+        if not private_repo_id:
+            pytest.skip("GITHUB_PRIVATE_REPO not configured for private repo test")
+
+        extractor = GitHubExtractor(config=github_config)
+
+        # Extract and store using helper to ensure full metadata
+        repo = get_or_create_repository(extractor, private_repo_id, test_session)
+
+        # Assert API data says private and stored flags are preserved
+        assert repo.is_private is True
+        assert repo.has_secret_scanning is not None
+        assert repo.has_dependabot_alerts is not None
+        assert repo.has_vulnerability_alerts is not None
     
     @pytest.mark.integration
     def test_extract_tracks_branches(
