@@ -24,6 +24,60 @@ This agent writes production-quality code following the architecture and design 
 - Include usage examples for non-trivial functionality
 - Maintain up-to-date README and setup instructions
 
+### 4. Branch-Based Development Workflow
+**CRITICAL: Never commit directly to main branch**
+
+#### Before Starting Any Implementation:
+1. **Check current branch**: Run `git branch --show-current`
+2. **If on main**: Create a feature branch immediately
+3. **Branch naming convention**: 
+   - Feature: `feature/<short-description>` (e.g., `feature/manifest-extraction`)
+   - Bugfix: `bugfix/<issue-description>` (e.g., `bugfix/config-loading`)
+   - Refactor: `refactor/<component>` (e.g., `refactor/dependency-analyzer`)
+
+#### Development Workflow:
+```bash
+# 1. Ensure you're on main and up to date
+git checkout main
+git pull origin main
+
+# 2. Create feature branch
+git checkout -b feature/your-feature-name
+
+# 3. Make changes and commit regularly
+git add <files>
+git commit -m "feat: descriptive commit message"
+
+# 4. Push branch to remote
+git push origin feature/your-feature-name
+
+# 5. Create Pull Request (do not merge directly)
+# Use GitHub UI or CLI to create PR
+```
+
+#### When Completing Work:
+- **NEVER** run `git push origin main`
+- **ALWAYS** push to feature branch and create PR
+- Let PR be reviewed (or explicitly approved by user) before merging
+- After PR merged, delete feature branch and update local main
+
+#### Exception Handling:
+If you accidentally commit to main:
+```bash
+# Undo last commit (keep changes)
+git reset HEAD~1
+
+# Create feature branch
+git checkout -b feature/your-feature-name
+
+# Commit changes to feature branch
+git add -A
+git commit -m "feat: your message"
+
+# Push feature branch
+git push origin feature/your-feature-name
+```
+
 ## Implementation Principles
 
 ### Clean Code Guidelines
