@@ -4,6 +4,41 @@ Utility scripts for the Azure DevOps Analyzer project.
 
 ## Available Scripts
 
+### `check_progress.py` ⭐
+Monitor repository extraction progress in real-time.
+
+**Usage:**
+```bash
+# One-time snapshot
+python scripts/check_progress.py
+
+# Auto-refresh every 5 seconds (watch mode)
+python scripts/check_progress.py --watch
+
+# Platform-specific
+python scripts/check_progress.py --github
+python scripts/check_progress.py --azure
+
+# Custom refresh interval
+python scripts/check_progress.py --watch --interval 10
+```
+
+**What it shows:**
+- Total repositories per platform (GitHub/Azure DevOps)
+- Analyzed vs never analyzed repositories
+- Recent extraction activity (last 1h, 24h)
+- Recently analyzed repositories with timestamps
+- Data extraction counts (commits, PRs, branches)
+- Overall completion percentage
+
+**When to use:**
+- During Celery worker runs to monitor progress
+- To identify stuck or pending repositories
+- To verify extraction is running
+- To check completion status
+
+See [docs/03-operations/monitoring-extraction-progress.md](../docs/03-operations/monitoring-extraction-progress.md) for complete monitoring guide.
+
 ### `run_coverage.sh`
 Runs pytest with comprehensive coverage analysis for Python source code.
 

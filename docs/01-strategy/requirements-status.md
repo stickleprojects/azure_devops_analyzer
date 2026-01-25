@@ -39,12 +39,12 @@
 
 ### Platform-Specific Features
 
-| Feature             | GitHub         | Azure DevOps   | Notes                                                                                                                                     |
-| ------------------- | -------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| README Extraction   | ✅ Implemented | ✅ Implemented | **Both platforms extract README files.** Implemented via base `get_readme_files()` method with scope detection - 2026-01-25               |
+| Feature             | GitHub         | Azure DevOps   | Notes                                                                                                                                      |
+| ------------------- | -------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| README Extraction   | ✅ Implemented | ✅ Implemented | **Both platforms extract README files.** Implemented via base `get_readme_files()` method with scope detection - 2026-01-25                |
 | Repository Metadata | ✅ Implemented | ✅ Implemented | **Both platforms extract metadata.** Both use `repository.json` at repo root. Workflows extract team_name/service_name fields - 2026-01-25 |
-| Security Features   | ✅ Implemented | N/A            | GitHub-specific: vulnerability alerts, secret scanning, Dependabot (Azure DevOps has different security model)                            |
-| GPG Verification    | ✅ Implemented | ✅ Implemented | Both track commit signature verification                                                                                                  |
+| Security Features   | ✅ Implemented | N/A            | GitHub-specific: vulnerability alerts, secret scanning, Dependabot (Azure DevOps has different security model)                             |
+| GPG Verification    | ✅ Implemented | ✅ Implemented | Both track commit signature verification                                                                                                   |
 
 ### Test Coverage (Both Platforms)
 
@@ -75,13 +75,13 @@
 
 ### FR-1: Repository Discovery and Tracking
 
-| ID     | Requirement                                                                       | Priority | Status                         | Notes                                                                                                                                                                                                                                                  |
-| ------ | --------------------------------------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR-1.1 | System shall discover all repositories within configured organizations            | High     | :white_check_mark: Complete    | **Platform Parity**: Azure DevOps and GitHub extractors implemented with identical API surface in [extractors/](../src/extractors/). Both platforms support: organizations, projects, repositories, branches, commits, PRs, languages, and file trees. |
-| FR-1.2 | System shall track repository metadata (name, URL, default branch, creation date) | High     | :white_check_mark: Complete    | `Repository` entity captures all metadata - [entities/repository.py](../src/entities/repository.py)                                                                                                                                                    |
-| FR-1.3 | System shall support marking repositories as active/inactive                      | Medium   | :white_check_mark: Complete    | `is_active` flag on Repository entity                                                                                                                                                                                                                  |
-| FR-1.4 | System shall track multiple branches per repository                               | High     | :white_check_mark: Complete    | `Branch` entity with full tracking - [entities/branch.py](../src/entities/branch.py)                                                                                                                                                                   |
-| FR-1.5 | System shall extract repository metadata from metadata files                      | High     | :white_check_mark: Complete    | Repository has `team_name` and `service_name` fields. **GitHub**: ✅ Implemented via `repository.json`. **Azure DevOps**: ✅ Implemented via `repository.json`. Both platforms extract metadata in workflow - implemented 2026-01-25.                  |
+| ID     | Requirement                                                                       | Priority | Status                      | Notes                                                                                                                                                                                                                                                  |
+| ------ | --------------------------------------------------------------------------------- | -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-1.1 | System shall discover all repositories within configured organizations            | High     | :white_check_mark: Complete | **Platform Parity**: Azure DevOps and GitHub extractors implemented with identical API surface in [extractors/](../src/extractors/). Both platforms support: organizations, projects, repositories, branches, commits, PRs, languages, and file trees. |
+| FR-1.2 | System shall track repository metadata (name, URL, default branch, creation date) | High     | :white_check_mark: Complete | `Repository` entity captures all metadata - [entities/repository.py](../src/entities/repository.py)                                                                                                                                                    |
+| FR-1.3 | System shall support marking repositories as active/inactive                      | Medium   | :white_check_mark: Complete | `is_active` flag on Repository entity                                                                                                                                                                                                                  |
+| FR-1.4 | System shall track multiple branches per repository                               | High     | :white_check_mark: Complete | `Branch` entity with full tracking - [entities/branch.py](../src/entities/branch.py)                                                                                                                                                                   |
+| FR-1.5 | System shall extract repository metadata from metadata files                      | High     | :white_check_mark: Complete | Repository has `team_name` and `service_name` fields. **GitHub**: ✅ Implemented via `repository.json`. **Azure DevOps**: ✅ Implemented via `repository.json`. Both platforms extract metadata in workflow - implemented 2026-01-25.                  |
 
 **FR-1 Summary:** 5/5 Complete
 
@@ -172,11 +172,11 @@
 
 ### FR-8: Repository Summarization
 
-| ID     | Requirement                                              | Priority | Status                         | Notes                                                                                                                                                       |
-| ------ | -------------------------------------------------------- | -------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-8.1 | System shall generate AI-powered repository summaries    | Medium   | :large_orange_diamond: Partial | `RepositorySummary` entity with summary, purpose, target_audience fields; AI integration not wired                                                          |
+| ID     | Requirement                                              | Priority | Status                         | Notes                                                                                                                                                                                                          |
+| ------ | -------------------------------------------------------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-8.1 | System shall generate AI-powered repository summaries    | Medium   | :large_orange_diamond: Partial | `RepositorySummary` entity with summary, purpose, target_audience fields; AI integration not wired                                                                                                             |
 | FR-8.2 | System shall extract and index README content            | High     | :white_check_mark: Complete    | `ReadmeFile` entity exists; full-text search index defined. **Both platforms**: ✅ Implemented via base `get_readme_files()` with scope detection. Workflows store via `_process_readme_files()` - 2026-01-25. |
-| FR-8.3 | System shall track which AI model generated each summary | Low      | :white_check_mark: Complete    | `model_used` field on RepositorySummary entity                                                                                                              |
+| FR-8.3 | System shall track which AI model generated each summary | Low      | :white_check_mark: Complete    | `model_used` field on RepositorySummary entity                                                                                                                                                                 |
 
 **FR-8 Summary:** 2/3 Complete, 1/3 Partial
 
