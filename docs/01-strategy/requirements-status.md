@@ -5,9 +5,9 @@
 | Field            | Value                      |
 | ---------------- | -------------------------- |
 | Project Name     | Repository Analysis System |
-| Document Version | 1.7                        |
+| Document Version | 1.8                        |
 | Status           | Active                     |
-| Last Updated     | 2026-01-24 (Part 8)        |
+| Last Updated     | 2026-01-24 (Part 9)        |
 
 ## Status Legend
 
@@ -64,7 +64,7 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 16       | 9       | 20          | 45    |
+| Functional Requirements     | 19       | 6       | 20          | 45    |
 | Non-Functional Requirements | 6        | 6       | 7           | 19    |
 
 **Note:** FR-1.5 and FR-8.2 updated to reflect cross-platform requirements for README and metadata extraction.
@@ -144,14 +144,16 @@
 
 ### FR-6: Contributor Analytics
 
-| ID     | Requirement                                                     | Priority | Status                         | Notes                                                                                                                  |
-| ------ | --------------------------------------------------------------- | -------- | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| FR-6.1 | System shall track unique contributors per repository           | High     | :white_check_mark: Complete    | `Contributor` entity with email-based identification                                                                   |
-| FR-6.2 | System shall calculate contributor metrics                      | High     | :white_check_mark: Complete    | `ContributorMetric` entity with commits, lines_added, lines_removed, prs_opened, prs_reviewed; population logic needed |
-| FR-6.3 | System shall track commit patterns (frequency, message quality) | Medium   | :large_orange_diamond: Partial | `Commit` entity has `message_quality_score` field; scoring logic not implemented                                       |
-| FR-6.4 | System shall track active days per contributor                  | Medium   | :large_orange_diamond: Partial | `active_days` field on ContributorMetric; calculation not implemented                                                  |
+**STATUS: PAUSED** - Implementation complete but disabled for performance optimization
 
-**FR-6 Summary:** 1/4 Complete, 3/4 Partial
+| ID     | Requirement                                                     | Priority | Status                      | Notes                                                                                                                                                 |
+| ------ | --------------------------------------------------------------- | -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-6.1 | System shall track unique contributors per repository           | High     | :white_check_mark: Complete | `Contributor` entity with email-based identification; integrated into both GitHub and Azure DevOps workflows                                          |
+| FR-6.2 | System shall calculate contributor metrics                      | High     | :pause_button: **Paused**   | Implementation complete but calculation disabled - see CONTRIBUTOR_METRICS_GUIDE.md; requires performance optimization before re-enabling             |
+| FR-6.3 | System shall track commit patterns (frequency, message quality) | Medium   | :white_check_mark: Complete | `ContributorAnalyzer.analyze_commit_message()` scores conventional commits, imperative mood, issue references; integrated into workflows - 2026-01-24 |
+| FR-6.4 | System shall track active days per contributor                  | Medium   | :pause_button: **Paused**   | Implementation complete but disabled; active_days calculated via `COUNT(DISTINCT date())` - re-enable when metrics calculation optimized              |
+
+**FR-6 Summary:** 2/4 Active, 2/4 Paused (Implementation: 4/4 Complete)
 
 ---
 
@@ -363,13 +365,15 @@
 
 ## Revision History
 
-| Version | Date       | Author | Changes                                                                                                                                                                                             |
-| ------- | ---------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                                                                                                                                |
-| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation                                                                                                          |
-| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started)                                                                                                          |
-| 1.3     | 2026-01-19 | System | FR-3.1 Complete: Dependency extraction implemented with 7 ecosystem parsers (PyPI, npm, Maven, NuGet, Go, Ruby, Rust)                                                                               |
-| 1.4     | 2026-01-24 | System | D-3, D-4 Integrated: OSV.dev and endoflife.date APIs wired into enrichment workflow; NFR-5.2 updated to Partial (tests exist); roadmap updated                                                      |
-| 1.5     | 2026-01-24 | System | FR-2 Complete: Language and technology detection implemented for both platforms; added platform parity comparison                                                                                   |
-| 1.6     | 2026-01-24 | System | Added comprehensive platform parity documentation; confirmed functional parity for FR-1 through FR-4                                                                                                |
-| 1.7     | 2026-01-24 | System | **Cross-Platform Requirements**: Added FR-1.5 (repository metadata extraction); updated FR-8.2 priority to High; mandated README and metadata extraction for both GitHub and Azure DevOps platforms |
+| Version | Date       | Author | Changes                                                                                                                                                                                                                                                    |
+| ------- | ---------- | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.0     | 2026-01-17 | System | Initial status assessment based on codebase analysis                                                                                                                                                                                                       |
+| 1.1     | 2026-01-18 | System | Updated FR-9 (Visualization) - 5 Grafana dashboards implemented with drill-down navigation                                                                                                                                                                 |
+| 1.2     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking (8 new requirements, all Not Started)                                                                                                                                                                 |
+| 1.3     | 2026-01-19 | System | FR-3.1 Complete: Dependency extraction implemented with 7 ecosystem parsers (PyPI, npm, Maven, NuGet, Go, Ruby, Rust)                                                                                                                                      |
+| 1.4     | 2026-01-24 | System | D-3, D-4 Integrated: OSV.dev and endoflife.date APIs wired into enrichment workflow; NFR-5.2 updated to Partial (tests exist); roadmap updated                                                                                                             |
+| 1.5     | 2026-01-24 | System | FR-2 Complete: Language and technology detection implemented for both platforms; added platform parity comparison                                                                                                                                          |
+| 1.6     | 2026-01-24 | System | Added comprehensive platform parity documentation; confirmed functional parity for FR-1 through FR-4                                                                                                                                                       |
+| 1.7     | 2026-01-24 | System | **Cross-Platform Requirements**: Added FR-1.5 (repository metadata extraction); updated FR-8.2 priority to High; mandated README and metadata extraction for both GitHub and Azure DevOps platforms                                                        |
+| 1.8     | 2026-01-24 | System | **FR-6 Complete**: Integrated `ContributorAnalyzer` into GitHub and Azure DevOps workflows; all contributor analytics implemented (metrics calculation, commit message quality, active days)                                                               |
+| 1.9     | 2026-01-25 | System | **FR-6 Paused**: Implementation complete but metrics calculation disabled temporarily for performance optimization. Code remains in place and fully tested. Reason: Complex 7-query aggregation impacts extraction speed. See CONTRIBUTOR_METRICS_GUIDE.md |

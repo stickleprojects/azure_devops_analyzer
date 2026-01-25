@@ -24,13 +24,11 @@ set -e  # Exit on error
 # =============================================================================
 # Configuration
 # =============================================================================
-COMPOSE_FILE="docker-compose.test.yml"
-RESULTS_DIR="test-results"
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.test.yml"
+RESULTS_DIR="${PROJECT_ROOT}/test-results"
 KEEP_DB=false
 RUN_LIVE_API=false
-ENV_FILE=".env" #the env file has indirect references, so we need to resolve it
-
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${PROJECT_ROOT}/.env"
 RESOLVED_ENV_FILE="${PROJECT_ROOT}/.env.resolved"
 RESOLVE_SCRIPT="${PROJECT_ROOT}/scripts/resolve_env.sh"
@@ -197,6 +195,9 @@ echo
 # =============================================================================
 # Run Tests
 # =============================================================================
+# Change to project root so docker-compose volume paths resolve correctly
+cd "$PROJECT_ROOT"
+
 if [ "$RUN_LIVE_API" = true ]; then
     log_info "Running GitHub AND Azure DevOps tests with LIVE API..."
     log_warning "This will hit real external APIs - may be slow and count against rate limits"
@@ -206,11 +207,13 @@ if [ "$RUN_LIVE_API" = true ]; then
     TEST_EXIT_CODE=0
     docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
         sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-               pytest tests/contract/integration/test_github_extraction_e2e.py \
-                      tests/contract/integration/test_azure_devops_extraction_e2e.py \
+               pytest tests/contract/integration/*.py \
                       -v \
                -m 'live_api' \
                --junit-xml=/app/test-results/junit-live-api.xml \
+               -o junit_family=xunit2 \
+               -o junit_logging=all \
+               -rs \
                --tb=short" || TEST_EXIT_CODE=$?
 else
     log_info "Running GitHub AND Azure DevOps integration tests (excluding live API)..."
@@ -221,11 +224,13 @@ else
     TEST_EXIT_CODE=0
     docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
         sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-               pytest tests/contract/integration/test_github_extraction_e2e.py \
-                      tests/contract/integration/test_azure_devops_extraction_e2e.py \
+               pytest tests/contract/integration/*.py \
                       -v \
                -m 'not live_api' \
                --junit-xml=/app/test-results/junit.xml \
+               -o junit_family=xunit2 \
+               -o junit_logging=all \
+               -rs \
                -p no:cacheprovider \
                --tb=short" || TEST_EXIT_CODE=$?
 fi

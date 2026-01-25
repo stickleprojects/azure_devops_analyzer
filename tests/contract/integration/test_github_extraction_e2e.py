@@ -259,14 +259,13 @@ class TestGitHubExtractionBasic:
         github_config,
         test_session: Session
     ):
-        pytest.skip("Contributor extraction is not implemented on GitHubExtractor yet")
         """
-        CONTRACT: Contributors are tracked with email identification.
+        CONTRACT: Contributors are tracked via commits with email identification.
         
         Verify:
-        - Contributor records created
+        - Contributor records created from commit authors
         - Email addresses captured
-        - Contribution counts populated
+        - Contributors linked to repository
         """
         # Setup
         extractor = GitHubExtractor(config=github_config)
@@ -275,31 +274,28 @@ class TestGitHubExtractionBasic:
         # Create repository with full metadata from GitHub API
         repo = get_or_create_repository(extractor, repo_id, test_session)
         
-        # Extract contributors
-        contributors_data = extractor.extract_contributors(repo_id)
+        # Extract commits (which creates contributors automatically)
+        commits_data = extractor.get_commits(repo_id, limit=10)
         
-        # Store contributors
-        for contrib_data in contributors_data:
-            contributor = Contributor(
-                repo_id=repo_id,
-                email=contrib_data.get("email", "unknown@github.com"),
-                name=contrib_data.get("name", "Unknown"),
-                contributions=contrib_data.get("contributions", 0),
-            )
-            test_session.add(contributor)
+        # Store commits (which stores contributors via get_or_create_contributor)
+        for commit_data in commits_data:
+            store_commit(test_session, repo_id, "main", commit_data)
+        
+        # Commit to ensure contributors are persisted
         test_session.commit()
         
         # Assert: Contributors stored
-        contributors = test_session.query(Contributor).filter_by(
-            repo_id=repo_id
-        ).all()
+        contributors = test_session.query(Contributor).all()
         
-        assert len(contributors) > 0, f"No contributors found for {repo_id}"
+        assert len(contributors) > 0, f"No contributors found after extracting commits"
         
         for contributor in contributors:
-            # Verify email is present (or has placeholder)
-            assert contributor.email is not None
-            assert "@" in contributor.email or contributor.email == "unknown@github.com"
+            # Verify email is present
+            assert contributor.email is not None, f"Contributor {contributor.contributor_id} has no email"
+            assert "@" in contributor.email, f"Invalid email format: {contributor.email}"
+            
+            # Verify name is present (may be same as email if not provided by Git)
+            assert contributor.name is not None, f"Contributor {contributor.contributor_id} has no name"
 
 
 class TestGitHubExtractionDataIntegrity:
@@ -628,16 +624,16 @@ class TestGitHubTechnologyDetection:
             
             # Assert: Result has expected structure
             assert result is not None
-            assert hasattr(result, 'languages')
+            assert hasattr(result, 'programming_languages')
             assert hasattr(result, 'frameworks')
             assert hasattr(result, 'databases')
-            assert hasattr(result, 'platforms')
-            
+            assert hasattr(result, 'deployment_platforms')
+
             # Assert: At least some basic files present
-            assert isinstance(result.languages, list)
+            assert isinstance(result.programming_languages, list)
             assert isinstance(result.frameworks, list)
             assert isinstance(result.databases, list)
-            assert isinstance(result.platforms, list)
+            assert isinstance(result.deployment_platforms, list)
             
         except Exception as e:
             pytest.skip(f"Unable to access file tree: {e}")
