@@ -45,27 +45,32 @@ Added comprehensive observability requirements and design documentation for extr
 ### Requirements Impact
 
 **New Requirements Added:**
+
 - **FR-9.5**: Extraction progress monitoring dashboard (High priority, Not Started)
 - **NFR-3.1-3.6**: Six observability requirements (High/Medium priority, all Not Started)
 
 **Updated Counts:**
+
 - FR-9: 3/5 Complete, 1/5 Partial, 1/5 Not Started (was 3/4 Complete, 1/4 Partial)
 - NFR-3: 0/6 Complete (new category)
 
 ### Technical Design Highlights
 
 **Database Schema:**
+
 - New `extraction_metrics` hypertable for time-series extraction data
 - Tracks: timing, status, records extracted, worker info, correlation IDs
 - Indexed for high-performance dashboard queries
 
 **Instrumentation Layers:**
+
 1. **Metrics Layer**: ExtractionMetricsTracker writes to database
 2. **Logging Layer**: Structured JSON logs with correlation IDs
 3. **Task Layer**: Celery signals for lifecycle events
 4. **Visualization**: Grafana dashboards with auto-refresh
 
 **Key Features:**
+
 - Real-time extraction progress monitoring
 - Platform comparison (GitHub vs Azure DevOps)
 - Worker health tracking
@@ -90,6 +95,7 @@ Celery Workers + Signal Handlers
 ### Next Steps
 
 **Implementation Path** (Total: 6-8 hours):
+
 1. Create database migration for `extraction_metrics` table (1 hour)
 2. Implement `ExtractionMetricsTracker` service (1 hour)
 3. Configure structured logging and Celery signals (1 hour)

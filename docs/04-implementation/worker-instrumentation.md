@@ -5,6 +5,7 @@
 This guide details how to instrument Celery workers for comprehensive observability including metrics, structured logging, and health checks.
 
 **Requirements Addressed:**
+
 - **NFR-3.1**: Workers shall emit structured metrics for extraction progress
 - **NFR-3.2**: Workers shall emit health check endpoints
 - **NFR-3.3**: Workers shall log extraction events with correlation IDs
@@ -69,12 +70,12 @@ def configure_structlog(
     correlation_id: Optional[str] = None
 ):
     """Configure structured logging for worker processes.
-    
+
     Args:
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR)
         correlation_id: Optional correlation ID to include in all logs
     """
-    
+
     # Shared processors for all loggers
     shared_processors = [
         structlog.contextvars.merge_contextvars,
@@ -83,7 +84,7 @@ def configure_structlog(
         structlog.dev.set_exc_info,
         structlog.processors.TimeStamper(fmt="iso"),
     ]
-    
+
     # Configure structlog
     structlog.configure(
         processors=shared_processors + [
@@ -96,21 +97,21 @@ def configure_structlog(
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
     )
-    
+
     # Configure standard library logging
     logging.basicConfig(
         format="%(message)s",
         stream=sys.stdout,
         level=getattr(logging, log_level.upper()),
     )
-    
+
     # Get logger instance
     logger = structlog.get_logger()
-    
+
     # Bind correlation ID if provided
     if correlation_id:
         logger = logger.bind(correlation_id=correlation_id)
-    
+
     return logger
 
 
@@ -248,63 +249,63 @@ class GitHubAnalysisWorkflow:
         self.extractor = extractor
         self.storage = storage
         self.platform = "github"
-        
+
         # Initialize logger with correlation ID
         self.logger = configure_structlog()
-        
+
     def run(self, org_name: str, max_repos: int = None):
         """Run extraction with full instrumentation."""
-        
+
         self.logger.info(
             "organization_extraction_started",
             organization=org_name,
             platform=self.platform,
             max_repos=max_repos
         )
-        
+
         # Get repositories
         repositories = self.extractor.get_repositories(org_name)
-        
+
         if max_repos:
             repositories = repositories[:max_repos]
-        
+
         self.logger.info(
             "repositories_discovered",
             organization=org_name,
             repository_count=len(repositories)
         )
-        
+
         # Process each repository
         for idx, repo_data in enumerate(repositories, 1):
             self._process_repository_with_instrumentation(
-                repo_data, 
-                idx, 
+                repo_data,
+                idx,
                 len(repositories)
             )
-        
+
         self.logger.info(
             "organization_extraction_completed",
             organization=org_name,
             repositories_processed=len(repositories)
         )
-    
+
     def _process_repository_with_instrumentation(
-        self, 
-        repo_data, 
-        current_idx: int, 
+        self,
+        repo_data,
+        current_idx: int,
         total_repos: int
     ):
         """Process single repository with metrics and logging."""
-        
+
         # Initialize metrics tracker
         tracker = ExtractionMetricsTracker(self.storage.session)
-        
+
         # Get Celery task context if available
         task_id = None
         worker_hostname = socket.gethostname()
         if current_task:
             task_id = current_task.request.id
-        
+
         # Start metrics tracking
         metric_id = tracker.start_extraction(
             repository_id=repo_data.repo_id,
@@ -312,7 +313,7 @@ class GitHubAnalysisWorkflow:
             celery_task_id=task_id,
             worker_hostname=worker_hostname
         )
-        
+
         self.logger.info(
             "repository_extraction_started",
             repository=repo_data.name,
@@ -320,16 +321,16 @@ class GitHubAnalysisWorkflow:
             progress=f"{current_idx}/{total_repos}",
             metric_id=metric_id
         )
-        
+
         try:
             # Existing extraction logic
             stored_repo = self.storage.store_repository(repo_data)
-            
+
             branches = self._process_branches(repo_data)
             commits = self._process_commits(repo_data, branches)
             prs = self._process_pull_requests(repo_data)
             contributors = self._count_contributors()
-            
+
             # Complete metrics
             tracker.complete_extraction(
                 metric_id,
@@ -338,7 +339,7 @@ class GitHubAnalysisWorkflow:
                 branches=len(branches),
                 contributors=contributors
             )
-            
+
             self.logger.info(
                 "repository_extraction_completed",
                 repository=repo_data.name,
@@ -349,11 +350,11 @@ class GitHubAnalysisWorkflow:
                 contributors=contributors,
                 metric_id=metric_id
             )
-            
+
         except Exception as e:
             # Record failure
             tracker.fail_extraction(metric_id, str(e))
-            
+
             self.logger.error(
                 "repository_extraction_failed",
                 repository=repo_data.name,
@@ -362,9 +363,9 @@ class GitHubAnalysisWorkflow:
                 metric_id=metric_id,
                 exc_info=True
             )
-            
+
             raise
-    
+
     def _count_contributors(self) -> int:
         """Count distinct contributors in current session."""
         from src.database.models import Contributor
@@ -392,14 +393,14 @@ app = Flask(__name__)
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint for worker monitoring.
-    
+
     Returns:
         JSON with worker status, database connectivity, last extraction
     """
-    
+
     hostname = socket.gethostname()
     now = datetime.now(timezone.utc)
-    
+
     # Check database connectivity
     try:
         engine = create_engine(get_database_url())
@@ -408,7 +409,7 @@ def health_check():
         db_status = "healthy"
     except Exception as e:
         db_status = f"unhealthy: {str(e)}"
-    
+
     # Get last extraction time
     try:
         with engine.connect() as conn:
@@ -422,7 +423,7 @@ def health_check():
             last_extraction = row[0] if row else None
     except:
         last_extraction = None
-    
+
     return jsonify({
         "status": "healthy" if db_status == "healthy" else "degraded",
         "worker": {
@@ -449,7 +450,7 @@ def run_health_server(port=8080):
 celery-worker:
   # ... existing config ...
   ports:
-    - "8080:8080"  # Health check endpoint
+    - "8080:8080" # Health check endpoint
   healthcheck:
     test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
     interval: 30s
@@ -476,14 +477,14 @@ from src.observability.extraction_metrics import ExtractionMetricsTracker
 def test_start_extraction_creates_record(db_session):
     """Test that starting extraction creates database record."""
     tracker = ExtractionMetricsTracker(db_session)
-    
+
     metric_id = tracker.start_extraction(
         repository_id="github/test/repo",
         platform="github",
         celery_task_id="test-task-123",
         worker_hostname="worker-01"
     )
-    
+
     assert metric_id is not None
     assert metric_id > 0
 
@@ -491,12 +492,12 @@ def test_start_extraction_creates_record(db_session):
 def test_complete_extraction_updates_record(db_session):
     """Test that completing extraction updates the record."""
     tracker = ExtractionMetricsTracker(db_session)
-    
+
     metric_id = tracker.start_extraction(
         repository_id="github/test/repo",
         platform="github"
     )
-    
+
     tracker.complete_extraction(
         metric_id,
         commits=10,
@@ -504,11 +505,11 @@ def test_complete_extraction_updates_record(db_session):
         branches=3,
         contributors=2
     )
-    
+
     # Verify record updated
     from src.database.models import ExtractionMetric
     metric = db_session.query(ExtractionMetric).get(metric_id)
-    
+
     assert metric.status == 'completed'
     assert metric.commits_extracted == 10
     assert metric.pull_requests_extracted == 5
@@ -531,14 +532,14 @@ from src.database.models import ExtractionMetric
 @pytest.mark.integration
 def test_workflow_creates_extraction_metrics(github_extractor, db_session):
     """Test that workflow creates extraction metrics."""
-    
+
     workflow = GitHubAnalysisWorkflow(github_extractor, storage)
     workflow.run("octocat", max_repos=1)
-    
+
     # Verify metrics created
     metrics = db_session.query(ExtractionMetric).all()
     assert len(metrics) >= 1
-    
+
     metric = metrics[0]
     assert metric.platform == 'github'
     assert metric.status == 'completed'
@@ -574,7 +575,7 @@ docker compose logs worker | grep "correlation_id=550e8400-e29b-41d4-a716-446655
 **Find slow extractions:**
 
 ```sql
-SELECT 
+SELECT
     repository_id,
     extraction_duration_seconds,
     commits_extracted,
@@ -589,7 +590,7 @@ LIMIT 10;
 **Find recent failures:**
 
 ```sql
-SELECT 
+SELECT
     repository_id,
     error_message,
     extraction_started_at,

@@ -255,14 +255,14 @@
 
 ### NFR-3: Observability
 
-| ID      | Requirement                                                    | Priority | Status          | Notes                                                                                                        |
-| ------- | -------------------------------------------------------------- | -------- | --------------- | ------------------------------------------------------------------------------------------------------------ |
-| NFR-3.1 | Workers shall emit structured metrics for extraction progress  | High     | :x: Not Started | Metrics: repos_processed, extraction_duration, errors, current_repository, platform                          |
-| NFR-3.2 | Workers shall emit health check endpoints                      | Medium   | :x: Not Started | HTTP endpoint returning worker status, queue depth, last successful extraction                               |
-| NFR-3.3 | Workers shall log extraction events with correlation IDs       | High     | :x: Not Started | Structured logging with repository_id, platform, task_id for tracing                                         |
-| NFR-3.4 | System shall store extraction metrics in TimescaleDB           | High     | :x: Not Started | New `extraction_metrics` table tracking start/end times, status, records extracted per repository            |
-| NFR-3.5 | Grafana shall display worker health and extraction rate        | High     | :x: Not Started | Dashboard panels showing: active workers, extraction velocity, failure rate, current processing queue        |
-| NFR-3.6 | System shall track Celery task metrics                         | Medium   | :x: Not Started | Task success/failure counts, execution time percentiles, queue depth over time                               |
+| ID      | Requirement                                                   | Priority | Status          | Notes                                                                                                 |
+| ------- | ------------------------------------------------------------- | -------- | --------------- | ----------------------------------------------------------------------------------------------------- |
+| NFR-3.1 | Workers shall emit structured metrics for extraction progress | High     | :x: Not Started | Metrics: repos_processed, extraction_duration, errors, current_repository, platform                   |
+| NFR-3.2 | Workers shall emit health check endpoints                     | Medium   | :x: Not Started | HTTP endpoint returning worker status, queue depth, last successful extraction                        |
+| NFR-3.3 | Workers shall log extraction events with correlation IDs      | High     | :x: Not Started | Structured logging with repository_id, platform, task_id for tracing                                  |
+| NFR-3.4 | System shall store extraction metrics in TimescaleDB          | High     | :x: Not Started | New `extraction_metrics` table tracking start/end times, status, records extracted per repository     |
+| NFR-3.5 | Grafana shall display worker health and extraction rate       | High     | :x: Not Started | Dashboard panels showing: active workers, extraction velocity, failure rate, current processing queue |
+| NFR-3.6 | System shall track Celery task metrics                        | Medium   | :x: Not Started | Task success/failure counts, execution time percentiles, queue depth over time                        |
 
 **NFR-3 Summary:** 0/6 Complete, 0/6 Partial, 6/6 Not Started
 

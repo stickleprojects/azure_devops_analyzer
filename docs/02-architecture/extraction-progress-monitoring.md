@@ -5,6 +5,7 @@
 This document defines the architecture for real-time extraction progress monitoring using Grafana dashboards and worker instrumentation.
 
 **Requirements Addressed:**
+
 - **FR-9.5**: System shall provide real-time extraction progress monitoring
 - **NFR-3.1-3.6**: Worker observability, metrics, health checks, structured logging
 
@@ -54,29 +55,29 @@ CREATE TABLE extraction_metrics (
     id SERIAL PRIMARY KEY,
     repository_id VARCHAR(255) NOT NULL REFERENCES repositories(repo_id),
     platform VARCHAR(50) NOT NULL,  -- 'github' or 'azure_devops'
-    
+
     -- Timing
     extraction_started_at TIMESTAMPTZ NOT NULL,
     extraction_completed_at TIMESTAMPTZ,
     extraction_duration_seconds INTEGER,
-    
+
     -- Status
     status VARCHAR(50) NOT NULL,  -- 'started', 'completed', 'failed'
     error_message TEXT,
-    
+
     -- Extraction results
     commits_extracted INTEGER DEFAULT 0,
     pull_requests_extracted INTEGER DEFAULT 0,
     branches_extracted INTEGER DEFAULT 0,
     contributors_extracted INTEGER DEFAULT 0,
-    
+
     -- Worker info
     celery_task_id VARCHAR(255),
     worker_hostname VARCHAR(255),
-    
+
     -- Correlation
     correlation_id UUID NOT NULL,  -- For tracing across logs
-    
+
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -84,10 +85,10 @@ CREATE TABLE extraction_metrics (
 SELECT create_hypertable('extraction_metrics', 'extraction_started_at');
 
 -- Indexes for dashboard queries
-CREATE INDEX idx_extraction_metrics_platform_status 
+CREATE INDEX idx_extraction_metrics_platform_status
     ON extraction_metrics(platform, status, extraction_started_at DESC);
-    
-CREATE INDEX idx_extraction_metrics_correlation 
+
+CREATE INDEX idx_extraction_metrics_correlation
     ON extraction_metrics(correlation_id);
 ```
 
@@ -97,10 +98,10 @@ CREATE INDEX idx_extraction_metrics_correlation
 
 ```sql
 -- Add index for progress tracking queries
-CREATE INDEX IF NOT EXISTS idx_repositories_last_analyzed 
+CREATE INDEX IF NOT EXISTS idx_repositories_last_analyzed
     ON repositories(last_analyzed_at DESC NULLS LAST);
-    
-CREATE INDEX IF NOT EXISTS idx_repositories_platform_analyzed 
+
+CREATE INDEX IF NOT EXISTS idx_repositories_platform_analyzed
     ON repositories(
         SPLIT_PART(repo_id, '/', 1),  -- platform
         last_analyzed_at DESC NULLS LAST
@@ -162,7 +163,7 @@ SELECT
     time_bucket('5 minutes', extraction_completed_at) as time,
     COUNT(*) * 12 as repos_per_hour  -- 5 min buckets * 12 = hourly rate
 FROM extraction_metrics
-WHERE 
+WHERE
     extraction_completed_at > NOW() - INTERVAL '1 hour'
     AND status = 'completed'
     AND $__timeFilter(extraction_completed_at)
@@ -174,7 +175,7 @@ ORDER BY time;
 
 ```sql
 SELECT
-    CASE 
+    CASE
         WHEN last_analyzed_at IS NULL THEN 'Never Analyzed'
         WHEN last_analyzed_at > NOW() - INTERVAL '24 hours' THEN 'Recently Analyzed'
         ELSE 'Needs Update'
@@ -201,7 +202,7 @@ GROUP BY platform;
 
 ```sql
 -- Active tasks in last 5 minutes
-SELECT 
+SELECT
     COUNT(DISTINCT worker_hostname) as active_workers,
     COUNT(*) FILTER (WHERE status = 'started') as active_tasks,
     COUNT(*) FILTER (WHERE status = 'failed') as failed_tasks,
@@ -283,11 +284,11 @@ from src.database.models import ExtractionMetric
 
 class ExtractionMetricsTracker:
     """Tracks extraction progress for monitoring."""
-    
+
     def __init__(self, db_session: Session):
         self.session = db_session
         self.correlation_id = uuid.uuid4()
-        
+
     def start_extraction(
         self,
         repository_id: str,
@@ -308,7 +309,7 @@ class ExtractionMetricsTracker:
         self.session.add(metric)
         self.session.commit()
         return metric.id
-    
+
     def complete_extraction(
         self,
         metric_id: int,
@@ -330,7 +331,7 @@ class ExtractionMetricsTracker:
             metric.branches_extracted = branches
             metric.contributors_extracted = contributors
             self.session.commit()
-    
+
     def fail_extraction(self, metric_id: int, error_message: str):
         """Record extraction failure."""
         metric = self.session.query(ExtractionMetric).get(metric_id)
@@ -354,7 +355,7 @@ from src.observability.extraction_metrics import ExtractionMetricsTracker
 class GitHubAnalysisWorkflow:
     def run(self, org_name: str, max_repos: int = None):
         # ... existing code ...
-        
+
         for repo_data in repositories:
             tracker = ExtractionMetricsTracker(self.storage.session)
             metric_id = tracker.start_extraction(
@@ -363,10 +364,10 @@ class GitHubAnalysisWorkflow:
                 celery_task_id=self.task_id,  # From Celery context
                 worker_hostname=socket.gethostname()
             )
-            
+
             try:
                 # ... existing extraction logic ...
-                
+
                 tracker.complete_extraction(
                     metric_id,
                     commits=len(stored_commits),
@@ -374,7 +375,7 @@ class GitHubAnalysisWorkflow:
                     branches=len(branches),
                     contributors=len(contributors)
                 )
-                
+
             except Exception as e:
                 tracker.fail_extraction(metric_id, str(e))
                 raise
@@ -464,7 +465,6 @@ class BaseWorkflow:
    - Extraction rate drops below threshold
    - Failure rate exceeds 5%
    - Repositories not analyzed in > 48 hours
-   
 2. **Health Check Endpoint**: Add HTTP endpoint to workers for external monitoring
 
 3. **Metrics Export**: Export metrics to Prometheus for additional monitoring tools
