@@ -1,5 +1,110 @@
 # Development Progress Log
 
+## Session: 2026-01-25 (Part 2) - Observability Requirements & Design
+
+### Summary
+
+Added comprehensive observability requirements and design documentation for extraction progress monitoring and worker instrumentation. Created new functional and non-functional requirements with detailed architectural designs.
+
+### Changes
+
+1. **Updated: `docs/01-strategy/requirements-status.md`** (v2.0 → v2.1)
+   - **Added FR-9.5**: Real-time extraction progress monitoring via Grafana dashboard
+   - **Added NFR-3**: Observability requirements (6 new requirements)
+     - NFR-3.1: Workers emit structured metrics
+     - NFR-3.2: Health check endpoints
+     - NFR-3.3: Structured logging with correlation IDs
+     - NFR-3.4: Metrics storage in TimescaleDB
+     - NFR-3.5: Grafana worker health dashboards
+     - NFR-3.6: Celery task metrics tracking
+   - Updated summary counts and revision history
+
+2. **Created: `docs/02-architecture/extraction-progress-monitoring.md`**
+   - Comprehensive design for extraction progress Grafana dashboard
+   - New `extraction_metrics` table schema with TimescaleDB hypertable
+   - 6 dashboard panels with SQL queries:
+     - Extraction rate (repos/hour)
+     - Repository status (pie chart)
+     - Platform comparison (bar chart)
+     - Worker health stats
+     - Recent activity table
+     - Data growth over time
+   - ExtractionMetricsTracker service design
+   - Workflow integration patterns
+   - Implementation plan (6-8 hours estimated)
+
+3. **Created: `docs/04-implementation/worker-instrumentation.md`**
+   - Worker instrumentation implementation guide
+   - Structured logging configuration with `structlog`
+   - Celery signal handlers for task lifecycle monitoring
+   - Integration examples for both GitHub and Azure DevOps workflows
+   - Optional health check HTTP endpoint design
+   - Testing strategy with unit and integration test examples
+   - Troubleshooting queries and log analysis patterns
+
+### Requirements Impact
+
+**New Requirements Added:**
+- **FR-9.5**: Extraction progress monitoring dashboard (High priority, Not Started)
+- **NFR-3.1-3.6**: Six observability requirements (High/Medium priority, all Not Started)
+
+**Updated Counts:**
+- FR-9: 3/5 Complete, 1/5 Partial, 1/5 Not Started (was 3/4 Complete, 1/4 Partial)
+- NFR-3: 0/6 Complete (new category)
+
+### Technical Design Highlights
+
+**Database Schema:**
+- New `extraction_metrics` hypertable for time-series extraction data
+- Tracks: timing, status, records extracted, worker info, correlation IDs
+- Indexed for high-performance dashboard queries
+
+**Instrumentation Layers:**
+1. **Metrics Layer**: ExtractionMetricsTracker writes to database
+2. **Logging Layer**: Structured JSON logs with correlation IDs
+3. **Task Layer**: Celery signals for lifecycle events
+4. **Visualization**: Grafana dashboards with auto-refresh
+
+**Key Features:**
+- Real-time extraction progress monitoring
+- Platform comparison (GitHub vs Azure DevOps)
+- Worker health tracking
+- Failure detection and alerting
+- Historical trend analysis
+- Log-to-metric correlation via correlation IDs
+
+### Architecture Stack
+
+```
+Grafana Dashboard (http://localhost:3000)
+    ↓ (SQL Queries)
+TimescaleDB (extraction_metrics + repositories)
+    ↑ (Metrics Write)
+ExtractionMetricsTracker + Structured Logging
+    ↑ (Integration)
+GitHub/Azure DevOps Workflows
+    ↑ (Invocation)
+Celery Workers + Signal Handlers
+```
+
+### Next Steps
+
+**Implementation Path** (Total: 6-8 hours):
+1. Create database migration for `extraction_metrics` table (1 hour)
+2. Implement `ExtractionMetricsTracker` service (1 hour)
+3. Configure structured logging and Celery signals (1 hour)
+4. Integrate into workflows (2 hours)
+5. Create Grafana dashboard JSON (2 hours)
+6. Add tests and documentation (1 hour)
+
+### Git Info
+
+- Branch: `main`
+- Status: ✅ Requirements and design documentation complete
+- Ready for: Implementation phase
+
+---
+
 ## Session: 2026-01-25 - FR-1.5/FR-8.2 Complete & Cleanup
 
 ### Summary

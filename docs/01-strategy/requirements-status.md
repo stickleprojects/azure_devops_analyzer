@@ -249,6 +249,23 @@
 | NFR-2.2 | Historical data retention | 2+ years time-series               | :white_check_mark: Complete    | TimescaleDB hypertables with chunking configured |
 | NFR-2.3 | Concurrent analysis jobs  | Parallel processing via task queue | :white_check_mark: Complete    | Celery with RabbitMQ configured                  |
 
+**NFR-2 Summary:** 2/3 Complete, 1/3 Partial, 0/3 Not Started
+
+---
+
+### NFR-3: Observability
+
+| ID      | Requirement                                                    | Priority | Status          | Notes                                                                                                        |
+| ------- | -------------------------------------------------------------- | -------- | --------------- | ------------------------------------------------------------------------------------------------------------ |
+| NFR-3.1 | Workers shall emit structured metrics for extraction progress  | High     | :x: Not Started | Metrics: repos_processed, extraction_duration, errors, current_repository, platform                          |
+| NFR-3.2 | Workers shall emit health check endpoints                      | Medium   | :x: Not Started | HTTP endpoint returning worker status, queue depth, last successful extraction                               |
+| NFR-3.3 | Workers shall log extraction events with correlation IDs       | High     | :x: Not Started | Structured logging with repository_id, platform, task_id for tracing                                         |
+| NFR-3.4 | System shall store extraction metrics in TimescaleDB           | High     | :x: Not Started | New `extraction_metrics` table tracking start/end times, status, records extracted per repository            |
+| NFR-3.5 | Grafana shall display worker health and extraction rate        | High     | :x: Not Started | Dashboard panels showing: active workers, extraction velocity, failure rate, current processing queue        |
+| NFR-3.6 | System shall track Celery task metrics                         | Medium   | :x: Not Started | Task success/failure counts, execution time percentiles, queue depth over time                               |
+
+**NFR-3 Summary:** 0/6 Complete, 0/6 Partial, 6/6 Not Started
+
 **NFR-2 Summary:** 2/3 Complete, 1/3 Partial
 
 ---
@@ -378,3 +395,4 @@
 | 1.8     | 2026-01-24 | System | **FR-6 Complete**: Integrated `ContributorAnalyzer` into GitHub and Azure DevOps workflows; all contributor analytics implemented (metrics calculation, commit message quality, active days)                                                               |
 | 1.9     | 2026-01-25 | System | **FR-6 Paused**: Implementation complete but metrics calculation disabled temporarily for performance optimization. Code remains in place and fully tested. Reason: Complex 7-query aggregation impacts extraction speed. See CONTRIBUTOR_METRICS_GUIDE.md |
 | 2.0     | 2026-01-25 | System | **FR-1.5 and FR-8.2 Complete**: README and metadata extraction now implemented for both GitHub and Azure DevOps platforms. Platform parity achieved for core documentation features.                                                                       |
+| 2.1     | 2026-01-25 | System | **Observability Requirements Added**: FR-9.5 (extraction progress monitoring) and NFR-3 (worker observability) with 6 new requirements for metrics, health checks, structured logging, and Grafana dashboards                                              |
