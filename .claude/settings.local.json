@@ -22,7 +22,15 @@
       "Bash(docker info:*)",
       "Bash(docker version:*)",
       "Bash(docker.exe version:*)",
-      "Bash(docker.exe compose:*)"
+      "Bash(docker.exe compose:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git push:*)",
+      "Bash(gh pr create --title \"docs: Clarify branch workflow applies to all changes\" --body \"$\\(cat <<''EOF''\n## Summary\n\n- Explicitly state that branch-based development applies to **ALL changes**, not just feature implementation\n- Added list of change types covered: features, bugs, refactoring, docs, housekeeping, tests\n- Added branch naming conventions for `chore/` and `docs/` prefixes\n\n## Motivation\n\nPrevents confusion about whether refactoring, documentation, or project structure changes can be committed directly to main.\n\n## Test plan\n\n- [x] Documentation change only - no code affected\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\nEOF\n\\)\")",
+      "Bash(git pull:*)",
+      "Bash(gh pr create:*)"
     ]
   }
 }
