@@ -90,8 +90,15 @@ def test_engine(test_database_url):
     yield engine
     
     # Cleanup: Drop all tables but keep database
-    Base.metadata.drop_all(engine)
-    engine.dispose()
+    # Suppress TimescaleDB internal schema errors during teardown
+    try:
+        Base.metadata.drop_all(engine)
+    except Exception as e:
+        # Ignore TimescaleDB schema errors during cleanup
+        if "_timescaledb" not in str(e):
+            raise
+    finally:
+        engine.dispose()
 
 
 @pytest.fixture(scope="function")

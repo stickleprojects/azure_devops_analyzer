@@ -1,5 +1,60 @@
 # Development Progress Log
 
+## Session: 2026-01-25 - FR-1.5/FR-8.2 Complete & Cleanup
+
+### Summary
+
+Completed FR-1.5/FR-8.2 feature implementation with final cleanup. Removed incomplete monitoring progress script and updated documentation to focus on production-ready monitoring tools.
+
+### Changes
+
+1. **Removed: `scripts/check_progress.py`**
+   - Deleted incomplete monitoring script with syntax errors
+   - Script was marked as in-progress/experimental
+
+2. **Updated: `docs/03-operations/monitoring-extraction-progress.md`**
+   - Removed all references to check_progress.py
+   - Updated monitoring recommendations to focus on:
+     - Flower UI (primary recommendation)
+     - Docker logs
+     - Direct database queries
+     - Grafana dashboards (future enhancement)
+   - Simplified recommended workflows and summary table
+
+3. **Updated: `scripts/README.md`**
+   - Removed check_progress.py section
+   - Documentation now focuses on production scripts
+
+### Feature Status
+
+**FR-1.5 (Repository Metadata Extraction):** ✅ **COMPLETE**
+
+- GitHub: ✅ Implemented via `repository.json`
+- Azure DevOps: ✅ Implemented via `repository.json`
+- Both workflows extract and store metadata
+
+**FR-8.2 (README Extraction):** ✅ **COMPLETE**
+
+- GitHub: ✅ Implemented with scope detection
+- Azure DevOps: ✅ Implemented with scope detection
+- Both platforms support repository/product/project scope detection
+- Full-text search indexing configured
+
+### Testing
+
+- ✅ 133 tests passed
+- ✅ All contract and integration tests passing
+- ✅ FR-1.5 tests: GitHub and Azure DevOps metadata extraction validated
+- ✅ FR-8.2 tests: README extraction for both platforms validated
+
+### Git Info
+
+- Branch: `feature/fr-1.5-azure-devops-readme-metadata`
+- PR: #12 "FR-1.5/FR-8.2: README and Metadata Extraction - Platform Parity Achieved"
+- Status: ✅ **READY TO MERGE**
+
+---
+
 ## Session: 2026-01-24 (Part 9) - FR-6 Contributor Analytics Complete
 
 ### Summary

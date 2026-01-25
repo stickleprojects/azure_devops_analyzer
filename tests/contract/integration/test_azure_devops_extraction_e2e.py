@@ -649,3 +649,104 @@ class TestAzureDevOpsAndGitHubComparison:
         assert len(azure_langs) == 1
         assert github_langs[0].language == "Python"
         assert azure_langs[0].language == "C#"
+
+
+class TestAzureDevOpsFR15:
+    """FR-1.5 / FR-8.2: README and metadata extraction tests."""
+    
+    @pytest.mark.integration
+    @pytest.mark.live_api
+    def test_extract_readme_files(
+        self,
+        azure_config,
+        test_session: Session
+    ):
+        """
+        CONTRACT: Azure DevOps extractor can extract README files from repositories.
+        
+        Verify:
+        - get_readme_files() returns list of README files
+        - README content is extracted
+        - Scope detection works (repository vs module level)
+        - File paths are normalized
+        """
+        extractor = AzureDevOpsExtractor(config=azure_config)
+        
+        # Get a repository with README
+        org_name = azure_config.org_url.rstrip("/").split("/")[-1]
+        projects = extractor.get_projects(org_name)
+        
+        if not projects:
+            pytest.skip("No projects available")
+        
+        repos_data = extractor.get_repositories(org_name, projects[0].name)
+        if not repos_data:
+            pytest.skip("No repositories found")
+        
+        repo = repos_data[0]
+        
+        # Extract README files
+        readme_files = extractor.get_readme_files(repo.repo_id)
+        
+        # Assert: At least one README found (most repos have one)
+        # Note: This might fail if repo has no README
+        if not readme_files:
+            pytest.skip(f"Repository {repo.name} has no README files")
+        
+        assert len(readme_files) > 0
+        
+        # Assert: README has required fields
+        readme = readme_files[0]
+        assert readme.file_path is not None
+        assert readme.content is not None
+        assert len(readme.content) > 0
+        
+        # Assert: Scope type detected
+        # Root README should be repository scope
+        if readme.file_path in ["README.md", "README.rst", "README.txt", "README"]:
+            assert readme.scope_type == "repository"
+    
+    @pytest.mark.integration
+    @pytest.mark.live_api
+    def test_extract_repository_metadata(
+        self,
+        azure_config,
+        test_session: Session
+    ):
+        """
+        CONTRACT: Azure DevOps extractor can extract repository metadata.
+        
+        Verify:
+        - get_repository_metadata() returns metadata if file exists
+        - Returns None if metadata file doesn't exist
+        - Supports repository.json format
+        """
+        extractor = AzureDevOpsExtractor(config=azure_config)
+        
+        # Get a repository
+        org_name = azure_config.org_url.rstrip("/").split("/")[-1]
+        projects = extractor.get_projects(org_name)
+        
+        if not projects:
+            pytest.skip("No projects available")
+        
+        repos_data = extractor.get_repositories(org_name, projects[0].name)
+        if not repos_data:
+            pytest.skip("No repositories found")
+        
+        repo = repos_data[0]
+        
+        # Extract metadata
+        metadata = extractor.get_repository_metadata(repo.repo_id)
+        
+        # Assert: Returns RepositoryMetadata or None
+        # Most repos won't have this file, so None is expected
+        # If it exists, verify structure
+        if metadata:
+            from src.extractors.base import RepositoryMetadata
+            assert isinstance(metadata, RepositoryMetadata)
+            # At least one field should be populated
+            assert metadata.team_name or metadata.service_name
+        else:
+            # Metadata file doesn't exist - this is OK
+            assert metadata is None

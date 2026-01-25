@@ -21,6 +21,7 @@ from src.database.storage import (
     store_pull_request,
     store_dependencies,
     store_enriched_dependencies,
+    store_readme,
     update_repository_analyzed_timestamp,
     get_extraction_summary,
 )
@@ -168,6 +169,17 @@ class AzureDevOpsAnalysisWorkflow:
                 )
                 return
 
+        # Get repository metadata (team_name, service_name)
+        try:
+            metadata = self.extractor.get_repository_metadata(repo_data.repo_id)
+            if metadata:
+                repo_data.team_name = metadata.team_name
+                repo_data.service_name = metadata.service_name
+                logger.info("          Found metadata: team=%s, service=%s", 
+                          repo_data.team_name, repo_data.service_name)
+        except Exception as e:
+            logger.warning("          Failed to fetch repository metadata: %s", e)
+
         # Store repository
         with session_scope() as session:
             project = (
@@ -188,6 +200,7 @@ class AzureDevOpsAnalysisWorkflow:
         self._process_branches(repo_data)
         self._process_languages(repo_data)
         self._process_technologies(repo_data)
+        self._process_readme_files(repo_data)
         self._process_commits(repo_data)
         self._process_pull_requests(repo_data)
 
@@ -269,6 +282,19 @@ class AzureDevOpsAnalysisWorkflow:
 
         except Exception as e:
             logger.warning("          Failed to detect technologies: %s", e)
+
+    def _process_readme_files(self, repo_data):
+        """Fetch and store README files for a repository."""
+        try:
+            readme_files = self.extractor.get_readme_files(repo_data.repo_id)
+            logger.info("          Found %d README files", len(readme_files))
+
+            with session_scope() as session:
+                for readme_data in readme_files:
+                    store_readme(session, repo_data.repo_id, readme_data)
+
+        except Exception as e:
+            logger.warning("          Failed to fetch README files: %s", e)
 
     def _process_commits(self, repo_data):
         """Fetch and store commits for a repository."""
