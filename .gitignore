@@ -5,6 +5,9 @@
 __pycache__
 venv
 
+# Credentials/tokens (potentially sensitive)
+auth
+
 # Test results
 test-results/
 

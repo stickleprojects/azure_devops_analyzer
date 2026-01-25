@@ -32,14 +32,24 @@ This agent writes production-quality code following the architecture and design 
 
 **CRITICAL: Never commit directly to main branch**
 
-#### Before Starting Any Implementation:
+This rule applies to **ALL changes**, including:
+- Feature implementation
+- Bug fixes
+- Refactoring
+- Documentation updates
+- Project structure/housekeeping changes
+- Test additions or modifications
+
+#### Before Starting Any Work:
 
 1. **Check current branch**: Run `git branch --show-current`
-2. **If on main**: Create a feature branch immediately
+2. **If on main**: Create a branch immediately before making any changes
 3. **Branch naming convention**:
    - Feature: `feature/<short-description>` (e.g., `feature/manifest-extraction`)
    - Bugfix: `bugfix/<issue-description>` (e.g., `bugfix/config-loading`)
    - Refactor: `refactor/<component>` (e.g., `refactor/dependency-analyzer`)
+   - Housekeeping: `chore/<description>` (e.g., `chore/project-structure-cleanup`)
+   - Documentation: `docs/<description>` (e.g., `docs/update-readme`)
 
 #### Development Workflow:
 
