@@ -41,8 +41,8 @@
 
 | Feature             | GitHub         | Azure DevOps   | Notes                                                                                                                                     |
 | ------------------- | -------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| README Extraction   | ✅ Implemented | ⚠️ Required    | **Both platforms must extract README files.** GitHub: implemented. Azure DevOps: needs implementation via file content API.               |
-| Repository Metadata | ✅ Implemented | ⚠️ Required    | **Both platforms must extract metadata.** GitHub: `.github/metadata.json`. Azure DevOps: needs equivalent (e.g., `.azure/metadata.json`). |
+| README Extraction   | ✅ Implemented | ✅ Implemented | **Both platforms extract README files.** Implemented via base `get_readme_files()` method with scope detection - 2026-01-25               |
+| Repository Metadata | ✅ Implemented | ✅ Implemented | **Both platforms extract metadata.** Both use `repository.json` at repo root. Workflows extract team_name/service_name fields - 2026-01-25 |
 | Security Features   | ✅ Implemented | N/A            | GitHub-specific: vulnerability alerts, secret scanning, Dependabot (Azure DevOps has different security model)                            |
 | GPG Verification    | ✅ Implemented | ✅ Implemented | Both track commit signature verification                                                                                                  |
 
@@ -64,10 +64,10 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 19       | 6       | 20          | 45    |
+| Functional Requirements     | 21       | 4       | 20          | 45    |
 | Non-Functional Requirements | 6        | 6       | 7           | 19    |
 
-**Note:** FR-1.5 and FR-8.2 updated to reflect cross-platform requirements for README and metadata extraction.
+**Note:** FR-1.5 and FR-8.2 updated to Complete - README and metadata extraction now implemented for both platforms (2026-01-25).
 
 ---
 
@@ -81,9 +81,9 @@
 | FR-1.2 | System shall track repository metadata (name, URL, default branch, creation date) | High     | :white_check_mark: Complete    | `Repository` entity captures all metadata - [entities/repository.py](../src/entities/repository.py)                                                                                                                                                    |
 | FR-1.3 | System shall support marking repositories as active/inactive                      | Medium   | :white_check_mark: Complete    | `is_active` flag on Repository entity                                                                                                                                                                                                                  |
 | FR-1.4 | System shall track multiple branches per repository                               | High     | :white_check_mark: Complete    | `Branch` entity with full tracking - [entities/branch.py](../src/entities/branch.py)                                                                                                                                                                   |
-| FR-1.5 | System shall extract repository metadata from metadata files                      | High     | :large_orange_diamond: Partial | Repository has `team_name` and `service_name` fields. **GitHub**: ✅ Implemented via `.github/metadata.json`. **Azure DevOps**: ❌ Needs implementation (e.g., `.azure/metadata.json`).                                                                |
+| FR-1.5 | System shall extract repository metadata from metadata files                      | High     | :white_check_mark: Complete    | Repository has `team_name` and `service_name` fields. **GitHub**: ✅ Implemented via `repository.json`. **Azure DevOps**: ✅ Implemented via `repository.json`. Both platforms extract metadata in workflow - implemented 2026-01-25.                  |
 
-**FR-1 Summary:** 4/5 Complete, 1/5 Partial
+**FR-1 Summary:** 5/5 Complete
 
 ---
 
@@ -175,10 +175,10 @@
 | ID     | Requirement                                              | Priority | Status                         | Notes                                                                                                                                                       |
 | ------ | -------------------------------------------------------- | -------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR-8.1 | System shall generate AI-powered repository summaries    | Medium   | :large_orange_diamond: Partial | `RepositorySummary` entity with summary, purpose, target_audience fields; AI integration not wired                                                          |
-| FR-8.2 | System shall extract and index README content            | High     | :large_orange_diamond: Partial | `ReadmeFile` entity exists; full-text search index defined. **GitHub**: ✅ Implemented via `get_readme_files()`. **Azure DevOps**: ❌ Needs implementation. |
+| FR-8.2 | System shall extract and index README content            | High     | :white_check_mark: Complete    | `ReadmeFile` entity exists; full-text search index defined. **Both platforms**: ✅ Implemented via base `get_readme_files()` with scope detection. Workflows store via `_process_readme_files()` - 2026-01-25. |
 | FR-8.3 | System shall track which AI model generated each summary | Low      | :white_check_mark: Complete    | `model_used` field on RepositorySummary entity                                                                                                              |
 
-**FR-8 Summary:** 1/3 Complete, 2/3 Partial
+**FR-8 Summary:** 2/3 Complete, 1/3 Partial
 
 ---
 
@@ -351,8 +351,8 @@
 ### Phase 4: AI & Advanced Features (Medium Priority)
 
 1. Wire AI integration for repository summarization
-2. Implement README extraction and indexing
-3. Add technology stack detection
+2. ~~Implement README extraction and indexing~~ ✅ Complete (both platforms)
+3. ~~Add technology stack detection~~ ✅ Complete (both platforms)
 
 ### Phase 5: Production Readiness (Lower Priority)
 
@@ -377,3 +377,4 @@
 | 1.7     | 2026-01-24 | System | **Cross-Platform Requirements**: Added FR-1.5 (repository metadata extraction); updated FR-8.2 priority to High; mandated README and metadata extraction for both GitHub and Azure DevOps platforms                                                        |
 | 1.8     | 2026-01-24 | System | **FR-6 Complete**: Integrated `ContributorAnalyzer` into GitHub and Azure DevOps workflows; all contributor analytics implemented (metrics calculation, commit message quality, active days)                                                               |
 | 1.9     | 2026-01-25 | System | **FR-6 Paused**: Implementation complete but metrics calculation disabled temporarily for performance optimization. Code remains in place and fully tested. Reason: Complex 7-query aggregation impacts extraction speed. See CONTRIBUTOR_METRICS_GUIDE.md |
+| 2.0     | 2026-01-25 | System | **FR-1.5 and FR-8.2 Complete**: README and metadata extraction now implemented for both GitHub and Azure DevOps platforms. Platform parity achieved for core documentation features.                                                                       |

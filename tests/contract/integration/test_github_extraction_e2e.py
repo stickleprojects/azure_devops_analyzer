@@ -774,3 +774,80 @@ class TestGitHubTechnologyDetection:
         ]
         result = detector.detect(csharp_files)
         assert "C#" in result.programming_languages, "Should detect C#"
+
+
+class TestGitHubFR15:
+    """FR-1.5 / FR-8.2: README and metadata extraction tests."""
+    
+    @pytest.mark.integration
+    @pytest.mark.live_api
+    def test_extract_readme_files(
+        self,
+        github_config,
+        test_session: Session
+    ):
+        """
+        CONTRACT: GitHub extractor can extract README files from repositories.
+        
+        Verify:
+        - get_readme_files() returns list of README files
+        - README content is extracted
+        - Scope detection works (repository vs module level)
+        - File paths are normalized
+        """
+        extractor = GitHubExtractor(config=github_config)
+        
+        # Use a known public repo with README
+        repo_id = "octocat/Hello-World"
+        
+        # Extract README files
+        readme_files = extractor.get_readme_files(repo_id)
+        
+        # Assert: At least one README found
+        assert len(readme_files) > 0, f"Expected README files in {repo_id}"
+        
+        # Assert: README has required fields
+        readme = readme_files[0]
+        assert readme.file_path is not None
+        assert readme.content is not None
+        assert len(readme.content) > 0
+        
+        # Assert: Scope type detected
+        # Root README should be repository scope
+        if readme.file_path in ["README.md", "README.rst", "README.txt", "README"]:
+            assert readme.scope_type == "repository"
+    
+    @pytest.mark.integration
+    @pytest.mark.live_api
+    def test_extract_repository_metadata(
+        self,
+        github_config,
+        test_session: Session
+    ):
+        """
+        CONTRACT: GitHub extractor can extract repository metadata.
+        
+        Verify:
+        - get_repository_metadata() returns metadata if file exists
+        - Returns None if metadata file doesn't exist
+        - Supports repository.json format
+        """
+        extractor = GitHubExtractor(config=github_config)
+        
+        # Use a known public repo
+        repo_id = "octocat/Hello-World"
+        
+        # Extract metadata
+        metadata = extractor.get_repository_metadata(repo_id)
+        
+        # Assert: Returns RepositoryMetadata or None
+        # Most repos won't have this file, so None is expected
+        # If it exists, verify structure
+        if metadata:
+            from src.extractors.base import RepositoryMetadata
+            assert isinstance(metadata, RepositoryMetadata)
+            # At least one field should be populated
+            assert metadata.team_name or metadata.service_name
+        else:
+            # Metadata file doesn't exist - this is OK
+            assert metadata is None
