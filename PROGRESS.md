@@ -28,11 +28,13 @@ Completed FR-1.5/FR-8.2 feature implementation with final cleanup. Removed incom
 ### Feature Status
 
 **FR-1.5 (Repository Metadata Extraction):** ✅ **COMPLETE**
+
 - GitHub: ✅ Implemented via `repository.json`
 - Azure DevOps: ✅ Implemented via `repository.json`
 - Both workflows extract and store metadata
 
 **FR-8.2 (README Extraction):** ✅ **COMPLETE**
+
 - GitHub: ✅ Implemented with scope detection
 - Azure DevOps: ✅ Implemented with scope detection
 - Both platforms support repository/product/project scope detection
