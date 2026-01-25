@@ -184,8 +184,12 @@ class GitHubAnalysisWorkflow:
         if self.limits.extract_dependencies:
             self._process_dependencies(repo_data)
         
-        # Calculate contributor metrics
-        self._process_contributor_metrics(repo_data)
+        # PAUSED: Contributor metrics calculation disabled temporarily
+        # Reason: Performance concerns - complex multi-query aggregation is slow
+        # Status: Implementation complete (FR-6.1-6.4) but not active
+        # See: CONTRIBUTOR_METRICS_GUIDE.md for architecture
+        # TODO: Optimize and re-enable in future sprint
+        # self._process_contributor_metrics(repo_data)
 
         # Update timestamp
         with session_scope() as session:
@@ -383,6 +387,8 @@ class GitHubAnalysisWorkflow:
         try:
             from datetime import datetime, UTC
             
+            logger.info("      Calculating contributor metrics...")
+            
             # Calculate metrics for the current month
             now = datetime.now(UTC)
             period_start = datetime(now.year, now.month, 1, tzinfo=UTC)
@@ -394,6 +400,23 @@ class GitHubAnalysisWorkflow:
                 period_end = datetime(now.year, now.month + 1, 1, tzinfo=UTC)
             
             with session_scope() as session:
+                # First, quickly check if there are any commits in this period
+                from src.database.models import Commit
+                has_commits = (
+                    session.query(Commit)
+                    .filter(
+                        Commit.repo_id == repo_data.repo_id,
+                        Commit.commit_date >= period_start,
+                        Commit.commit_date < period_end,
+                    )
+                    .limit(1)
+                    .first()
+                )
+                
+                if not has_commits:
+                    logger.info("      No commits in current period - skipping metrics calculation")
+                    return
+                
                 metrics = calculate_and_store_contributor_metrics(
                     session,
                     repo_data.repo_id,

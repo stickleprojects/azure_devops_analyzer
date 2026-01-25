@@ -7,6 +7,7 @@
 ## Issues Discovered
 
 ### 1. Integration Tests Stalling
+
 - Tests hang during execution in Docker
 - May timeout without completing
 - **Possible causes:**
@@ -16,6 +17,7 @@
   - Docker resource constraints
 
 **Debug steps:**
+
 ```bash
 # Run with verbose output
 ./scripts/run-tests-docker.sh --live-api
@@ -31,9 +33,11 @@ docker stats
 ### 2. Test Failures
 
 #### `test_extract_tracks_branches` - FAILED
+
 **Location:** `tests/contract/integration/test_github_extraction_e2e.py`
 
 **ROOT CAUSE:** Duplicate key violation - repository already exists in database
+
 ```
 sqlalchemy.exc.IntegrityError: duplicate key value violates unique constraint "repositories_pkey"
 DETAIL:  Key (repo_id)=(octocat/Hello-World) already exists.
@@ -42,19 +46,23 @@ DETAIL:  Key (repo_id)=(octocat/Hello-World) already exists.
 **Issue:** Test is trying to insert the same repository that was created by a previous test
 
 **Fix:**
+
 1. Tests need to use `get_or_create_repository()` instead of direct insert
 2. OR: Better test isolation/cleanup between tests
 3. OR: Use unique repo names per test
 
 #### `test_extract_tracks_contributors` - FAILED
+
 **Location:** `tests/contract/integration/test_github_extraction_e2e.py`
 
 **ROOT CAUSE:** Wrong function signature - `get_commits()` doesn't accept `max_commits` parameter
+
 ```
 TypeError: GitHubExtractor.get_commits() got an unexpected keyword argument 'max_commits'
 ```
 
 **Issue:** Test code calls:
+
 ```python
 commits_data = extractor.get_commits(repo_id, max_commits=10)
 ```
@@ -62,6 +70,7 @@ commits_data = extractor.get_commits(repo_id, max_commits=10)
 But `GitHubExtractor.get_commits()` signature is different (check actual signature in extractor)
 
 **Fix:**
+
 ```python
 # Check actual signature in src/extractors/github/extractor.py
 # Then update test to match, likely one of:
@@ -72,16 +81,19 @@ commits_data = extractor.get_commits(repo_id)[:10]       # or just slice results
 ### 3. Skipped Tests
 
 #### `test_detect_technologies_from_repo` - SKIPPED
+
 **Location:** `tests/contract/integration/test_github_extraction_e2e.py`  
 **Skip reason:** "Unable to access file tree"
 
 **Background:**
+
 - Was already skipped before FR-6 work
 - May be GitHub API permission issue
 - Could be rate limiting
 - Possibly needs specific repo access
 
 **Options:**
+
 1. Fix the underlying issue (GitHub API access)
 2. Use a different test repository
 3. Keep skipped but document why
@@ -90,6 +102,7 @@ commits_data = extractor.get_commits(repo_id)[:10]       # or just slice results
 ## Test Execution Plan
 
 ### Step 1: Isolated Test Runs
+
 Run each failing test individually to get detailed output:
 
 ```bash
@@ -106,6 +119,7 @@ docker compose -f docker-compose.test.yml run --rm test-runner \
 ```
 
 ### Step 2: Add Debug Logging
+
 If errors aren't clear, add temporary debug prints:
 
 ```python
@@ -115,7 +129,7 @@ print(f"DEBUG: Query returned {len(branches)} branch records")
 for b in branches[:3]:
     print(f"DEBUG: Branch {b.name}: {b.branch_id}")
 
-# In test_extract_tracks_contributors  
+# In test_extract_tracks_contributors
 print(f"DEBUG: Stored {len(commits_data)} commits")
 contributors = test_session.query(Contributor).all()
 print(f"DEBUG: Found {len(contributors)} contributors")
@@ -124,6 +138,7 @@ for c in contributors[:3]:
 ```
 
 ### Step 3: Verify Workflow Integration
+
 Check if the issue is in the test or the workflow:
 
 ```bash
@@ -148,6 +163,7 @@ with session_scope() as session:
 ```
 
 ### Step 4: Check Database State
+
 Verify data is actually being stored:
 
 ```bash

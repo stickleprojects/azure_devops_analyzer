@@ -164,18 +164,24 @@ def cleanup_database(test_session):
     yield
     
     # Delete in reverse order to respect FK constraints
+    # Order: child tables first, parent tables last
     try:
         from src.database.models import (
             Vulnerability, Dependency,
+            PRComment, PRReview, PullRequest,
             Commit, Contributor, Branch, Repository
         )
         
-        test_session.query(Vulnerability).delete()
-        test_session.query(Dependency).delete()
-        test_session.query(Commit).delete()
-        test_session.query(Contributor).delete()
-        test_session.query(Branch).delete()
-        test_session.query(Repository).delete()
+        # Delete in correct FK dependency order
+        test_session.query(Vulnerability).delete()  # FK: Dependency
+        test_session.query(PRComment).delete()      # FK: PullRequest, Contributor
+        test_session.query(PRReview).delete()       # FK: PullRequest, Contributor
+        test_session.query(PullRequest).delete()    # FK: Repository, Contributor
+        test_session.query(Dependency).delete()     # FK: Repository
+        test_session.query(Commit).delete()         # FK: Contributor, Repository
+        test_session.query(Contributor).delete()    # FK: none (referenced by many)
+        test_session.query(Branch).delete()         # FK: Repository
+        test_session.query(Repository).delete()     # FK: none (parent table)
         test_session.commit()
         
         logger.debug("✓ Test data cleaned up")

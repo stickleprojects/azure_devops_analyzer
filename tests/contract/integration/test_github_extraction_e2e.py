@@ -275,11 +275,14 @@ class TestGitHubExtractionBasic:
         repo = get_or_create_repository(extractor, repo_id, test_session)
         
         # Extract commits (which creates contributors automatically)
-        commits_data = extractor.get_commits(repo_id, max_commits=10)
+        commits_data = extractor.get_commits(repo_id, limit=10)
         
         # Store commits (which stores contributors via get_or_create_contributor)
         for commit_data in commits_data:
-            store_commit(test_session, repo_id, commit_data)
+            store_commit(test_session, repo_id, "main", commit_data)
+        
+        # Commit to ensure contributors are persisted
+        test_session.commit()
         
         # Assert: Contributors stored
         contributors = test_session.query(Contributor).all()
@@ -621,16 +624,16 @@ class TestGitHubTechnologyDetection:
             
             # Assert: Result has expected structure
             assert result is not None
-            assert hasattr(result, 'languages')
+            assert hasattr(result, 'programming_languages')
             assert hasattr(result, 'frameworks')
             assert hasattr(result, 'databases')
-            assert hasattr(result, 'platforms')
-            
+            assert hasattr(result, 'deployment_platforms')
+
             # Assert: At least some basic files present
-            assert isinstance(result.languages, list)
+            assert isinstance(result.programming_languages, list)
             assert isinstance(result.frameworks, list)
             assert isinstance(result.databases, list)
-            assert isinstance(result.platforms, list)
+            assert isinstance(result.deployment_platforms, list)
             
         except Exception as e:
             pytest.skip(f"Unable to access file tree: {e}")
