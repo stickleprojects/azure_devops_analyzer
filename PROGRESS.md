@@ -1,5 +1,28 @@
 # Development Progress Log
 
+---
+
+## ⚠️ URGENT - TODO FOR TOMORROW (2026-01-30)
+
+**PR Tests Failing on GitHub Actions (PR #18)**
+
+- **Issue**: PR tests are passing locally but failing on GitHub Actions runner
+- **Status**: Database schema fixes applied (contributor_metrics primary key, NOT NULL constraints, fixture deduplication)
+- **Last Known Issue**: Need to verify GitHub Actions workflow is using latest schema changes
+- **Action Items**:
+  1. Check latest PR test run logs for specific failures
+  2. Verify migration 007 is being executed on GitHub Actions
+  3. Confirm schema.sql with NOT NULL constraints is deployed
+  4. Test fixture deduplication (organization and teams fixtures)
+  5. Re-run GitHub Actions tests after verification
+
+**Related Commits**:
+- `dacceb4`: SQLAlchemy model fix + unique constraint
+- `dd38c06`: Migration 007 added
+- `20e5ecd`: NOT NULL constraints + fixture deduplication
+
+---
+
 ## Session: 2026-01-25 (Part 2) - Observability Requirements & Design
 
 ### Summary
