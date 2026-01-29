@@ -47,6 +47,7 @@
 **Execute this phase before starting Phase 2 development.**
 
 #### For Documentation Changes:
+
 - [ ] Reviewed against `agents/00-documentation-standards.md`
 - [ ] Code content ≤ 30% of document
 - [ ] Each example ≤ 15 lines maximum
@@ -55,6 +56,7 @@
 - [ ] If implementation doc: includes "Architecture Guardian" section
 
 #### For Code Changes:
+
 - [ ] Architecture Guardian review completed
 - [ ] No boundary violations (see agents/02a-architecture-guardian.md)
   - Extractors: Platform-isolated, no DB writes
@@ -65,6 +67,7 @@
 - [ ] No cross-layer dependencies created
 
 #### Branch Verification (Always):
+
 - [ ] Current branch confirmed: `git status`
   - Must show: `On branch feat/...`
   - MUST NOT show: `On branch main`

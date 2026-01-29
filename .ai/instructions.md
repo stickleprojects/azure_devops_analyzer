@@ -234,6 +234,7 @@ bash scripts/validate-documentation.sh docs/your-file.md
 ```
 
 **Requirements for documentation**:
+
 - Code content ≤ 30% of total document
 - Each code example ≤ 15 lines
 - ≤ 3 code examples per section
@@ -245,6 +246,7 @@ bash scripts/validate-documentation.sh docs/your-file.md
 If modifying `*.py` files in business logic:
 
 **Verify**:
+
 - Extractors: No database writes (use `src/database/` layer)
 - Analyzers: No extractor imports (no platform dependencies)
 - Workflows: No business logic (orchestration only)
@@ -283,6 +285,7 @@ Tests: All N tests passing" || "No code changes"
 **Types**: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 
 **Example**:
+
 ```
 feat: add team allocation during scan
 

@@ -161,7 +161,7 @@ WHERE NOT EXISTS (SELECT 1 FROM teams WHERE name = 'Unallocated');
 
 **Workflow step** (insert after `store_repository`):
 
-1. Extract `teamname` from `repository_metadata` 
+1. Extract `teamname` from `repository_metadata`
 2. If `teamname` exists → lookup or create that team; set `is_unallocated=False`
 3. If no `teamname` → use "Unallocated" fallback team; set `is_unallocated=True`
 4. For each contributor discovered → call `allocate_contributor_to_team()` with team ID, source="scan", and unallocated flag
@@ -250,7 +250,7 @@ python scripts/migrate_contributor_to_team.py \
 
 **See implementation**: [scripts/migrate_contributor_to_team.py](../../../scripts/migrate_contributor_to_team.py)
 
-````
+```
 
 #### Layer 4.3: Bulk Migration for Unallocated Contributors
 
@@ -383,3 +383,4 @@ The migration script supports comprehensive operations:
 - **Existing Pattern**: `src/database/team_analytics.py`
 - **Architecture Boundaries**: `agents/02a-architecture-guardian.md`
 - **Approved Stack**: Python 3.12, SQLAlchemy, PostgreSQL
+```

@@ -102,6 +102,7 @@ bash scripts/run-tests-docker.sh
 **RULE**: DO NOT modify tests to make code pass
 
 **PROCESS**:
+
 1. Understand why test is failing (read error message)
 2. Fix the **implementation** (not the test)
 3. Re-run tests: `bash scripts/run-tests-docker.sh`
@@ -109,8 +110,9 @@ bash scripts/run-tests-docker.sh
 5. Only then commit
 
 **Never** commit with:
+
 - ❌ Failing tests
-- ❌ Commented-out assertions  
+- ❌ Commented-out assertions
 - ❌ Skipped tests
 - ❌ Reduced coverage
 - ❌ Weakened validations

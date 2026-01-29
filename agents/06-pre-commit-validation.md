@@ -11,11 +11,13 @@ The Pre-Commit Validation Agent acts as a quality gate-keeper that ensures all w
 ## Core Responsibilities
 
 ### 1. Branch Verification
+
 - Prevent accidental commits to `main` branch
 - Enforce feature branch naming convention (`feat/...`, `fix/...`, etc.)
 - Block commits that would bypass version control workflows
 
 ### 2. Documentation Standards Validation
+
 - Ensure documentation meets "Documentation Over Code" principle
 - Check code content ≤ 30% of document size
 - Verify code examples ≤ 15 lines each
@@ -23,18 +25,21 @@ The Pre-Commit Validation Agent acts as a quality gate-keeper that ensures all w
 - Validate Architecture Guardian sections in implementation docs
 
 ### 3. Architectural Boundary Enforcement
+
 - Verify extractor layer isolation (no DB writes)
 - Verify analyzer independence (no extractor imports)
 - Confirm workflow purity (orchestration only)
 - Ensure database layer centralization
 
 ### 4. Test Requirement Verification
+
 - All staged code changes must have passing tests
 - No skipped tests allowed
 - No test modifications to make code pass
 - Existing tests must still pass (no regressions)
 
 ### 5. Commit Message Format Validation
+
 - Verify commit message follows project format
 - Ensure type is one of: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 - Confirm description is descriptive and clear
@@ -49,6 +54,7 @@ The Pre-Commit Validation Agent acts as a quality gate-keeper that ensures all w
 **Trigger**: Before every commit
 
 **Validation**:
+
 ```bash
 BRANCH=$(git rev-parse --abbrev-ref HEAD)
 if [ "$BRANCH" = "main" ]; then
@@ -60,6 +66,7 @@ fi
 **Impact**: Physically prevents commits to main branch
 
 **Recovery**:
+
 ```bash
 git reset HEAD~1              # Undo last commit
 git checkout -b feat/feature  # Create feature branch
@@ -73,12 +80,14 @@ git commit -m "..."           # Re-apply commit
 **Trigger**: When `*.md` files are staged
 
 **Validation**:
+
 - Count code blocks: Should be ≤ 6 per document
 - Check for full functions: Should be 0
 - Estimate code %, should be ≤ 30%
 - Verify Architecture Guardian section present (if implementation doc)
 
 **Command**:
+
 ```bash
 bash scripts/validate-documentation.sh docs/file.md
 ```
@@ -86,6 +95,7 @@ bash scripts/validate-documentation.sh docs/file.md
 **Impact**: Catches guideline violations before commit
 
 **Recovery**:
+
 ```bash
 # Remove code examples or move to script files
 # Update document structure
@@ -100,12 +110,14 @@ bash scripts/validate-documentation.sh docs/file.md
 **Trigger**: When `*.py` files are staged in business logic
 
 **Validation**:
+
 - Extractors must not have database write operations
 - Analyzers must not import from extractors
 - Workflows must not contain business logic
 - Database operations only in `src/database/`
 
 **Implementation**:
+
 ```python
 # Check: if "src/extractors" in file:
 #   verify no "session.add", "session.execute"
@@ -118,6 +130,7 @@ bash scripts/validate-documentation.sh docs/file.md
 **Impact**: Prevents architectural violations
 
 **Recovery**:
+
 ```bash
 # Move code to appropriate layer
 # Remove cross-layer dependencies
@@ -131,6 +144,7 @@ bash scripts/validate-documentation.sh docs/file.md
 **Trigger**: When code in `src/` is staged
 
 **Validation**:
+
 ```bash
 bash scripts/run-tests-docker.sh
 # Requirements:
@@ -142,6 +156,7 @@ bash scripts/run-tests-docker.sh
 **Impact**: No failing code reaches version control
 
 **Recovery**:
+
 ```bash
 # Fix implementation
 bash scripts/run-tests-docker.sh
@@ -156,13 +171,14 @@ git reset HEAD path/to/file.py
 **Trigger**: Before every commit (commit-msg hook)
 
 **Validation**:
+
 ```
 Format: type: description
 
 Valid types: feat, fix, docs, refactor, test, chore
 Example:
   feat: add team allocation
-  
+
   - Implements FR-13.2
   - Adds 5 integration tests
 ```
@@ -170,6 +186,7 @@ Example:
 **Impact**: Clean, searchable commit history
 
 **Recovery**:
+
 ```bash
 git commit --amend -m "type: corrected message"
 ```
@@ -194,12 +211,14 @@ git commit --amend -m "type: corrected message"
 ### Enforcement Mechanism
 
 **Automated**:
+
 - Pre-commit hook: Blocks main branch commits
 - Pre-commit hook: Checks doc standards
 - Pre-commit hook: Validates Python syntax
 - Commit-msg hook: Validates message format
 
 **Manual**:
+
 - Developer verifies architecture compliance
 - Developer runs tests locally
 - Developer reviews own commit message
@@ -240,15 +259,12 @@ Commit will be **approved** and **allowed** if:
 - **Pre-commit hook**: `.git/hooks/pre-commit`
   - Automated branch + doc validation
   - Blocks main branch commits
-  
 - **Validation script**: `scripts/validate-documentation.sh`
   - Documentation standards checker
   - Reports code %, code blocks, violations
-  
 - **Agent coordination**: `agents/02a-architecture-guardian.md`
   - Architecture validation rules
   - Boundary definitions
-  
 - **Test requirements**: `agents/04a-test-guardian.md`
   - Test validation rules
   - Coverage expectations
@@ -286,6 +302,7 @@ Pre-Commit Hooks Run
 ### Scenario 1: Developer Forgets Feature Branch
 
 **Problem**:
+
 ```bash
 $ git status
 On branch main
@@ -295,6 +312,7 @@ $ git commit ...
 ```
 
 **Solution**:
+
 ```bash
 $ git reset HEAD~1
 $ git checkout -b feat/my-feature
@@ -307,6 +325,7 @@ $ git commit ...
 ### Scenario 2: Documentation Exceeds Code Limit
 
 **Problem**:
+
 ```bash
 $ git commit -m "docs: new architecture"
 ⚠️  Warning: Document has 8 code blocks
@@ -314,6 +333,7 @@ $ git commit -m "docs: new architecture"
 ```
 
 **Solution**:
+
 ```bash
 # Remove or move code examples
 # Keep only 3 essential examples
@@ -331,6 +351,7 @@ $ git commit ...
 ### Scenario 3: Test Failure on Commit
 
 **Problem**:
+
 ```bash
 $ git commit -m "feat: new feature"
 Gate 4: Running tests...
@@ -339,6 +360,7 @@ Exit code: 1
 ```
 
 **Solution**:
+
 ```bash
 # Fix the failing tests
 # Re-run locally to verify

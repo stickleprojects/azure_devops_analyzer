@@ -390,12 +390,12 @@ represents in the business domain."
 
 ### Code Blocks
 
-````markdown
+```markdown
 - Always specify language: `python, `javascript, etc.
 - Use comments to annotate: // ❌ Bad, // ✅ Good
 - Keep examples minimal and focused
 - Prefer pseudo-code for complex algorithms
-````
+```
 
 ## Examples: Good vs Bad Documentation
 
@@ -605,11 +605,13 @@ Use markdown checklists for trackable items:
 - [ ] Pending item
 - [ ] Future item
 ```
+
 ## Pre-Commit Documentation Validation Checklist
 
-**Before committing any documentation file (*.md), verify**:
+**Before committing any documentation file (\*.md), verify**:
 
 ### Code Content Check
+
 - [ ] Code represents ≤ 30% of document total lines
 - [ ] Each code example ≤ 15 lines maximum
 - [ ] ≤ 3 code examples per section
@@ -622,13 +624,15 @@ Use markdown checklists for trackable items:
   - ❌ Complete implementations (link instead)
 - [ ] Full implementations linked to actual files, not embedded
 
-### Structure Check  
+### Structure Check
+
 - [ ] Principles explained in prose BEFORE any code examples
 - [ ] Complex concepts use tables/lists instead of code
 - [ ] Section headings clearly distinguish architecture from implementation
 - [ ] Documentation reads as "WHAT and WHY", not "HOW and WHERE"
 
 ### Completeness Check
+
 - [ ] Architecture Guardian validation section present (if implementation doc)
   - Verifies no boundary violations
   - Lists what architectural rules are followed
@@ -640,6 +644,7 @@ Use markdown checklists for trackable items:
 - [ ] No orphaned references to non-existent files
 
 ### Validation Command
+
 ```bash
 # Quick validation
 bash scripts/validate-documentation.sh docs/04-implementation/your-doc.md
@@ -651,6 +656,7 @@ bash scripts/validate-documentation.sh docs/04-implementation/your-doc.md
 ```
 
 ---
+
 ### Session Handoff Checklist
 
 Before ending an AI session, ensure:
