@@ -74,13 +74,17 @@ jobs:
           pytest tests/contract/integration/ -v --tb=short --durations=10 -m "not live_api"
 
       - name: Run live API tests
-        if: secrets.LIVE_GITHUB_TOKEN && secrets.AZURE_DEVOPS_PAT
         env:
           GITHUB_TOKEN: ${{ secrets.LIVE_GITHUB_TOKEN }}
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
-          pytest tests/contract/integration/ -v --tb=short --durations=10 -m "live_api"
+          if [ -n "$GITHUB_TOKEN" ] && [ -n "$AZURE_DEVOPS_PAT" ]; then
+            echo "Running live API tests with provided credentials..."
+            pytest tests/contract/integration/ -v --tb=short --durations=10 -m "live_api"
+          else
+            echo "Skipping live API tests - credentials not available"
+          fi
 
       - name: Generate coverage report
         run: |
