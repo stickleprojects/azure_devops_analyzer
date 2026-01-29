@@ -270,19 +270,19 @@ def teams(test_session, organization):
     
     teams = [
         Team(
-            organization_id=organization.id,
+            organization_id=organization.organization_id,
             name="Platform Team",
             description="Infrastructure and platform",
             created_at=datetime.utcnow(),
         ),
         Team(
-            organization_id=organization.id,
+            organization_id=organization.organization_id,
             name="Backend Team",
             description="Backend services",
             created_at=datetime.utcnow(),
         ),
         Team(
-            organization_id=organization.id,
+            organization_id=organization.organization_id,
             name="Frontend Team",
             description="Frontend and UI",
             created_at=datetime.utcnow(),
