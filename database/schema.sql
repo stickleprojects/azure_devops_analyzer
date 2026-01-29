@@ -277,8 +277,8 @@ CREATE INDEX idx_contributor_email ON contributors(email);
 -- Contributor Metrics (Time-series)
 CREATE TABLE contributor_metrics (
     id BIGSERIAL PRIMARY KEY,
-    repo_id VARCHAR(255),
-    contributor_id INTEGER,
+    repo_id VARCHAR(255) NOT NULL,
+    contributor_id INTEGER NOT NULL,
     period_start TIMESTAMPTZ NOT NULL,
     period_end TIMESTAMPTZ NOT NULL,
     commit_count INTEGER DEFAULT 0,

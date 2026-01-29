@@ -276,27 +276,29 @@ def teams(test_session, organization):
     from src.database.models import Team
     from datetime import datetime, timezone
     
-    teams = [
-        Team(
+    team_names = ["Platform Team", "Backend Team", "Frontend Team"]
+    descriptions = ["Infrastructure and platform", "Backend services", "Frontend and UI"]
+    
+    teams = []
+    for name, desc in zip(team_names, descriptions):
+        # Check if team already exists
+        existing = test_session.query(Team).filter_by(
             organization_id=organization.organization_id,
-            name="Platform Team",
-            description="Infrastructure and platform",
-            created_at=datetime.now(timezone.utc),
-        ),
-        Team(
-            organization_id=organization.organization_id,
-            name="Backend Team",
-            description="Backend services",
-            created_at=datetime.now(timezone.utc),
-        ),
-        Team(
-            organization_id=organization.organization_id,
-            name="Frontend Team",
-            description="Frontend and UI",
-            created_at=datetime.now(timezone.utc),
-        ),
-    ]
-    test_session.add_all(teams)
+            name=name
+        ).first()
+        
+        if existing:
+            teams.append(existing)
+        else:
+            team = Team(
+                organization_id=organization.organization_id,
+                name=name,
+                description=desc,
+                created_at=datetime.now(timezone.utc),
+            )
+            test_session.add(team)
+            teams.append(team)
+    
     test_session.commit()
     return teams
 
