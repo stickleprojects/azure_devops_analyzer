@@ -71,27 +71,20 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
-          pytest tests/contract/integration/ -v --tb=short --durations=10
+          pytest tests/contract/integration/ -v --tb=short --durations=10 -m "not live_api"
 
-      - name: Run live API tests (GitHub)
-        if: secrets.LIVE_GITHUB_TOKEN != ''
+      - name: Run live API tests
+        if: secrets.LIVE_GITHUB_TOKEN != '' && secrets.AZURE_DEVOPS_PAT != ''
         env:
           GITHUB_TOKEN: ${{ secrets.LIVE_GITHUB_TOKEN }}
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
-        run: |
-          pytest tests/contract/integration/ -v --tb=short --live-api -m "github"
-
-      - name: Run live API tests (Azure DevOps)
-        if: secrets.AZURE_DEVOPS_PAT != ''
-        env:
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
-          pytest tests/contract/integration/ -v --tb=short --live-api -m "azure_devops"
+          pytest tests/contract/integration/ -v --tb=short --durations=10 -m "live_api"
 
       - name: Generate coverage report
         run: |
-          pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing
+          pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing -m "not live_api"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
