@@ -74,7 +74,7 @@ jobs:
           pytest tests/contract/integration/ -v --tb=short --durations=10 -m "not live_api"
 
       - name: Run live API tests
-        if: secrets.LIVE_GITHUB_TOKEN != '' && secrets.AZURE_DEVOPS_PAT != ''
+        if: ${{ secrets.LIVE_GITHUB_TOKEN != '' && secrets.AZURE_DEVOPS_PAT != '' }}
         env:
           GITHUB_TOKEN: ${{ secrets.LIVE_GITHUB_TOKEN }}
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
