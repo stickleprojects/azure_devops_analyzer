@@ -74,9 +74,9 @@ jobs:
           pytest tests/contract/integration/ -v --tb=short --durations=10
 
       - name: Run live API tests (GitHub)
-        if: secrets.GITHUB_TOKEN_LIVE_API != ''
+        if: secrets.LIVE_GITHUB_TOKEN != ''
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_LIVE_API }}
+          GITHUB_TOKEN: ${{ secrets.LIVE_GITHUB_TOKEN }}
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
           pytest tests/contract/integration/ -v --tb=short --live-api -m "github"
