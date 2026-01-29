@@ -41,8 +41,12 @@ _For getting the system running and maintaining it_
 - [visualization.md](03-operations/visualization.md) — Grafana dashboards, metrics, visualization design
 - [deployment-plan.md](03-operations/deployment-plan.md) — Implementation timeline, phases, checklist
 - [session-continuity.md](03-operations/session-continuity.md) — Session management, context tracking, reproducibility
-- [github-config-env-loading.md](03-operations/github-config-env-loading.md) — Environment variable loading with indirect resolution
-- [github-config-refactoring.md](03-operations/github-config-refactoring.md) — Configuration refactoring summary
+- [feature-development-workflow.md](03-operations/feature-development-workflow.md) — Development process and PR workflow
+- [branch-protection-setup.md](03-operations/branch-protection-setup.md) — Branch protection configuration
+
+**Code Quality & Architecture**:
+- [Architecture Guardian](../agents/02a-architecture-guardian.md) — Automatic architecture protection
+- [Test Guardian](../agents/04a-test-guardian.md) — Automatic test quality enforcement
 
 **Start here if you're**: DevOps engineer, system operator, deploying to production
 
@@ -54,6 +58,9 @@ _For planning what comes next and evaluating options_
 
 - [parallelization-plan.md](04-implementation/parallelization-plan.md) — Multi-worker strategy, rate limiting, scaling
 - [infrastructure-options.md](04-implementation/infrastructure-options.md) — Kubernetes vs Docker Compose evaluation, pros/cons
+- [integration-testing-priority-assessment.md](04-implementation/integration-testing-priority-assessment.md) — Testing strategy and priorities
+- [worker-instrumentation.md](04-implementation/worker-instrumentation.md) — Worker metrics and observability
+- [contributor-team-allocation-strategy.md](04-implementation/contributor-team-allocation-strategy.md) — Team assignment architecture
 
 **Start here if you're**: Planning next phase, evaluating infrastructure options, scaling decisions
 
