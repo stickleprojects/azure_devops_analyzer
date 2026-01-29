@@ -2,6 +2,8 @@
 
 This file contains tool-agnostic instructions for AI coding assistants working on this project. Both GitHub Copilot (`.github/copilot-instructions.md`) and Claude Code (`CLAUDE.md`) reference this file.
 
+⚠️ **READ FIRST**: Before starting ANY development work, read `docs/03-operations/feature-development-workflow.md` - it contains the feature development checklist and testing requirements that MUST be followed.
+
 ---
 
 ## Tone and Personality
@@ -134,9 +136,32 @@ Present options to the user:
 
 ---
 
-## Test Guardian
+## Test Guardian - CRITICAL ENFORCEMENT
+
+**⚠️ THE IRON RULE: If a test fails after implementation changes, the implementation is probably wrong, not the test.**
 
 Before modifying ANY tests, validate against test integrity rules defined in `agents/04a-test-guardian.md`.
+
+### Non-Negotiable Requirements
+
+1. **NEVER commit code with failing tests**
+   - Run `bash scripts/run-tests-docker.sh` BEFORE every commit
+   - Verify exit code is 0 (all tests pass)
+   - If tests fail, fix implementation, not tests
+   
+2. **NEVER modify CONTRACT tests to make implementation pass**
+   - CONTRACT tests define requirements (business rules, API contracts)
+   - They are the source of truth
+   - IMPLEMENTATION tests can evolve with technical details
+   
+3. **NEVER disable/skip tests to pass builds**
+   - `@pytest.mark.skip` on a failing test = failing test
+   - Remove the skip only when test actually passes
+   
+4. **ALWAYS run full integration test suite in Docker**
+   - Local Python tests can miss Docker environment issues
+   - Use: `bash scripts/run-tests-docker.sh`
+   - This is non-negotiable before any commit
 
 ### The Iron Rule
 **If a test fails after implementation changes, the implementation is probably wrong, not the test.**
