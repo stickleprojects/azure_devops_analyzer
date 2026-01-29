@@ -61,6 +61,12 @@ The AI agent guides in the `agents/` directory follow best practices for AI-driv
 
 ### How to Use the Guides
 
+#### Typical Session
+At the start of your sesssion, give a greeting to your AI engine (open the copilot window and type "good afternoon" or "hi, what shall we do today")
+The agent will give you a greeting and catch you up on what you were doing and whats next priority
+When you've finised  a session, tell copilot "lets wrap this session" and it will summarise the things and prompt you to commit/etc.
+
+
 #### 1. **Sequential Workflow**
 
 Follow the guides in order for new projects:
