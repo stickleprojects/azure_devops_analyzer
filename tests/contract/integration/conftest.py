@@ -252,13 +252,21 @@ def organization(test_session):
     """Create a test organization."""
     from src.database.models import Organization
     
-    org = Organization(
+    # Try to find existing org first
+    org = test_session.query(Organization).filter_by(
         name="Test Organization",
-        url="https://test.example.com",
-        platform="azure_devops",
-    )
-    test_session.add(org)
-    test_session.commit()
+        platform="azure_devops"
+    ).first()
+    
+    if org is None:
+        org = Organization(
+            name="Test Organization",
+            url="https://test.example.com",
+            platform="azure_devops",
+        )
+        test_session.add(org)
+        test_session.commit()
+    
     return org
 
 
