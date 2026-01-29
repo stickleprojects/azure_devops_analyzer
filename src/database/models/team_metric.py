@@ -25,9 +25,9 @@ class TeamMetric(Base):
 
     __tablename__ = "team_metrics"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(autoincrement=True)
     team_id: Mapped[int] = mapped_column(
-        ForeignKey("teams.team_id", ondelete="CASCADE"), nullable=False
+        ForeignKey("teams.team_id", ondelete="CASCADE"), nullable=False, primary_key=True
     )
     period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), primary_key=True)
     period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

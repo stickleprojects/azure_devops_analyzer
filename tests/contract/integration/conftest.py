@@ -266,26 +266,26 @@ def organization(test_session):
 def teams(test_session, organization):
     """Create test teams."""
     from src.database.models import Team
-    from datetime import datetime
+    from datetime import datetime, timezone
     
     teams = [
         Team(
             organization_id=organization.organization_id,
             name="Platform Team",
             description="Infrastructure and platform",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         ),
         Team(
             organization_id=organization.organization_id,
             name="Backend Team",
             description="Backend services",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         ),
         Team(
             organization_id=organization.organization_id,
             name="Frontend Team",
             description="Frontend and UI",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
         ),
     ]
     test_session.add_all(teams)
