@@ -71,47 +71,47 @@
 └─────────────────────────────────────────────────────────────┘
 
         ↓
-        
+
         ┌─ GATE 1: BRANCH VERIFICATION ─┐
         │ .git/hooks/pre-commit          │
         │ Prevents: Commits to main      │
         │ Enforcement: 100% (auto-block) │
         └────────────────────────────────┘
-        
+
         ↓
-        
+
         ┌─ GATE 2: DOC STANDARDS ──────┐
         │ scripts/validate-docs.sh      │
         │ Prevents: Guideline violations│
         │ Enforcement: Auto-check       │
         └────────────────────────────────┘
-        
+
         ↓
-        
+
         ┌─ GATE 3: ARCHITECTURE ───────┐
         │ agents/02a validation         │
         │ Prevents: Boundary violations │
         │ Enforcement: Guardian check   │
         └────────────────────────────────┘
-        
+
         ↓
-        
+
         ┌─ GATE 4: TEST REQUIREMENT ───┐
         │ run-tests-docker.sh           │
         │ Prevents: Failing code merged │
         │ Enforcement: Exit code = 0    │
         └────────────────────────────────┘
-        
+
         ↓
-        
+
         ┌─ GATE 5: MESSAGE FORMAT ─────┐
         │ Commit message validation     │
         │ Prevents: Unclear commits     │
         │ Enforcement: Auto-check       │
         └────────────────────────────────┘
-        
+
         ↓
-        
+
     ✅ COMMIT SUCCEEDS
     (Only if all 5 gates pass)
 ```
@@ -123,7 +123,7 @@
 ```
 THIS SESSION:
 ✅ Problem identified
-✅ Root cause analyzed  
+✅ Root cause analyzed
 ✅ Solution designed
 ✅ Recommendations documented
 
@@ -135,7 +135,7 @@ NEXT SESSION (P0 - Critical):
 
 ⏳ Create validation script
    └─ Checks doc compliance
-   └─ 45 min effort  
+   └─ 45 min effort
    └─ Catches guideline violations
 
 FOLLOWING SESSION (P1 - Important):
@@ -195,7 +195,8 @@ IMPACT:
 
 **Before**: Developer writes doc → commits → review finds violations
 
-**After**: 
+**After**:
+
 ```
 1. Developer writes doc
 2. Try to commit
@@ -208,17 +209,17 @@ IMPACT:
 
 **Result**: Zero guideline violations in git
 
-
 ### Problem 2: Branch Confusion
 
 **Before**: Developer on main → commits → overwrites main
 
 **After**:
+
 ```
 1. Developer accidentally on main
 2. Try to commit
 3. Pre-commit hook checks: git rev-parse --abbrev-ref HEAD
-4. Detects: "On branch main"  
+4. Detects: "On branch main"
 5. ❌ Commit BLOCKED
 6. Developer creates feature branch
 7. ✅ Commit succeeds on feat/...
@@ -231,11 +232,13 @@ IMPACT:
 ## Files to Create/Update (Complete List)
 
 ### CREATE (New):
+
 1. `.git/hooks/pre-commit` - Blocks main commits
 2. `scripts/validate-documentation.sh` - Checks doc standards
 3. `agents/06-pre-commit-validation.md` - Formal validation agent
 
 ### UPDATE (Existing):
+
 1. `.ai/instructions.md` - Add validation gates section
 2. `docs/03-operations/feature-development-workflow.md` - Add Phase 1.5
 3. `agents/07-session-continuity-agent.md` - Add startup validation
@@ -271,17 +274,20 @@ THE SHIFT:
 ## Recommendation Priority
 
 🔴 **P0 (Do First)**: 1.25 hours
+
 - Pre-commit hook (blocks main)
 - Doc validation script (catches violations)
 
 These two items alone prevent both problems.
 
 🟡 **P1 (Do Next)**: 2 hours
+
 - Agent/workflow documentation updates
 
 These clarify expectations and guide future work.
 
 🟢 **P2 (Nice to Have)**: 3.75 hours
+
 - Formal validation agent
 - Cross-reference updates
 

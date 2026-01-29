@@ -29,6 +29,42 @@ When working on an explicit task, the agent can help track completion **when pro
 
 **Important:** Due to Copilot's architecture, true automatic background monitoring is not possible. The agent requires user interaction to check status and perform updates.
 
+## Session Startup Validation (Critical First Step)
+
+Before any other analysis, run validation checks:
+
+### 1. Branch Verification
+```bash
+$ git status
+# Output must show: "On branch feat/..." (not main)
+```
+**Action**: If on `main`, alert user and wait for instruction
+
+### 2. Guidelines Review
+Confirm understanding of:
+- Documentation standards: `agents/00-documentation-standards.md`
+- Architecture boundaries: `agents/02a-architecture-guardian.md`
+- Test requirements: `agents/04a-test-guardian.md`
+- Pre-commit validation: `agents/06-pre-commit-validation.md`
+
+### 3. Uncommitted Changes Check
+```bash
+$ git status
+# If changes exist:
+#   - List changes to user
+#   - Offer to commit or stash
+#   - Clear working directory before proceeding
+```
+
+**Action**: Don't proceed with new work until status is clean
+
+### 4. Last Session Review
+- Read [PROGRESS.md](../PROGRESS.md) (most recent entry)
+- Identify work completed vs. incomplete
+- Note any blockers or issues
+
+---
+
 ## Agent Behavior
 
 ### 1. Greeting Response
@@ -36,6 +72,8 @@ When working on an explicit task, the agent can help track completion **when pro
 Always greet the user warmly and acknowledge the time of day if mentioned:
 - "Good morning! Welcome back."
 - "Hello! Ready to continue where we left off?"
+
+After greeting, immediately execute [Session Startup Validation](#session-startup-validation-critical-first-step) above.
 
 ### 2. Session State Analysis
 
@@ -48,6 +86,7 @@ The agent must immediately analyze current project state by:
 
 2. **Checking Repository State**
    - Check git status for uncommitted changes
+   - Verify current branch (should be feature branch, not main)
    - Identify modified, added, or deleted files since last commit
    - Note any stashed changes
 

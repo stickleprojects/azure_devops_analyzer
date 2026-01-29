@@ -3,6 +3,7 @@
 **Session Goal**: Design and document contributor-to-team allocation architecture (FR-13.2, FR-13.3)
 
 **Problems Identified**:
+
 1. ❌ **Documentation Guideline Violations**: Initial document violated "Documentation Over Code" principle (500+ lines of code in 1,105-line doc)
 2. ❌ **Branch/Commit Risk**: Risk of committing to wrong branch (though actual commits were correct to `feat/team-management`)
 
@@ -13,6 +14,7 @@
 ### What Happened
 
 The initial `contributor-team-allocation-strategy.md` document contained:
+
 - Complete Python function implementations (150+ lines)
 - 10+ CLI command examples (50+ lines)
 - Programmatic API usage examples (20+ lines)
@@ -20,6 +22,7 @@ The initial `contributor-team-allocation-strategy.md` document contained:
 - **Total violation**: ~500 lines of code in 1,105-line document (45% code)
 
 **Guideline Requirement**: [agents/00-documentation-standards.md](agents/00-documentation-standards.md)
+
 - Max 30% code per document
 - Max 15 lines per example
 - Max 3 examples per section
@@ -39,9 +42,10 @@ The document was created with these problems:
 4. **Missing validation workflow**: No step to "review against guidelines" before committing
 
 **Why It Wasn't Caught**:
+
 - Guidelines exist but weren't explicitly checked before content creation
 - Workflow doesn't have a "pre-flight documentation check" step
-- Agent created document → created review → *then* identified violations (backwards)
+- Agent created document → created review → _then_ identified violations (backwards)
 
 ---
 
@@ -52,6 +56,7 @@ The document was created with these problems:
 The user reported concern that code was committed to `main` branch instead of feature branch.
 
 While the final commit was correct (`feat/team-management`), this indicates a **workflow risk**:
+
 - During session, changes were made to multiple files
 - If developer isn't vigilant, could accidentally commit to `main`
 - Feature development checklist exists but **pre-commit verification missing**
@@ -66,6 +71,7 @@ While the final commit was correct (`feat/team-management`), this indicates a **
 4. **Instructions incomplete**: `.ai/instructions.md` emphasizes "create feature branch" but lacks enforcement
 
 **Why It Could Happen Again**:
+
 - Developer could run `git commit` without checking `git status` first
 - Pre-commit hook doesn't validate branch
 - Workflow checklist item "ALWAYS create feature branch BEFORE code changes" is aspirational, not enforced
@@ -136,38 +142,44 @@ Improved Flow (Recommended):
 
 **Add new section**: "Pre-Commit Documentation Validation"
 
-```markdown
+````markdown
 ## Pre-Commit Documentation Validation Checklist
 
-Before committing any documentation file (*.md), verify:
+Before committing any documentation file (\*.md), verify:
 
 ### Code Content Check
+
 - [ ] Code represents ≤30% of document
 - [ ] Each code example ≤15 lines
 - [ ] ≤3 code examples per section
 - [ ] Code ONLY included when absolutely necessary (algorithm, security, API contract)
 - [ ] Full implementations linked to actual files, not embedded
 
-### Structure Check  
+### Structure Check
+
 - [ ] Principles explained in prose BEFORE any code examples
 - [ ] Complex concepts use tables/lists instead of code
 - [ ] Section headings clearly distinguish "what" from "how"
 - [ ] Architecture documented separately from implementation guide
 
 ### Completeness Check
+
 - [ ] Architecture Guardian validation section present (if applicable)
 - [ ] References to actual implementation files (if applicable)
 - [ ] Test strategy linked to actual test files (if applicable)
 - [ ] No orphaned references to non-existent files
 
 ### Quick Check Command
-```bash
+
+````bash
 # Count code fence blocks
 grep -c '^```' docs/04-implementation/your-doc.md
 
 # If > 6 blocks total, likely over 30% code limit
-```
-```
+````
+````
+
+````
 
 ### 2. Update Feature Development Workflow
 
@@ -197,7 +209,7 @@ grep -c '^```' docs/04-implementation/your-doc.md
 - [ ] Verify on feature branch: `git status` shows `On branch feat/...`
 - [ ] If on `main`: create feature branch `git checkout -b feat/your-feature`
 - [ ] Commit only to feature branch, NEVER to main
-```
+````
 
 ### 3. Enhance Agent Instructions
 
@@ -205,37 +217,43 @@ grep -c '^```' docs/04-implementation/your-doc.md
 
 **Add new section**: "Pre-Commit Validation Requirements"
 
-```markdown
+````markdown
 ## Pre-Commit Validation (Critical - Cannot Skip)
 
 ### Every Commit Must Pass:
 
 #### 1. Branch Verification
+
 ```bash
 BEFORE git commit:
   git status
   # Output must show: "On branch feat/..."
   # If "On branch main" → immediately: git checkout -b feat/your-feature
 ```
+````
 
-#### 2. Documentation Validation  
+#### 2. Documentation Validation
+
 - If modifying `*.md` files:
   - Count code blocks: should be ≤6 per document
   - Verify against agents/00-documentation-standards.md
   - Run: `bash scripts/validate-documentation.sh`
 
 #### 3. Code Validation
+
 - If modifying `*.py` files:
   - Run full test suite: `bash scripts/run-tests-docker.sh`
   - All tests must pass (exit code 0)
   - No modifications to tests without requirement approval
 
 #### 4. Commit Message Validation
+
 - Format: `type: description\n\n- bullet points`
 - Examples: `feat: add team allocation`, `docs: refactor architecture doc`
 
 **Rule**: Never commit without passing all 4 validation gates.
-```
+
+````
 
 ### 4. Create Documentation Validation Script
 
@@ -271,13 +289,13 @@ if [[ "$FILE" == *"implementation"* ]]; then
 fi
 
 echo "✅ Documentation validation passed"
-```
+````
 
 ### 5. Create Pre-Commit Hook
 
 **Location**: `.git/hooks/pre-commit` (NEW)
 
-```bash
+````bash
 #!/bin/bash
 # Pre-commit validation hook
 
@@ -311,7 +329,7 @@ fi
 
 echo "✅ Pre-commit validation passed"
 exit 0
-```
+````
 
 ---
 
@@ -331,7 +349,7 @@ Before proceeding with any work:
    - If on main, immediately create feature branch
 
 2. ✅ Verify guidelines understood:
-   - Documentation: agents/00-documentation-standards.md  
+   - Documentation: agents/00-documentation-standards.md
    - Code: agents/02a-architecture-guardian.md
    - Tests: agents/04a-test-guardian.md
 
@@ -348,7 +366,7 @@ Before proceeding with any work:
 
 **Add section**: "Pre-Commit Test Validation"
 
-```markdown
+````markdown
 ## Pre-Commit Test Validation
 
 Before any commit containing code changes:
@@ -357,6 +375,7 @@ Before any commit containing code changes:
    ```bash
    bash scripts/run-tests-docker.sh
    ```
+````
 
 2. **Verify output**:
    - Exit code = 0 (all tests pass)
@@ -368,7 +387,8 @@ Before any commit containing code changes:
    - If test fails, fix implementation
    - If requirement changed, update contract test
    - If technical approach changed, update implementation test
-```
+
+````
 
 ### 3. Create New Agent: `agents/06-pre-commit-validation.md`
 
@@ -420,20 +440,20 @@ Approve commit only if:
 - ✅ Architecture Guardian approves
 - ✅ All tests passing
 - ✅ Clear commit message
-```
+````
 
 ---
 
 ## Implementation Priority
 
-| Priority | Change | Effort | Impact |
-|----------|--------|--------|--------|
-| **🔴 P0** | Add pre-commit hook (.git/hooks/pre-commit) | 30min | Prevents main branch commits |
-| **🔴 P0** | Add documentation validation script | 45min | Catches guideline violations |
-| **🟡 P1** | Update `.ai/instructions.md` with validation gates | 1hr | Guides AI agents in validation |
-| **🟡 P1** | Add "Pre-Flight Validation" phase to workflow | 1hr | Documents requirements |
-| **🟢 P2** | Create `agents/06-pre-commit-validation.md` | 1.5hr | Formalizes validation process |
-| **🟢 P2** | Update existing agent docs | 2hr | Cross-reference new validation rules |
+| Priority  | Change                                             | Effort | Impact                               |
+| --------- | -------------------------------------------------- | ------ | ------------------------------------ |
+| **🔴 P0** | Add pre-commit hook (.git/hooks/pre-commit)        | 30min  | Prevents main branch commits         |
+| **🔴 P0** | Add documentation validation script                | 45min  | Catches guideline violations         |
+| **🟡 P1** | Update `.ai/instructions.md` with validation gates | 1hr    | Guides AI agents in validation       |
+| **🟡 P1** | Add "Pre-Flight Validation" phase to workflow      | 1hr    | Documents requirements               |
+| **🟢 P2** | Create `agents/06-pre-commit-validation.md`        | 1.5hr  | Formalizes validation process        |
+| **🟢 P2** | Update existing agent docs                         | 2hr    | Cross-reference new validation rules |
 
 ---
 
@@ -450,16 +470,19 @@ Approve commit only if:
 ## How to Prevent These Problems Going Forward
 
 ### During Development
+
 1. **BEFORE committing**: Run validation gates
 2. **Documentation**: Check against standards checklist
 3. **Code**: Run tests, verify architecture
 4. **Branch**: Always confirm `git status` shows feat/...
 
-### Agent Improvements  
+### Agent Improvements
+
 1. **Pre-flight checks**: Validate guidelines before creating content
 2. **Automated gates**: Pre-commit hook + validation scripts
 3. **Clear instructions**: Updated agent guidelines with explicit requirements
 4. **Workflow checkpoints**: Add validation phases to documented workflow
 
 ### Outcome
+
 These improvements shift from "catch problems after commit" to "prevent problems before commit" via automated validation gates.

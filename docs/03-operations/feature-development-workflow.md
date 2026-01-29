@@ -42,6 +42,38 @@
 - [ ] Test plan considered (what must be tested?)
 - [ ] Integration test infrastructure available
 
+### Phase 1.5: Pre-Flight Validation (New - Critical Step)
+
+**Execute this phase before starting Phase 2 development.**
+
+#### For Documentation Changes:
+- [ ] Reviewed against `agents/00-documentation-standards.md`
+- [ ] Code content ≤ 30% of document
+- [ ] Each example ≤ 15 lines maximum
+- [ ] ≤ 3 code examples per section
+- [ ] NO full function/class definitions (reference actual files instead)
+- [ ] If implementation doc: includes "Architecture Guardian" section
+
+#### For Code Changes:
+- [ ] Architecture Guardian review completed
+- [ ] No boundary violations (see agents/02a-architecture-guardian.md)
+  - Extractors: Platform-isolated, no DB writes
+  - Analyzers: No extractor dependencies
+  - Workflows: Orchestration only, no business logic
+  - Database: Single layer for all DB operations
+- [ ] New components placed in correct layer
+- [ ] No cross-layer dependencies created
+
+#### Branch Verification (Always):
+- [ ] Current branch confirmed: `git status`
+  - Must show: `On branch feat/...`
+  - MUST NOT show: `On branch main`
+- [ ] If on main: Create feature branch immediately
+  - `git checkout -b feat/your-feature`
+- [ ] Commit only to feature branch, NEVER to main
+
+**Outcome**: Ready to proceed to Phase 2 development with confidence that all quality gates understood.
+
 ### Phase 2: Development (Local, Uncommitted)
 
 - [ ] Write CONTRACT tests first (tests define requirements)
