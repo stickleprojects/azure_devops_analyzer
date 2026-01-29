@@ -131,9 +131,8 @@ class TestTeamMembership:
         contributors = []
         for i in range(3):
             contrib = Contributor(
-                username=f"member{i}",
+                name=f"Member {i}",
                 email=f"member{i}@example.com",
-                organization_id=organization.id,
             )
             test_session.add(contrib)
             contributors.append(contrib)
@@ -153,14 +152,12 @@ class TestTeamMembership:
     def test_get_active_team_members_excludes_removed(self, test_session, organization, teams):
         """Test that removed members are not in active list."""
         contrib1 = Contributor(
-            username="kept",
+            name="Kept",
             email="kept@example.com",
-            organization_id=organization.id,
         )
         contrib2 = Contributor(
-            username="removed",
+            name="Removed",
             email="removed@example.com",
-            organization_id=organization.id,
         )
         test_session.add(contrib1)
         test_session.add(contrib2)
@@ -183,9 +180,8 @@ class TestTeamMembership:
     def test_get_active_team_members_as_of_date(self, test_session, organization, teams):
         """Test time-travel queries for team membership."""
         contrib = Contributor(
-            username="time_traveler",
+            name="Time Traveler",
             email="time_traveler@example.com",
-            organization_id=organization.id,
         )
         test_session.add(contrib)
         test_session.commit()
@@ -219,9 +215,8 @@ class TestTeamMembership:
         contributors = []
         for i in range(5):
             contrib = Contributor(
-                username=f"counter{i}",
+                name=f"Counter {i}",
                 email=f"counter{i}@example.com",
-                organization_id=organization.id,
             )
             test_session.add(contrib)
             contributors.append(contrib)
@@ -329,9 +324,8 @@ class TestTeamContributorCascade:
     def test_contributor_deletion_cascades(self, test_session, organization, teams):
         """Test that deleting a contributor removes their team relationships."""
         contrib = Contributor(
-            username="cascade_test",
+            name="Cascade Test",
             email="cascade_test@example.com",
-            organization_id=organization.id,
         )
         test_session.add(contrib)
         test_session.commit()
