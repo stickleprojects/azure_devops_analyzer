@@ -25,7 +25,6 @@ class TeamMetric(Base):
 
     __tablename__ = "team_metrics"
 
-    id: Mapped[int] = mapped_column(autoincrement=True)
     team_id: Mapped[int] = mapped_column(
         ForeignKey("teams.team_id", ondelete="CASCADE"), nullable=False, primary_key=True
     )

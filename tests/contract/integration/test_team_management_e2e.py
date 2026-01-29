@@ -26,9 +26,8 @@ class TestTeamContributorRelationship:
     def test_add_contributor_to_team(self, test_session, organization, teams):
         """Test adding a contributor to a team."""
         contrib = Contributor(
-            username="alice",
+            name="Alice",
             email="alice@example.com",
-            organization_id=organization.id,
         )
         test_session.add(contrib)
         test_session.commit()
@@ -46,9 +45,8 @@ class TestTeamContributorRelationship:
     def test_add_contributor_to_team_nonexistent_team(self, test_session, organization):
         """Test error when adding contributor to nonexistent team."""
         contrib = Contributor(
-            username="bob",
+            name="Bob",
             email="bob@example.com",
-            organization_id=organization.id,
         )
         test_session.add(contrib)
         test_session.commit()
@@ -64,9 +62,8 @@ class TestTeamContributorRelationship:
     def test_add_contributor_duplicate(self, test_session, organization, teams):
         """Test adding same contributor twice returns existing relationship."""
         contrib = Contributor(
-            username="charlie",
+            name="Charlie",
             email="charlie@example.com",
-            organization_id=organization.id,
         )
         test_session.add(contrib)
         test_session.commit()
@@ -90,9 +87,8 @@ class TestTeamMembership:
     def test_remove_contributor_from_team(self, test_session, organization, teams):
         """Test removing contributor from team."""
         contrib = Contributor(
-            username="dave",
+            name="Dave",
             email="dave@example.com",
-            organization_id=organization.id,
         )
         test_session.add(contrib)
         test_session.commit()
@@ -117,9 +113,8 @@ class TestTeamMembership:
     def test_remove_nonexistent_relationship(self, test_session, organization, teams):
         """Test removing relationship that doesn't exist."""
         contrib = Contributor(
-            username="eve",
+            name="Eve",
             email="eve@example.com",
-            organization_id=organization.id,
         )
         test_session.add(contrib)
         test_session.commit()
