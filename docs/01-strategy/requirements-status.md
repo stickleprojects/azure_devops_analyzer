@@ -64,10 +64,10 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 21       | 4       | 20          | 45    |
+| Functional Requirements     | 26       | 4       | 15          | 45    |
 | Non-Functional Requirements | 6        | 6       | 7           | 19    |
 
-**Note:** FR-1.5 and FR-8.2 updated to Complete - README and metadata extraction now implemented for both platforms (2026-01-25).
+**Note:** FR-11.2, FR-11.3, FR-11.5 updated to Complete - Team management data layer fully implemented with 11 passing integration tests (2026-01-29).
 
 ---
 
@@ -211,18 +211,18 @@
 
 ### FR-11: Team Management and Contributor Linking
 
-| ID      | Requirement                                                          | Priority | Status                      | Notes                                                                                                                |
-| ------- | -------------------------------------------------------------------- | -------- | --------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| FR-11.1 | System shall support defining teams with name, description           | High     | :white_check_mark: Complete | `Team` entity implemented with name, description, organization_id - [models/team.py](../src/database/models/team.py) |
-| FR-11.2 | System shall support many-to-many relationships (contributors-teams) | High     | :x: Not Started             | No contributor-team junction table                                                                                   |
-| FR-11.3 | System shall track team membership with effective dates              | Medium   | :x: Not Started             | Date-range membership for historical analysis                                                                        |
-| FR-11.4 | System shall support team hierarchy (parent/child teams)             | Low      | :x: Not Started             | Optional nested team structure                                                                                       |
-| FR-11.5 | System shall aggregate contributor metrics at team level             | High     | :x: Not Started             | Team-level totals for commits, PRs, reviews                                                                          |
-| FR-11.6 | System shall provide Individual Contributor Dashboard                | Medium   | :x: Not Started             | Personal dashboard showing commits, PRs, reviews across repos                                                        |
-| FR-11.7 | System shall display team member aggregates on Team Overview         | Medium   | :x: Not Started             | Per-member stats with drill-down to Individual Contributor view                                                      |
-| FR-11.8 | System shall support filtering dashboards by team                    | Medium   | :x: Not Started             | Team template variable on relevant dashboards                                                                        |
+| ID      | Requirement                                                          | Priority | Status                      | Notes                                                                                                                                                       |
+| ------- | -------------------------------------------------------------------- | -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-11.1 | System shall support defining teams with name, description           | High     | :white_check_mark: Complete | `Team` entity implemented with name, description, organization_id - [models/team.py](../src/database/models/team.py)                                        |
+| FR-11.2 | System shall support many-to-many relationships (contributors-teams) | High     | :white_check_mark: Complete | `TeamContributor` junction table with unique constraint - [models/team_contributor.py](../src/database/models/team_contributor.py) - Implemented 2026-01-29 |
+| FR-11.3 | System shall track team membership with effective dates              | Medium   | :white_check_mark: Complete | `TeamContributor` tracks `effective_start_date` and `effective_end_date` for historical membership - Implemented 2026-01-29                                 |
+| FR-11.4 | System shall support team hierarchy (parent/child teams)             | Low      | :x: Not Started             | Optional nested team structure - not required for current sprint                                                                                            |
+| FR-11.5 | System shall aggregate contributor metrics at team level             | High     | :white_check_mark: Complete | `TeamMetric` model with 6 aggregate functions in `team_analytics.py` service module - Implemented 2026-01-29                                                |
+| FR-11.6 | System shall provide Individual Contributor Dashboard                | Medium   | :x: Not Started             | Personal dashboard showing commits, PRs, reviews across repos - Blocked pending dashboard integration framework                                             |
+| FR-11.7 | System shall display team member aggregates on Team Overview         | Medium   | :x: Not Started             | Per-member stats with drill-down to Individual Contributor view - Blocked pending dashboard integration framework                                           |
+| FR-11.8 | System shall support filtering dashboards by team                    | Medium   | :x: Not Started             | Team template variable on relevant dashboards - Blocked pending dashboard integration framework                                                             |
 
-**FR-11 Summary:** 0/8 Complete, 0/8 Partial, 8/8 Not Started
+**FR-11 Summary:** 5/8 Complete, 0/8 Partial, 3/8 Not Started (3 dashboard features blocked pending integration framework)
 
 ---
 
