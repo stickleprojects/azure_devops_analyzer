@@ -157,47 +157,18 @@ WHERE NOT EXISTS (SELECT 1 FROM teams WHERE name = 'Unallocated');
 
 ### Layer 3: Workflow Integration
 
-**Location**: Enhanced extraction workflow
+**Location**: Enhanced extraction workflow (`src/workflows/github_analysis.py`)
 
 **Workflow step** (insert after `store_repository`):
 
-```python
-# Get teamname from repository.json (already extracted by extractor)
-repo_team_name = repository_metadata.get('teamname')
+1. Extract `teamname` from `repository_metadata` 
+2. If `teamname` exists → lookup or create that team; set `is_unallocated=False`
+3. If no `teamname` → use "Unallocated" fallback team; set `is_unallocated=True`
+4. For each contributor discovered → call `allocate_contributor_to_team()` with team ID, source="scan", and unallocated flag
 
-# Determine target team
-if repo_team_name:
-    # Explicit team from repository.json
-    target_team = get_or_create_team_by_name(session, repo_team_name)
-else:
-    # Fallback to unallocated team
-    target_team = get_unallocated_team(session)
-
-# For each contributor discovered in this repository
-for contributor_data in contributors:
-    contributor = store_contributor(session, contributor_data)
-    allocate_contributor_to_team(
-        session,
-        team_id=target_team.team_id,
-        contributor_id=contributor.id,
-        source="scan",
-        is_unallocated=(not repo_team_name)
-    )
-```
-
-**Data captured**:
-
-```python
-class TeamContributor(Base):
-    # ... existing fields ...
-    source: str  # "scan", "api", "manual"
-    is_unallocated: bool = False  # True if assigned to unallocated team
-    allocated_at: datetime  # When assignment happened
-```
+See workflow source file for complete implementation details and error handling.
 
 ---
-
-### Layer 4: Post-Analysis Reallocation
 
 ### Layer 4: Post-Analysis Reallocation
 
@@ -285,23 +256,9 @@ python scripts/migrate_contributor_to_team.py \
 
 **Script: `scripts/process_unallocated_contributors.py`**
 
-```python
-def bulk_move_unallocated_to_team(
-    session: Session,
-    from_repository_id: int,
-    to_team_name: str,
-    dry_run: bool = True,
-) -> dict:
-    """
-    Move all unallocated contributors from a repository to a team.
+Supports batch operations for moving multiple contributors in one command. Use when reassigning entire repository's contributors to a newly identified team.
 
-    Use case: After analyzing which repo belongs to which team,
-    move all contributors in batch rather than one-by-one.
-
-    Returns:
-        Summary of moved contributors and metrics recalculated
-    """
-````
+See script implementation for full function signatures and examples.
 
 ---
 
@@ -309,81 +266,26 @@ def bulk_move_unallocated_to_team(
 
 ### New Table: `contributor_migration_audit`
 
-Tracks who moved which contributor, when, and why.
+Tracks migration history: who moved which contributor, when, and why. Used to maintain complete audit trail of team assignments.
 
-```sql
-CREATE TABLE contributor_migration_audit (
-    id SERIAL PRIMARY KEY,
-    contributor_id INT NOT NULL REFERENCES contributors(id),
-    from_team_id INT NOT NULL REFERENCES teams(team_id),
-    to_team_id INT NOT NULL REFERENCES teams(team_id),
-    effective_date TIMESTAMPTZ NOT NULL,
-    reason TEXT,  -- Why the migration happened
-    migrated_by VARCHAR(255),  -- Script, API, or user
-    migrated_at TIMESTAMPTZ DEFAULT NOW(),
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-
-    FOREIGN KEY (contributor_id) REFERENCES contributors(id) ON DELETE CASCADE,
-    FOREIGN KEY (from_team_id) REFERENCES teams(team_id) ON DELETE RESTRICT,
-    FOREIGN KEY (to_team_id) REFERENCES teams(team_id) ON DELETE RESTRICT,
-
-    CONSTRAINT audit_valid_teams CHECK (from_team_id != to_team_id)
-);
-
-CREATE INDEX idx_contributor_migration_contributor
-    ON contributor_migration_audit(contributor_id);
-CREATE INDEX idx_contributor_migration_teams
-    ON contributor_migration_audit(from_team_id, to_team_id);
-CREATE INDEX idx_contributor_migration_date
-    ON contributor_migration_audit(migrated_at DESC);
-```
+Key fields: contributor_id, from_team_id, to_team_id, reason, migrated_at. Full schema in database migration files.
 
 ### Enhanced: `team_contributors` Table
 
-Add metadata fields:
-
-```sql
-ALTER TABLE team_contributors ADD COLUMN IF NOT EXISTS
-    source VARCHAR(50) DEFAULT 'scan',  -- "scan", "api", "manual"
-    is_unallocated BOOLEAN DEFAULT FALSE,
-    allocated_at TIMESTAMPTZ DEFAULT NOW();
-```
+Add metadata fields: `source` (scan/api/manual), `is_unallocated` (bool), `allocated_at` (timestamp).
 
 ---
 
 ## Service Module: `src/database/team_allocation.py`
 
-Centralized functions for team allocation (already created in PR #15, extended here):
+Centralized functions for team allocation operations:
+- `get_unallocated_team()` - Returns/creates system-wide unallocated team
+- `allocate_contributor_to_team()` - Allocates contributor with metadata
+- `get_team_by_name()` - Team lookup by name
+- `get_or_create_team_by_name()` - Creates team if needed
+- `recalculate_team_metrics()` - Updates aggregated metrics after allocation change
 
-```python
-def get_unallocated_team(session: Session) -> Team:
-    """Get or create the system-wide unallocated team."""
-
-def allocate_contributor_to_team(
-    session: Session,
-    team_id: int,
-    contributor_id: int,
-    source: str = "scan",
-    is_unallocated: bool = False,
-) -> TeamContributor:
-    """Allocate contributor to team with metadata."""
-
-def get_team_by_name(session: Session, team_name: str) -> Optional[Team]:
-    """Look up team by name."""
-
-def get_or_create_team_by_name(
-    session: Session,
-    team_name: str,
-) -> Team:
-    """Create team if doesn't exist, return team."""
-
-def recalculate_team_metrics(
-    session: Session,
-    team_id: int,
-    period_start: datetime,
-) -> TeamMetric:
-    """Recalculate aggregated metrics for a team for a specific period."""
-```
+All functions already created in PR #15; see source file for signatures.
 
 ---
 
@@ -391,287 +293,86 @@ def recalculate_team_metrics(
 
 ### Updated Workflow: `src/workflows/github_analysis.py`
 
-**Add this after `store_repository()` call**:
+**Add allocation step after `store_repository()`**: Extract teamname from repository metadata, look up/create team, then allocate all contributors to that team. If no teamname, use fallback "Unallocated" team.
 
-```python
-def _allocate_contributors_to_team(
-    self,
-    session: Session,
-    org_data,
-    repo_data,
-    repository_record,
-    contributors: List[ContributorData],
-):
-    """
-    Allocate contributors to team based on repository metadata.
-
-    Strategy:
-    1. Get teamname from repository.json (if present)
-    2. Look up or create team in database
-    3. Allocate all contributors to that team
-    4. If no teamname, allocate to "Unallocated" team
-    """
-
-    # Get teamname from repository metadata (extracted by extractor)
-    repo_team_name = repository_record.get_metadata('teamname')
-
-    if repo_team_name:
-        # Explicit team assignment
-        target_team = get_or_create_team_by_name(session, repo_team_name)
-        is_unallocated = False
-        logger.info(f"  Contributors → team: {repo_team_name}")
-    else:
-        # Fallback to unallocated
-        target_team = get_unallocated_team(session)
-        is_unallocated = True
-        logger.info(f"  Contributors → team: Unallocated")
-
-    # Allocate all contributors in batch
-    for contributor_data in contributors:
-        allocate_contributor_to_team(
-            session,
-            team_id=target_team.team_id,
-            contributor_id=contributor_data.id,
-            source="scan",
-            is_unallocated=is_unallocated,
-        )
-```
-
----
-
-## Script CLI Reference
-
-**File**: `scripts/migrate_contributor_to_team.py`
-
-See the script file for complete CLI documentation and all supported options. Key workflows:
-
-**Workflow 1: Migrate single contributor** (using friendly names):
-
-```bash
-python scripts/migrate_contributor_to_team.py \
-  --contributor-name "John Smith" \
-  --from-team-name "Unallocated" \
-  --to-team-name "backend-platform" \
-  --reason "Assigned to backend team"
-```
-
-**Workflow 2: Create team and migrate (auto-create if missing)**:
-
-```bash
-python scripts/migrate_contributor_to_team.py \
-  --contributor-name "Jane Doe" \
-  --from-team-name "Unallocated" \
-  --to-team-name "new-platform-team" \
-  --create-team-if-missing \
-  --reason "New team created"
-```
-
-**Workflow 3: Preview before executing (dry-run)**:
-
-```bash
-python scripts/migrate_contributor_to_team.py \
-  --contributor-name "John Smith" \
-  --from-team-name "Unallocated" \
-  --to-team-name "backend-platform" \
-  --dry-run
-```
-
-For programmatic usage and full documentation, see [scripts/migrate_contributor_to_team.py](../../../scripts/migrate_contributor_to_team.py).
-
----
-
-## Implementation Phases
-
-| Phase | Component                                  | Status               | Notes                                         |
-| ----- | ------------------------------------------ | -------------------- | --------------------------------------------- |
-| **1** | Create "Unallocated" team                  | ✅ Done (manual SQL) | One-time setup                                |
-| **2** | Extend `team_allocation.py` service        | ⏳ Implement         | Add `get_unallocated_team()`                  |
-| **3** | Update workflow integration                | ⏳ Implement         | Add allocation step after repo store          |
-| **4** | Create `contributor_migration_audit` table | ⏳ Implement         | New migration file                            |
-| **5** | Implement migration script                 | ⏳ Implement         | `scripts/migrate_contributor_to_team.py`      |
-| **6** | Add bulk migration utility                 | ⏳ Implement         | `scripts/process_unallocated_contributors.py` |
-| **7** | Write tests                                | ⏳ Implement         | Unit + integration tests                      |
-| **8** | Update requirements-status.md              | ⏳ Implement         | Mark FR-13.2, FR-13.3 complete                |
-
----
-
-## Testing Strategy
-
-### Unit Tests
-
-**File**: `tests/unit/database/test_team_allocation.py`
-
-```python
-def test_get_unallocated_team_creates_if_missing():
-    """Unallocated team auto-created on first call."""
-
-def test_allocate_contributor_to_team():
-    """Contributor successfully allocated."""
-
-def test_get_or_create_team_by_name():
-    """Team created if doesn't exist."""
-
-def test_recalculate_team_metrics():
-    """Metrics recalculated after allocation change."""
-```
-
-### Integration Tests
-
-**File**: `tests/contract/integration/test_contributor_team_allocation.py`
-
-```python
-def test_scan_with_repository_json_allocates_to_named_team():
-    """Contributors from repo with teamname allocated to that team."""
-
-def test_scan_without_repository_json_allocates_to_unallocated():
-    """Contributors from repo without teamname go to Unallocated."""
-
-def test_migrate_contributor_between_teams():
-    """migrate_contributor() correctly updates all affected records."""
-
-def test_bulk_migrate_unallocated_contributors():
-    """Bulk move of unallocated contributors to team."""
-
-def test_team_metrics_recalculated_after_migration():
-    """TeamMetric records updated after contributor moves."""
-
-def test_audit_log_tracks_migrations():
-    """Migration audit trail created with reason."""
-```
-
-### Docker-Based Contract Tests
-
-Use existing test infrastructure with mocked data.
-
----
-
-## Configuration
-
-No configuration file needed! The system uses:
-
-- ✅ `repository.json` for metadata (already present in repos)
-- ✅ "Unallocated" team (created once at setup)
-- ✅ Migration scripts (run on-demand by operators)
-
----
-
-## Usage Examples
-
-### During Scan (Automatic)
-
-```bash
-# Scan runs normally
-python scripts/run_extraction.py --org "myorg" --platform github
-
-# Contributions allocated:
-# - Repos WITH repository.json → named team
-# - Repos WITHOUT repository.json → Unallocated team
-```
-
----
-
-## Usage Examples
-
-### During Scan (Automatic)
-
-Contributors are allocated automatically based on `repository.json`:
-
-- Repos **with** `teamname` field → contributors assigned to that team
-- Repos **without** `teamname` field → contributors assigned to "Unallocated" team
-
-```bash
-python scripts/run_extraction.py --org "myorg" --platform github
-# Automatically allocates all discovered contributors
-```
-
-### Post-Scan (Manual Reallocation)
-
-See [Script CLI Reference](#script-cli-reference) above for common workflows.
-
-For complete programmatic usage, see test files: [tests/contract/integration/test_contributor_team_allocation.py](../../../tests/contract/integration/test_contributor_team_allocation.py)
+**Helper function added to workflow**: `_allocate_contributors_to_team()` handles the logic. See workflow source file for complete implementation.
 
 ---
 
 ## Script Capabilities Summary
 
-The migration script supports comprehensive operations for managing teams and contributors:
+The migration script supports comprehensive operations:
 
-| Capability               | Operation                         | Details                                               |
-| ------------------------ | --------------------------------- | ----------------------------------------------------- |
-| **Create Team Manually** | Create new teams before migration | Supports team metadata (name, description)            |
-| **Migrate by IDs**       | Fast lookup using numeric IDs     | Use when IDs are known                                |
-| **Migrate by Names**     | Human-friendly name-based lookup  | Recommended for operators (auto-resolves names)       |
-| **Auto-Create Team**     | Create target team if missing     | Creates team on-the-fly during migration              |
-| **Name Lookup**          | Flexible name matching            | Exact name → email → partial match (case-insensitive) |
-| **Dry-Run Preview**      | Preview changes before executing  | Validates migration path without making changes       |
-| **Audit Trail**          | Complete migration history        | Logs contributor, teams, timestamp, reason            |
-| **Metric Recalculation** | Auto-update affected team metrics | Automatic for ±30 days around migration date          |
+| Capability               | Operation                         |
+| ------------------------ | --------------------------------- |
+| **Create Team Manually** | Add new teams before migration    |
+| **Migrate by IDs**       | Fast lookup using numeric IDs     |
+| **Migrate by Names**     | Human-friendly name-based lookup  |
+| **Auto-Create Team**     | Create target team if missing     |
+| **Name Lookup**          | Flexible matching (exact/email/partial) |
+| **Dry-Run Preview**      | Validate before executing         |
+| **Audit Trail**          | Complete migration history        |
+| **Metric Recalculation** | Auto-update team metrics          |
+
+---
+
+## Testing Strategy
+
+**Unit Tests** (`tests/unit/database/test_team_allocation.py`):
+- `test_get_unallocated_team_creates_if_missing()`
+- `test_allocate_contributor_to_team()`
+- `test_get_or_create_team_by_name()`
+- `test_recalculate_team_metrics()`
+
+**Integration Tests** (`tests/contract/integration/test_contributor_team_allocation.py`):
+- `test_scan_with_repository_json_allocates_to_named_team()`
+- `test_scan_without_repository_json_allocates_to_unallocated()`
+- `test_migrate_contributor_between_teams()`
+- `test_bulk_migrate_unallocated_contributors()`
+- `test_team_metrics_recalculated_after_migration()`
+- `test_audit_log_tracks_migrations()`
+
+---
+
+## Implementation Phases
+
+| Phase | Component                                  | Status               |
+| ----- | ------------------------------------------ | -------------------- |
+| **1** | Create "Unallocated" team                  | ✅ Done (manual SQL) |
+| **2** | Extend `team_allocation.py` service        | ⏳ Implement         |
+| **3** | Update workflow integration                | ⏳ Implement         |
+| **4** | Create `contributor_migration_audit` table | ⏳ Implement         |
+| **5** | Implement migration script                 | ⏳ Implement         |
+| **6** | Add bulk migration utility                 | ⏳ Implement         |
+| **7** | Write tests                                | ⏳ Implement         |
+| **8** | Update requirements-status.md              | ⏳ Implement         |
 
 ---
 
 ## Benefits of This Approach
 
-### 1. **Simple and Deterministic**
+**Simple & Deterministic**: No inference, clear rules (teamname → team, no teamname → Unallocated)
 
-- No inference, no guessing
-- Clear rules: teamname → named team, no teamname → Unallocated
-- Same behavior across all organizations
+**Complete Audit Trail**: Track where each allocation came from, who moved contributors, when, and why
 
-### 2. **Audit Trail**
+**Respects Boundaries**: Extractors isolated, database layer centralized, workflows orchestrate, scripts are utilities
 
-- Track where each allocation came from (scan vs. script)
-- Audit log shows who moved contributor and why
-- Complete migration history
+**Backward Compatible**: All changes are additive, existing data unaffected, gradual adoption
 
-### 3. **Respects Boundaries**
+**Flexible & Operator-Driven**: Scan completes automatically, operators control reallocation timing
 
-- Extractors remain isolated
-- Database layer handles all storage
-- Workflows orchestrate allocation step
-- Scripts are standalone utilities
-
-### 4. **Backward Compatible**
-
-- New tables/fields are additive
-- Existing contributor data unchanged
-- Gradual adoption: scan, then reallocate as needed
-
-### 5. **Flexible**
-
-- Scan completes without manual intervention
-- Reallocation happens post-analysis via script
-- Operators control the pace and timing
-- Bulk operations supported
-
-### 6. **No Configuration Needed**
-
-- Uses existing `repository.json` format
-- Unallocated team is implicit fallback
-- Script has built-in help and dry-run
+**No Configuration**: Uses existing `repository.json`, implicit fallback team
 
 ---
 
 ## Risks & Mitigation
 
-| Risk                                          | Impact                                 | Mitigation                                          |
-| --------------------------------------------- | -------------------------------------- | --------------------------------------------------- |
-| **Slow growth of Unallocated team**           | Eventually hard to track               | Quarterly review; dashboard shows unallocated count |
-| **Wrong metadata in repository.json**         | Misallocation                          | Validate teamname against known teams; log warnings |
-| **Performance of metric recalc**              | Migration script slow for many changes | Batch recalculation; run during off-hours           |
-| **Contributor in multiple teams temporarily** | Confusing metrics                      | Soft-delete old record with effective_end_date      |
-
----
-
-## Next Steps (If Approved)
-
-1. ✅ Approve this simplified approach
-2. Create "Unallocated" team via SQL
-3. Extend `team_allocation.py` with new functions
-4. Add allocation step to workflow
-5. Create migration script and audit table
-6. Write comprehensive tests
-7. Update requirements-status.md
-8. Commit to feat/team-management branch
+| Risk                                | Mitigation                                        |
+| ----------------------------------- | ------------------------------------------------- |
+| Unallocated team grows slowly       | Quarterly review; dashboard shows unallocated count |
+| Wrong metadata in repository.json   | Validate against known teams; log warnings       |
+| Slow metric recalculation          | Batch recalculation; run during off-hours        |
+| Contributor in multiple teams      | Soft-delete with effective_end_date              |
 
 ---
 

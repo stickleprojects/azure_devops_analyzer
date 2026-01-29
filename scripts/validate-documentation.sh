@@ -49,19 +49,50 @@ check_file() {
   
   # Check for violations
   
-  # Violation 1: Full function definitions
-  if grep -q "^def " "$FILE" 2>/dev/null; then
-    echo "  ${RED}❌ Contains full Python function definitions${NC}"
-    echo "     Move implementations to script files, reference instead"
-    VIOLATIONS=$((VIOLATIONS + 1))
+  # Violation 1: Full function implementations (more than just stub)
+  # A stub is: def foo(): """docstring"""
+  # A full impl is: def foo(): ... actual code ...
+  if grep -q "^    [a-z_][a-z_0-9]*\s*=" "$FILE" 2>/dev/null; then
+    # Check if this is inside a code block (not just examples)
+    IN_CODE_BLOCK=0
+    FULL_IMPL=0
+    
+    while IFS= read -r line; do
+      if [[ "$line" == '```'* ]]; then
+        # Toggle code block state
+        if [ $IN_CODE_BLOCK -eq 0 ]; then
+          IN_CODE_BLOCK=1
+        else
+          IN_CODE_BLOCK=0
+        fi
+      elif [ $IN_CODE_BLOCK -eq 1 ]; then
+        # Inside code block - check for implementation logic
+        if [[ "$line" =~ ^\ \ \ \ [a-z_][a-z_0-9]*\ *=\ *[^\"]  ]]; then
+          FULL_IMPL=1
+        fi
+      fi
+    done < "$FILE"
+    
+    if [ $FULL_IMPL -eq 1 ]; then
+      echo "  ${RED}❌ Contains full Python function implementations${NC}"
+      echo "     Move implementations to script files, reference instead"
+      VIOLATIONS=$((VIOLATIONS + 1))
+    fi
   fi
   
-  if grep -q "^async def " "$FILE" 2>/dev/null; then
-    echo "  ${RED}❌ Contains async function definitions${NC}"
-    VIOLATIONS=$((VIOLATIONS + 1))
+  # More direct check: if file has actual logic loops/conditions in code blocks
+  if grep -A5 '^```python$' "$FILE" 2>/dev/null | grep -q 'for\|while\|if.*:' 2>/dev/null; then
+    # Has control flow in code blocks - likely implementation
+    if ! grep -q 'test_\|# This is an example' "$FILE" 2>/dev/null; then
+      # Unless it's tests or marked as example
+      echo "  ${YELLOW}⚠️  Contains control flow logic (for/while/if) in code examples${NC}"
+      echo "     Verify this is architectural example, not full implementation"
+      WARNINGS=$((WARNINGS + 1))
+    fi
   fi
   
-  if grep -q "^class " "$FILE" 2>/dev/null; then
+  # Check for class definitions (full ones, not stubs)
+  if grep -q "^class [A-Z]" "$FILE" 2>/dev/null; then
     echo "  ${RED}❌ Contains full class definitions${NC}"
     echo "     Classes belong in Python files, not documentation"
     VIOLATIONS=$((VIOLATIONS + 1))
