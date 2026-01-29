@@ -253,8 +253,9 @@ def organization(test_session):
     from src.database.models import Organization
     
     org = Organization(
-        organization_id="test-org",
         name="Test Organization",
+        url="https://test.example.com",
+        platform="azure_devops",
     )
     test_session.add(org)
     test_session.commit()
