@@ -11,12 +11,14 @@ This document provides a standardized approach for resuming AI development sessi
 ### ✅ Starting Your Session - Use These Prompts
 
 **When you begin work:**
+
 - "good morning"
 - "let's continue"
 - "pick up where we left off"
 - "what should I work on?"
 
 **If greeting doesn't activate the agent:**
+
 - "analyze last session"
 - "show me the backlog"
 - "what's the priority list?"
@@ -24,6 +26,7 @@ This document provides a standardized approach for resuming AI development sessi
 ### What Happens
 
 The agent will:
+
 1. Read your last session from PROGRESS.md
 2. Check git status for uncommitted work
 3. Present either:
@@ -61,12 +64,14 @@ Which would you like to tackle?
 ### ✅ Check Task Completion
 
 **When you think you're done with a task:**
+
 - "is this task complete?"
 - "check if I'm done"
 - "am I ready to mark this complete?"
 - "review task status"
 
 **What the agent checks:**
+
 - ✓ Tests passing (no errors)
 - ✓ Git status (committed or staged)
 - ✓ No TODOs in modified files
