@@ -10,6 +10,16 @@ import importlib.util
 from pathlib import Path
 
 
+def _get_project_root() -> Path:
+    """Get the project root directory (where pyproject.toml is located)."""
+    current = Path(__file__).resolve()
+    while current != current.parent:
+        if (current / "pyproject.toml").exists():
+            return current
+        current = current.parent
+    raise RuntimeError("Could not find project root (no pyproject.toml found)")
+
+
 class TestImportsAndStructure:
     """Test suite for verifying Python module imports and structure."""
 
@@ -25,7 +35,8 @@ class TestImportsAndStructure:
         assert spec is not None, "src.scheduler.tasks module not found"
         
         # Read the file and check key imports
-        tasks_file = Path(__file__).parent.parent / "src" / "scheduler" / "tasks.py"
+        project_root = _get_project_root()
+        tasks_file = project_root / "src" / "scheduler" / "tasks.py"
         content = tasks_file.read_text()
         
         required_imports = [
@@ -39,7 +50,8 @@ class TestImportsAndStructure:
 
     def test_submit_extraction_task_imports(self):
         """Verify submit_extraction_task.py has correct imports."""
-        script_file = Path(__file__).parent.parent / "scripts" / "submit_extraction_task.py"
+        project_root = _get_project_root()
+        script_file = project_root / "scripts" / "submit_extraction_task.py"
         assert script_file.exists(), "submit_extraction_task.py not found"
         
         content = script_file.read_text()
@@ -56,14 +68,16 @@ class TestImportsAndStructure:
     def test_no_circular_imports(self):
         """Verify there are no obvious circular imports in module structure."""
         # Check tasks.py doesn't import from submit_extraction_task
-        tasks_file = Path(__file__).parent.parent / "src" / "scheduler" / "tasks.py"
+        project_root = _get_project_root()
+        tasks_file = project_root / "src" / "scheduler" / "tasks.py"
         content = tasks_file.read_text()
         assert "from scripts" not in content, "Circular import detected: tasks imports from scripts"
         assert "submit_extraction_task" not in content, "Circular import detected"
 
     def test_celery_app_structure(self):
         """Verify celery_app.py has required structure."""
-        celery_file = Path(__file__).parent.parent / "src" / "scheduler" / "celery_app.py"
+        project_root = _get_project_root()
+        celery_file = project_root / "src" / "scheduler" / "celery_app.py"
         assert celery_file.exists(), "celery_app.py not found"
         
         content = celery_file.read_text()
@@ -80,7 +94,8 @@ class TestImportsAndStructure:
 
     def test_tasks_define_correct_task_names(self):
         """Verify tasks are defined with correct names."""
-        tasks_file = Path(__file__).parent.parent / "src" / "scheduler" / "tasks.py"
+        project_root = _get_project_root()
+        tasks_file = project_root / "src" / "scheduler" / "tasks.py"
         content = tasks_file.read_text()
         
         required_tasks = [
@@ -98,7 +113,8 @@ class TestImportsAndStructure:
 
     def test_no_missing_module_references(self):
         """Verify files don't reference non-existent modules."""
-        tasks_file = Path(__file__).parent.parent / "src" / "scheduler" / "tasks.py"
+        project_root = _get_project_root()
+        tasks_file = project_root / "src" / "scheduler" / "tasks.py"
         content = tasks_file.read_text()
         
         # These should NOT be imported (were removed as non-existent)
@@ -118,6 +134,7 @@ class TestImportsAndStructure:
         """Verify Python files have valid syntax."""
         import py_compile
         
+        project_root = _get_project_root()
         files_to_check = [
             "src/scheduler/celery_app.py",
             "src/scheduler/tasks.py",
@@ -125,7 +142,7 @@ class TestImportsAndStructure:
         ]
         
         for file_path in files_to_check:
-            full_path = Path(__file__).parent.parent / file_path
+            full_path = project_root / file_path
             try:
                 py_compile.compile(str(full_path), doraise=True)
             except py_compile.PyCompileError as e:
@@ -147,7 +164,8 @@ class TestModuleImportability:
 
     def test_tasks_module_structure(self):
         """Test that tasks module has expected function definitions."""
-        tasks_file = Path(__file__).parent.parent / "src" / "scheduler" / "tasks.py"
+        project_root = _get_project_root()
+        tasks_file = project_root / "src" / "scheduler" / "tasks.py"
         content = tasks_file.read_text()
         
         # Check function definitions exist
