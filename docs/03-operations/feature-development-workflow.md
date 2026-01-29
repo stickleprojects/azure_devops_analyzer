@@ -35,6 +35,7 @@
 ## Feature Development Checklist
 
 ### Phase 1: Planning (Before Code)
+
 - [ ] Feature branch created: `git checkout -b feat/feature-name`
 - [ ] Requirements understood (review acceptance criteria)
 - [ ] Architecture validated (no boundary violations)
@@ -42,6 +43,7 @@
 - [ ] Integration test infrastructure available
 
 ### Phase 2: Development (Local, Uncommitted)
+
 - [ ] Write CONTRACT tests first (tests define requirements)
 - [ ] Develop implementation to satisfy tests
 - [ ] Write IMPLEMENTATION tests for technical details
@@ -50,6 +52,7 @@
 - [ ] Docstrings for public APIs
 
 ### Phase 3: Validation (Critical Step - Do Not Skip)
+
 - [ ] Run: `bash scripts/run-tests-docker.sh`
 - [ ] Confirm: All tests pass ✅
 - [ ] Confirm: No regressions (existing tests still pass)
@@ -57,20 +60,23 @@
 - [ ] If failures: Fix implementation and re-test (don't modify tests)
 
 ### Phase 4: Commit (Only After Tests Pass)
+
 - [ ] Stage changes: `git add -A`
 - [ ] Commit with clear message:
+
   ```
   git commit -m "feat: Brief description
-  
+
   - Implements FR-X.Y feature
   - Adds N new integration tests
   - Updates schema/models if applicable
-  
+
   Tests: All N tests passing
   "
   ```
 
 ### Phase 5: Pull Request & Review
+
 - [ ] Create PR from `feat/feature-name` → `main`
 - [ ] PR title matches commit message
 - [ ] PR description explains WHAT and WHY
@@ -79,6 +85,7 @@
 - [ ] No changes to CONTRACT tests without requirement approval
 
 ### Phase 6: Merge
+
 - [ ] Merge PR to main
 - [ ] Verify main branch tests still pass
 - [ ] Update PROGRESS.md with completion details
@@ -106,6 +113,7 @@ bash scripts/run-tests-docker.sh
 ```
 
 ### What "All Tests Pass" Means
+
 - All contract tests passing (business requirements met)
 - All implementation tests passing (technical validation)
 - No skipped tests (no `@pytest.mark.skip`)
@@ -113,6 +121,7 @@ bash scripts/run-tests-docker.sh
 - Exit code: 0
 
 ### If Tests Fail
+
 - **DO NOT modify tests to make them pass**
 - **DO modify implementation**
 - Understand why test is failing
@@ -125,6 +134,7 @@ bash scripts/run-tests-docker.sh
 ## Commit Message Guidelines
 
 ### Format
+
 ```
 <type>: <subject>
 
@@ -132,6 +142,7 @@ bash scripts/run-tests-docker.sh
 ```
 
 ### Types
+
 - `feat:` - New feature implementation
 - `fix:` - Bug fix
 - `test:` - Test additions/updates
@@ -139,6 +150,7 @@ bash scripts/run-tests-docker.sh
 - `refactor:` - Code reorganization (no functional change)
 
 ### Examples
+
 ```
 feat: Add team contributor management
 
@@ -173,6 +185,7 @@ Supports: test_team_management_e2e.py integration tests
 Before implementing, check:
 
 ### New Models/Database Changes
+
 - [ ] Schema changes validated (no breaking changes to existing code)
 - [ ] Migrations created (only incremental changes)
 - [ ] Foreign key relationships correct
@@ -180,12 +193,14 @@ Before implementing, check:
 - [ ] Backward compatibility maintained
 
 ### New Service Modules
+
 - [ ] Location correct (extractors/, analyzers/, database/, workflows/)
 - [ ] No cross-boundary violations
 - [ ] No database operations outside storage layer
 - [ ] Type hints on all functions
 
 ### Test Organization
+
 - [ ] Contract tests in `tests/contract/`
 - [ ] Implementation tests in `tests/implementation/`
 - [ ] Docstrings start with `"""CONTRACT:` or `"""IMPLEMENTATION:`
@@ -196,25 +211,33 @@ Before implementing, check:
 ## Common Mistakes & Prevention
 
 ### Mistake 1: Committing Before Tests Pass
+
 **Prevention:** Make running tests a REQUIRED step before `git commit`
+
 - Add pre-commit hook that runs tests
 - Create CI/CD branch protection rule
 - Document in this workflow (this file) ← You are here
 
 ### Mistake 2: Modifying Contract Tests When Implementation Fails
+
 **Prevention:** Remember The Iron Rule
+
 - If test fails → Implementation is wrong
 - If implementation and test disagree → Fix implementation
 - Only change tests if requirement actually changed (with documentation)
 
 ### Mistake 3: Committing to Main Instead of Feature Branch
+
 **Prevention:** Enforce feature branches
+
 - Use: `git checkout -b feat/name` immediately after starting
 - Never work on main branch
 - Use git hooks to prevent main commits: See below
 
 ### Mistake 4: Large Commits Without Testing
+
 **Prevention:** Smaller, tested commits
+
 - Test frequently during development
 - Commit after each tested component
 - Keep commits atomic and focused
@@ -226,6 +249,7 @@ Before implementing, check:
 ### Prevent Accidental Main Commits
 
 Create `.git/hooks/pre-commit`:
+
 ```bash
 #!/bin/bash
 # Prevent commits to main unless explicitly approved
@@ -239,6 +263,7 @@ exit 0
 ```
 
 Make executable:
+
 ```bash
 chmod +x .git/hooks/pre-commit
 ```
@@ -246,6 +271,7 @@ chmod +x .git/hooks/pre-commit
 ### Force Test Pass Before Commit
 
 Create `.git/hooks/pre-commit-tests`:
+
 ```bash
 #!/bin/bash
 # Uncomment to enforce tests before commit
@@ -259,6 +285,7 @@ exit 0
 ## Session Continuity
 
 ### Starting a New Session
+
 1. Read this file (you're already doing it!)
 2. Read `PROGRESS.md` to understand current state
 3. Check if there are uncommitted changes: `git status`
@@ -266,11 +293,13 @@ exit 0
 5. If starting new work: Create new feature branch
 
 ### During Development
+
 - Update PROGRESS.md incrementally
 - Note test status and blockers
 - Document decisions and alternatives considered
 
 ### Ending a Session
+
 - Ensure tests pass or document why they don't
 - Commit all tested code
 - Update PROGRESS.md with completion status
