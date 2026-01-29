@@ -13,6 +13,8 @@ from src.database.models.base import Base
 if TYPE_CHECKING:
     from src.database.models.organization import Organization
     from src.database.models.repository import Repository
+    from src.database.models.team_contributor import TeamContributor
+    from src.database.models.team_metric import TeamMetric
 
 
 class Team(Base):
@@ -34,3 +36,9 @@ class Team(Base):
     # Relationships
     organization: Mapped["Organization"] = relationship(back_populates="teams")
     repositories: Mapped[list["Repository"]] = relationship(back_populates="team")
+    contributors: Mapped[list["TeamContributor"]] = relationship(
+        back_populates="team", cascade="all, delete-orphan"
+    )
+    metrics: Mapped[list["TeamMetric"]] = relationship(
+        back_populates="team", cascade="all, delete-orphan"
+    )

@@ -17,6 +17,8 @@ from src.database.models.repository import Branch, Repository
 from src.database.models.service import RepositoryService, Service
 from src.database.models.summary import ReadmeFile, RepositorySummary
 from src.database.models.team import Team
+from src.database.models.team_contributor import TeamContributor
+from src.database.models.team_metric import TeamMetric
 
 __all__ = [
     # Base
@@ -26,6 +28,8 @@ __all__ = [
     "Organization",
     "Project",
     "Team",
+    "TeamContributor",
+    "TeamMetric",
     # Repository
     "Repository",
     "Branch",

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from src.database.models.commit import Commit
     from src.database.models.pull_request import PRComment, PRReview, PullRequest
     from src.database.models.repository import Repository
+    from src.database.models.team_contributor import TeamContributor
 
 
 class Contributor(Base):
@@ -50,6 +51,9 @@ class Contributor(Base):
     )
     comments: Mapped[list["PRComment"]] = relationship(
         back_populates="author", cascade="all, delete-orphan"
+    )
+    teams: Mapped[list["TeamContributor"]] = relationship(
+        back_populates="contributor", cascade="all, delete-orphan"
     )
 
 
