@@ -208,6 +208,105 @@ Before modifying ANY tests, validate against test integrity rules defined in `ag
 
 ---
 
+## Pre-Commit Validation (Critical - Cannot Skip)
+
+**Every commit must pass all validation gates before being committed.**
+
+### Gate 1: Branch Verification ✅
+
+```bash
+BEFORE git commit, verify:
+  git status
+  # Output MUST show: "On branch feat/..."
+  # If shows "On branch main": STOP
+  # Create feature branch: git checkout -b feat/your-feature
+```
+
+**Rule**: NEVER commit directly to `main` branch. All work goes on feature branches.
+
+### Gate 2: Documentation Standards ✅
+
+If modifying `*.md` files:
+
+```bash
+# Check documentation compliance
+bash scripts/validate-documentation.sh docs/your-file.md
+```
+
+**Requirements for documentation**:
+
+- Code content ≤ 30% of total document
+- Each code example ≤ 15 lines
+- ≤ 3 code examples per section
+- NO full function/class definitions (reference script files instead)
+- Implementation docs must have "Architecture Guardian" section
+
+### Gate 3: Architecture Boundaries ✅
+
+If modifying `*.py` files in business logic:
+
+**Verify**:
+
+- Extractors: No database writes (use `src/database/` layer)
+- Analyzers: No extractor imports (no platform dependencies)
+- Workflows: No business logic (orchestration only)
+- Database: Single point for all DB operations
+
+**Reference**: `agents/02a-architecture-guardian.md`
+
+### Gate 4: Test Requirement ✅
+
+If modifying code in `src/`:
+
+```bash
+# Run full test suite
+bash scripts/run-tests-docker.sh
+
+# Requirements:
+# ✅ Exit code = 0 (all tests pass)
+# ✅ No skipped tests
+# ✅ No new failures
+# ✅ Existing tests still pass (no regressions)
+```
+
+**Rule**: NEVER modify tests to make code pass. Fix implementation instead.
+
+### Gate 5: Commit Message Format ✅
+
+```bash
+git commit -m "type: brief description
+
+- Bullet point 1
+- Bullet point 2
+
+Tests: All N tests passing" || "No code changes"
+```
+
+**Types**: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
+
+**Example**:
+
+```
+feat: add team allocation during scan
+
+- Automatic allocation from repository.json
+- Fallback to "Unallocated" team if missing
+- Soft-delete pattern for historical tracking
+
+Tests: All 5 new team allocation tests passing
+```
+
+### Enforcement
+
+- **Automated**: Pre-commit hook blocks commits to main
+- **Automated**: Documentation validator blocks code violations
+- **Manual**: Developer verifies tests pass locally
+- **Manual**: Developer reviews architecture before implementing
+
+**If any gate fails**: Fix the issue, then try commit again.
+
+---
+
 ## Project Conventions
 
 ### Docker

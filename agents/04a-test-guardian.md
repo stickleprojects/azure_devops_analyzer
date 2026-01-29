@@ -68,6 +68,57 @@ Implementation represents:
 - 🔧 Subject to change and optimization
 - 🔧 Must satisfy tests, not vice versa
 
+---
+
+## Pre-Commit Test Validation
+
+### Requirement: All Tests Must Pass Before Commit
+
+**Critical Rule**: No code changes commit if tests fail.
+
+### Before Every Commit (Gate 4)
+
+```bash
+# Run full test suite
+bash scripts/run-tests-docker.sh
+
+# Verify output shows:
+# ✅ Exit code = 0 (all tests passed)
+# ✅ No skipped tests (no @pytest.mark.skip)
+# ✅ No test failures in output
+# ✅ Existing tests still pass (no regressions)
+```
+
+### What "All Tests Pass" Means
+
+- **All CONTRACT tests passing**: Business requirements met ✅
+- **All IMPLEMENTATION tests passing**: Technical validation complete ✅
+- **No skipped tests**: No circumventing validation ✅
+- **No test failures**: All assertions successful ✅
+- **Exit code = 0**: Successful test run ✅
+
+### If Tests Fail
+
+**RULE**: DO NOT modify tests to make code pass
+
+**PROCESS**:
+
+1. Understand why test is failing (read error message)
+2. Fix the **implementation** (not the test)
+3. Re-run tests: `bash scripts/run-tests-docker.sh`
+4. Repeat until all pass
+5. Only then commit
+
+**Never** commit with:
+
+- ❌ Failing tests
+- ❌ Commented-out assertions
+- ❌ Skipped tests
+- ❌ Reduced coverage
+- ❌ Weakened validations
+
+---
+
 ## Review Triggers by Test Type
 
 ### CONTRACT TESTS - STRICT Protection

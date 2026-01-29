@@ -2,9 +2,108 @@
 
 ## Purpose
 
-This document provides a standardized approach for resuming AI development sessions, ensuring smooth handoffs and minimizing context loss between sessions.
+This document provides a standardized approach for resuming AI development sessions, ensuring smooth handoffs and minimizing context loss between sessions. It covers both how to use the Session Continuity Agent and the technical specification of how session continuity works.
 
-## Quick Resume Checklist
+---
+
+## Quick Reference: Prompting the Agent
+
+### ✅ Starting Your Session - Use These Prompts
+
+**When you begin work:**
+
+- "good morning"
+- "let's continue"
+- "pick up where we left off"
+- "what should I work on?"
+
+**If greeting doesn't activate the agent:**
+
+- "analyze last session"
+- "show me the backlog"
+- "what's the priority list?"
+
+### What Happens
+
+The agent will:
+
+1. Read your last session from PROGRESS.md
+2. Check git status for uncommitted work
+3. Present either:
+   - **Incomplete work** → Summary + suggestion to continue
+   - **Completed work** → Backlog priorities with recommendations
+
+### Example Interaction
+
+```
+You: "good morning"
+
+Agent: Good morning! Welcome back. 🌅
+
+📋 Last Session Summary (2026-01-23)
+
+Completed:
+- Fixed GitHub API private repository bug
+- All 34 tests passing
+
+In Progress:
+None - previous session complete
+
+Top Priority Backlog:
+1. 🔴 HIGH - Dependency API Integration (70% complete)
+2. 🟡 MEDIUM - Repository Language Detection (quick win)
+
+Recommendation: Start with #2 for a quick win.
+Which would you like to tackle?
+```
+
+---
+
+## During Your Work Session
+
+### ✅ Check Task Completion
+
+**When you think you're done with a task:**
+
+- "is this task complete?"
+- "check if I'm done"
+- "am I ready to mark this complete?"
+- "review task status"
+
+**What the agent checks:**
+
+- ✓ Tests passing (no errors)
+- ✓ Git status (committed or staged)
+- ✓ No TODOs in modified files
+- ✓ Implementation complete
+
+### Example Interaction
+
+```
+You: "is this task complete?"
+
+Agent: Let me check the completion criteria...
+
+✓ Tests: 12 tests, all passing
+✓ Git: Changes committed 5 minutes ago
+✓ Errors: None detected
+✓ Implementation: All planned changes complete
+
+🎉 Task appears complete!
+
+Would you like me to:
+1. Mark task as complete in todo list
+2. Update PROGRESS.md with session entry
+3. Update requirements-status.md
+
+Reply 'yes' to proceed.
+```
+
+---
+
+## Technical Specification
+
+### Quick Resume Checklist
 
 When starting a new AI session, provide the AI with this information:
 

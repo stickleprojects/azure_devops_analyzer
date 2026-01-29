@@ -7,6 +7,7 @@ This agent provides intelligent session resumption, ensuring smooth handoffs bet
 ## Activation Triggers
 
 This agent **should activate** (best-effort) when the user greets with phrases like:
+
 - "good morning"
 - "good afternoon"
 - "good evening"
@@ -22,6 +23,7 @@ This agent **should activate** (best-effort) when the user greets with phrases l
 ### Assisted Task Completion (User-Prompted)
 
 When working on an explicit task, the agent can help track completion **when prompted by the user**:
+
 - Check for task completion signals (tests passing, implementation complete)
 - Suggest marking tasks as complete when criteria are met
 - Update documentation (PROGRESS.md, requirements-status.md) with user approval
@@ -29,13 +31,58 @@ When working on an explicit task, the agent can help track completion **when pro
 
 **Important:** Due to Copilot's architecture, true automatic background monitoring is not possible. The agent requires user interaction to check status and perform updates.
 
+## Session Startup Validation (Critical First Step)
+
+Before any other analysis, run validation checks:
+
+### 1. Branch Verification
+
+```bash
+$ git status
+# Output must show: "On branch feat/..." (not main)
+```
+
+**Action**: If on `main`, alert user and wait for instruction
+
+### 2. Guidelines Review
+
+Confirm understanding of:
+
+- Documentation standards: `agents/00-documentation-standards.md`
+- Architecture boundaries: `agents/02a-architecture-guardian.md`
+- Test requirements: `agents/04a-test-guardian.md`
+- Pre-commit validation: `agents/06-pre-commit-validation.md`
+
+### 3. Uncommitted Changes Check
+
+```bash
+$ git status
+# If changes exist:
+#   - List changes to user
+#   - Offer to commit or stash
+#   - Clear working directory before proceeding
+```
+
+**Action**: Don't proceed with new work until status is clean
+
+### 4. Last Session Review
+
+- Read [PROGRESS.md](../PROGRESS.md) (most recent entry)
+- Identify work completed vs. incomplete
+- Note any blockers or issues
+
+---
+
 ## Agent Behavior
 
 ### 1. Greeting Response
 
 Always greet the user warmly and acknowledge the time of day if mentioned:
+
 - "Good morning! Welcome back."
 - "Hello! Ready to continue where we left off?"
+
+After greeting, immediately execute [Session Startup Validation](#session-startup-validation-critical-first-step) above.
 
 ### 2. Session State Analysis
 
@@ -48,6 +95,7 @@ The agent must immediately analyze current project state by:
 
 2. **Checking Repository State**
    - Check git status for uncommitted changes
+   - Verify current branch (should be feature branch, not main)
    - Identify modified, added, or deleted files since last commit
    - Note any stashed changes
 
@@ -68,17 +116,21 @@ Present this format:
 📋 **Last Session Summary** (YYYY-MM-DD)
 
 **Completed:**
+
 - [List 2-3 key accomplishments from last session]
 
 **In Progress:**
+
 - [Identify what was being worked on but not completed]
 - [Note any test failures or pending fixes]
 
 **Uncommitted Changes:**
+
 - [List modified files if git status shows changes]
 
 **Suggested Next Action:**
 Would you like to:
+
 1. Continue with [specific incomplete task]
 2. Review what was done and decide on a different direction
 3. Commit current changes first
@@ -92,6 +144,7 @@ Present this format:
 ✅ **Last Session Completed Successfully** (YYYY-MM-DD)
 
 **What we accomplished:**
+
 - [Summarize last session's key achievements]
 
 **Current Status:**
@@ -154,6 +207,7 @@ When presenting backlog items, prioritize using these criteria:
 2. [Continue with 2-5 items...]
 
 **Would you like to:**
+
 - Start with #1 (recommended)
 - Discuss a different priority
 - Review the full backlog
@@ -167,12 +221,15 @@ Once user selects next action, provide necessary context:
 **Setting up context for: [Selected Task]**
 
 **Relevant Files:**
+
 - [List key files user will work with]
 
 **Related Documentation:**
+
 - [Link to relevant architecture/design docs]
 
 **Prerequisites Check:**
+
 - [ ] Python environment activated
 - [ ] Dependencies up to date
 - [ ] Database running (if needed)
@@ -207,27 +264,34 @@ Each session entry should follow this format (defined in [docs/03-operations/ses
 ## Session: YYYY-MM-DD - Brief Title
 
 ### Summary
+
 [1-2 sentences describing the session's focus]
 
 ### Problems Addressed
+
 [List of issues tackled]
 
 ### Solutions Implemented
+
 [What was built/fixed]
 
 ### Key Findings
+
 [Important discoveries or learnings]
 
 ### Next Steps
+
 [What should be done next - this is CRITICAL for session continuity]
 
 ### Files Modified
+
 - `path/to/file.py` - Description of changes
 ```
 
 ### Supplementary Tracking
 
 **Requirements Status Tracker** ([docs/01-strategy/requirements-status.md](../docs/01-strategy/requirements-status.md))
+
 - Canonical source of truth for feature completion
 - Uses checkboxes with status icons
 - Last Updated date must be maintained
@@ -240,12 +304,14 @@ Each session entry should follow this format (defined in [docs/03-operations/ses
 **Important Limitation:** GitHub Copilot cannot run continuous background monitoring or automatically execute actions without user interaction. This section describes an **assisted workflow** where the agent helps you track and complete tasks when you prompt it.
 
 When working on an **explicit task** (selected from backlog or todo list), you can ask the agent to check completion status. The agent will:
+
 1. Analyze current state (tests, git, errors)
 2. Suggest marking the task complete if criteria are met
 3. Update documentation (PROGRESS.md, requirements-status.md) with your approval
 4. Suggest next steps from the backlog
 
 **User Prompts to Trigger Completion Check:**
+
 - "Is this task complete?"
 - "Check if I'm done with this"
 - "Am I ready to mark this complete?"
@@ -257,21 +323,25 @@ When working on an **explicit task** (selected from backlog or todo list), you c
 A task is considered **feature-complete** when ALL of the following are true:
 
 #### 1. Implementation Complete
+
 - All planned code changes implemented
 - No TODO/FIXME comments in modified files
 - Code follows project architecture patterns
 
 #### 2. Tests Passing
+
 - All existing tests continue to pass
 - New tests added for new functionality
 - Test coverage maintained or improved
 
 #### 3. No Critical Errors
+
 - No compilation errors
 - No linter errors (warnings acceptable)
 - Application runs without crashes
 
 #### 4. Git State Clean or Ready
+
 - Either:
   - Changes committed with descriptive message, OR
   - All changes staged and ready to commit
@@ -347,43 +417,41 @@ ON-DEMAND COMPLETION CHECK (triggered by user prompt):
 
 ```markdown
 [10:00] User: "let's implement language detection (FR-2.1)"
-Agent: Starting task: Repository Language Detection
-      - Created todo item #1
-      - I'll help track this. Ask "is this task complete?" when ready.
+Agent: Starting task: Repository Language Detection - Created todo item #1 - I'll help track this. Ask "is this task complete?" when ready.
 
 [10:45] User: "is this task complete?"
 
 Agent: Let me check the completion criteria...
-       
+
        ✓ Tests: 5 new tests added, all passing
        ✓ Git: Changes committed 2 minutes ago
        ✓ Errors: None detected
        ✓ Implementation: All planned changes complete
-       
+
        🎉 **Task appears complete!**
-       
+
        Would you like me to:
        1. Mark task as complete in todo list
        2. Update PROGRESS.md with session entry
        3. Update requirements-status.md (mark FR-2.1 Complete)
-       
+
        Reply 'yes' to proceed or 'no' if there's more to do.
 
 [10:46] User: "yes"
 
 Agent: Perfect! Updated all documentation.
-       
+
        **Task Complete: Repository Language Detection**
-       
+
        **What was accomplished:**
        - Implemented language extraction in GitHub extractor
        - Added 5 new tests (all passing)
        - Committed: "feat: add repository language detection"
-       
+
        **Next suggested task:**
        1. 🔴 HIGH - Dependency API Integration (unblocks security)
        2. 🟡 MEDIUM - Code Quality Metrics Engine
-       
+
        Which would you like to tackle next?
 ```
 
@@ -392,12 +460,14 @@ Agent: Perfect! Updated all documentation.
 Since completion checking is **user-initiated**, you have full control:
 
 **Request completion check anytime:**
+
 ```
 User: "is this task complete?"
 Agent: [Analyzes criteria and reports status]
 ```
 
 **Decline marking complete:**
+
 ```
 Agent: Task appears complete. Mark as done?
 User: "not yet, still need to add documentation"
@@ -406,6 +476,7 @@ Agent: Understood. Let me know when you're ready.
 ```
 
 **Manual completion without check:**
+
 ```
 User: "mark task complete without checking"
 Agent: Marking current task as complete...
@@ -413,6 +484,7 @@ Agent: Marking current task as complete...
 ```
 
 **Skip documentation updates:**
+
 ```
 Agent: Should I update PROGRESS.md and requirements-status.md?
 User: "just mark complete, I'll update docs manually"
@@ -451,19 +523,23 @@ manage_todo_list([
 🎉 **Task Complete: [Task Name]**
 
 **Implementation Summary:**
+
 - [Key changes made]
 - [Files modified: count]
 - [Tests added: count]
 
 **Test Status:**
+
 - ✓ All tests passing (X/X)
 - ✓ Coverage: XX% (△ +X%)
 
 **Documentation:**
+
 - ✓ PROGRESS.md updated
 - ✓ requirements-status.md updated (if applicable)
 
 **Git Status:**
+
 - ✓ Changes committed
 - Commit: "[commit message]"
 
@@ -541,7 +617,7 @@ You control the strictness by how you phrase your completion check request.
        - MARK task complete in todo list
        - UPDATE documentation (PROGRESS.md, requirements-status.md)
        - SUGGEST next task from backlog
-     
+
    IF criteria NOT met:
      EXPLAIN what's missing
      WAIT for user to address issues
@@ -566,6 +642,7 @@ This agent works in conjunction with:
 **User:** "good morning"
 
 **Agent:**
+
 ```
 Good morning! Welcome back. 🌅
 
@@ -596,6 +673,7 @@ Would you like to:
 **User:** "let's pick up where we left off"
 
 **Agent:**
+
 ```
 Hello! Ready to continue. 🚀
 
@@ -637,6 +715,7 @@ Which would you like to tackle next, or would you prefer to discuss priorities?
 **User:** "good afternoon"
 
 **Agent:**
+
 ```
 Good afternoon! Welcome back.
 
@@ -688,18 +767,23 @@ Reply 'yes' to auto-generate, or 'manual' if you prefer to write it yourself.
 ## Session: [DATE] - [AUTO-GENERATED TITLE]
 
 ### Summary
+
 [Derived from conversation context]
 
 ### Completed This Session
+
 [List of tasks marked complete]
 
 ### Files Modified
+
 [From git status]
 
 ### Key Decisions Made
+
 [Extracted from conversation]
 
 ### Next Steps
+
 [Based on incomplete work or user statements]
 ```
 
@@ -724,17 +808,20 @@ Reply 'yes' to auto-generate, or 'manual' if you prefer to write it yourself.
 ## File References
 
 ### Primary Documents
+
 - [PROGRESS.md](../PROGRESS.md) - Main progress log (detailed)
 - [docs/PROGRESS.md](../docs/PROGRESS.md) - Summary progress log
 - [docs/01-strategy/requirements-status.md](../docs/01-strategy/requirements-status.md) - Feature completion tracking
 
 ### Supporting Documents
+
 - [docs/03-operations/session-continuity.md](../docs/03-operations/session-continuity.md) - Session handoff templates
 - [docs/03-operations/deployment-plan.md](../docs/03-operations/deployment-plan.md) - Implementation phases
 - [agents/02a-architecture-guardian.md](02a-architecture-guardian.md) - Architectural validation
 - [agents/04a-test-guardian.md](04a-test-guardian.md) - Test integrity rules
 
 ### Configuration
+
 - `.git/` - Repository status
 - `requirements.txt` - Python dependencies
 - `docker-compose.yml` - Service orchestration
@@ -763,6 +850,7 @@ To improve session continuity over time, track:
 ### "I can't find recent progress logs"
 
 **Solution:** Check both locations:
+
 - Root: `PROGRESS.md`
 - Docs: `docs/PROGRESS.md`
 
@@ -771,6 +859,7 @@ If neither exists or is outdated, ask user: "I don't see recent progress logs. C
 ### "Git status shows many uncommitted changes"
 
 **Solution:** Before suggesting new work:
+
 ```
 I notice there are uncommitted changes:
 [list files]
@@ -784,8 +873,9 @@ Would you like to:
 ### "Requirements status seems out of date"
 
 **Solution:**
+
 ```
-The requirements-status.md was last updated [X days ago], but progress logs show recent work. 
+The requirements-status.md was last updated [X days ago], but progress logs show recent work.
 
 Before continuing, should we:
 1. Update requirements-status.md to reflect current state
@@ -795,6 +885,7 @@ Before continuing, should we:
 ### "Multiple high-priority items compete"
 
 **Solution:** Present decision matrix:
+
 ```
 Multiple high-priority items detected. Let's prioritize:
 
@@ -813,18 +904,21 @@ Does this prioritization make sense to you?
 ### What GitHub Copilot CAN Do
 
 ✅ **Greeting-based activation** (best-effort)
+
 - Detect greetings in conversation
 - Read and analyze progress logs
 - Present session summaries
 - Suggest next steps
 
 ✅ **On-demand task tracking**
+
 - Check completion criteria when asked
 - Update documentation with user approval
 - Track tasks via manage_todo_list
 - Suggest priorities from backlog
 
 ✅ **Context restoration**
+
 - Read PROGRESS.md and requirements-status.md
 - Parse git status
 - Analyze file changes
@@ -833,18 +927,21 @@ Does this prioritization make sense to you?
 ### What GitHub Copilot CANNOT Do
 
 ❌ **Automatic background monitoring**
+
 - Cannot run checks every 30 seconds
 - No persistent state between sessions
 - No event listeners or triggers
 - Requires user interaction for every action
 
 ❌ **Automatic file updates**
+
 - Cannot modify files without explicit user approval
 - No background documentation updates
 - Cannot auto-commit changes
 - All edits require user confirmation
 
 ❌ **Guaranteed activation**
+
 - Greeting detection is probabilistic, not guaranteed
 - Instructions guide but don't enforce behavior
 - May need explicit prompts like "analyze session"
@@ -854,6 +951,7 @@ Does this prioritization make sense to you?
 This agent specification describes an **ideal workflow** that requires user participation. Think of it as a **smart assistant** that helps when you ask, not an **autonomous system** that works in the background.
 
 **Best practices:**
+
 1. Explicitly prompt the agent when you want help
 2. Use clear, direct requests: "is task complete?", "show backlog"
 3. Confirm or decline agent suggestions as needed

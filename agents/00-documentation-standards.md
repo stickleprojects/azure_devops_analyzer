@@ -390,12 +390,12 @@ represents in the business domain."
 
 ### Code Blocks
 
-````markdown
+```markdown
 - Always specify language: `python, `javascript, etc.
 - Use comments to annotate: // ❌ Bad, // ✅ Good
 - Keep examples minimal and focused
 - Prefer pseudo-code for complex algorithms
-````
+```
 
 ## Examples: Good vs Bad Documentation
 
@@ -605,6 +605,57 @@ Use markdown checklists for trackable items:
 - [ ] Pending item
 - [ ] Future item
 ```
+
+## Pre-Commit Documentation Validation Checklist
+
+**Before committing any documentation file (\*.md), verify**:
+
+### Code Content Check
+
+- [ ] Code represents ≤ 30% of document total lines
+- [ ] Each code example ≤ 15 lines maximum
+- [ ] ≤ 3 code examples per section
+- [ ] Code ONLY included when absolutely necessary
+  - ✅ Complex algorithms or logic
+  - ✅ Security-critical patterns
+  - ✅ Before/after refactoring comparisons
+  - ❌ Simple self-explanatory concepts
+  - ❌ Standard patterns everyone knows
+  - ❌ Complete implementations (link instead)
+- [ ] Full implementations linked to actual files, not embedded
+
+### Structure Check
+
+- [ ] Principles explained in prose BEFORE any code examples
+- [ ] Complex concepts use tables/lists instead of code
+- [ ] Section headings clearly distinguish architecture from implementation
+- [ ] Documentation reads as "WHAT and WHY", not "HOW and WHERE"
+
+### Completeness Check
+
+- [ ] Architecture Guardian validation section present (if implementation doc)
+  - Verifies no boundary violations
+  - Lists what architectural rules are followed
+- [ ] References to actual implementation files included (if applicable)
+  - Script locations: `scripts/filename.py`
+  - Test files: `tests/contract/integration/test_filename.py`
+  - Model files: `src/database/models/filename.py`
+- [ ] Test strategy linked to actual test files (if applicable)
+- [ ] No orphaned references to non-existent files
+
+### Validation Command
+
+```bash
+# Quick validation
+bash scripts/validate-documentation.sh docs/04-implementation/your-doc.md
+
+# Output should show:
+# ✅ Code content within guidelines
+# ✅ No full function definitions
+# ✅ Architecture Guardian section present
+```
+
+---
 
 ### Session Handoff Checklist
 
