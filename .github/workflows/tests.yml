@@ -56,7 +56,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
-          python scripts/run_migrations.sh || true
+          bash scripts/run_migrations.sh || true
 
       - name: Run unit tests
         run: |
