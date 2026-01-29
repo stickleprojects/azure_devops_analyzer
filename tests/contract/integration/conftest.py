@@ -169,19 +169,26 @@ def cleanup_database(test_session):
         from src.database.models import (
             Vulnerability, Dependency,
             PRComment, PRReview, PullRequest,
-            Commit, Contributor, Branch, Repository
+            Commit, Contributor, Branch, Repository,
+            Team, TeamContributor, TeamMetric, ContributorMetric,
+            Organization
         )
         
         # Delete in correct FK dependency order
+        test_session.query(TeamMetric).delete()     # FK: Team
+        test_session.query(TeamContributor).delete() # FK: Team, Contributor
         test_session.query(Vulnerability).delete()  # FK: Dependency
         test_session.query(PRComment).delete()      # FK: PullRequest, Contributor
         test_session.query(PRReview).delete()       # FK: PullRequest, Contributor
         test_session.query(PullRequest).delete()    # FK: Repository, Contributor
         test_session.query(Dependency).delete()     # FK: Repository
         test_session.query(Commit).delete()         # FK: Contributor, Repository
+        test_session.query(ContributorMetric).delete()  # FK: Contributor, Repository
         test_session.query(Contributor).delete()    # FK: none (referenced by many)
         test_session.query(Branch).delete()         # FK: Repository
-        test_session.query(Repository).delete()     # FK: none (parent table)
+        test_session.query(Repository).delete()     # FK: Team
+        test_session.query(Team).delete()           # FK: Organization
+        test_session.query(Organization).delete()   # No FK
         test_session.commit()
         
         logger.debug("✓ Test data cleaned up")
@@ -234,6 +241,73 @@ def mock_eol_client():
     mock.is_eol.return_value = False
     
     return mock
+
+
+# ============================================================================
+# TEST DATA FIXTURES (Teams and Contributors)
+# ============================================================================
+
+@pytest.fixture
+def organization(test_session):
+    """Create a test organization."""
+    from src.database.models import Organization
+    
+    org = Organization(
+        organization_id="test-org",
+        name="Test Organization",
+    )
+    test_session.add(org)
+    test_session.commit()
+    return org
+
+
+@pytest.fixture
+def teams(test_session, organization):
+    """Create test teams."""
+    from src.database.models import Team
+    from datetime import datetime
+    
+    teams = [
+        Team(
+            organization_id=organization.id,
+            name="Platform Team",
+            description="Infrastructure and platform",
+            created_at=datetime.utcnow(),
+        ),
+        Team(
+            organization_id=organization.id,
+            name="Backend Team",
+            description="Backend services",
+            created_at=datetime.utcnow(),
+        ),
+        Team(
+            organization_id=organization.id,
+            name="Frontend Team",
+            description="Frontend and UI",
+            created_at=datetime.utcnow(),
+        ),
+    ]
+    test_session.add_all(teams)
+    test_session.commit()
+    return teams
+
+
+@pytest.fixture
+def contributors(test_session, organization):
+    """Create test contributors."""
+    from src.database.models import Contributor
+    
+    contributors = []
+    for i in range(5):
+        contrib = Contributor(
+            email=f"user{i}@example.com",
+            name=f"User {i}",
+        )
+        test_session.add(contrib)
+        contributors.append(contrib)
+    
+    test_session.commit()
+    return contributors
 
 
 # ============================================================================
