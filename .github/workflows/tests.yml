@@ -84,10 +84,11 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
           GITHUB_TOKEN: ${{ secrets.LIVE_GITHUB_TOKEN }}
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          AZURE_DEVOPS_ORG_URL: https://dev.azure.com/kieronwray
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
-          if [ -n "$GITHUB_TOKEN" ] && [ -n "$AZURE_DEVOPS_PAT" ]; then
+          if [ -n "$GITHUB_TOKEN" ] && [ -n "$AZURE_DEVOPS_PAT" ] && [ -n "$AZURE_DEVOPS_ORG_URL" ]; then
             echo "Running live API tests with provided credentials..."
             pytest tests/contract/integration/ -v --tb=short --durations=10 -m "live_api"
           else
