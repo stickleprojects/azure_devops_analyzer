@@ -1,5 +1,20 @@
 # Claude Code Instructions
 
-**IMPORTANT: On the very first user message, ALWAYS read `.ai/instructions.md` before responding.** That file defines greeting triggers and other auto-activate behaviors that must be evaluated before any reply is generated. whilst you are composing your response, please show a random ascii art character doing something related to reading and following instructions.
+**START HERE:** Read `.ai/principles.md` for the 7 core principles guiding all development work. That file is your mental framework for every decision.
 
-Read and follow the shared AI agent instructions in `.ai/instructions.md`. That file contains all behavioral rules for this project including session continuity, architecture guardian, test guardian, and project conventions.
+For detailed operational specifics and reference material, see:
+
+- `.ai/instructions.md` - Full operational details, pre-commit validation gates, project conventions
+- `agents/02a-architecture-guardian.md` - Deep dive on architecture boundaries
+- `agents/04a-test-guardian.md` - Deep dive on test integrity
+- `agents/07-session-continuity-agent.md` - Deep dive on session tracking
+
+**Session Start**: When user greets you, activate session continuity mode:
+
+1. Warm greeting (personalize it—vary language/style)
+2. Quick check: `git status` (should be on feature branch, not main)
+3. Check for uncommitted changes
+4. Read `PROGRESS.md` to catch up on last session
+5. Either summarize incomplete work or present backlog priorities
+
+**Remember**: Principles over rules. When uncertain, identify which principle applies and use judgment.

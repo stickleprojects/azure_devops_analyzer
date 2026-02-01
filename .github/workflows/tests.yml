@@ -2,9 +2,13 @@ name: Tests
 
 on:
   push:
-    branches: [main, develop, 'feat/**']
+    branches: [main, develop]
   pull_request:
     branches: [main, develop]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
@@ -14,7 +18,7 @@ jobs:
 
     services:
       postgres:
-        image: timescale/timescaledb:latest-pg15
+        image: timescale/timescaledb:latest-pg16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -50,32 +54,50 @@ jobs:
           POSTGRES_USER=postgres
           POSTGRES_PASSWORD=postgres
           POSTGRES_DB=test_azure_devops
+          TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_azure_devops
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_azure_devops
           EOF
 
       - name: Run database migrations
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
-          python scripts/run_migrations.sh || true
+          bash scripts/run_migrations.sh || true
 
       - name: Run unit tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           pytest tests/unit/ -v --tb=short
 
       - name: Run integration tests
         env:
+          PYTHONPATH: ${{ github.workspace }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
-          pytest tests/contract/integration/ -v --tb=short --durations=10
+          pytest tests/contract/integration/ -v --tb=short --durations=10 -m "not live_api"
+
+      - name: Run live API tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          GITHUB_TOKEN: ${{ secrets.LIVE_GITHUB_TOKEN }}
+          GITHUB_PRIVATE_REPO: stickleprojects/azure_devops_analyzer
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          AZURE_DEVOPS_ORG_URL: https://dev.azure.com/kieronwray
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
+        run: |
+          if [ -n "$GITHUB_TOKEN" ] && [ -n "$AZURE_DEVOPS_PAT" ] && [ -n "$AZURE_DEVOPS_ORG_URL" ]; then
+            echo "Running live API tests with provided credentials..."
+            pytest tests/contract/integration/ -v --tb=short --durations=10 -m "live_api"
+          else
+            echo "Skipping live API tests - credentials not available"
+          fi
 
       - name: Generate coverage report
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: |
-          pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
-          verbose: true
+          pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing -m "not live_api"

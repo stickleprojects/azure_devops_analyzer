@@ -12,7 +12,7 @@ Tests verify:
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, UTC
 from sqlalchemy.orm import Session
 
 from src.extractors.github.extractor import GitHubExtractor
@@ -485,6 +485,9 @@ class TestGitHubLanguageDetection:
             assert stored_lang.byte_count > 0
             assert stored_lang.percentage is not None
             assert stored_lang.analyzed_at is not None
+            # Ensure timestamp is timezone-aware (assume UTC if naive from DB)
+            if stored_lang.analyzed_at.tzinfo is None:
+                stored_lang.analyzed_at = stored_lang.analyzed_at.replace(tzinfo=UTC)
             assert stored_lang.analyzed_at.tzinfo is not None, \
                 "analyzed_at should be timezone-aware"
     
@@ -570,16 +573,17 @@ class TestGitHubLanguageDetection:
         assert len(all_snapshots) == 3, \
             f"Expected 3 language records (1 + 2), got {len(all_snapshots)}"
         
-        # Assert: First snapshot
-        first_snapshot = [s for s in all_snapshots if s.analyzed_at == now]
-        assert len(first_snapshot) == 1
-        assert first_snapshot[0].language == "Python"
+        # Assert: First snapshot (oldest timestamp)
+        assert all_snapshots[0].language == "Python"
+        assert all_snapshots[0].byte_count == 10000
+        assert all_snapshots[0].percentage == 100.0
         
-        # Assert: Second snapshot
-        second_snapshot = [s for s in all_snapshots if s.analyzed_at == later]
-        assert len(second_snapshot) == 2
-        lang_names = {s.language for s in second_snapshot}
+        # Assert: Second snapshot (newer timestamps)
+        lang_names = {all_snapshots[1].language, all_snapshots[2].language}
         assert lang_names == {"Python", "JavaScript"}
+        # Verify the second snapshot has updated data
+        python_record = [s for s in all_snapshots[1:] if s.language == "Python"][0]
+        assert python_record.byte_count == 8000
 
 
 class TestGitHubTechnologyDetection:

@@ -26,17 +26,22 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture(scope="session")
 def env_setup():
-    """Load environment variables from .env.resolved."""
-    env_file = Path(__file__).parent.parent.parent / ".env.resolved"
+    """Load environment variables from .env files."""
+    root_dir = Path(__file__).parent.parent.parent
     
-    if not env_file.exists():
-        # Fall back to .env if .resolved doesn't exist
-        env_file = Path(__file__).parent.parent.parent / ".env"
+    # Try loading in order: .env.resolved, .env.test, .env
+    env_files = [
+        root_dir / ".env.resolved",
+        root_dir / ".env.test",
+        root_dir / ".env",
+    ]
     
-    if env_file.exists():
-        load_dotenv(env_file)
+    for env_file in env_files:
+        if env_file.exists():
+            load_dotenv(env_file)
+            break
     
-    return env_file
+    return root_dir
 
 
 @pytest.fixture(scope="session")
@@ -103,13 +108,19 @@ def integration_test_engine(test_database_url):
     """
     logger.info(f"Creating test database engine: {test_database_url[:50]}...")
     
-    engine = create_engine(test_database_url, echo=False)
+    engine = create_engine(
+        test_database_url,
+        echo=False,
+        pool_pre_ping=True,  # Verify connections before using to avoid stale connections
+    )
     
     # Test connection
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
             logger.info("✓ Test database connection successful")
+            # Set timezone to UTC for consistent behavior across environments
+            conn.execute(text("SET timezone = 'UTC'"))
     except Exception as e:
         pytest.fail(f"Failed to connect to test database: {e}")
     
@@ -142,10 +153,14 @@ def test_session(integration_test_engine):
     Provide a clean database session for each test.
     
     Each test gets an isolated session that is rolled back after the test,
-    ensuring clean state for the next test.
+    ensuring clean state for the next test. Ensures UTC timezone for
+    consistent datetime handling across all environments.
     """
     Session = sessionmaker(bind=integration_test_engine)
     session = Session()
+    
+    # Ensure timezone is UTC for this session
+    session.execute(text("SET timezone = 'UTC'"))
     
     yield session
     
@@ -159,41 +174,60 @@ def cleanup_database(test_session):
     """
     Automatically clean up all test data after each test.
     
-    Deletes test data in reverse order of foreign key dependencies.
+    Uses DELETE for hypertables and TRUNCATE for regular tables.
     """
     yield
     
-    # Delete in reverse order to respect FK constraints
-    # Order: child tables first, parent tables last
     try:
-        from src.database.models import (
-            Vulnerability, Dependency,
-            PRComment, PRReview, PullRequest,
-            Commit, Contributor, Branch, Repository,
-            Team, TeamContributor, TeamMetric, ContributorMetric,
-            Organization
-        )
+        # Delete from hypertables first (TRUNCATE doesn't work well with TimescaleDB hypertables)
+        hypertables = [
+            "repository_languages",
+            "dependencies",
+            "code_quality_metrics",
+            "branch_metrics",
+            "contributor_metrics",
+        ]
         
-        # Delete in correct FK dependency order
-        test_session.query(TeamMetric).delete()     # FK: Team
-        test_session.query(TeamContributor).delete() # FK: Team, Contributor
-        test_session.query(Vulnerability).delete()  # FK: Dependency
-        test_session.query(PRComment).delete()      # FK: PullRequest, Contributor
-        test_session.query(PRReview).delete()       # FK: PullRequest, Contributor
-        test_session.query(PullRequest).delete()    # FK: Repository, Contributor
-        test_session.query(Dependency).delete()     # FK: Repository
-        test_session.query(Commit).delete()         # FK: Contributor, Repository
-        test_session.query(ContributorMetric).delete()  # FK: Contributor, Repository
-        test_session.query(Contributor).delete()    # FK: none (referenced by many)
-        test_session.query(Branch).delete()         # FK: Repository
-        test_session.query(Repository).delete()     # FK: Team
-        test_session.query(Team).delete()           # FK: Organization
-        test_session.query(Organization).delete()   # No FK
+        for table in hypertables:
+            try:
+                test_session.execute(text(f"DELETE FROM {table}"))
+            except Exception as e:
+                logger.debug(f"Delete from {table}: {e}")
+        
+        # Truncate regular tables to clean state
+        # Order matters: truncate dependent tables first, then their parents
+        # Use RESTART IDENTITY to reset auto-increment sequences
+        truncate_tables = [
+            "team_metrics",
+            "team_contributors", 
+            "vulnerabilities",
+            "pr_comments",
+            "pr_reviews",
+            "pull_requests",
+            "commits",
+            "contributors",
+            "branches",
+            "repositories",
+            "teams",
+            "projects",
+            "organizations",
+        ]
+        
+        for table in truncate_tables:
+            try:
+                # Try with RESTART IDENTITY, fall back to regular TRUNCATE
+                test_session.execute(text(f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE"))
+            except Exception as e:
+                try:
+                    test_session.execute(text(f"TRUNCATE TABLE {table}"))
+                except Exception as e2:
+                    # Table might not exist or might already be empty, that's OK
+                    logger.debug(f"Truncate {table}: {e2}")
+        
         test_session.commit()
-        
-        logger.debug("✓ Test data cleaned up")
+        logger.debug("✓ Database cleaned (hypertables deleted, regular tables truncated)")
     except Exception as e:
-        logger.warning(f"Error cleaning up test data: {e}")
+        logger.warning(f"Error truncating database: {e}")
         test_session.rollback()
 
 
@@ -252,13 +286,21 @@ def organization(test_session):
     """Create a test organization."""
     from src.database.models import Organization
     
-    org = Organization(
+    # Try to find existing org first
+    org = test_session.query(Organization).filter_by(
         name="Test Organization",
-        url="https://test.example.com",
-        platform="azure_devops",
-    )
-    test_session.add(org)
-    test_session.commit()
+        platform="azure_devops"
+    ).first()
+    
+    if org is None:
+        org = Organization(
+            name="Test Organization",
+            url="https://test.example.com",
+            platform="azure_devops",
+        )
+        test_session.add(org)
+        test_session.commit()
+    
     return org
 
 
@@ -268,47 +310,80 @@ def teams(test_session, organization):
     from src.database.models import Team
     from datetime import datetime, timezone
     
-    teams = [
-        Team(
+    team_names = ["Platform Team", "Backend Team", "Frontend Team"]
+    descriptions = ["Infrastructure and platform", "Backend services", "Frontend and UI"]
+    
+    teams = []
+    for name, desc in zip(team_names, descriptions):
+        # Check if team already exists
+        existing = test_session.query(Team).filter_by(
             organization_id=organization.organization_id,
-            name="Platform Team",
-            description="Infrastructure and platform",
-            created_at=datetime.now(timezone.utc),
-        ),
-        Team(
-            organization_id=organization.organization_id,
-            name="Backend Team",
-            description="Backend services",
-            created_at=datetime.now(timezone.utc),
-        ),
-        Team(
-            organization_id=organization.organization_id,
-            name="Frontend Team",
-            description="Frontend and UI",
-            created_at=datetime.now(timezone.utc),
-        ),
-    ]
-    test_session.add_all(teams)
+            name=name
+        ).first()
+        
+        if existing:
+            teams.append(existing)
+        else:
+            team = Team(
+                organization_id=organization.organization_id,
+                name=name,
+                description=desc,
+                created_at=datetime.now(timezone.utc),
+            )
+            test_session.add(team)
+            teams.append(team)
+    
     test_session.commit()
     return teams
 
 
 @pytest.fixture
 def contributors(test_session, organization):
-    """Create test contributors."""
+    """Create test contributors with deduplication."""
     from src.database.models import Contributor
     
     contributors = []
     for i in range(5):
-        contrib = Contributor(
-            email=f"user{i}@example.com",
-            name=f"User {i}",
-        )
-        test_session.add(contrib)
-        contributors.append(contrib)
+        email = f"user{i}@example.com"
+        
+        # Check if contributor already exists
+        existing = test_session.query(Contributor).filter_by(email=email).first()
+        
+        if existing:
+            contributors.append(existing)
+        else:
+            contrib = Contributor(
+                email=email,
+                name=f"User {i}",
+            )
+            test_session.add(contrib)
+            contributors.append(contrib)
     
     test_session.commit()
     return contributors
+
+
+@pytest.fixture
+def repository(test_session, teams):
+    """Create a test repository."""
+    from src.database.models import Repository
+    
+    # Check if repository already exists
+    repo = test_session.query(Repository).filter_by(
+        repo_id="test-repo-001"
+    ).first()
+    
+    if repo is None:
+        repo = Repository(
+            repo_id="test-repo-001",
+            name="Test Repository",
+            url="https://github.com/test/test-repo",
+            team_id=teams[0].team_id,
+        )
+        test_session.add(repo)
+        test_session.commit()
+    
+    return repo
 
 
 # ============================================================================

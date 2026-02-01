@@ -276,9 +276,9 @@ CREATE INDEX idx_contributor_email ON contributors(email);
 
 -- Contributor Metrics (Time-series)
 CREATE TABLE contributor_metrics (
-    id SERIAL,
-    repo_id VARCHAR(255),
-    contributor_id INTEGER,
+    id BIGSERIAL PRIMARY KEY,
+    repo_id VARCHAR(255) NOT NULL,
+    contributor_id INTEGER NOT NULL,
     period_start TIMESTAMPTZ NOT NULL,
     period_end TIMESTAMPTZ NOT NULL,
     commit_count INTEGER DEFAULT 0,
@@ -290,7 +290,7 @@ CREATE TABLE contributor_metrics (
     pr_approvals INTEGER DEFAULT 0,
     active_days INTEGER DEFAULT 0,
     avg_commit_message_quality DECIMAL(5,2),
-    PRIMARY KEY (id, period_start),
+    UNIQUE (repo_id, contributor_id, period_start),
     CONSTRAINT fk_contribmetrics_repository FOREIGN KEY (repo_id) REFERENCES repositories(repo_id) ON DELETE CASCADE,
     CONSTRAINT fk_contribmetrics_contributor FOREIGN KEY (contributor_id) REFERENCES contributors(id) ON DELETE CASCADE
 );

@@ -244,7 +244,7 @@ class TestTeamMembership:
 class TestTeamMetrics:
     """Test team metrics computation and retrieval."""
 
-    def test_compute_team_metrics(self, test_session, organization, teams, contributors):
+    def test_compute_team_metrics(self, test_session, organization, teams, contributors, repository):
         """Test computing aggregated team metrics."""
         # Add contributors to team
         for contrib in contributors:
@@ -257,6 +257,7 @@ class TestTeamMetrics:
 
         for i, contrib in enumerate(contributors):
             metric = ContributorMetric(
+                repo_id=repository.repo_id,
                 contributor_id=contrib.id,
                 period_start=period_start,
                 period_end=period_end,

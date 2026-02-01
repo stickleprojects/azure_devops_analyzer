@@ -1,4 +1,6 @@
-# Test Guardian Agent
+# Test Guardian Agent (Reference Guide)
+
+📖 **This is a reference guide.** Start with `.ai/principles.md` (Principle 1: Tests Define Truth). Use this file for detailed test integrity patterns, violation scenarios, and remediation strategies.
 
 ## Purpose
 

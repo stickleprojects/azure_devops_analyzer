@@ -1,4 +1,6 @@
-# Session Continuity Agent
+# Session Continuity Agent (Reference Guide)
+
+📖 **This is a reference guide.** Start with `.ai/principles.md` (Principle 5: Sessions Are Continuous). Use this file for detailed session tracking patterns, progress log formats, and backlog prioritization examples.
 
 ## Purpose
 
