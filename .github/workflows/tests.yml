@@ -43,6 +43,9 @@ jobs:
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             # Get changed files in PR
             CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }})
+          elif [ "${{ job.status }}" == "failure" ]; then
+            echo "✗ Tests failed"
+            exit 1
           else
             # Get changed files in push
             CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
@@ -54,6 +57,9 @@ jobs:
           if [ "$NON_MARKDOWN" -eq 0 ]; then
             echo "skip_tests=true" >> $GITHUB_OUTPUT
             echo "✓ Only markdown files changed - skipping tests"
+          elif [ "${{ job.status }}" == "failure" ]; then
+            echo "✗ Tests failed"
+            exit 1
           else
             echo "skip_tests=false" >> $GITHUB_OUTPUT
             echo "✓ Non-markdown files changed - running tests"
@@ -123,6 +129,9 @@ jobs:
           if [ -n "$GITHUB_TOKEN" ] && [ -n "$AZURE_DEVOPS_PAT" ] && [ -n "$AZURE_DEVOPS_ORG_URL" ]; then
             echo "Running live API tests with provided credentials..."
             pytest tests/contract/integration/ -v --tb=short --durations=10 -m "live_api"
+          elif [ "${{ job.status }}" == "failure" ]; then
+            echo "✗ Tests failed"
+            exit 1
           else
             echo "Skipping live API tests - credentials not available"
           fi
@@ -139,7 +148,10 @@ jobs:
           if [ "${{ steps.markdown_only.outputs.skip_tests }}" == "true" ]; then
             echo "✓ Tests skipped - only markdown files changed"
             exit 0
+          elif [ "${{ job.status }}" == "failure" ]; then
+            echo "✗ Tests failed"
+            exit 1
           else
-            echo "✓ Tests completed"
+            echo "✓ Tests completed successfully"
             exit 0
           fi
