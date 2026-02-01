@@ -335,6 +335,29 @@ def contributors(test_session, organization):
     return contributors
 
 
+@pytest.fixture
+def repository(test_session, teams):
+    """Create a test repository."""
+    from src.database.models import Repository
+    
+    # Check if repository already exists
+    repo = test_session.query(Repository).filter_by(
+        repo_id="test-repo-001"
+    ).first()
+    
+    if repo is None:
+        repo = Repository(
+            repo_id="test-repo-001",
+            name="Test Repository",
+            url="https://github.com/test/test-repo",
+            team_id=teams[0].team_id,
+        )
+        test_session.add(repo)
+        test_session.commit()
+    
+    return repo
+
+
 # ============================================================================
 # PYTEST HOOKS AND CONFIGURATION
 # ============================================================================
