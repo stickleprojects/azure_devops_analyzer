@@ -310,17 +310,25 @@ def teams(test_session, organization):
 
 @pytest.fixture
 def contributors(test_session, organization):
-    """Create test contributors."""
+    """Create test contributors with deduplication."""
     from src.database.models import Contributor
     
     contributors = []
     for i in range(5):
-        contrib = Contributor(
-            email=f"user{i}@example.com",
-            name=f"User {i}",
-        )
-        test_session.add(contrib)
-        contributors.append(contrib)
+        email = f"user{i}@example.com"
+        
+        # Check if contributor already exists
+        existing = test_session.query(Contributor).filter_by(email=email).first()
+        
+        if existing:
+            contributors.append(existing)
+        else:
+            contrib = Contributor(
+                email=email,
+                name=f"User {i}",
+            )
+            test_session.add(contrib)
+            contributors.append(contrib)
     
     test_session.commit()
     return contributors
