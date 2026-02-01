@@ -14,7 +14,7 @@ Tests verify:
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, UTC
 from sqlalchemy.orm import Session
 
 from src.extractors.azure_devops.extractor import AzureDevOpsExtractor

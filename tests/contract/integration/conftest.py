@@ -195,6 +195,8 @@ def cleanup_database(test_session):
                 logger.debug(f"Delete from {table}: {e}")
         
         # Truncate regular tables to clean state
+        # Order matters: truncate dependent tables first, then their parents
+        # Use RESTART IDENTITY to reset auto-increment sequences
         truncate_tables = [
             "team_metrics",
             "team_contributors", 
@@ -213,10 +215,14 @@ def cleanup_database(test_session):
         
         for table in truncate_tables:
             try:
-                test_session.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
+                # Try with RESTART IDENTITY, fall back to regular TRUNCATE
+                test_session.execute(text(f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE"))
             except Exception as e:
-                # Table might not exist or might already be empty, that's OK
-                logger.debug(f"Truncate {table}: {e}")
+                try:
+                    test_session.execute(text(f"TRUNCATE TABLE {table}"))
+                except Exception as e2:
+                    # Table might not exist or might already be empty, that's OK
+                    logger.debug(f"Truncate {table}: {e2}")
         
         test_session.commit()
         logger.debug("✓ Database cleaned (hypertables deleted, regular tables truncated)")
