@@ -26,17 +26,22 @@ logger = logging.getLogger(__name__)
 
 @pytest.fixture(scope="session")
 def env_setup():
-    """Load environment variables from .env.resolved."""
-    env_file = Path(__file__).parent.parent.parent / ".env.resolved"
+    """Load environment variables from .env files."""
+    root_dir = Path(__file__).parent.parent.parent
     
-    if not env_file.exists():
-        # Fall back to .env if .resolved doesn't exist
-        env_file = Path(__file__).parent.parent.parent / ".env"
+    # Try loading in order: .env.resolved, .env.test, .env
+    env_files = [
+        root_dir / ".env.resolved",
+        root_dir / ".env.test",
+        root_dir / ".env",
+    ]
     
-    if env_file.exists():
-        load_dotenv(env_file)
+    for env_file in env_files:
+        if env_file.exists():
+            load_dotenv(env_file)
+            break
     
-    return env_file
+    return root_dir
 
 
 @pytest.fixture(scope="session")
