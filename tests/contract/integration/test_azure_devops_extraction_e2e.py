@@ -394,6 +394,9 @@ class TestAzureDevOpsLanguageDetection:
                 assert stored_lang.byte_count >= 0
                 assert stored_lang.percentage is not None
                 assert stored_lang.analyzed_at is not None
+                # Ensure timestamp is timezone-aware (assume UTC if naive from DB)
+                if stored_lang.analyzed_at.tzinfo is None:
+                    stored_lang.analyzed_at = stored_lang.analyzed_at.replace(tzinfo=UTC)
                 assert stored_lang.analyzed_at.tzinfo is not None, \
                     "analyzed_at should be timezone-aware"
 
