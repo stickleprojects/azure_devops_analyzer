@@ -133,3 +133,13 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing -m "not live_api"
+      - name: Report test status
+        if: always()
+        run: |
+          if [ "${{ steps.markdown_only.outputs.skip_tests }}" == "true" ]; then
+            echo "✓ Tests skipped - only markdown files changed"
+            exit 0
+          else
+            echo "✓ Tests completed"
+            exit 0
+          fi
