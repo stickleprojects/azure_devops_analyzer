@@ -18,7 +18,7 @@ jobs:
 
     services:
       postgres:
-        image: timescale/timescaledb:latest-pg15
+        image: timescale/timescaledb:latest-pg16
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
@@ -54,6 +54,8 @@ jobs:
           POSTGRES_USER=postgres
           POSTGRES_PASSWORD=postgres
           POSTGRES_DB=test_azure_devops
+          TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_azure_devops
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_azure_devops
           EOF
 
       - name: Run database migrations
@@ -72,6 +74,7 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
           pytest tests/contract/integration/ -v --tb=short --durations=10 -m "not live_api"
@@ -81,6 +84,7 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
           GITHUB_TOKEN: ${{ secrets.LIVE_GITHUB_TOKEN }}
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
           if [ -n "$GITHUB_TOKEN" ] && [ -n "$AZURE_DEVOPS_PAT" ]; then

@@ -108,13 +108,19 @@ def integration_test_engine(test_database_url):
     """
     logger.info(f"Creating test database engine: {test_database_url[:50]}...")
     
-    engine = create_engine(test_database_url, echo=False)
+    engine = create_engine(
+        test_database_url,
+        echo=False,
+        pool_pre_ping=True,  # Verify connections before using to avoid stale connections
+    )
     
     # Test connection
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
             logger.info("✓ Test database connection successful")
+            # Set timezone to UTC for consistent behavior across environments
+            conn.execute(text("SET timezone = 'UTC'"))
     except Exception as e:
         pytest.fail(f"Failed to connect to test database: {e}")
     
@@ -147,10 +153,14 @@ def test_session(integration_test_engine):
     Provide a clean database session for each test.
     
     Each test gets an isolated session that is rolled back after the test,
-    ensuring clean state for the next test.
+    ensuring clean state for the next test. Ensures UTC timezone for
+    consistent datetime handling across all environments.
     """
     Session = sessionmaker(bind=integration_test_engine)
     session = Session()
+    
+    # Ensure timezone is UTC for this session
+    session.execute(text("SET timezone = 'UTC'"))
     
     yield session
     

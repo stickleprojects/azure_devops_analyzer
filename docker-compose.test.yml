@@ -28,12 +28,12 @@ services:
     image: timescale/timescaledb:latest-pg16
     container_name: analyzer-test-db
     environment:
-      POSTGRES_USER: test_analyzer
-      POSTGRES_PASSWORD: test_password_123
-      POSTGRES_DB: analyzer_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_azure_devops
       TIMESCALEDB_TELEMETRY: off
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U test_analyzer -d analyzer_test"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d test_azure_devops"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -55,9 +55,9 @@ services:
       dockerfile: Dockerfile.migrations
     container_name: analyzer-test-migrations
     environment:
-      POSTGRES_USER: test_analyzer
-      POSTGRES_PASSWORD: test_password_123
-      POSTGRES_DB: analyzer_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_azure_devops
       POSTGRES_HOST: test-db
       POSTGRES_PORT: 5432
     depends_on:
@@ -79,20 +79,25 @@ services:
       - -c
       - |
         pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-        pytest tests/contract/integration/test_github_extraction_e2e.py \
-               tests/contract/integration/test_azure_devops_extraction_e2e.py \
+        pytest tests/unit/ \
+               tests/contract/integration/ \
                -v \
-          -m 'not live_api' \
-          --junit-xml=/app/test-results/junit.xml \
-          -p no:cacheprovider \
-          --tb=short
+               --tb=short \
+               --durations=10 \
+               -m 'not live_api' \
+               --cov=src \
+               --cov-report=term-missing \
+               --cov-report=xml \
+               --junit-xml=/app/test-results/junit.xml
     environment:
       # Test database connection (internal Docker network)
-      TEST_DATABASE_URL: postgresql://test_analyzer:test_password_123@test-db:5432/analyzer_test
+      # Note: Must match GitHub Actions credentials exactly
+      TEST_DATABASE_URL: postgresql://postgres:postgres@test-db:5432/test_azure_devops
+      DATABASE_URL: postgresql://postgres:postgres@test-db:5432/test_azure_devops
       POSTGRES_HOST: test-db
-      POSTGRES_USER: test_analyzer
-      POSTGRES_PASSWORD: test_password_123
-      POSTGRES_DB: analyzer_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_azure_devops
       POSTGRES_PORT: 5432
       
       # GitHub SDK for tests (from host environment)
