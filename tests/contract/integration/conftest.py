@@ -164,41 +164,42 @@ def cleanup_database(test_session):
     """
     Automatically clean up all test data after each test.
     
-    Deletes test data in reverse order of foreign key dependencies.
+    Truncates all tables in reverse dependency order to ensure clean state.
     """
     yield
     
-    # Delete in reverse order to respect FK constraints
-    # Order: child tables first, parent tables last
     try:
-        from src.database.models import (
-            Vulnerability, Dependency,
-            PRComment, PRReview, PullRequest,
-            Commit, Contributor, Branch, Repository,
-            Team, TeamContributor, TeamMetric, ContributorMetric,
-            Organization
-        )
+        # Truncate all tables to clean state (faster and more reliable than delete)
+        # TRUNCATE CASCADE will remove all dependent rows automatically
+        truncate_tables = [
+            "team_metrics",
+            "team_contributors", 
+            "vulnerabilities",
+            "pr_comments",
+            "pr_reviews",
+            "pull_requests",
+            "dependencies",
+            "commits",
+            "contributor_metrics",
+            "contributors",
+            "branches",
+            "repositories",
+            "teams",
+            "projects",
+            "organizations",
+        ]
         
-        # Delete in correct FK dependency order
-        test_session.query(TeamMetric).delete()     # FK: Team
-        test_session.query(TeamContributor).delete() # FK: Team, Contributor
-        test_session.query(Vulnerability).delete()  # FK: Dependency
-        test_session.query(PRComment).delete()      # FK: PullRequest, Contributor
-        test_session.query(PRReview).delete()       # FK: PullRequest, Contributor
-        test_session.query(PullRequest).delete()    # FK: Repository, Contributor
-        test_session.query(Dependency).delete()     # FK: Repository
-        test_session.query(Commit).delete()         # FK: Contributor, Repository
-        test_session.query(ContributorMetric).delete()  # FK: Contributor, Repository
-        test_session.query(Contributor).delete()    # FK: none (referenced by many)
-        test_session.query(Branch).delete()         # FK: Repository
-        test_session.query(Repository).delete()     # FK: Team
-        test_session.query(Team).delete()           # FK: Organization
-        test_session.query(Organization).delete()   # No FK
+        for table in truncate_tables:
+            try:
+                test_session.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
+            except Exception as e:
+                # Table might not exist or might already be empty, that's OK
+                logger.debug(f"Truncate {table}: {e}")
+        
         test_session.commit()
-        
-        logger.debug("✓ Test data cleaned up")
+        logger.debug("✓ Database truncated and cleaned")
     except Exception as e:
-        logger.warning(f"Error cleaning up test data: {e}")
+        logger.warning(f"Error truncating database: {e}")
         test_session.rollback()
 
 
