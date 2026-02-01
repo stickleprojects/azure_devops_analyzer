@@ -164,13 +164,27 @@ def cleanup_database(test_session):
     """
     Automatically clean up all test data after each test.
     
-    Truncates all tables in reverse dependency order to ensure clean state.
+    Uses DELETE for hypertables and TRUNCATE for regular tables.
     """
     yield
     
     try:
-        # Truncate all tables to clean state (faster and more reliable than delete)
-        # TRUNCATE CASCADE will remove all dependent rows automatically
+        # Delete from hypertables first (TRUNCATE doesn't work well with TimescaleDB hypertables)
+        hypertables = [
+            "repository_languages",
+            "dependencies",
+            "code_quality_metrics",
+            "branch_metrics",
+            "contributor_metrics",
+        ]
+        
+        for table in hypertables:
+            try:
+                test_session.execute(text(f"DELETE FROM {table}"))
+            except Exception as e:
+                logger.debug(f"Delete from {table}: {e}")
+        
+        # Truncate regular tables to clean state
         truncate_tables = [
             "team_metrics",
             "team_contributors", 
@@ -178,9 +192,7 @@ def cleanup_database(test_session):
             "pr_comments",
             "pr_reviews",
             "pull_requests",
-            "dependencies",
             "commits",
-            "contributor_metrics",
             "contributors",
             "branches",
             "repositories",
@@ -197,7 +209,7 @@ def cleanup_database(test_session):
                 logger.debug(f"Truncate {table}: {e}")
         
         test_session.commit()
-        logger.debug("✓ Database truncated and cleaned")
+        logger.debug("✓ Database cleaned (hypertables deleted, regular tables truncated)")
     except Exception as e:
         logger.warning(f"Error truncating database: {e}")
         test_session.rollback()
