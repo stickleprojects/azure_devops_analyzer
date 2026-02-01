@@ -17,16 +17,16 @@ This folder contains documentation for deploying, running, and maintaining the R
 
 ## Quick Links
 
-| Document                     | Focus                     | For                      |
-| ---------------------------- | ------------------------- | ------------------------ |
-| visualization.md             | Grafana setup, dashboards | DevOps, dashboarding     |
-| deployment-plan.md           | Rollout strategy, timeline | Deployment, PM          |
-| docker-setup.md              | Docker configuration      | Infrastructure, setup    |
-| session-continuity.md        | Context persistence       | Reproducibility, debugging |
-| github-actions-tests.md      | CI/CD pipelines           | Testing, automation      |
-| feature-development-workflow.md | Git workflow           | Development, code review |
-| branch-protection-setup.md   | Branch protection rules   | Repository governance    |
-| monitoring-extraction-progress.md | Job monitoring        | Operations, support      |
+| Document                          | Focus                      | For                        |
+| --------------------------------- | -------------------------- | -------------------------- |
+| visualization.md                  | Grafana setup, dashboards  | DevOps, dashboarding       |
+| deployment-plan.md                | Rollout strategy, timeline | Deployment, PM             |
+| docker-setup.md                   | Docker configuration       | Infrastructure, setup      |
+| session-continuity.md             | Context persistence        | Reproducibility, debugging |
+| github-actions-tests.md           | CI/CD pipelines            | Testing, automation        |
+| feature-development-workflow.md   | Git workflow               | Development, code review   |
+| branch-protection-setup.md        | Branch protection rules    | Repository governance      |
+| monitoring-extraction-progress.md | Job monitoring             | Operations, support        |
 
 ## Recommended Reading Order
 

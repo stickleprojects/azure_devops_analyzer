@@ -87,3 +87,4 @@ azure-devops-analyzer/
 ├── database/               # Database schema and migrations
 ├── tests/                  # Unit and integration tests
 ├── workers/                # Background job workers
+```
