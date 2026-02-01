@@ -101,10 +101,3 @@ jobs:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing -m "not live_api"
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
-          verbose: true
