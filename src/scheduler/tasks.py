@@ -3,6 +3,7 @@ from typing import Optional
 
 from src.scheduler.celery_app import celery_app
 from src.workflows.github_analysis import GitHubAnalysisWorkflow, ExtractionLimits
+from src.workflows.azure_devops_analysis import run_azure_devops_extraction
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +40,24 @@ def run_github_extraction(self):
         
     except Exception as e:
         logger.error(f"GitHub extraction failed: {e}", exc_info=True)
+        return {"status": "error", "message": str(e)}
+
+
+@celery_app.task(name="tasks.run_azure_devops_extraction", bind=True)
+def run_azure_devops_extraction_task(self):
+    """
+    Execute Azure DevOps repository extraction and analysis workflow.
+    """
+    logger.info("Starting Azure DevOps extraction task: %s", self.request.id)
+
+    try:
+        summary = run_azure_devops_extraction()
+
+        logger.info("Azure DevOps extraction completed. Summary: %s", summary)
+        return {"status": "success", "summary": summary}
+
+    except Exception as e:
+        logger.error("Azure DevOps extraction failed: %s", e, exc_info=True)
         return {"status": "error", "message": str(e)}
 
 

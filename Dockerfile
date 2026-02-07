@@ -26,7 +26,8 @@ COPY workers/ ./workers/
 COPY scripts/ ./scripts/
 
 # Create non-root user for security
-RUN useradd --create-home --shell /bin/bash appuser
+RUN useradd --create-home --shell /bin/bash appuser && \
+    chown -R appuser:appuser /app
 USER appuser
 
 # Default command (overridden in docker compose configuration)
