@@ -5,9 +5,9 @@
 | Field            | Value                      |
 | ---------------- | -------------------------- |
 | Project Name     | Repository Analysis System |
-| Document Version | 1.8                        |
+| Document Version | 2.2                        |
 | Status           | Active                     |
-| Last Updated     | 2026-01-24 (Part 9)        |
+| Last Updated     | 2026-02-09                 |
 
 ## Status Legend
 
@@ -64,8 +64,8 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 26       | 4       | 15          | 45    |
-| Non-Functional Requirements | 6        | 6       | 7           | 19    |
+| Functional Requirements     | 27       | 4       | 14          | 45    |
+| Non-Functional Requirements | 9        | 6       | 4           | 19    |
 
 **Note:** FR-11.2, FR-11.3, FR-11.5 updated to Complete - Team management data layer fully implemented with 11 passing integration tests (2026-01-29).
 
@@ -190,8 +190,9 @@
 | FR-9.2 | System shall support time-range filtering               | High     | :white_check_mark: Complete    | All dashboards use Grafana time picker; navigation preserves time range                                                                                      |
 | FR-9.3 | System shall support drill-down navigation              | Medium   | :white_check_mark: Complete    | Repository names in tables link to Deep-Dive dashboard; cross-dashboard navigation links on all dashboards                                                   |
 | FR-9.4 | System shall provide security-focused dashboard views   | High     | :large_orange_diamond: Partial | Security metrics included in Team Overview and Repository Deep-Dive (vulnerabilities, EOL deps); dedicated Security dashboard not yet created                |
+| FR-9.5 | System shall display extraction progress monitoring     | High     | :white_check_mark: Complete    | Extraction progress dashboard with run + per-repo metrics                                                                                                    |
 
-**FR-9 Summary:** 3/4 Complete, 1/4 Partial, 0/4 Not Started
+**FR-9 Summary:** 4/5 Complete, 1/5 Partial, 0/5 Not Started
 
 ---
 
@@ -257,14 +258,14 @@
 
 | ID      | Requirement                                                   | Priority | Status          | Notes                                                                                                 |
 | ------- | ------------------------------------------------------------- | -------- | --------------- | ----------------------------------------------------------------------------------------------------- |
-| NFR-3.1 | Workers shall emit structured metrics for extraction progress | High     | :x: Not Started | Metrics: repos_processed, extraction_duration, errors, current_repository, platform                   |
+| NFR-3.1 | Workers shall emit structured metrics for extraction progress | High     | :white_check_mark: Complete | Metrics captured per run and repository with platform context                                           |
 | NFR-3.2 | Workers shall emit health check endpoints                     | Medium   | :x: Not Started | HTTP endpoint returning worker status, queue depth, last successful extraction                        |
 | NFR-3.3 | Workers shall log extraction events with correlation IDs      | High     | :x: Not Started | Structured logging with repository_id, platform, task_id for tracing                                  |
-| NFR-3.4 | System shall store extraction metrics in TimescaleDB          | High     | :x: Not Started | New `extraction_metrics` table tracking start/end times, status, records extracted per repository     |
-| NFR-3.5 | Grafana shall display worker health and extraction rate       | High     | :x: Not Started | Dashboard panels showing: active workers, extraction velocity, failure rate, current processing queue |
+| NFR-3.4 | System shall store extraction metrics in TimescaleDB          | High     | :white_check_mark: Complete | `extraction_metrics` table tracking run/repo timing, status, and records extracted                     |
+| NFR-3.5 | Grafana shall display worker health and extraction rate       | High     | :white_check_mark: Complete | Extraction progress dashboard panels for rate, status, and activity                                    |
 | NFR-3.6 | System shall track Celery task metrics                        | Medium   | :x: Not Started | Task success/failure counts, execution time percentiles, queue depth over time                        |
 
-**NFR-3 Summary:** 0/6 Complete, 0/6 Partial, 6/6 Not Started
+**NFR-3 Summary:** 3/6 Complete, 0/6 Partial, 3/6 Not Started
 
 **NFR-2 Summary:** 2/3 Complete, 1/3 Partial
 
@@ -396,3 +397,4 @@
 | 1.9     | 2026-01-25 | System | **FR-6 Paused**: Implementation complete but metrics calculation disabled temporarily for performance optimization. Code remains in place and fully tested. Reason: Complex 7-query aggregation impacts extraction speed. See CONTRIBUTOR_METRICS_GUIDE.md |
 | 2.0     | 2026-01-25 | System | **FR-1.5 and FR-8.2 Complete**: README and metadata extraction now implemented for both GitHub and Azure DevOps platforms. Platform parity achieved for core documentation features.                                                                       |
 | 2.1     | 2026-01-25 | System | **Observability Requirements Added**: FR-9.5 (extraction progress monitoring) and NFR-3 (worker observability) with 6 new requirements for metrics, health checks, structured logging, and Grafana dashboards                                              |
+| 2.2     | 2026-02-09 | System | **Progress Monitoring Complete**: FR-9.5 complete, NFR-3.1/3.4/3.5 complete after extraction progress tracking, TimescaleDB storage, and Grafana dashboard validation                                         |

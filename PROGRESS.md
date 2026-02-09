@@ -1881,7 +1881,7 @@ Stabilized Docker runtime by fixing Celery Beat write permissions and making mig
    - Updated migrations 003/004 with `IF NOT EXISTS` guards so fresh schema + migrations are idempotent.
    - Added APScheduler entrypoint and Azure DevOps task wiring so `python -m src.scheduler.main` runs.
 
-2. **Extraction Progress Monitoring (In Progress)**
+2. **Extraction Progress Monitoring (Complete)**
    - Added `extraction_runs` and `extraction_metrics` schema + migration for progress tracking.
    - Added ORM models and storage helpers to write run-level and per-repo progress.
    - Instrumented GitHub and Azure DevOps workflows with run/progress updates.
@@ -1913,12 +1913,40 @@ Stabilized Docker runtime by fixing Celery Beat write permissions and making mig
 
 ### Testing
 
-- Not run yet (recommend `docker compose up` to validate migrations + dashboard).
+- Extraction progress monitoring validated end-to-end (schema, storage, workflows, Grafana dashboard).
+- Migrations verified after fixes.
 
 ### Current Branch Status
 
 - Branch: `feat/extraction-progress-monitoring`
-- Uncommitted changes: progress tracking schema/models/workflows + new dashboard
+- Progress monitoring work completed and tested.
+
+---
+
+## Session: 2026-02-09 - CI Test Gating + Line Endings Cleanup
+
+### Summary
+
+Finished and validated extraction progress monitoring, fixed CRLF issues in startup scripts, and refined CI test gating. Updated branch policy check name to match CI job name.
+
+### Changes
+
+1. **CI and Tests**
+   - BATS test path resolution fixed for Linux runners.
+   - CI job renamed to "CI Tests" with scoped BATS/Python execution.
+
+2. **Line Endings Policy**
+   - Added `.gitattributes` to enforce LF in repo and CRLF on checkout for Windows scripts.
+   - Normalized startup script and BATS files to LF.
+
+3. **Progress Monitoring**
+   - Confirmed extraction progress monitoring is complete and validated.
+   - Migrations confirmed fixed and applying cleanly.
+   - Branch policy check name now aligned with CI job name.
+
+### Testing
+
+- `npx bats startup-scripts/tests/*.bats`
 
 ---
 
