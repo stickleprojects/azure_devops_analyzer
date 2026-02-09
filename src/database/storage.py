@@ -6,6 +6,7 @@ deduplication, upsert logic, and relationship management.
 """
 
 from datetime import datetime, timedelta, UTC
+import uuid
 from typing import Optional
 
 from sqlalchemy.orm import Session
@@ -24,6 +25,8 @@ from src.database.models import (
     Team,
     Dependency,
     RepositoryLanguage,
+    ExtractionRun,
+    ExtractionMetric,
 )
 from src.extractors.base import (
     OrganizationData,
@@ -41,6 +44,200 @@ from src.extractors.base import (
 
 # Default minimum hours between scans of the same repository
 DEFAULT_MIN_SCAN_INTERVAL_HOURS = 6
+_UNSET = object()
+
+
+def start_extraction_run(
+    session: Session,
+    platform: str,
+    organization_name: Optional[str] = None,
+    project_name: Optional[str] = None,
+    total_repositories: int = 0,
+) -> uuid.UUID:
+    """
+    Create a new extraction run record and return its run_id.
+    """
+    now = datetime.now(UTC)
+    run = ExtractionRun(
+        run_id=uuid.uuid4(),
+        platform=platform,
+        organization_name=organization_name,
+        project_name=project_name,
+        status="running",
+        total_repositories=total_repositories,
+        processed_repositories=0,
+        started_at=now,
+        updated_at=now,
+    )
+    session.add(run)
+    session.flush()
+    return run.run_id
+
+
+def update_extraction_run_progress(
+    session: Session,
+    run_id: uuid.UUID,
+    processed_repositories: Optional[int] = None,
+    current_repository_id: Optional[str] | object = _UNSET,
+    status: Optional[str] = None,
+) -> None:
+    """
+    Update extraction run progress counters and current repository.
+    """
+    run = session.get(ExtractionRun, run_id)
+    if not run:
+        return
+
+    if processed_repositories is not None:
+        run.processed_repositories = processed_repositories
+    if current_repository_id is not _UNSET:
+        run.current_repository_id = current_repository_id
+    if status is not None:
+        run.status = status
+
+    run.updated_at = datetime.now(UTC)
+    session.flush()
+
+
+def complete_extraction_run(session: Session, run_id: uuid.UUID) -> None:
+    """
+    Mark an extraction run as completed.
+    """
+    run = session.get(ExtractionRun, run_id)
+    if not run:
+        return
+
+    now = datetime.now(UTC)
+    run.status = "completed"
+    run.completed_at = now
+    run.updated_at = now
+    run.current_repository_id = None
+    session.flush()
+
+
+def fail_extraction_run(
+    session: Session,
+    run_id: uuid.UUID,
+    error_message: str,
+) -> None:
+    """
+    Mark an extraction run as failed.
+    """
+    run = session.get(ExtractionRun, run_id)
+    if not run:
+        return
+
+    now = datetime.now(UTC)
+    run.status = "failed"
+    run.completed_at = now
+    run.updated_at = now
+    run.error_message = error_message[:1000]
+    run.current_repository_id = None
+    session.flush()
+
+
+def start_repository_extraction(
+    session: Session,
+    run_id: uuid.UUID,
+    repository_id: str,
+    platform: str,
+    celery_task_id: Optional[str] = None,
+    worker_hostname: Optional[str] = None,
+) -> int:
+    """
+    Record a repository extraction start and return the metric id.
+    """
+    now = datetime.now(UTC)
+    metric = ExtractionMetric(
+        run_id=run_id,
+        repository_id=repository_id,
+        platform=platform,
+        status="started",
+        extraction_started_at=now,
+        correlation_id=uuid.uuid4(),
+        celery_task_id=celery_task_id,
+        worker_hostname=worker_hostname,
+    )
+    session.add(metric)
+    session.flush()
+    return metric.id
+
+
+def skip_repository_extraction(
+    session: Session,
+    run_id: uuid.UUID,
+    repository_id: str,
+    platform: str,
+    reason: str,
+) -> int:
+    """
+    Record a repository extraction skip.
+    """
+    now = datetime.now(UTC)
+    metric = ExtractionMetric(
+        run_id=run_id,
+        repository_id=repository_id,
+        platform=platform,
+        status="skipped",
+        extraction_started_at=now,
+        extraction_completed_at=now,
+        extraction_duration_seconds=0,
+        error_message=reason[:1000],
+        correlation_id=uuid.uuid4(),
+    )
+    session.add(metric)
+    session.flush()
+    return metric.id
+
+
+def complete_repository_extraction(
+    session: Session,
+    metric_id: int,
+    commits_extracted: int = 0,
+    pull_requests_extracted: int = 0,
+    branches_extracted: int = 0,
+    contributors_extracted: int = 0,
+) -> None:
+    """
+    Record a successful repository extraction completion.
+    """
+    metric = session.get(ExtractionMetric, metric_id)
+    if not metric:
+        return
+
+    now = datetime.now(UTC)
+    metric.extraction_completed_at = now
+    metric.extraction_duration_seconds = int(
+        (now - metric.extraction_started_at).total_seconds()
+    )
+    metric.status = "completed"
+    metric.commits_extracted = commits_extracted
+    metric.pull_requests_extracted = pull_requests_extracted
+    metric.branches_extracted = branches_extracted
+    metric.contributors_extracted = contributors_extracted
+    session.flush()
+
+
+def fail_repository_extraction(
+    session: Session,
+    metric_id: int,
+    error_message: str,
+) -> None:
+    """
+    Record a repository extraction failure.
+    """
+    metric = session.get(ExtractionMetric, metric_id)
+    if not metric:
+        return
+
+    now = datetime.now(UTC)
+    metric.extraction_completed_at = now
+    metric.extraction_duration_seconds = int(
+        (now - metric.extraction_started_at).total_seconds()
+    )
+    metric.status = "failed"
+    metric.error_message = error_message[:1000]
+    session.flush()
 
 
 def should_scan_repository(

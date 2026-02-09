@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   test:
-    name: Python Tests
+    name: CI Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -37,12 +37,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check if only markdown files changed
-        id: markdown_only
+      - name: Determine test scope
+        id: test_scope
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
             # Get changed files in PR
-            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }})
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
           elif [ "${{ job.status }}" == "failure" ]; then
             echo "✗ Tests failed"
             exit 1
@@ -50,36 +50,63 @@ jobs:
             # Get changed files in push
             CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
           fi
-          
-          # Check if any non-markdown files were changed
-          NON_MARKDOWN=$(echo "$CHANGED_FILES" | grep -v '\.md$' | grep -v '\.github/workflows' | wc -l)
-          
-          if [ "$NON_MARKDOWN" -eq 0 ]; then
-            echo "skip_tests=true" >> $GITHUB_OUTPUT
-            echo "✓ Only markdown files changed - skipping tests"
-          elif [ "${{ job.status }}" == "failure" ]; then
-            echo "✗ Tests failed"
-            exit 1
+
+          PYTHON_CHANGES=$(echo "$CHANGED_FILES" | grep -E '\.py$' | wc -l)
+          BATS_CHANGES=$(echo "$CHANGED_FILES" | grep -E '\.(sh|bash|bats)$' | wc -l)
+
+          if [ "$PYTHON_CHANGES" -gt 0 ]; then
+            echo "run_python=true" >> $GITHUB_OUTPUT
           else
-            echo "skip_tests=false" >> $GITHUB_OUTPUT
-            echo "✓ Non-markdown files changed - running tests"
+            echo "run_python=false" >> $GITHUB_OUTPUT
           fi
 
+          if [ "$BATS_CHANGES" -gt 0 ]; then
+            echo "run_bats=true" >> $GITHUB_OUTPUT
+          else
+            echo "run_bats=false" >> $GITHUB_OUTPUT
+          fi
+
+          if [ "$PYTHON_CHANGES" -eq 0 ] && [ "$BATS_CHANGES" -eq 0 ]; then
+            echo "skip_tests=true" >> $GITHUB_OUTPUT
+            echo "✓ No Python or shell changes - skipping tests"
+          else
+            echo "skip_tests=false" >> $GITHUB_OUTPUT
+            echo "✓ Relevant changes detected - running tests"
+          fi
+
+      - name: Set up Node.js
+        if: steps.test_scope.outputs.run_bats == 'true' && github.event_name == 'pull_request'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install Node dependencies
+        if: steps.test_scope.outputs.run_bats == 'true' && github.event_name == 'pull_request'
+        run: |
+          npm ci
+
+      - name: Run startup script bats tests
+        if: steps.test_scope.outputs.run_bats == 'true' && github.event_name == 'pull_request'
+        run: |
+          npx bats startup-scripts/tests/*.bats
+
       - name: Set up Python
-        if: steps.markdown_only.outputs.skip_tests == 'false'
+        if: steps.test_scope.outputs.run_python == 'true'
         uses: actions/setup-python@v4
         with:
           python-version: '3.12'
           cache: 'pip'
 
       - name: Install dependencies
-        if: steps.markdown_only.outputs.skip_tests == 'false'
+        if: steps.test_scope.outputs.run_python == 'true'
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
 
       - name: Create test environment file
-        if: steps.markdown_only.outputs.skip_tests == 'false'
+        if: steps.test_scope.outputs.run_python == 'true'
         run: |
           cat > .env.test << 'EOF'
           POSTGRES_HOST=localhost
@@ -92,21 +119,21 @@ jobs:
           EOF
 
       - name: Run database migrations
-        if: steps.markdown_only.outputs.skip_tests == 'false'
+        if: steps.test_scope.outputs.run_python == 'true'
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
-          bash scripts/run_migrations.sh || true
+          bash docker/scripts/run_migrations.sh || true
 
       - name: Run unit tests
-        if: steps.markdown_only.outputs.skip_tests == 'false'
+        if: steps.test_scope.outputs.run_python == 'true'
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
           pytest tests/unit/ -v --tb=short
 
       - name: Run integration tests
-        if: steps.markdown_only.outputs.skip_tests == 'false'
+        if: steps.test_scope.outputs.run_python == 'true'
         env:
           PYTHONPATH: ${{ github.workspace }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -116,7 +143,7 @@ jobs:
           pytest tests/contract/integration/ -v --tb=short --durations=10 -m "not live_api"
 
       - name: Run live API tests
-        if: steps.markdown_only.outputs.skip_tests == 'false'
+        if: steps.test_scope.outputs.run_python == 'true'
         env:
           PYTHONPATH: ${{ github.workspace }}
           GITHUB_TOKEN: ${{ secrets.LIVE_GITHUB_TOKEN }}
@@ -137,7 +164,7 @@ jobs:
           fi
 
       - name: Generate coverage report
-        if: steps.markdown_only.outputs.skip_tests == 'false'
+        if: steps.test_scope.outputs.run_python == 'true'
         env:
           PYTHONPATH: ${{ github.workspace }}
         run: |
@@ -145,8 +172,8 @@ jobs:
       - name: Report test status
         if: always()
         run: |
-          if [ "${{ steps.markdown_only.outputs.skip_tests }}" == "true" ]; then
-            echo "✓ Tests skipped - only markdown files changed"
+          if [ "${{ steps.test_scope.outputs.skip_tests }}" == "true" ]; then
+            echo "✓ Tests skipped - no relevant changes"
             exit 0
           elif [ "${{ job.status }}" == "failure" ]; then
             echo "✗ Tests failed"

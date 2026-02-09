@@ -19,9 +19,30 @@ This system analyzes repositories from multiple platforms (Azure DevOps and GitH
 
 ## Local Repository Analysis Quickstart
 
-Run the PowerShell helper to bootstrap the Docker stack, create `.env`, apply migrations, and start extraction:
+Use the helper to bootstrap the Docker stack, create `.env`, initialize the schema, and start extraction:
 
 - PowerShell (Windows/macOS/Linux): `pwsh ./Start-RepoAnalysis.ps1 -RegenerateEnv`
+- Bash (macOS/Linux/Git Bash): `./Start-RepoAnalysis.sh --regenerate-env`
+
+What happens:
+
+1. Prompts for GitHub/Azure DevOps credentials and writes `.env`
+2. Starts Docker services (TimescaleDB, RabbitMQ, workers, scheduler)
+3. Initializes the database schema
+4. Submits an extraction task to Celery (background mode)
+
+To start analysis manually without the helper:
+
+1. Copy and edit `.env` from `.env.example`
+2. Start services: `docker compose up -d`
+3. Submit a run: `docker compose run --rm scheduler python /app/scripts/submit_extraction_task.py`
+
+How to know it is running:
+
+- Scheduler logs show `Enqueuing task=...`
+- Worker logs show tasks executing
+- Flower UI at `http://localhost:5555`
+- Grafana dashboards at `http://localhost:3000` (admin/admin)
 
 See [Start-RepoAnalysis.ps1](Start-RepoAnalysis.ps1#L1-L50) for parameters and examples.
 

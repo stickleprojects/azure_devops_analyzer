@@ -44,7 +44,7 @@ CREATE TABLE teams (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(team_id, name),
+    UNIQUE(organization_id, name),
     CONSTRAINT fk_team_organization FOREIGN KEY (organization_id) REFERENCES organizations(organization_id)
 );
 
@@ -61,12 +61,82 @@ CREATE TABLE repositories (
     created_at TIMESTAMPTZ,
     last_analyzed_at TIMESTAMPTZ,
     is_active BOOLEAN DEFAULT TRUE,
+    is_private BOOLEAN,
+    is_archived BOOLEAN,
+    repository_size INTEGER,  -- Size in KB
+    open_issues_count INTEGER,
+    license_name VARCHAR(255),
+    license_key VARCHAR(100),
+    has_vulnerability_alerts BOOLEAN,
+    has_secret_scanning BOOLEAN,
+    has_dependabot_alerts BOOLEAN,
+    pushed_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ,
     CONSTRAINT fk_repository_project FOREIGN KEY (project_id) REFERENCES projects(project_id),
     CONSTRAINT fk_repository_team FOREIGN KEY (team_id) REFERENCES teams(team_id)
 );
 
 CREATE INDEX idx_repo_project ON repositories(project_id);
 CREATE INDEX idx_repo_last_analyzed ON repositories(last_analyzed_at);
+CREATE INDEX idx_repositories_team_id ON repositories(team_id);
+CREATE INDEX idx_repositories_is_private ON repositories(is_private);
+CREATE INDEX idx_repositories_is_archived ON repositories(is_archived);
+CREATE INDEX idx_repositories_has_vulnerability_alerts ON repositories(has_vulnerability_alerts);
+CREATE INDEX idx_repositories_has_secret_scanning ON repositories(has_secret_scanning);
+CREATE INDEX idx_repositories_has_dependabot_alerts ON repositories(has_dependabot_alerts);
+CREATE INDEX idx_repositories_license_key ON repositories(license_key);
+
+-- =============================================================================
+-- EXTRACTION PROGRESS TABLES
+-- =============================================================================
+
+CREATE TABLE extraction_runs (
+    run_id UUID PRIMARY KEY,
+    platform VARCHAR(50) NOT NULL,
+    organization_name VARCHAR(255),
+    project_name VARCHAR(255),
+    status VARCHAR(50) NOT NULL,
+    total_repositories INTEGER NOT NULL DEFAULT 0,
+    processed_repositories INTEGER NOT NULL DEFAULT 0,
+    current_repository_id VARCHAR(255),
+    started_at TIMESTAMPTZ NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL,
+    completed_at TIMESTAMPTZ,
+    error_message TEXT
+);
+
+CREATE INDEX idx_extraction_runs_status ON extraction_runs(status, updated_at DESC);
+CREATE INDEX idx_extraction_runs_platform ON extraction_runs(platform, status, updated_at DESC);
+
+CREATE TABLE extraction_metrics (
+    id BIGSERIAL PRIMARY KEY,
+    run_id UUID NOT NULL REFERENCES extraction_runs(run_id) ON DELETE CASCADE,
+    repository_id VARCHAR(255) NOT NULL,  -- No FK: metrics must record progress before repo is stored
+    platform VARCHAR(50) NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    extraction_started_at TIMESTAMPTZ NOT NULL,
+    extraction_completed_at TIMESTAMPTZ,
+    extraction_duration_seconds INTEGER,
+    error_message TEXT,
+    commits_extracted INTEGER DEFAULT 0,
+    pull_requests_extracted INTEGER DEFAULT 0,
+    branches_extracted INTEGER DEFAULT 0,
+    contributors_extracted INTEGER DEFAULT 0,
+    celery_task_id VARCHAR(255),
+    worker_hostname VARCHAR(255),
+    correlation_id UUID NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+SELECT create_hypertable('extraction_metrics', 'extraction_started_at',
+    chunk_time_interval => INTERVAL '1 day',
+    if_not_exists => TRUE
+);
+
+CREATE INDEX idx_extraction_metrics_run ON extraction_metrics(run_id, extraction_started_at DESC);
+CREATE INDEX idx_extraction_metrics_platform_status ON extraction_metrics(platform, status, extraction_started_at DESC);
+CREATE INDEX idx_extraction_metrics_repo ON extraction_metrics(repository_id);
+CREATE INDEX idx_extraction_metrics_correlation ON extraction_metrics(correlation_id);
 
 -- Branches
 CREATE TABLE branches (
@@ -248,14 +318,23 @@ CREATE TABLE readme_files (
     content TEXT,
     summary TEXT,
     word_count INTEGER,
+    scope_type VARCHAR(50),
+    scope_path TEXT,
+    parent_readme_id INTEGER,
+    affects_paths TEXT[],
     analyzed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(repo_id, branch_id, file_path),
     CONSTRAINT fk_readme_repository FOREIGN KEY (repo_id) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    CONSTRAINT fk_readme_branch FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE CASCADE
+    CONSTRAINT fk_readme_branch FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE CASCADE,
+    CONSTRAINT fk_readme_parent FOREIGN KEY (parent_readme_id) REFERENCES readme_files(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_readme_repo ON readme_files(repo_id);
 CREATE INDEX idx_readme_content_fts ON readme_files USING gin(to_tsvector('english', content));
+CREATE INDEX idx_readme_scope_type ON readme_files(scope_type);
+CREATE INDEX idx_readme_scope_path ON readme_files(scope_path);
+CREATE INDEX idx_readme_parent ON readme_files(parent_readme_id);
+CREATE INDEX idx_readme_affects_paths ON readme_files USING gin(affects_paths);
 
 -- =============================================================================
 -- CONTRIBUTOR AND ACTIVITY TABLES
@@ -264,21 +343,60 @@ CREATE INDEX idx_readme_content_fts ON readme_files USING gin(to_tsvector('engli
 -- Contributors
 CREATE TABLE contributors (
     id SERIAL PRIMARY KEY,
-    team_id INTEGER,
     email VARCHAR(255) NOT NULL UNIQUE,
     name VARCHAR(255),
     first_seen_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    last_seen_at TIMESTAMPTZ,
-    CONSTRAINT fk_contributor_team FOREIGN KEY (team_id) REFERENCES teams(team_id)
+    last_seen_at TIMESTAMPTZ
 );
 
 CREATE INDEX idx_contributor_email ON contributors(email);
 
+-- Team contributors (many-to-many)
+CREATE TABLE team_contributors (
+    id SERIAL PRIMARY KEY,
+    team_id INTEGER NOT NULL REFERENCES teams(team_id) ON DELETE CASCADE,
+    contributor_id INTEGER NOT NULL REFERENCES contributors(id) ON DELETE CASCADE,
+    effective_start_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    effective_end_date TIMESTAMPTZ,
+    CONSTRAINT uq_team_contributor UNIQUE (team_id, contributor_id)
+);
+
+CREATE INDEX idx_team_contributors_team_id ON team_contributors(team_id);
+CREATE INDEX idx_team_contributors_contributor_id ON team_contributors(contributor_id);
+CREATE INDEX idx_team_contributors_effective_dates ON team_contributors(effective_start_date, effective_end_date);
+
+-- Team metrics (Time-series)
+CREATE TABLE team_metrics (
+    id SERIAL,
+    team_id INTEGER NOT NULL REFERENCES teams(team_id) ON DELETE CASCADE,
+    period_start TIMESTAMPTZ NOT NULL,
+    period_end TIMESTAMPTZ NOT NULL,
+    total_commits INTEGER DEFAULT 0,
+    total_lines_added INTEGER DEFAULT 0,
+    total_lines_removed INTEGER DEFAULT 0,
+    total_files_modified INTEGER DEFAULT 0,
+    total_prs_created INTEGER DEFAULT 0,
+    total_pr_reviews INTEGER DEFAULT 0,
+    total_pr_approvals INTEGER DEFAULT 0,
+    avg_pr_size_lines NUMERIC(10, 2),
+    active_contributors INTEGER DEFAULT 0,
+    avg_commit_message_quality NUMERIC(5, 2),
+    PRIMARY KEY (id, period_start)
+);
+
+SELECT create_hypertable('team_metrics', 'period_start',
+    chunk_time_interval => INTERVAL '1 month',
+    if_not_exists => TRUE
+);
+
+CREATE INDEX idx_team_metrics_team_id ON team_metrics(team_id, period_start DESC);
+CREATE INDEX idx_team_metrics_period ON team_metrics(period_start DESC, period_end DESC);
+
 -- Contributor Metrics (Time-series)
 CREATE TABLE contributor_metrics (
     id BIGSERIAL PRIMARY KEY,
-    repo_id VARCHAR(255) NOT NULL,
-    contributor_id INTEGER NOT NULL,
+    repo_id VARCHAR(255),
+    contributor_id INTEGER,
     period_start TIMESTAMPTZ NOT NULL,
     period_end TIMESTAMPTZ NOT NULL,
     commit_count INTEGER DEFAULT 0,
@@ -317,6 +435,8 @@ CREATE TABLE commits (
     files_changed INTEGER,
     lines_added INTEGER,
     lines_removed INTEGER,
+    is_verified BOOLEAN,  -- GPG signature verification
+    verification_reason VARCHAR(255),  -- Reason if verification failed
     CONSTRAINT fk_commit_repository FOREIGN KEY (repo_id) REFERENCES repositories(repo_id) ON DELETE CASCADE,
     CONSTRAINT fk_commit_author FOREIGN KEY (author_id) REFERENCES contributors(id),
     CONSTRAINT fk_commit_committer FOREIGN KEY (committer_id) REFERENCES contributors(id)
@@ -325,6 +445,7 @@ CREATE TABLE commits (
 CREATE INDEX idx_commit_repo ON commits(repo_id);
 CREATE INDEX idx_commit_author ON commits(author_id);
 CREATE INDEX idx_commit_date ON commits(commit_date);
+CREATE INDEX idx_commits_is_verified ON commits(is_verified);
 
 -- =============================================================================
 -- PULL REQUEST TABLES
