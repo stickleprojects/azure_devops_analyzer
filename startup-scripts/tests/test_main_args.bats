@@ -1,7 +1,9 @@
 #!/usr/bin/env bats
 
 setup() {
-    SCRIPT="d:/code/tyl/azure-devops-analyzer/Start-RepoAnalysis.sh"
+    load test_helper
+    SCRIPT="${PROJECT_ROOT}/Start-RepoAnalysis.sh"
+    [ -f "$SCRIPT" ]
 }
 
 @test "script shows usage with --help" {

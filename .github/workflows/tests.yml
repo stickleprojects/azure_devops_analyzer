@@ -12,7 +12,7 @@ concurrency:
 
 jobs:
   test:
-    name: Python Tests
+    name: CI Tests
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
