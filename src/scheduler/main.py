@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Any, Dict
 
 import yaml
@@ -111,7 +111,11 @@ def _schedule_maintenance_jobs(
         return
 
     trigger = job_config.get("trigger", "interval")
-    trigger_args = {k: v for k, v in job_config.items() if k != "trigger"}
+    trigger_args = {
+        k: v
+        for k, v in job_config.items()
+        if k not in {"trigger", "retention_days"}
+    }
 
     scheduler.add_job(
         _enqueue_task,
@@ -172,7 +176,7 @@ def main() -> None:
     config = _load_config(config_path)
     _configure_logging(config)
 
-    logger.info("Scheduler starting at %s", datetime.utcnow().isoformat())
+    logger.info("Scheduler starting at %s", datetime.now(UTC).isoformat())
 
     scheduler = _configure_scheduler(config)
 

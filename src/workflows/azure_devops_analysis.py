@@ -6,6 +6,7 @@ including organizations, projects, repositories, branches, commits, and pull req
 """
 
 import logging
+import socket
 from dataclasses import dataclass
 from typing import Optional
 
@@ -24,6 +25,14 @@ from src.database.storage import (
     store_readme,
     update_repository_analyzed_timestamp,
     get_extraction_summary,
+    start_extraction_run,
+    update_extraction_run_progress,
+    complete_extraction_run,
+    fail_extraction_run,
+    start_repository_extraction,
+    skip_repository_extraction,
+    complete_repository_extraction,
+    fail_repository_extraction,
 )
 from src.analyzers.dependency_analyzer import DependencyAnalyzer
 from src.analyzers.technology_detector import TechnologyDetector
@@ -148,10 +157,43 @@ class AzureDevOpsAnalysisWorkflow:
         repos = self.extractor.get_repositories(org_data.name, project=project_name)
         logger.info("      Found %d repositories", len(repos))
 
-        for repo_data in repos:
-            self._process_repository(org_data, repo_data)
+        with session_scope() as session:
+            run_id = start_extraction_run(
+                session,
+                platform=org_data.platform.value,
+                organization_name=org_data.name,
+                project_name=project_name,
+                total_repositories=len(repos),
+            )
 
-    def _process_repository(self, org_data, repo_data):
+        try:
+            for index, repo_data in enumerate(repos, start=1):
+                with session_scope() as session:
+                    update_extraction_run_progress(
+                        session,
+                        run_id,
+                        processed_repositories=index - 1,
+                        current_repository_id=repo_data.repo_id,
+                    )
+
+                self._process_repository(org_data, repo_data, run_id)
+
+                with session_scope() as session:
+                    update_extraction_run_progress(
+                        session,
+                        run_id,
+                        processed_repositories=index,
+                        current_repository_id=None,
+                    )
+        except Exception as e:
+            with session_scope() as session:
+                fail_extraction_run(session, run_id, str(e))
+            raise
+        else:
+            with session_scope() as session:
+                complete_extraction_run(session, run_id)
+
+    def _process_repository(self, org_data, repo_data, run_id):
         """Process a single repository."""
         logger.info("        Processing repo: %s", repo_data.name)
 
@@ -162,6 +204,17 @@ class AzureDevOpsAnalysisWorkflow:
                 repo_data.repo_id,
                 self.limits.min_scan_interval_hours,
             ):
+                skip_reason = (
+                    "scanned within last %d hours"
+                    % self.limits.min_scan_interval_hours
+                )
+                skip_repository_extraction(
+                    session,
+                    run_id,
+                    repo_data.repo_id,
+                    org_data.platform.value,
+                    skip_reason,
+                )
                 logger.info(
                     "          Skipping %s - scanned within last %d hours",
                     repo_data.name,
@@ -169,44 +222,57 @@ class AzureDevOpsAnalysisWorkflow:
                 )
                 return
 
-        # Get repository metadata (team_name, service_name)
-        try:
-            metadata = self.extractor.get_repository_metadata(repo_data.repo_id)
-            if metadata:
-                repo_data.team_name = metadata.team_name
-                repo_data.service_name = metadata.service_name
-                logger.info("          Found metadata: team=%s, service=%s", 
-                          repo_data.team_name, repo_data.service_name)
-        except Exception as e:
-            logger.warning("          Failed to fetch repository metadata: %s", e)
-
-        # Store repository
         with session_scope() as session:
-            project = (
-                session.query(Project)
-                .join(Organization)
-                .filter(
-                    Organization.name == org_data.name,
-                    Organization.platform == org_data.platform.value,
-                    Project.name == repo_data.project_name,
-                )
-                .first()
+            metric_id = start_repository_extraction(
+                session,
+                run_id,
+                repo_data.repo_id,
+                org_data.platform.value,
+                worker_hostname=socket.gethostname(),
             )
 
-            repo = store_repository(session, project, repo_data)
-            logger.info("          Stored repository: %s", repo_data.name)
+        try:
+            # Get repository metadata (team_name, service_name)
+            try:
+                metadata = self.extractor.get_repository_metadata(repo_data.repo_id)
+                if metadata:
+                    repo_data.team_name = metadata.team_name
+                    repo_data.service_name = metadata.service_name
+                    logger.info(
+                        "          Found metadata: team=%s, service=%s",
+                        repo_data.team_name,
+                        repo_data.service_name,
+                    )
+            except Exception as e:
+                logger.warning("          Failed to fetch repository metadata: %s", e)
 
-        # Process repository contents
-        self._process_branches(repo_data)
-        self._process_languages(repo_data)
-        self._process_technologies(repo_data)
-        self._process_readme_files(repo_data)
-        self._process_commits(repo_data)
-        self._process_pull_requests(repo_data)
+            # Store repository
+            with session_scope() as session:
+                project = (
+                    session.query(Project)
+                    .join(Organization)
+                    .filter(
+                        Organization.name == org_data.name,
+                        Organization.platform == org_data.platform.value,
+                        Project.name == repo_data.project_name,
+                    )
+                    .first()
+                )
 
-        # Extract dependencies
-        if self.limits.extract_dependencies:
-            self._process_dependencies(repo_data)
+                repo = store_repository(session, project, repo_data)
+                logger.info("          Stored repository: %s", repo_data.name)
+
+            # Process repository contents
+            branches_count = self._process_branches(repo_data)
+            self._process_languages(repo_data)
+            self._process_technologies(repo_data)
+            self._process_readme_files(repo_data)
+            commits_count = self._process_commits(repo_data)
+            prs_count = self._process_pull_requests(repo_data)
+
+            # Extract dependencies
+            if self.limits.extract_dependencies:
+                self._process_dependencies(repo_data)
         
         # PAUSED: Contributor metrics calculation disabled temporarily
         # Reason: Performance concerns - complex multi-query aggregation is slow
@@ -215,12 +281,26 @@ class AzureDevOpsAnalysisWorkflow:
         # TODO: Optimize and re-enable in future sprint
         # self._process_contributor_metrics(repo_data)
 
-        # Update timestamp
-        with session_scope() as session:
-            update_repository_analyzed_timestamp(session, repo_data.repo_id)
-            logger.info("          Updated last_analyzed_at for %s", repo_data.name)
+            # Update timestamp
+            with session_scope() as session:
+                update_repository_analyzed_timestamp(session, repo_data.repo_id)
+                logger.info("          Updated last_analyzed_at for %s", repo_data.name)
 
-    def _process_branches(self, repo_data):
+            with session_scope() as session:
+                complete_repository_extraction(
+                    session,
+                    metric_id,
+                    commits_extracted=commits_count,
+                    pull_requests_extracted=prs_count,
+                    branches_extracted=branches_count,
+                )
+        except Exception as e:
+            with session_scope() as session:
+                fail_repository_extraction(session, metric_id, str(e))
+            logger.warning("          Repository processing failed: %s", e)
+            return
+
+    def _process_branches(self, repo_data) -> int:
         """Fetch and store branches for a repository."""
         try:
             branches = self.extractor.get_branches(repo_data.repo_id)
@@ -230,8 +310,12 @@ class AzureDevOpsAnalysisWorkflow:
                 for branch_data in branches[: self.limits.max_branches]:
                     store_branch(session, repo_data.repo_id, branch_data)
 
+            return min(len(branches), self.limits.max_branches)
+
         except Exception as e:
             logger.warning("          Failed to fetch branches: %s", e)
+
+        return 0
 
     def _process_languages(self, repo_data):
         """Fetch and store language statistics for a repository."""
@@ -296,7 +380,7 @@ class AzureDevOpsAnalysisWorkflow:
         except Exception as e:
             logger.warning("          Failed to fetch README files: %s", e)
 
-    def _process_commits(self, repo_data):
+    def _process_commits(self, repo_data) -> int:
         """Fetch and store commits for a repository."""
         try:
             commits = self.extractor.get_commits(
@@ -320,10 +404,14 @@ class AzureDevOpsAnalysisWorkflow:
                 if stored_count > 0:
                     logger.info("          Stored %d new commits", stored_count)
 
+            return stored_count
+
         except Exception as e:
             logger.warning("          Failed to fetch commits: %s", e)
 
-    def _process_pull_requests(self, repo_data):
+        return 0
+
+    def _process_pull_requests(self, repo_data) -> int:
         """Fetch and store pull requests for a repository."""
         try:
             prs = self.extractor.get_pull_requests(repo_data.repo_id)
@@ -340,8 +428,12 @@ class AzureDevOpsAnalysisWorkflow:
                 if stored_count > 0:
                     logger.info("          Stored %d new pull requests", stored_count)
 
+            return stored_count
+
         except Exception as e:
             logger.warning("          Failed to fetch PRs: %s", e)
+
+        return 0
 
     def _process_dependencies(self, repo_data):
         """Extract and store dependencies for a repository."""

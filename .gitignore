@@ -21,3 +21,9 @@ coverage.xml
 .pytest_cache/
 .env.resolved
 /test-output.log
+
+node_modules
+dist
+build
+*.egg-info
+*.egg

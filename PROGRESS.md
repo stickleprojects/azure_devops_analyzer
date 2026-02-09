@@ -1868,6 +1868,60 @@ e6586f7 refactor: contributor-team-allocation-strategy.md - reduce code content 
 
 ---
 
+## Session: 2026-02-07 - Scheduler Fixes + Extraction Progress Monitoring
+
+### Summary
+
+Stabilized Docker runtime by fixing Celery Beat write permissions and making migrations idempotent, then added extraction progress tracking (run + per-repo metrics) and a Grafana dashboard for near real-time visibility.
+
+### Changes
+
+1. **Docker & Migration Stability**
+   - Made `/app` writable for the non-root user to prevent Celery Beat schedule write failures.
+   - Updated migrations 003/004 with `IF NOT EXISTS` guards so fresh schema + migrations are idempotent.
+   - Added APScheduler entrypoint and Azure DevOps task wiring so `python -m src.scheduler.main` runs.
+
+2. **Extraction Progress Monitoring (In Progress)**
+   - Added `extraction_runs` and `extraction_metrics` schema + migration for progress tracking.
+   - Added ORM models and storage helpers to write run-level and per-repo progress.
+   - Instrumented GitHub and Azure DevOps workflows with run/progress updates.
+   - Added Grafana dashboard JSON for live progress visibility.
+
+### Files Modified
+
+- `Dockerfile` - Ensure `/app` is writable by the non-root user.
+- `database/migrations/003_add_teams.sql` - Idempotent table/column/index creation.
+- `database/migrations/004_add_security_code_quality_fields.sql` - Idempotent column/index creation.
+- `src/scheduler/main.py` - APScheduler entrypoint (new file).
+- `src/scheduler/tasks.py` - Azure DevOps task added.
+- `database/schema.sql` - Added extraction progress tables.
+- `src/database/models/__init__.py` - Export progress models.
+- `src/database/models/repository.py` - Relationship for extraction metrics.
+- `src/database/storage.py` - Run/progress storage helpers.
+- `src/workflows/github_analysis.py` - Progress instrumentation.
+- `src/workflows/azure_devops_analysis.py` - Progress instrumentation.
+
+### Files Added
+
+- `database/migrations/008_add_extraction_progress_metrics.sql`
+- `src/database/models/extraction_metric.py`
+- `dashboards/extraction-progress.json`
+
+### Git Commits
+
+- `07c19f5` - fix: idempotent migrations and scheduler entrypoint
+
+### Testing
+
+- Not run yet (recommend `docker compose up` to validate migrations + dashboard).
+
+### Current Branch Status
+
+- Branch: `feat/extraction-progress-monitoring`
+- Uncommitted changes: progress tracking schema/models/workflows + new dashboard
+
+---
+
 ## Previous Sessions
 
 _(See git log for earlier session details)_
