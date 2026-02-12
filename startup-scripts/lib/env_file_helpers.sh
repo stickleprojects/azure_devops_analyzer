@@ -19,6 +19,13 @@ new_env_file() {
 
     declare -A values
     local line
+    local prompt_source="/dev/tty"
+
+    if [ ! -r "$prompt_source" ]; then
+        write_error "No TTY available for interactive prompts."
+        write_error "Run this script in an interactive terminal or provide a prefilled .env file."
+        return 1
+    fi
 
     while IFS= read -r line || [ -n "$line" ]; do
         if [[ "$line" =~ ^[[:space:]]*[^#=[:space:]]+[[:space:]]*= ]]; then
@@ -26,6 +33,7 @@ new_env_file() {
             local raw_default
             key="${line%%=*}"
             raw_default="${line#*=}"
+            raw_default="${raw_default%$'\r'}"
             key="$(echo "$key" | xargs)"
 
             local default="$raw_default"
@@ -46,13 +54,15 @@ new_env_file() {
                 display_default="<empty>"
             fi
 
-            read -r -p "Enter $key [default: $display_default] (type 'env' to search existing environment variables): " input_raw
+            printf "Enter %s [default: %s] (type 'env' to search existing environment variables): " "$key" "$display_default" > "$prompt_source"
+            IFS= read -r input_raw < "$prompt_source"
 
             local final=""
             if [ -z "$input_raw" ]; then
                 final="$default"
             elif [ "$input_raw" = "env" ]; then
-                read -r -p "Search term for environment variables [default: $key]: " search_term
+                printf "Search term for environment variables [default: %s]: " "$key" > "$prompt_source"
+                IFS= read -r search_term < "$prompt_source"
                 if [ -z "$search_term" ]; then
                     search_term="$key"
                 fi
@@ -74,7 +84,7 @@ new_env_file() {
                     final="$input_raw"
                 fi
             else
-                if [ -n "${!input_raw}" ]; then
+                if [[ "$input_raw" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]] && [ -n "${!input_raw}" ]; then
                     final="\$${input_raw}"
                     write_info "Using value from environment variable '$input_raw'"
                 else
