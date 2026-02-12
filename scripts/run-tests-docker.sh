@@ -2,10 +2,10 @@
 # =============================================================================
 # Integration Test Runner - Docker Compose
 # =============================================================================
-# Runs integration tests in fully isolated Docker environment.
+# Runs all tests (excluding live API) in fully isolated Docker environment.
 #
 # Usage:
-#   ./scripts/run-tests-docker.sh              # Run all integration tests
+#   ./scripts/run-tests-docker.sh              # Run all tests (excluding live API)
 #   ./scripts/run-tests-docker.sh --live-api   # Run live API tests only
 #   ./scripts/run-tests-docker.sh --keep-db    # Keep database for debugging
 #   ./scripts/run-tests-docker.sh --help       # Show help
@@ -90,17 +90,15 @@ EXAMPLES:
     # Run tests without cleanup (inspect containers after)
     $0 --no-cleanup
 
-WHAT GETS TESTED:
-    GitHub Platform:
-    - Repository extraction and metadata storage
-    - Branch and commit tracking
-    - Language detection (via GitHub API)
-    - Technology stack detection
+WHAT GETS TESTED (excluding live API):
+    Unit Tests:
+    - Extractor caching and utilities
+    - Analyzer logic and helpers
 
-    Azure DevOps Platform:
+    Contract & Integration Tests:
     - Repository extraction and metadata storage
     - Branch and commit tracking
-    - Language detection (via file heuristics)
+    - Language detection
     - Technology stack detection
 
 REQUIREMENTS:
@@ -216,23 +214,23 @@ if [ "$RUN_LIVE_API" = true ]; then
                -rs \
                --tb=short" || TEST_EXIT_CODE=$?
 else
-    log_info "Running GitHub AND Azure DevOps integration tests (excluding live API)..."
+    log_info "Running all tests (excluding live API)..."
     log_info "Use --live-api flag to run tests against real external APIs"
     echo
     
     # Run tests with exit code capture (only watch test-runner, not migrations)
     TEST_EXIT_CODE=0
-    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
-        sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-               pytest tests/contract/integration/*.py \
-                      -v \
-               -m 'not live_api' \
-               --junit-xml=/app/test-results/junit.xml \
-               -o junit_family=xunit2 \
-               -o junit_logging=all \
-               -rs \
-               -p no:cacheprovider \
-               --tb=short" || TEST_EXIT_CODE=$?
+        docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
+         sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
+             pytest tests/ \
+                 -v \
+             -m 'not live_api' \
+             --junit-xml=/app/test-results/junit.xml \
+             -o junit_family=xunit2 \
+             -o junit_logging=all \
+             -rs \
+             -p no:cacheprovider \
+             --tb=short" || TEST_EXIT_CODE=$?
 fi
 
 echo

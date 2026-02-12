@@ -11,6 +11,7 @@ A decorator-based caching layer on the extractor interface will eliminate redund
 ### Decorator: `@cached`
 
 A simple instance-method decorator that:
+
 - Generates a cache key from method name + normalized arguments
 - Stores results in `self._cache` (a dict on the extractor instance)
 - Returns cached results on subsequent calls with the same arguments
@@ -32,6 +33,7 @@ A simple instance-method decorator that:
 ### 1. `src/extractors/cache.py` (NEW) ✅ Created
 
 The caching decorator module:
+
 - `_normalize_arg(arg)` — converts datetime→ISO string, None→sentinel, else→str
 - `_make_cache_key(method_name, args, kwargs)` — builds deterministic string key
 - `@cached` — the decorator itself, looks up `self._cache` and `self._cache_hits`/`self._cache_misses`
@@ -48,6 +50,7 @@ The caching decorator module:
 ### 3. `src/extractors/github/extractor.py` ✅ Done
 
 Applied `@cached` decorator to:
+
 - `get_file_tree()` — **biggest win**, called 3x per repo
 - `get_file_content()` — called N times for READMEs + manifests, same files may overlap
 - `get_languages()` — called once per repo, cheap for GitHub but consistency with Azure
@@ -57,6 +60,7 @@ Applied `@cached` decorator to:
 Also added `_user_email_cache` dict for `get_pull_requests()` — avoids redundant `client.get_user()` calls when the same author appears on multiple PRs.
 
 NOT cached (called once with unique params, or results change between calls):
+
 - `get_organizations()`, `get_projects()` — called once at workflow start, cheap
 - `get_repositories()` — called once per org, already paginated
 - `get_commits()` — called once per repo with unique date params
@@ -65,6 +69,7 @@ NOT cached (called once with unique params, or results change between calls):
 ### 4. `src/extractors/azure_devops/extractor.py` ✅ Done
 
 Applied `@cached` decorator to:
+
 - `get_file_tree()`
 - `get_file_content()`
 - `get_languages()` — **especially valuable here** since Azure walks the entire file tree locally
@@ -92,21 +97,21 @@ Applied `@cached` decorator to:
 
 ## Expected Impact
 
-| Scenario | Before | After |
-|----------|--------|-------|
-| `_get_repo()` (GitHub) per repo | 6+ (one per method) | 1 (+ 5+ cache hits) |
-| `get_file_tree()` calls per repo | 3 | 1 (+ 2 cache hits) |
-| `get_file_content()` for shared files | N calls | 1 per unique file |
-| `get_user()` for PR authors | 1 per PR | 1 per unique author |
-| Azure `get_languages()` file walk | Full walk every call | 1 walk per repo |
-| Total API calls per 100 repos | ~800+ | ~400 (est. 50% reduction) |
+| Scenario                              | Before               | After                     |
+| ------------------------------------- | -------------------- | ------------------------- |
+| `_get_repo()` (GitHub) per repo       | 6+ (one per method)  | 1 (+ 5+ cache hits)       |
+| `get_file_tree()` calls per repo      | 3                    | 1 (+ 2 cache hits)        |
+| `get_file_content()` for shared files | N calls              | 1 per unique file         |
+| `get_user()` for PR authors           | 1 per PR             | 1 per unique author       |
+| Azure `get_languages()` file walk     | Full walk every call | 1 walk per repo           |
+| Total API calls per 100 repos         | ~800+                | ~400 (est. 50% reduction) |
 
 ## Verification
 
-1. **Unit tests**: ✅ `tests/unit/test_extractor_cache.py` — 23 tests passing
+1. **Unit tests**: ✅ `tests/unit/test_extractor_cache.py` — 24 tests passing
    - `TestNormalizeArg` (6 tests): None→sentinel, datetime→ISO, string, int, bool
    - `TestMakeCacheKey` (7 tests): positional, kwargs sorted, mixed, datetime, collisions
    - `TestCachedDecorator` (6 tests): miss, hit, same-object identity, different args/kwargs, explicit-None vs omitted
-   - `TestCacheManagement` (4 tests): initial state, stats, clear_cache, fresh calls after clear
-2. **Existing tests**: ✅ 100 passed, 3 skipped (live API), 0 failures — no regressions
+   - `TestCacheManagement` (5 tests): initial state, stats, clear_cache, method stats tracking, fresh calls after clear
+2. **Existing tests**: ⚠️ Not re-verified in this update (tests not run)
 3. **Manual verification**: Run extraction against a repo and check DEBUG logs for cache hit messages
