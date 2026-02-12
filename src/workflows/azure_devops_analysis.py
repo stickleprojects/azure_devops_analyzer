@@ -33,6 +33,7 @@ from src.database.storage import (
     skip_repository_extraction,
     complete_repository_extraction,
     fail_repository_extraction,
+    record_cache_stats,
 )
 from src.analyzers.dependency_analyzer import DependencyAnalyzer
 from src.analyzers.technology_detector import TechnologyDetector
@@ -222,31 +223,23 @@ class AzureDevOpsAnalysisWorkflow:
                 )
                 return
 
-        with session_scope() as session:
-            metric_id = start_repository_extraction(
-                session,
-                run_id,
-                repo_data.repo_id,
-                org_data.platform.value,
-                worker_hostname=socket.gethostname(),
-            )
-
+        # Get repository metadata (team_name, service_name)
         try:
-            # Get repository metadata (team_name, service_name)
-            try:
-                metadata = self.extractor.get_repository_metadata(repo_data.repo_id)
-                if metadata:
-                    repo_data.team_name = metadata.team_name
-                    repo_data.service_name = metadata.service_name
-                    logger.info(
-                        "          Found metadata: team=%s, service=%s",
-                        repo_data.team_name,
-                        repo_data.service_name,
-                    )
-            except Exception as e:
-                logger.warning("          Failed to fetch repository metadata: %s", e)
+            metadata = self.extractor.get_repository_metadata(repo_data.repo_id)
+            if metadata:
+                repo_data.team_name = metadata.team_name
+                repo_data.service_name = metadata.service_name
+                logger.info(
+                    "          Found metadata: team=%s, service=%s",
+                    repo_data.team_name,
+                    repo_data.service_name,
+                )
+        except Exception as e:
+            logger.warning("          Failed to fetch repository metadata: %s", e)
 
-            # Store repository
+        metric_id = None
+        try:
+            # Store repository before extraction metrics (FK dependency)
             with session_scope() as session:
                 project = (
                     session.query(Project)
@@ -262,6 +255,15 @@ class AzureDevOpsAnalysisWorkflow:
                 repo = store_repository(session, project, repo_data)
                 logger.info("          Stored repository: %s", repo_data.name)
 
+            with session_scope() as session:
+                metric_id = start_repository_extraction(
+                    session,
+                    run_id,
+                    repo_data.repo_id,
+                    org_data.platform.value,
+                    worker_hostname=socket.gethostname(),
+                )
+
             # Process repository contents
             branches_count = self._process_branches(repo_data)
             self._process_languages(repo_data)
@@ -273,7 +275,7 @@ class AzureDevOpsAnalysisWorkflow:
             # Extract dependencies
             if self.limits.extract_dependencies:
                 self._process_dependencies(repo_data)
-        
+
         # PAUSED: Contributor metrics calculation disabled temporarily
         # Reason: Performance concerns - complex multi-query aggregation is slow
         # Status: Implementation complete (FR-6.1-6.4) but not active
@@ -286,6 +288,7 @@ class AzureDevOpsAnalysisWorkflow:
                 update_repository_analyzed_timestamp(session, repo_data.repo_id)
                 logger.info("          Updated last_analyzed_at for %s", repo_data.name)
 
+            stats = self.extractor.cache_stats
             with session_scope() as session:
                 complete_repository_extraction(
                     session,
@@ -293,11 +296,18 @@ class AzureDevOpsAnalysisWorkflow:
                     commits_extracted=commits_count,
                     pull_requests_extracted=prs_count,
                     branches_extracted=branches_count,
+                    cache_hits=stats["hits"],
+                    cache_misses=stats["misses"],
                 )
+
+            logger.info("          Cache stats for %s: %s", repo_data.repo_id, stats)
+            self.extractor.clear_cache()
         except Exception as e:
-            with session_scope() as session:
-                fail_repository_extraction(session, metric_id, str(e))
+            if metric_id is not None:
+                with session_scope() as session:
+                    fail_repository_extraction(session, metric_id, str(e))
             logger.warning("          Repository processing failed: %s", e)
+            self.extractor.clear_cache()
             return
 
     def _process_branches(self, repo_data) -> int:

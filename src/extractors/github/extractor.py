@@ -44,6 +44,7 @@ from src.extractors.base import (
     PRCommentData,
     FileTreeItem,
 )
+from src.extractors.cache import cached
 
 
 class GitHubExtractor(RepositoryExtractor):
@@ -53,10 +54,12 @@ class GitHubExtractor(RepositoryExtractor):
         self,
         config: Optional[GitHubExtractorConfig] = None,
     ):
+        super().__init__()
         self.config = config or GitHubExtractorConfig.from_env()
         self._client = None
         self._org_name = self.config.organization
         self._user_name = self.config.user
+        self._user_email_cache: dict[str, str] = {}
         self._logger = logging.getLogger(__name__)
 
     @property
@@ -247,6 +250,7 @@ class GitHubExtractor(RepositoryExtractor):
         except GithubException as exc:
             raise ValueError(f"Repository not found: {repo_id}") from exc
 
+    @cached
     def get_branches(self, repo_id: str) -> list[BranchData]:
         """Get all branches for a repository."""
         repo = self._get_repo(repo_id)
@@ -261,10 +265,11 @@ class GitHubExtractor(RepositoryExtractor):
             for b in branches
         ]
 
+    @cached
     def get_languages(self, repo_id: str) -> list["LanguageData"]:
         """
         Get programming language statistics for a repository.
-        
+
         Returns language data with byte counts and percentages.
         GitHub API returns a dict of {language_name: byte_count}.
         """
@@ -389,17 +394,21 @@ class GitHubExtractor(RepositoryExtractor):
             else:
                 pr_status = "closed"
 
-            # Get author email (may require additional API call)
+            # Get author email (cached to avoid redundant API calls)
             author_email = ""
             author_name = None
             if pr.user:
                 author_name = pr.user.login
-                # Try to get email from user profile
-                try:
-                    user = self.client.get_user(pr.user.login)
-                    author_email = user.email or f"{pr.user.login}@users.noreply.github.com"
-                except GithubException:
-                    author_email = f"{pr.user.login}@users.noreply.github.com"
+                login = pr.user.login
+                if login in self._user_email_cache:
+                    author_email = self._user_email_cache[login]
+                else:
+                    try:
+                        user = self.client.get_user(login)
+                        author_email = user.email or f"{login}@users.noreply.github.com"
+                    except GithubException:
+                        author_email = f"{login}@users.noreply.github.com"
+                    self._user_email_cache[login] = author_email
 
             result.append(
                 PullRequestData(
@@ -557,6 +566,7 @@ class GitHubExtractor(RepositoryExtractor):
                 pass
         return min(self.config.backoff_seconds, self.config.max_backoff_seconds)
 
+    @cached
     def get_file_tree(
         self,
         repo_id: str,
@@ -580,6 +590,7 @@ class GitHubExtractor(RepositoryExtractor):
             for item in tree.tree
         ]
 
+    @cached
     def get_file_content(
         self,
         repo_id: str,
@@ -598,6 +609,7 @@ class GitHubExtractor(RepositoryExtractor):
         except GithubException:
             return None
 
+    @cached
     def _get_repo(self, repo_id: str) -> GHRepository:
         """Get a repository by ID (owner/name format)."""
         return self.client.get_repo(repo_id)
