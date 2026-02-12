@@ -1,10 +1,17 @@
 """Unit tests for the extractor caching decorator."""
 
-import pytest
 from datetime import datetime, timezone, timedelta
 from unittest.mock import MagicMock
 
-from src.extractors.cache import _normalize_arg, _make_cache_key, cached, _NONE_SENTINEL
+import pytest
+
+from src.extractors.cache import (
+    _NONE_SENTINEL,
+    _file_cache_path,
+    _make_cache_key,
+    _normalize_arg,
+    cached,
+)
 from src.extractors.base import RepositoryExtractor
 
 
@@ -274,3 +281,63 @@ class TestCacheManagement:
 
         # Simulate a miss after clear
         assert "get_file_tree|repo" not in ext._cache
+
+
+# ---------------------------------------------------------------------------
+# File cache behavior
+# ---------------------------------------------------------------------------
+
+
+class TestFileCache:
+    def _make_extractor(self):
+        ext = _StubExtractor()
+        ext._underlying = MagicMock(return_value=["file1", "file2"])
+
+        @cached
+        def get_file_tree(self, repo_id, branch=None):
+            return self._underlying(repo_id, branch)
+
+        import types
+
+        ext.get_file_tree = types.MethodType(get_file_tree, ext)
+        return ext
+
+    def test_file_cache_hit_across_instances(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("EXTRACTOR_FILE_CACHE_ENABLED", "true")
+        monkeypatch.setenv("EXTRACTOR_FILE_CACHE_PATH", str(tmp_path))
+
+        ext1 = self._make_extractor()
+        ext1.get_file_tree("owner/repo")
+
+        ext2 = self._make_extractor()
+        result = ext2.get_file_tree("owner/repo")
+
+        assert result == ["file1", "file2"]
+        assert ext2._cache_hits == 1
+        assert ext2._cache_misses == 0
+        ext2._underlying.assert_not_called()
+
+    def test_file_cache_disabled_does_not_write(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("EXTRACTOR_FILE_CACHE_ENABLED", "false")
+        monkeypatch.setenv("EXTRACTOR_FILE_CACHE_PATH", str(tmp_path))
+
+        ext = self._make_extractor()
+        ext.get_file_tree("owner/repo")
+
+        assert list(tmp_path.rglob("*.json")) == []
+
+    def test_corrupt_file_cache_treated_as_miss(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("EXTRACTOR_FILE_CACHE_ENABLED", "true")
+        monkeypatch.setenv("EXTRACTOR_FILE_CACHE_PATH", str(tmp_path))
+
+        ext = self._make_extractor()
+        key = _make_cache_key("get_file_tree", ("owner/repo",), {})
+        cache_path = _file_cache_path("get_file_tree", key)
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
+        cache_path.write_text("not-json", encoding="utf-8")
+
+        result = ext.get_file_tree("owner/repo")
+
+        assert result == ["file1", "file2"]
+        assert ext._cache_misses == 1
+        ext._underlying.assert_called_once_with("owner/repo", None)

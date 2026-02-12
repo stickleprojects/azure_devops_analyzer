@@ -113,11 +113,14 @@ services:
       LOG_LEVEL: DEBUG
       PYTHONPATH: /app
       PYTHONDONTWRITEBYTECODE: 1
+      PYTHONPYCACHEPREFIX: /tmp/pycache
     volumes:
       # Mount source code (read-only for safety)
       - ./tests:/app/tests:ro
-      - ./src:/app/src:ro
+      - ./src:/app/src
       - ./database:/app/database:ro
+      - ./pyproject.toml:/app/pyproject.toml:ro
+      - ./.env:/app/.env:ro
       
       # Export test results to host
       - ./test-results:/app/test-results
