@@ -215,6 +215,29 @@ class RepositoryExtractor(ABC):
     to provide a consistent API for data extraction.
     """
 
+    def __init__(self):
+        self._cache: dict = {}
+        self._cache_hits: int = 0
+        self._cache_misses: int = 0
+        self._cache_method_stats: dict[str, dict[str, int]] = {}
+
+    def clear_cache(self) -> None:
+        """Reset the instance cache and counters."""
+        self._cache.clear()
+        self._cache_hits = 0
+        self._cache_misses = 0
+        self._cache_method_stats.clear()
+
+    @property
+    def cache_stats(self) -> dict:
+        """Return cache hit/miss/size statistics."""
+        return {
+            "hits": self._cache_hits,
+            "misses": self._cache_misses,
+            "size": len(self._cache),
+            "methods": dict(self._cache_method_stats),
+        }
+
     @property
     @abstractmethod
     def platform(self) -> Platform:

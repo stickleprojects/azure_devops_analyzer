@@ -40,12 +40,14 @@ from src.extractors.base import (
     FileTreeItem,
     LanguageData,
 )
+from src.extractors.cache import cached
 
 
 class AzureDevOpsExtractor(RepositoryExtractor):
     """Extractor for Azure DevOps repositories."""
 
     def __init__(self, config: Optional[AzureDevOpsExtractorConfig] = None):
+        super().__init__()
         self.config = config or AzureDevOpsExtractorConfig.from_env()
         self._git_client = None
         self._core_client = None
@@ -207,6 +209,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
 
     # ── Branches ──────────────────────────────────────────────────────
 
+    @cached
     def get_branches(self, repo_id: str) -> list[BranchData]:
         """Get all branches for a repository."""
         branches = self._api_call_with_retry(
@@ -223,6 +226,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
 
     # ── Languages ─────────────────────────────────────────────────────
 
+    @cached
     def get_languages(self, repo_id: str) -> list[LanguageData]:
         """
         Get programming language statistics for a repository.
@@ -651,6 +655,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
 
     # ── File Operations ───────────────────────────────────────────────
 
+    @cached
     def get_file_tree(
         self,
         repo_id: str,
@@ -682,6 +687,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
             if item.path != "/"
         ]
 
+    @cached
     def get_file_content(
         self,
         repo_id: str,
