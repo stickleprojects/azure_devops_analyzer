@@ -32,8 +32,7 @@ from src.database.storage import (
     start_repository_extraction,
     skip_repository_extraction,
     complete_repository_extraction,
-    fail_repository_extraction,
-    record_cache_stats,
+    fail_repository_extraction
 )
 from src.analyzers.dependency_analyzer import DependencyAnalyzer
 from src.analyzers.technology_detector import TechnologyDetector
