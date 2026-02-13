@@ -1,8 +1,11 @@
 """Pytest configuration for environment setup."""
 
 import os
+import shutil
 import sys
 from pathlib import Path
+
+import pytest
 
 
 def pytest_configure(config):
@@ -53,4 +56,29 @@ def pytest_configure(config):
     else:
         print(f"\n[OK] GITHUB_TOKEN loaded successfully from {env_file_used.name if env_file_used else 'unknown'}")
         print(f"  Token starts with: {github_token[:20]}...")
+
+
+@pytest.fixture(autouse=True)
+def _clear_extractor_file_cache_between_tests():
+    """Clear file cache between tests to avoid cross-test contamination."""
+    from src.config.github import _find_project_root
+    from src.extractors.cache import _file_cache_enabled, _file_cache_root
+
+    if _file_cache_enabled():
+        cache_root = _file_cache_root()
+        project_root = _find_project_root()
+        if cache_root.exists() and (
+            cache_root == project_root / ".cache" or project_root in cache_root.parents
+        ):
+            shutil.rmtree(cache_root, ignore_errors=True)
+
+    yield
+
+    if _file_cache_enabled():
+        cache_root = _file_cache_root()
+        project_root = _find_project_root()
+        if cache_root.exists() and (
+            cache_root == project_root / ".cache" or project_root in cache_root.parents
+        ):
+            shutil.rmtree(cache_root, ignore_errors=True)
 

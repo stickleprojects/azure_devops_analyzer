@@ -121,7 +121,7 @@ services:
       - ./database:/app/database:ro
       - ./pyproject.toml:/app/pyproject.toml:ro
       - ./.env:/app/.env:ro
-      
+      - ./src/.cache:/app/.cache
       # Export test results to host
       - ./test-results:/app/test-results
     depends_on:
