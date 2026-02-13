@@ -2,6 +2,30 @@
 
 ---
 
+## Session: 2026-02-13 - File Cache Completion
+
+### Summary
+
+Finalized the file-based extractor cache by preventing cross-test cache leakage while keeping cache tests valid. User ran the full Docker test suite successfully after the fix.
+
+### Changes
+
+1. **Test Isolation for File Cache**
+   - Added an autouse pytest fixture that clears the file cache between tests
+   - Prevents cached values from leaking across unit tests while preserving file cache behavior within each test
+
+### Files Modified
+
+- `tests/conftest.py` - Autouse fixture to clear file cache between tests
+
+### Testing
+
+- **Docker test suite**: ✅ Run by user after fix (reported passing)
+
+### Status
+
+- **File cache feature**: ✅ Complete
+
 ## Session: 2026-02-12 - Progress Status Update
 
 ### Summary
