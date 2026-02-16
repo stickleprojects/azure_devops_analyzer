@@ -270,6 +270,8 @@ class GitHubAnalysisWorkflow:
                     commits_extracted=commits_count,
                     pull_requests_extracted=prs_count,
                     branches_extracted=branches_count,
+                    cache_hits=stats["hits"],
+                    cache_misses=stats["misses"],
                 )
                 
             logger.info("      Cache stats for %s: %s", repo_data.repo_id, stats)
@@ -446,7 +448,6 @@ class GitHubAnalysisWorkflow:
                             repo_data.repo_id,
                             result.enriched_dependencies,
                             branch_name=repo_data.default_branch,
-                            analyzed_at=result.analyzed_at,
                         )
                     else:
                         # Fallback to unenriched if enrichment failed
@@ -455,7 +456,6 @@ class GitHubAnalysisWorkflow:
                             repo_data.repo_id,
                             result.dependencies,
                             branch_name=repo_data.default_branch,
-                            analyzed_at=result.analyzed_at,
                         )
                     
                     logger.info(

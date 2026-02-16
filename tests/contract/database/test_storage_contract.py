@@ -624,7 +624,8 @@ class TestLanguageStorage:
         assert python_lang.percentage == 65.5
         assert python_lang.repo_id == repo.repo_id
         assert python_lang.branch_id is None
-        assert python_lang.analyzed_at is not None
+        assert python_lang.first_seen_at is not None
+        assert python_lang.last_seen_at is not None
     
     def test_contract_store_languages_with_branch(self, db_session):
         """CONTRACT: Language statistics can be associated with specific branch."""

@@ -155,9 +155,13 @@ services:
       AZURE_BACKUP_CONTAINER: ${AZURE_BACKUP_CONTAINER}
       # Logging
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Extractor file cache
+      EXTRACTOR_FILE_CACHE_ENABLED: ${EXTRACTOR_FILE_CACHE_ENABLED:-false}
+      EXTRACTOR_FILE_CACHE_PATH: ${EXTRACTOR_FILE_CACHE_PATH:-.cache}
     volumes:
       - ./src:/app/src:ro
       - ./config:/app/config:ro
+      - ./.cache:/app/.cache
     depends_on:
       db-migrations:
         condition: service_completed_successfully

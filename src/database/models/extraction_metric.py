@@ -65,6 +65,8 @@ class ExtractionMetric(Base):
     pull_requests_extracted: Mapped[int] = mapped_column(Integer, default=0)
     branches_extracted: Mapped[int] = mapped_column(Integer, default=0)
     contributors_extracted: Mapped[int] = mapped_column(Integer, default=0)
+    cache_hits: Mapped[int] = mapped_column(Integer, default=0)
+    cache_misses: Mapped[int] = mapped_column(Integer, default=0)
     celery_task_id: Mapped[Optional[str]] = mapped_column(String(255))
     worker_hostname: Mapped[Optional[str]] = mapped_column(String(255))
     correlation_id: Mapped[uuid.UUID] = mapped_column(

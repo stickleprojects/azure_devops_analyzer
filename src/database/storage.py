@@ -197,6 +197,8 @@ def complete_repository_extraction(
     pull_requests_extracted: int = 0,
     branches_extracted: int = 0,
     contributors_extracted: int = 0,
+    cache_hits: int = 0,
+    cache_misses: int = 0,
 ) -> None:
     """
     Record a successful repository extraction completion.
@@ -215,6 +217,8 @@ def complete_repository_extraction(
     metric.pull_requests_extracted = pull_requests_extracted
     metric.branches_extracted = branches_extracted
     metric.contributors_extracted = contributors_extracted
+    metric.cache_hits = cache_hits
+    metric.cache_misses = cache_misses
     session.flush()
 
 
@@ -511,37 +515,49 @@ def store_languages(
     repo_id: str,
     languages: list[LanguageData],
     branch_id: Optional[int] = None,
-    analyzed_at: Optional[datetime] = None,
 ) -> list[RepositoryLanguage]:
     """
-    Store language statistics for a repository.
+    Upsert language statistics for a repository.
+
+    Uses (repo_id, language) as the natural key. On first insert sets
+    first_seen_at; on every run updates last_seen_at and stats.
 
     Args:
         session: Database session.
         repo_id: Repository ID.
         languages: List of language data from extractor.
         branch_id: Optional branch ID (None for repository-wide stats).
-        analyzed_at: Timestamp of analysis (defaults to now).
 
     Returns:
-        List of created RepositoryLanguage instances.
+        List of upserted RepositoryLanguage instances.
     """
-    if analyzed_at is None:
-        analyzed_at = datetime.now(UTC)
-
+    now = datetime.now(UTC)
     results = []
     for lang_data in languages:
-        lang = RepositoryLanguage(
-            repo_id=repo_id,
-            branch_id=branch_id,
-            language=lang_data.language,
-            percentage=lang_data.percentage,
-            line_count=None,  # Not provided by GitHub API
-            byte_count=lang_data.byte_count,
-            analyzed_at=analyzed_at,
+        existing = (
+            session.query(RepositoryLanguage)
+            .filter_by(repo_id=repo_id, language=lang_data.language)
+            .first()
         )
-        session.add(lang)
-        results.append(lang)
+        if existing:
+            existing.percentage = lang_data.percentage
+            existing.byte_count = lang_data.byte_count
+            existing.branch_id = branch_id
+            existing.last_seen_at = now
+            results.append(existing)
+        else:
+            lang = RepositoryLanguage(
+                repo_id=repo_id,
+                branch_id=branch_id,
+                language=lang_data.language,
+                percentage=lang_data.percentage,
+                line_count=None,
+                byte_count=lang_data.byte_count,
+                first_seen_at=now,
+                last_seen_at=now,
+            )
+            session.add(lang)
+            results.append(lang)
 
     return results
 
@@ -865,64 +881,74 @@ def store_readme(
         return readme_file
 
 
+def _resolve_branch_id(
+    session: Session, repo_id: str, branch_name: Optional[str]
+) -> Optional[int]:
+    """Resolve a branch name to its ID."""
+    if not branch_name:
+        return None
+    branch = (
+        session.query(Branch)
+        .filter_by(repo_id=repo_id, branch_name=branch_name)
+        .first()
+    )
+    return branch.branch_id if branch else None
+
+
 def store_dependencies(
     session: Session,
     repo_id: str,
     dependencies: list[DependencyData],
     branch_name: Optional[str] = None,
-    analyzed_at: Optional[datetime] = None,
 ) -> list[Dependency]:
     """
-    Store dependencies for a repository.
+    Upsert dependencies for a repository.
 
-    This function performs an upsert operation, replacing existing dependencies
-    for the repository/branch combination with the new set.
+    Uses (repo_id, package_name, ecosystem) as the natural key.
+    On first insert sets first_seen_at; on every run updates last_seen_at.
 
     Args:
         session: Database session.
         repo_id: Repository identifier.
         dependencies: List of DependencyData to store.
         branch_name: Branch name (optional).
-        analyzed_at: Timestamp for the analysis (defaults to now).
 
     Returns:
         List of stored Dependency instances.
     """
-    if analyzed_at is None:
-        analyzed_at = datetime.now(UTC)
+    now = datetime.now(UTC)
+    branch_id = _resolve_branch_id(session, repo_id, branch_name)
 
-    # Find branch_id if branch_name is provided
-    branch_id = None
-    if branch_name:
-        branch = (
-            session.query(Branch)
-            .filter_by(repo_id=repo_id, branch_name=branch_name)
-            .first()
-        )
-        if branch:
-            branch_id = branch.branch_id
-
-    # Delete existing dependencies for this repo/branch
-    delete_query = session.query(Dependency).filter(
-        Dependency.repo_id == repo_id,
-        Dependency.branch_id == branch_id,
-    )
-    delete_query.delete(synchronize_session=False)
-
-    # Store new dependencies
     stored_deps = []
     for dep_data in dependencies:
-        dep = Dependency(
-            repo_id=repo_id,
-            branch_id=branch_id,
-            package_name=dep_data.package_name,
-            version=dep_data.version,
-            ecosystem=dep_data.ecosystem,
-            is_dev_dependency=dep_data.is_dev_dependency,
-            analyzed_at=analyzed_at,
+        existing = (
+            session.query(Dependency)
+            .filter_by(
+                repo_id=repo_id,
+                package_name=dep_data.package_name,
+                ecosystem=dep_data.ecosystem,
+            )
+            .first()
         )
-        session.add(dep)
-        stored_deps.append(dep)
+        if existing:
+            existing.version = dep_data.version
+            existing.is_dev_dependency = dep_data.is_dev_dependency
+            existing.branch_id = branch_id
+            existing.last_seen_at = now
+            stored_deps.append(existing)
+        else:
+            dep = Dependency(
+                repo_id=repo_id,
+                branch_id=branch_id,
+                package_name=dep_data.package_name,
+                version=dep_data.version,
+                ecosystem=dep_data.ecosystem,
+                is_dev_dependency=dep_data.is_dev_dependency,
+                first_seen_at=now,
+                last_seen_at=now,
+            )
+            session.add(dep)
+            stored_deps.append(dep)
 
     return stored_deps
 
@@ -932,68 +958,63 @@ def store_enriched_dependencies(
     repo_id: str,
     enriched_dependencies: list,
     branch_name: Optional[str] = None,
-    analyzed_at: Optional[datetime] = None,
 ) -> list[Dependency]:
     """
-    Store enriched dependencies for a repository.
+    Upsert enriched dependencies for a repository.
 
-    This function stores dependencies with additional data from external APIs:
-    - latest_version from OSV.dev
-    - eol_date and is_eol from endoflife.date
-    - has_vulnerabilities and vulnerability metadata
-
-    Performs an upsert operation, replacing existing dependencies for the
-    repository/branch combination with the new set.
+    Uses (repo_id, package_name, ecosystem) as the natural key.
+    Includes enrichment fields from OSV.dev and endoflife.date.
 
     Args:
         session: Database session.
         repo_id: Repository identifier.
         enriched_dependencies: List of EnrichedDependency objects.
         branch_name: Branch name (optional).
-        analyzed_at: Timestamp for the analysis (defaults to now).
 
     Returns:
         List of stored Dependency instances.
     """
-    if analyzed_at is None:
-        analyzed_at = datetime.now(UTC)
+    now = datetime.now(UTC)
+    branch_id = _resolve_branch_id(session, repo_id, branch_name)
 
-    # Find branch_id if branch_name is provided
-    branch_id = None
-    if branch_name:
-        branch = (
-            session.query(Branch)
-            .filter_by(repo_id=repo_id, branch_name=branch_name)
-            .first()
-        )
-        if branch:
-            branch_id = branch.branch_id
-
-    # Delete existing dependencies for this repo/branch
-    delete_query = session.query(Dependency).filter(
-        Dependency.repo_id == repo_id,
-        Dependency.branch_id == branch_id,
-    )
-    delete_query.delete(synchronize_session=False)
-
-    # Store new enriched dependencies
     stored_deps = []
     for enriched_dep in enriched_dependencies:
-        dep = Dependency(
-            repo_id=repo_id,
-            branch_id=branch_id,
-            package_name=enriched_dep.package_name,
-            version=enriched_dep.version,
-            ecosystem=enriched_dep.ecosystem,
-            latest_version=enriched_dep.latest_version,
-            is_dev_dependency=enriched_dep.is_dev_dependency,
-            has_vulnerabilities=enriched_dep.has_vulnerabilities,
-            is_eol=enriched_dep.is_eol,
-            eol_date=enriched_dep.eol_date,
-            analyzed_at=analyzed_at,
+        existing = (
+            session.query(Dependency)
+            .filter_by(
+                repo_id=repo_id,
+                package_name=enriched_dep.package_name,
+                ecosystem=enriched_dep.ecosystem,
+            )
+            .first()
         )
-        session.add(dep)
-        stored_deps.append(dep)
+        if existing:
+            existing.version = enriched_dep.version
+            existing.latest_version = enriched_dep.latest_version
+            existing.is_dev_dependency = enriched_dep.is_dev_dependency
+            existing.has_vulnerabilities = enriched_dep.has_vulnerabilities
+            existing.is_eol = enriched_dep.is_eol
+            existing.eol_date = enriched_dep.eol_date
+            existing.branch_id = branch_id
+            existing.last_seen_at = now
+            stored_deps.append(existing)
+        else:
+            dep = Dependency(
+                repo_id=repo_id,
+                branch_id=branch_id,
+                package_name=enriched_dep.package_name,
+                version=enriched_dep.version,
+                ecosystem=enriched_dep.ecosystem,
+                latest_version=enriched_dep.latest_version,
+                is_dev_dependency=enriched_dep.is_dev_dependency,
+                has_vulnerabilities=enriched_dep.has_vulnerabilities,
+                is_eol=enriched_dep.is_eol,
+                eol_date=enriched_dep.eol_date,
+                first_seen_at=now,
+                last_seen_at=now,
+            )
+            session.add(dep)
+            stored_deps.append(dep)
 
     return stored_deps
 
