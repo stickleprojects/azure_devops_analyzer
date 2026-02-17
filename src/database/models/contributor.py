@@ -6,7 +6,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database.models.base import Base
@@ -65,21 +65,18 @@ class ContributorMetric(Base):
     """
 
     __tablename__ = "contributor_metrics"
-    __table_args__ = (
-        UniqueConstraint(
-            "repo_id", "contributor_id", "period_start",
-            name="uq_contributor_metrics_time_series"
-        ),
-    )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     repo_id: Mapped[str] = mapped_column(
-        String(255), ForeignKey("repositories.repo_id", ondelete="CASCADE")
+        String(255), ForeignKey("repositories.repo_id", ondelete="CASCADE"),
+        primary_key=True,
     )
     contributor_id: Mapped[int] = mapped_column(
-        ForeignKey("contributors.id", ondelete="CASCADE")
+        ForeignKey("contributors.id", ondelete="CASCADE"),
+        primary_key=True,
     )
-    period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    period_start: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, primary_key=True,
+    )
     period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     commit_count: Mapped[int] = mapped_column(Integer, default=0)
     lines_added: Mapped[int] = mapped_column(Integer, default=0)

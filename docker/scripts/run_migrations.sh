@@ -36,7 +36,7 @@ log_error() {
 # Wait for PostgreSQL to be ready
 log_info "Waiting for PostgreSQL to be ready at $POSTGRES_HOST:$POSTGRES_PORT..."
 for i in {1..30}; do
-    if PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1" >/dev/null 2>&1; then
+    if PGPASSWORD="$POSTGRES_PASSWORD" psql --no-password -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1" >/dev/null 2>&1; then
         log_success "PostgreSQL is ready"
         break
     fi

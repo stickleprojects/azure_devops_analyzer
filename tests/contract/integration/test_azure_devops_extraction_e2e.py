@@ -393,12 +393,17 @@ class TestAzureDevOpsLanguageDetection:
                 assert stored_lang.language is not None
                 assert stored_lang.byte_count >= 0
                 assert stored_lang.percentage is not None
-                assert stored_lang.analyzed_at is not None
-                # Ensure timestamp is timezone-aware (assume UTC if naive from DB)
-                if stored_lang.analyzed_at.tzinfo is None:
-                    stored_lang.analyzed_at = stored_lang.analyzed_at.replace(tzinfo=UTC)
-                assert stored_lang.analyzed_at.tzinfo is not None, \
-                    "analyzed_at should be timezone-aware"
+                assert stored_lang.first_seen_at is not None
+                assert stored_lang.last_seen_at is not None
+                # Ensure timestamps are timezone-aware (assume UTC if naive from DB)
+                if stored_lang.first_seen_at.tzinfo is None:
+                    stored_lang.first_seen_at = stored_lang.first_seen_at.replace(tzinfo=UTC)
+                if stored_lang.last_seen_at.tzinfo is None:
+                    stored_lang.last_seen_at = stored_lang.last_seen_at.replace(tzinfo=UTC)
+                assert stored_lang.first_seen_at.tzinfo is not None, \
+                    "first_seen_at should be timezone-aware"
+                assert stored_lang.last_seen_at.tzinfo is not None, \
+                    "last_seen_at should be timezone-aware"
 
     @pytest.mark.integration
     def test_language_storage_time_series(
@@ -406,12 +411,12 @@ class TestAzureDevOpsLanguageDetection:
         test_session: Session
     ):
         """
-        CONTRACT: Language data can be stored multiple times for time-series tracking.
+        CONTRACT: Language data can be stored and updated across runs.
         
         Verify:
-        - Multiple language snapshots can be stored
-        - analyzed_at timestamps distinguish snapshots
-        - TimescaleDB hypertable accepts data
+        - Languages are upserted by (repo_id, language)
+        - first_seen_at stays stable
+        - last_seen_at updates on subsequent runs
         """
         from datetime import timedelta, UTC
         
@@ -430,8 +435,7 @@ class TestAzureDevOpsLanguageDetection:
         languages_v1 = [
             LanguageData(language="Python", byte_count=15000, percentage=100.0),
         ]
-        now = datetime.now(UTC)
-        store_languages(test_session, repo.repo_id, languages_v1, analyzed_at=now)
+        store_languages(test_session, repo.repo_id, languages_v1)
         test_session.commit()
         
         # Store second snapshot (1 hour later)
@@ -439,29 +443,22 @@ class TestAzureDevOpsLanguageDetection:
             LanguageData(language="Python", byte_count=12000, percentage=75.0),
             LanguageData(language="JavaScript", byte_count=4000, percentage=25.0),
         ]
-        later = now + timedelta(hours=1)
-        store_languages(test_session, repo.repo_id, languages_v2, analyzed_at=later)
+        store_languages(test_session, repo.repo_id, languages_v2)
         test_session.commit()
         
-        # Assert: Both snapshots stored
+        # Assert: Latest snapshot stored (upserted)
         all_snapshots = test_session.query(RepositoryLanguage).filter_by(
             repo_id=repo.repo_id
-        ).order_by(RepositoryLanguage.analyzed_at).all()
+        ).order_by(RepositoryLanguage.last_seen_at).all()
         
-        assert len(all_snapshots) == 3, \
-            f"Expected 3 language records (1 + 2), got {len(all_snapshots)}"
+        assert len(all_snapshots) == 2, \
+            f"Expected 2 language records (upserted), got {len(all_snapshots)}"
         
-        # Assert: First snapshot (oldest timestamp)
-        assert all_snapshots[0].language == "Python"
-        assert all_snapshots[0].byte_count == 15000
-        assert all_snapshots[0].percentage == 100.0
-        
-        # Assert: Second snapshot (newer timestamps)
-        lang_names = {all_snapshots[1].language, all_snapshots[2].language}
+        lang_names = {snapshot.language for snapshot in all_snapshots}
         assert lang_names == {"Python", "JavaScript"}
-        # Verify the second snapshot has updated data
-        python_record = [s for s in all_snapshots[1:] if s.language == "Python"][0]
+        python_record = next(s for s in all_snapshots if s.language == "Python")
         assert python_record.byte_count == 12000
+        assert python_record.first_seen_at <= python_record.last_seen_at
 
 
 class TestAzureDevOpsTechnologyDetection:

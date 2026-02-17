@@ -122,6 +122,8 @@ CREATE TABLE extraction_metrics (
     pull_requests_extracted INTEGER DEFAULT 0,
     branches_extracted INTEGER DEFAULT 0,
     contributors_extracted INTEGER DEFAULT 0,
+    cache_hits INTEGER DEFAULT 0,
+    cache_misses INTEGER DEFAULT 0,
     celery_task_id VARCHAR(255),
     worker_hostname VARCHAR(255),
     correlation_id UUID NOT NULL,
@@ -158,7 +160,7 @@ CREATE INDEX idx_branch_last_analyzed ON branches(last_analyzed_at);
 -- LANGUAGE AND DEPENDENCY TABLES
 -- =============================================================================
 
--- Repository Languages (Time-series)
+-- Repository Languages
 CREATE TABLE repository_languages (
     id SERIAL PRIMARY KEY,
     repo_id VARCHAR(255),
@@ -167,21 +169,18 @@ CREATE TABLE repository_languages (
     percentage DECIMAL(5,2),
     line_count INTEGER,
     byte_count BIGINT,
-    analyzed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    first_seen_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (repo_id, language),
     CONSTRAINT fk_repolang_repository FOREIGN KEY (repo_id) REFERENCES repositories(repo_id) ON DELETE CASCADE,
     CONSTRAINT fk_repolang_branch FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_lang_repo ON repository_languages(repo_id);
 CREATE INDEX idx_lang_branch ON repository_languages(branch_id);
-CREATE INDEX idx_lang_analyzed ON repository_languages(analyzed_at);
+CREATE INDEX idx_lang_last_seen ON repository_languages(last_seen_at);
 
-SELECT create_hypertable('repository_languages', 'analyzed_at',
-    chunk_time_interval => INTERVAL '1 month',
-    if_not_exists => TRUE
-);
-
--- Dependencies (Time-series)
+-- Dependencies
 CREATE TABLE dependencies (
     id SERIAL PRIMARY KEY,
     repo_id VARCHAR(255),
@@ -194,7 +193,9 @@ CREATE TABLE dependencies (
     has_vulnerabilities BOOLEAN DEFAULT FALSE,
     is_eol BOOLEAN DEFAULT FALSE,
     eol_date DATE,
-    analyzed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    first_seen_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (repo_id, package_name, ecosystem),
     CONSTRAINT fk_dependency_repository FOREIGN KEY (repo_id) REFERENCES repositories(repo_id) ON DELETE CASCADE,
     CONSTRAINT fk_dependency_branch FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE CASCADE
 );
@@ -203,12 +204,7 @@ CREATE INDEX idx_dep_repo ON dependencies(repo_id);
 CREATE INDEX idx_dep_branch ON dependencies(branch_id);
 CREATE INDEX idx_dep_has_vuln ON dependencies(has_vulnerabilities);
 CREATE INDEX idx_dep_is_eol ON dependencies(is_eol);
-CREATE INDEX idx_dep_analyzed ON dependencies(analyzed_at);
-
-SELECT create_hypertable('dependencies', 'analyzed_at',
-    chunk_time_interval => INTERVAL '1 month',
-    if_not_exists => TRUE
-);
+CREATE INDEX idx_dep_last_seen ON dependencies(last_seen_at);
 
 -- Vulnerabilities
 CREATE TABLE vulnerabilities (
@@ -222,7 +218,7 @@ CREATE TABLE vulnerabilities (
     published_date TIMESTAMPTZ,
     modified_date TIMESTAMPTZ,
     fixed_in_version VARCHAR(100),
-    references JSONB,  -- Array of reference URLs
+    "references" JSONB,  -- Array of reference URLs
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_vulnerability_dependency FOREIGN KEY (dependency_id) REFERENCES dependencies(id) ON DELETE CASCADE
 );
@@ -394,7 +390,6 @@ CREATE INDEX idx_team_metrics_period ON team_metrics(period_start DESC, period_e
 
 -- Contributor Metrics (Time-series)
 CREATE TABLE contributor_metrics (
-    id BIGSERIAL PRIMARY KEY,
     repo_id VARCHAR(255),
     contributor_id INTEGER,
     period_start TIMESTAMPTZ NOT NULL,
@@ -408,7 +403,7 @@ CREATE TABLE contributor_metrics (
     pr_approvals INTEGER DEFAULT 0,
     active_days INTEGER DEFAULT 0,
     avg_commit_message_quality DECIMAL(5,2),
-    UNIQUE (repo_id, contributor_id, period_start),
+    PRIMARY KEY (repo_id, contributor_id, period_start),
     CONSTRAINT fk_contribmetrics_repository FOREIGN KEY (repo_id) REFERENCES repositories(repo_id) ON DELETE CASCADE,
     CONSTRAINT fk_contribmetrics_contributor FOREIGN KEY (contributor_id) REFERENCES contributors(id) ON DELETE CASCADE
 );
@@ -584,7 +579,6 @@ CREATE INDEX idx_repo_service_service ON repository_services(service_id);
 
 -- Composite indexes for common queries
 CREATE INDEX idx_quality_repo_timestamp ON code_quality_metrics(repo_id, timestamp DESC);
-CREATE INDEX idx_dep_repo_timestamp ON dependencies(repo_id, analyzed_at DESC);
 CREATE INDEX idx_contrib_metrics_repo_period ON contributor_metrics(repo_id, period_start DESC);
 CREATE INDEX idx_pr_repo_status_created ON pull_requests(repo_id, status, created_at DESC);
 

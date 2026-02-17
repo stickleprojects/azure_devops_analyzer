@@ -473,7 +473,6 @@ class AzureDevOpsAnalysisWorkflow:
                             repo_data.repo_id,
                             result.enriched_dependencies,
                             branch_name=repo_data.default_branch,
-                            analyzed_at=result.analyzed_at,
                         )
                     else:
                         # Fallback to unenriched if enrichment failed
@@ -482,7 +481,6 @@ class AzureDevOpsAnalysisWorkflow:
                             repo_data.repo_id,
                             result.dependencies,
                             branch_name=repo_data.default_branch,
-                            analyzed_at=result.analyzed_at,
                         )
                     
                     logger.info(

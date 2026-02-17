@@ -19,7 +19,8 @@ class Dependency(Base):
     """
     Package dependency for a repository.
 
-    This is a TimescaleDB hypertable with 1-month chunks, partitioned by analyzed_at.
+    Upserted on (repo_id, package_name, ecosystem). Tracks first_seen_at and
+    last_seen_at to infer when dependencies are added or removed.
     """
 
     __tablename__ = "dependencies"
@@ -39,7 +40,8 @@ class Dependency(Base):
     has_vulnerabilities: Mapped[bool] = mapped_column(Boolean, default=False)
     is_eol: Mapped[bool] = mapped_column(Boolean, default=False)
     eol_date: Mapped[Optional[date]] = mapped_column(Date)
-    analyzed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     # Relationships
     repository: Mapped["Repository"] = relationship(back_populates="dependencies")

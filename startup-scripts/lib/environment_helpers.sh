@@ -30,19 +30,27 @@ select_env_variable() {
         fi
     done < <(env | cut -d= -f1 | sort)
 
-    if [ ${#matches[@]} -eq 0 ]; then
-        write_warning "No environment variables matched '$search_term'"
+    local tty_source="/dev/tty"
+    if [ ! -r "$tty_source" ]; then
+        write_warning "No TTY available for environment variable selection."
         echo ""
         return 0
     fi
 
-    write_info "Select an environment variable value:"
+    if [ ${#matches[@]} -eq 0 ]; then
+        printf "No environment variables matched '%s'\n" "$search_term" > "$tty_source"
+        echo ""
+        return 0
+    fi
+
+    printf "Select an environment variable value:\n" > "$tty_source"
     local i
     for i in "${!matches[@]}"; do
-        printf "  [%d] %s\n" "$((i + 1))" "${matches[$i]}"
+        printf "  [%d] %s\n" "$((i + 1))" "${matches[$i]}" > "$tty_source"
     done
 
-    read -r -p "Enter number (or press Enter to cancel): " choice
+    printf "Enter number (or press Enter to cancel): " > "$tty_source"
+    IFS= read -r choice < "$tty_source"
     if [ -z "$choice" ]; then
         echo ""
         return 0

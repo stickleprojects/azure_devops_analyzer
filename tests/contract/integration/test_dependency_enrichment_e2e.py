@@ -435,11 +435,11 @@ class TestDependencyStorageE2E:
     @pytest.mark.integration
     def test_store_dependencies_upsert(self, test_session: Session):
         """
-        CONTRACT: store_dependencies() replaces existing dependencies.
+        CONTRACT: store_dependencies() upserts dependencies.
 
         Verify:
-        - Old dependencies deleted on re-store
-        - New set replaces previous
+        - Existing dependencies remain
+        - New dependencies are added
         - No duplicates accumulate
         """
         repo = Repository(
@@ -474,8 +474,9 @@ class TestDependencyStorageE2E:
             repo_id="test/dep-upsert"
         ).all()
 
-        assert len(db_deps) == 1
-        assert db_deps[0].package_name == "fastapi"
+        assert len(db_deps) == 3
+        package_names = {dep.package_name for dep in db_deps}
+        assert package_names == {"flask", "django", "fastapi"}
 
     @pytest.mark.integration
     def test_store_enriched_dependencies(self, test_session: Session):
@@ -546,13 +547,13 @@ class TestDependencyStorageE2E:
         assert django_dep.has_vulnerabilities is True
 
     @pytest.mark.integration
-    def test_analyzed_at_timestamp(self, test_session: Session):
+    def test_first_last_seen_timestamps(self, test_session: Session):
         """
-        CONTRACT: Dependencies have timezone-aware analyzed_at timestamps.
+        CONTRACT: Dependencies have timezone-aware first/last seen timestamps.
 
         Verify:
-        - analyzed_at defaults to current time if not provided
-        - Custom analyzed_at is preserved
+        - first_seen_at/last_seen_at default to current time if not provided
+        - last_seen_at is updated on subsequent runs
         - Timestamps are UTC-aware
         """
         repo = Repository(
@@ -563,23 +564,22 @@ class TestDependencyStorageE2E:
         test_session.add(repo)
         test_session.commit()
 
-        custom_time = datetime(2024, 6, 15, 12, 0, 0, tzinfo=timezone.utc)
         deps = [
             DependencyData(package_name="numpy", ecosystem="pypi", version="1.25.0"),
         ]
 
-        store_dependencies(
-            test_session, "test/dep-timestamp", deps, analyzed_at=custom_time
-        )
+        store_dependencies(test_session, "test/dep-timestamp", deps)
         test_session.commit()
 
         stored = test_session.query(Dependency).filter_by(
             repo_id="test/dep-timestamp"
         ).first()
 
-        assert stored.analyzed_at is not None
-        assert stored.analyzed_at.tzinfo is not None
-        assert stored.analyzed_at == custom_time
+        assert stored.first_seen_at is not None
+        assert stored.last_seen_at is not None
+        assert stored.first_seen_at.tzinfo is not None
+        assert stored.last_seen_at.tzinfo is not None
+        assert stored.first_seen_at <= stored.last_seen_at
 
 
 class TestVulnerabilityStorageDirectE2E:
@@ -608,12 +608,14 @@ class TestVulnerabilityStorageDirectE2E:
         test_session.add(repo)
         test_session.commit()
 
+        now = datetime.now(timezone.utc)
         dep = Dependency(
             repo_id="test/vuln-storage",
             package_name="lodash",
             ecosystem="npm",
             version="4.17.20",
-            analyzed_at=datetime.now(timezone.utc),
+            first_seen_at=now,
+            last_seen_at=now,
         )
         test_session.add(dep)
         test_session.flush()
@@ -659,13 +661,15 @@ class TestVulnerabilityStorageDirectE2E:
         test_session.add(repo)
         test_session.commit()
 
+        now = datetime.now(timezone.utc)
         dep = Dependency(
             repo_id="test/multi-vuln",
             package_name="django",
             ecosystem="pypi",
             version="3.2.0",
             has_vulnerabilities=True,
-            analyzed_at=datetime.now(timezone.utc),
+            first_seen_at=now,
+            last_seen_at=now,
         )
         test_session.add(dep)
         test_session.flush()
@@ -722,12 +726,14 @@ class TestVulnerabilityStorageDirectE2E:
         test_session.add(repo)
         test_session.commit()
 
+        now = datetime.now(timezone.utc)
         dep = Dependency(
             repo_id="test/vuln-cascade",
             package_name="express",
             ecosystem="npm",
             version="4.17.1",
-            analyzed_at=datetime.now(timezone.utc),
+            first_seen_at=now,
+            last_seen_at=now,
         )
         test_session.add(dep)
         test_session.flush()

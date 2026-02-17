@@ -184,24 +184,35 @@ class TestGetRepositoriesLive:
 
         extractor = GitHubExtractor()
 
-        print(f"\n{'='*60}")
-        print(f"Testing get_repositories for: {self.target_account}")
-        print(f"Type: {'User' if self.github_user else 'Organization'}")
-        print(f"{'='*60}")
+        print(f"\n{'='*70}")
+        print(f"PRIVATE REPO TEST - Extractor.get_repositories()")
+        print(f"{'='*70}")
+        print(f"Target Account: {self.target_account}")
+        print(f"Account Type:   {'User' if self.github_user else 'Organization'}")
+        print(f"Looking for:    {self.private_repo}")
 
         repos = extractor.get_repositories(self.target_account)
+        repo_ids = sorted([r.repo_id for r in repos])
         repo_names = [r.name for r in repos]
 
         print(f"\nExtractor returned {len(repos)} repositories:")
-        for name in sorted(repo_names):
-            print(f"  - {name}")
+        for repo_id in repo_ids:
+            marker = " <-- TARGET" if repo_id == self.private_repo else ""
+            print(f"  - {repo_id}{marker}")
 
         # Check for the configured private repo
-        assert self.private_repo in repo_names, (
+        if self.private_repo not in repo_ids:
+            print(f"\n✗ ERROR: Repository '{self.private_repo}' NOT found")
+            print(f"\nDEBUG: Checking by name instead...")
+            print(f"  Looking for name: {self.private_repo.split('/')[-1]}")
+            print(f"  Available names: {sorted(repo_names)}")
+        
+        assert self.private_repo in repo_ids, (
             f"Repository '{self.private_repo}' not found in extractor results.\n"
-            f"Returned repos: {sorted(repo_names)}"
+            f"Returned repos: {repo_ids}"
         )
-        print(f"\n✓ '{self.private_repo}' found in results")
+        print(f"\n✓ SUCCESS: '{self.private_repo}' found in results")
+        print(f"{'='*70}\n")
 
     def test_direct_api_finds_private_repo(self):
         """
@@ -213,34 +224,45 @@ class TestGetRepositoriesLive:
         auth = Auth.Token(self.github_token)
         client = Github(auth=auth)
 
-        print(f"\n{'='*60}")
-        print(f"Direct API: Finding '{self.private_repo}'")
-        print(f"{'='*60}")
+        print(f"\n{'='*70}")
+        print(f"PRIVATE REPO TEST - Direct GitHub API Calls")
+        print(f"{'='*70}")
+        print(f"Target Account: {self.target_account}")
+        print(f"Looking for:    {self.private_repo}")
 
         # Method 1: Authenticated user's repos
-        print("\n1. client.get_user().get_repos(visibility='all'):")
+        print(f"\n1. get_user().get_repos(visibility='all'):")
         auth_user = client.get_user()
         all_repos = list(auth_user.get_repos(visibility="all"))
-        repo_names = [r.name for r in all_repos]
-        found = self.private_repo in repo_names
-
-        print(f"   Total repos: {len(all_repos)}")
-        print(f"   '{self.private_repo}' found: {found}")
+        repo_items = [(r.full_name, r.private) for r in all_repos]
+        repo_items.sort()
+        
+        print(f"   Found {len(all_repos)} repositories:")
+        for full_name, is_private in repo_items:
+            marker = " <-- TARGET" if full_name == self.private_repo else ""
+            private_flag = "🔒 PRIVATE" if is_private else "🌐 PUBLIC"
+            print(f"     - {full_name} ({private_flag}){marker}")
+        
+        found = self.private_repo in [r[0] for r in repo_items]
+        print(f"\n   Result: '{self.private_repo}' {'✓ FOUND' if found else '✗ NOT FOUND'}")
 
         if found:
-            repo = next(r for r in all_repos if r.name == self.private_repo)
-            print(f"   Private: {repo.private}")
-            print(f"   Owner: {repo.owner.login}")
+            repo = next(r for r in all_repos if r.full_name == self.private_repo)
+            print(f"   Details: Private={repo.private}, Owner={repo.owner.login}")
 
         # Method 2: Try to get repo directly
-        print(f"\n2. client.get_repo('{self.target_account}/{self.private_repo}'):")
+        print(f"\n2. get_repo('{self.private_repo}'):")
         try:
-            repo = client.get_repo(f"{self.target_account}/{self.private_repo}")
-            print(f"   Found! Private: {repo.private}, Owner: {repo.owner.login}")
+            repo = client.get_repo(self.private_repo)
+            print(f"   ✓ Found! Private={repo.private}, Owner={repo.owner.login}")
         except Exception as e:
-            print(f"   Error: {e}")
+            print(f"   ✗ Error: {e}")
 
-        assert found, f"{self.private_repo} not found via direct API call"
+        print(f"{'='*70}\n")
+        assert found, (
+            f"'{self.private_repo}' not found via direct API.\n"
+            f"Available repos listed above - check if credentials have access."
+        )
 
     def test_debug_extractor_code_path(self):
         """

@@ -12,15 +12,22 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       TIMESCALEDB_TELEMETRY: ${TIMESCALEDB_TELEMETRY:-off}
+      # PostgreSQL tuning for 7.75GB RAM, 2 CPUs
+      POSTGRES_MAX_CONNECTIONS: "100"
+      POSTGRES_SHARED_BUFFERS: "1900MB"
+      POSTGRES_EFFECTIVE_CACHE_SIZE: "5850MB"
+      POSTGRES_WORK_MEM: "9MB"
+      POSTGRES_MAINTENANCE_WORK_MEM: "475MB"
     volumes:
       - timescaledb_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
     networks:
       - analyzer-network
 
@@ -39,6 +46,10 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_HOST: ${POSTGRES_HOST}
       POSTGRES_PORT: ${POSTGRES_PORT}
+    volumes:
+      # Mount schema and migrations at runtime for development (no rebuild needed)
+      - ./database/schema.sql:/migrations/schema.sql:ro
+      - ./database/migrations:/migrations/migrations:ro
     depends_on:
       timescaledb:
         condition: service_healthy
@@ -155,9 +166,13 @@ services:
       AZURE_BACKUP_CONTAINER: ${AZURE_BACKUP_CONTAINER}
       # Logging
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      # Extractor file cache
+      EXTRACTOR_FILE_CACHE_ENABLED: ${EXTRACTOR_FILE_CACHE_ENABLED:-false}
+      EXTRACTOR_FILE_CACHE_PATH: ${EXTRACTOR_FILE_CACHE_PATH:-.cache}
     volumes:
       - ./src:/app/src:ro
       - ./config:/app/config:ro
+      - ./.cache:/app/.cache
     depends_on:
       db-migrations:
         condition: service_completed_successfully
@@ -233,6 +248,8 @@ services:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}

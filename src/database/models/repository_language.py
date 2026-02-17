@@ -1,5 +1,5 @@
 """
-Repository language model (TimescaleDB hypertable).
+Repository language model.
 """
 
 from datetime import datetime
@@ -19,7 +19,8 @@ class RepositoryLanguage(Base):
     """
     Programming language statistics for a repository.
 
-    This is a TimescaleDB hypertable with 1-month chunks, partitioned by analyzed_at.
+    Upserted on (repo_id, language). Tracks first_seen_at and last_seen_at
+    to infer when languages are added or removed.
     """
 
     __tablename__ = "repository_languages"
@@ -35,7 +36,8 @@ class RepositoryLanguage(Base):
     percentage: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2))
     line_count: Mapped[Optional[int]] = mapped_column(Integer)
     byte_count: Mapped[Optional[int]] = mapped_column(BigInteger)
-    analyzed_at: Mapped[datetime] = mapped_column(nullable=False)
+    first_seen_at: Mapped[datetime] = mapped_column(nullable=False)
+    last_seen_at: Mapped[datetime] = mapped_column(nullable=False)
 
     # Relationships
     repository: Mapped["Repository"] = relationship(back_populates="languages")

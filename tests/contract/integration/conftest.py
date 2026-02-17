@@ -70,7 +70,11 @@ def test_database_url(env_setup):
 
 @pytest.fixture(scope="session")
 def github_config(env_setup):
-    """Load GitHub API configuration from environment."""
+    """Load GitHub API configuration from environment.
+    
+    NOTE: File caching disabled for all integration tests in pytest_configure
+    to prevent stale cache interfering with test expectations.
+    """
     try:
         config = GitHubExtractorConfig.from_env()
         if not config.token:
