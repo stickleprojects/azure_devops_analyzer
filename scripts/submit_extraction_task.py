@@ -22,7 +22,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.scheduler.celery_app import celery_app
-from src.scheduler.tasks import run_azure_devops_extraction_task, run_github_extraction
+from src.scheduler.tasks import run_github_extraction
+from src.scheduler.tasks import run_azure_devops_extraction_task
 
 
 def setup_logging(verbose: bool = False) -> None:

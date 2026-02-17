@@ -60,6 +60,10 @@ services:
       POSTGRES_DB: test_azure_devops
       POSTGRES_HOST: test-db
       POSTGRES_PORT: 5432
+    volumes:
+      # Mount schema and migrations at runtime for development (no rebuild needed)
+      - ./database/schema.sql:/migrations/schema.sql:ro
+      - ./database/migrations:/migrations/migrations:ro
     depends_on:
       test-db:
         condition: service_healthy
@@ -120,6 +124,7 @@ services:
       - ./src:/app/src
       - ./database:/app/database:ro
       - ./pyproject.toml:/app/pyproject.toml:ro
+      - ./.env.resolved:/app/.env.resolved:ro
       - ./.env:/app/.env:ro
       - ./src/.cache:/app/.cache
       # Export test results to host

@@ -14,9 +14,16 @@ def pytest_configure(config):
     This ensures that .env.resolved (or .env) is loaded for all tests,
     including when running from VS Code's test runner.
     
+    IMPORTANT: Disables file-based extractor caching for tests to prevent
+    cached results from previous runs interfering with test expectations.
+    This is critical when tests expect different repo lists (e.g., private vs public).
+    
     For database tests: Override POSTGRES_HOST from .env.test if it exists,
     to connect to localhost when running tests on host machine.
     """
+    # Disable file caching for tests to ensure clean state
+    # (prevents stale cache from interfering with test assumptions)
+    os.environ["EXTRACTOR_FILE_CACHE_ENABLED"] = "false"
     # Import here to avoid circular dependencies
     project_root = Path(__file__).parent.parent
     sys.path.insert(0, str(project_root))
@@ -58,27 +65,143 @@ def pytest_configure(config):
         print(f"  Token starts with: {github_token[:20]}...")
 
 
+def _is_github_auth_error(exc: BaseException) -> bool:
+    try:
+        from github import BadCredentialsException, GithubException
+    except Exception:
+        return False
+
+    def _matches(candidate: BaseException) -> bool:
+        if isinstance(candidate, BadCredentialsException):
+            return True
+
+        if isinstance(candidate, GithubException):
+            status = getattr(candidate, "status", None)
+            data = getattr(candidate, "data", None) or {}
+            message = ""
+            if isinstance(data, dict):
+                message = str(data.get("message", "")).lower()
+            return status in (401, 403) and (
+                "bad credentials" in message
+                or "requires authentication" in message
+                or "invalid token" in message
+            )
+
+        return False
+
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if _matches(current):
+            return True
+        current = current.__cause__ or current.__context__
+
+    return False
+
+
+def _is_azure_auth_error(exc: BaseException) -> bool:
+    try:
+        from azure.devops.exceptions import AzureDevOpsServiceError
+    except Exception:
+        return False
+
+    def _matches(candidate: BaseException) -> bool:
+        if not isinstance(candidate, AzureDevOpsServiceError):
+            return False
+
+        response = getattr(candidate, "response", None)
+        status = getattr(response, "status_code", None)
+        message = str(candidate).lower()
+        return status in (401, 403) or "not authorized" in message or "unauthorized" in message
+
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if _matches(current):
+            return True
+        current = current.__cause__ or current.__context__
+
+    return False
+
+
+def pytest_runtest_makereport(item, call):
+    if call.when != "call" or call.excinfo is None:
+        return
+
+    if "live_api" not in item.keywords:
+        return
+
+    exc = call.excinfo.value
+    if _is_github_auth_error(exc):
+        print("\n" + "="*80)
+        print("GITHUB AUTHENTICATION ERROR DETAILS:")
+        print("="*80)
+        print(f"Exception Type: {type(exc).__name__}")
+        print(f"Exception Message: {str(exc)}")
+        print("\nFull Traceback:")
+        import traceback
+        traceback.print_exc()
+        print("="*80)
+        pytest.exit(
+            "GitHub authentication failed (invalid token). Aborting live API tests.",
+            returncode=1,
+        )
+    if _is_azure_auth_error(exc):
+        print("\n" + "="*80)
+        print("AZURE DEVOPS AUTHENTICATION ERROR DETAILS:")
+        print("="*80)
+        print(f"Exception Type: {type(exc).__name__}")
+        print(f"Exception Message: {str(exc)}")
+        print("\nFull Traceback:")
+        import traceback
+        traceback.print_exc()
+        print("="*80)
+        pytest.exit(
+            "Azure DevOps authentication failed (invalid PAT). Aborting live API tests.",
+            returncode=1,
+        )
+
+
 @pytest.fixture(autouse=True)
-def _clear_extractor_file_cache_between_tests():
-    """Clear file cache between tests to avoid cross-test contamination."""
+def _clear_extractor_caches_between_tests():
+    """
+    Clear both file and instance caches between tests.
+    
+    CRITICAL: This ensures extractor instances don't return stale cached results
+    from previous calls within the same test or across tests.
+    
+    Example of the bug this fixes:
+    1. Test calls extractor.get_repositories("account") -> gets public repos
+    2. Cache stores result (file cache + instance cache)
+    3. Test then tries to find private repo from the cached public list
+    4. Private repo not found! (FALSE NEGATIVE)
+    """
     from src.config.github import _find_project_root
     from src.extractors.cache import _file_cache_enabled, _file_cache_root
 
-    if _file_cache_enabled():
+    # BEFORE test: Clear file cache (file cache is disabled for tests anyway)
+    try:
         cache_root = _file_cache_root()
         project_root = _find_project_root()
         if cache_root.exists() and (
             cache_root == project_root / ".cache" or project_root in cache_root.parents
         ):
             shutil.rmtree(cache_root, ignore_errors=True)
+    except Exception:
+        pass  # Ignore errors
 
     yield
 
-    if _file_cache_enabled():
+    # AFTER test: Clear file cache again
+    try:
         cache_root = _file_cache_root()
         project_root = _find_project_root()
         if cache_root.exists() and (
             cache_root == project_root / ".cache" or project_root in cache_root.parents
         ):
             shutil.rmtree(cache_root, ignore_errors=True)
+    except Exception:
+        pass  # Ignore errors
 

@@ -139,16 +139,46 @@ class GitHubExtractor(RepositoryExtractor):
         self,
         organization: str,
         project: Optional[str] = None,
+        include_private: bool = True,
     ) -> list[RepositoryData]:
-        """List repositories for an organization or user with pagination and rate limiting."""
+        """
+        List repositories for an organization or user with pagination and rate limiting.
+        
+        Args:
+            organization: Organization or username to list repos for
+            project: Optional project name (GitHub doesn't use this, but API requires it)
+            include_private: If True, attempt to fetch ALL repos (public + private).
+                           If False, fetch only public repos.
+                           
+                           IMPORTANT: Actual behavior depends on GitHub API constraints:
+                           - For authenticated user: Both true and false work correctly
+                           - For organizations: Private repos fetched if you're a member
+                           - For other users: Private repos NOT accessible (GitHub API limitation)
+                           
+        CACHE KEY NOTE:
+            The cache key includes `include_private`, ensuring separate cache entries
+            for public-only vs all-repos calls, preventing stale data mismatches.
+            
+        Logging:
+            This method logs which endpoint was used and whether private repos are
+            included/excluded. Check logs to verify expected access level.
+        """
         repos: list[RepositoryData] = []
-
         gh_repos = None
         org_name = organization
-
+        fetch_access_mode = None  # For logging: 'org_private', 'org_public', 'user_authenticated_all', etc.
+        
+        # Try organization first
         try:
             org = self.client.get_organization(organization)
-            gh_repos = org.get_repos(type="all")
+            if include_private:
+                # For organizations: type="all" includes private repos if you're a member
+                gh_repos = org.get_repos(type="all")
+                fetch_access_mode = "organization (public + private if member)"
+            else:
+                # For organizations: type="public" returns only public repos
+                gh_repos = org.get_repos(type="public")
+                fetch_access_mode = "organization (public only)"
         except GithubException as exc:
             # Fall back to a user with the provided name
             # CRITICAL: GitHub API behavior for private repos
@@ -156,27 +186,58 @@ class GitHubExtractor(RepositoryExtractor):
             # - Named user endpoint: client.get_user('name') returns ONLY public repos
             # We must detect if 'organization' is the authenticated user and use the right endpoint
             try:
-                if organization:
-                    # Check if requested user is the authenticated user
-                    auth_user = self.client.get_user()
-                    if auth_user.login.lower() == organization.lower():
-                        # Use authenticated user endpoint to get ALL repos including private
-                        user = auth_user
+                auth_user = self.client.get_user()
+                is_authenticated_user = (
+                    organization and 
+                    auth_user.login.lower() == organization.lower()
+                )
+                
+                if is_authenticated_user:
+                    # Use authenticated user endpoint (can access own private repos)
+                    user = auth_user
+                    if include_private:
+                        # Fetch both public AND private repos (full access)
                         gh_repos = user.get_repos(visibility="all")
+                        fetch_access_mode = "authenticated_user (public + private)"
                     else:
-                        # Different user - can only see public repos
-                        user = self.client.get_user(organization)
-                        gh_repos = user.get_repos(type="all")
+                        # Fetch only public repos
+                        gh_repos = user.get_repos(visibility="public")
+                        fetch_access_mode = "authenticated_user (public only)"
                 else:
-                    # No organization specified - get authenticated user's repos
-                    user = self.client.get_user()
-                    gh_repos = user.get_repos(visibility="all")
+                    # Different user - can only see public repos (API limitation)
+                    # NOTE: include_private parameter has NO EFFECT here - GitHub API
+                    # does not allow accessing another user's private repos
+                    if organization:
+                        user = self.client.get_user(organization)
+                    else:
+                        # No organization specified - get authenticated user's repos
+                        user = auth_user
+                    
+                    # Named user endpoint always uses type="all" (gets all they expose)
+                    # which is only public repos for other users
+                    gh_repos = user.get_repos(type="all")
+                    
+                    if organization and organization.lower() != auth_user.login.lower():
+                        # Requesting someone else's repos
+                        fetch_access_mode = f"user '{organization}' (public only - GitHub API limitation)"
+                    else:
+                        # Fallback case (shouldn't reach here normally)
+                        fetch_access_mode = "user (public only)"
+                
                 org_name = user.login
             except GithubException as inner_exc:
                 self._logger.warning("Failed to list repos for %s: %s", organization, inner_exc)
                 return []
             else:
-                self._logger.info("Falling back to user scope for %s (%s)", organization, exc)
+                self._logger.info(
+                    "GitHub extractor: Falling back to user scope for '%s' (%s)",
+                    organization, exc
+                )
+        
+        self._logger.debug(
+            "GitHub extractor: Fetching repositories for '%s' using access mode: %s",
+            organization, fetch_access_mode or "unknown"
+        )
 
         paginated_repos = self._safe_paginated_list(gh_repos, limit=self.config.max_items_per_list)
 

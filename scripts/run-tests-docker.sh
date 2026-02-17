@@ -124,6 +124,16 @@ cleanup() {
     fi
 }
 
+start_test_db_and_migrations() {
+    log_info "Starting test database..."
+    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" up -d test-db >/dev/null 2>&1
+    log_success "Test database started"
+
+    log_info "Applying database schema/migrations..."
+    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-migrations
+    log_success "Database schema/migrations applied"
+}
+
 # =============================================================================
 # Parse Arguments
 # =============================================================================
@@ -196,6 +206,8 @@ echo
 # Change to project root so docker-compose volume paths resolve correctly
 cd "$PROJECT_ROOT"
 
+start_test_db_and_migrations
+
 if [ "$RUN_LIVE_API" = true ]; then
     log_info "Running GitHub AND Azure DevOps tests with LIVE API..."
     log_warning "This will hit real external APIs - may be slow and count against rate limits"
@@ -206,13 +218,15 @@ if [ "$RUN_LIVE_API" = true ]; then
     docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
         sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
                pytest tests/contract/integration/*.py \
-                      -v \
+                      -vv \
                -m 'live_api' \
                --junit-xml=/app/test-results/junit-live-api.xml \
                -o junit_family=xunit2 \
                -o junit_logging=all \
+             -p no:cacheprovider \
                -rs \
-               --tb=short" || TEST_EXIT_CODE=$?
+               --tb=long \
+               --capture=no" || TEST_EXIT_CODE=$?
 else
     log_info "Running all tests (excluding live API)..."
     log_info "Use --live-api flag to run tests against real external APIs"
@@ -223,14 +237,15 @@ else
         docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
          sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
              pytest tests/ \
-                 -v \
+                 -vv \
              -m 'not live_api' \
              --junit-xml=/app/test-results/junit.xml \
              -o junit_family=xunit2 \
              -o junit_logging=all \
              -rs \
              -p no:cacheprovider \
-             --tb=short" || TEST_EXIT_CODE=$?
+             --tb=long \
+             --capture=no" || TEST_EXIT_CODE=$?
 fi
 
 echo

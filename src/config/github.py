@@ -24,6 +24,16 @@ class GitHubExtractorConfig:
     user: Optional[str] = None
     private_repo: Optional[str] = None
 
+    @property
+    def username(self) -> Optional[str]:
+        """Alias for 'user' field for convenience."""
+        return self.user
+    
+    @property
+    def org(self) -> Optional[str]:
+        """Alias for 'organization' field for convenience."""
+        return self.organization
+
     @classmethod
     def from_env(cls, env_file: Optional[str | Path] = None) -> "GitHubExtractorConfig":
         """

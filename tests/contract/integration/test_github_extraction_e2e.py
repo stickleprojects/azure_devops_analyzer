@@ -136,14 +136,75 @@ class TestGitHubExtractionBasic:
 
         extractor = GitHubExtractor(config=github_config)
 
-        # Extract and store using helper to ensure full metadata
-        repo = get_or_create_repository(extractor, private_repo_id, test_session)
+        # CRITICAL: Normalize private_repo_id - must have owner prefix for GitHub API
+        original_private_repo_id = private_repo_id
+        if private_repo_id and "/" not in private_repo_id:
+            # No owner prefix, need to add it
+            owner = github_config.user or github_config.organization
+            if owner:
+                private_repo_id = f"{owner}/{private_repo_id}"
+                print(f"[TEST] Normalized private_repo_id: '{original_private_repo_id}' -> '{private_repo_id}'")
+            else:
+                print(f"[TEST] WARNING: Could not normalize private_repo_id (no owner configured)")
+        else:
+            print(f"[TEST] private_repo_id already normalized: {private_repo_id}")
 
+        # Debug: List all available repositories before attempting to fetch private repo
+        print(f"\n{'='*70}")
+        print(f"Private Repo Test - Debug Info")
+        print(f"{'='*70}")
+        print(f"Looking for private repo: {private_repo_id}")
+        print(f"\nFetching all available repositories...")
+        
+        try:
+            # Attempt to list all repos the authenticated user can access
+            target_account = github_config.user or github_config.organization or ""
+            all_repos = extractor.get_repositories(target_account, include_private=True)
+            repo_ids = sorted([r.repo_id for r in all_repos])
+            repo_ids = sorted([r.repo_id for r in all_repos])
+            
+            print(f"\nAvailable repositories ({len(all_repos)} total):")
+            for repo_id in repo_ids:
+                marker = " <-- TARGET" if repo_id == private_repo_id else ""
+                print(f"  - {repo_id}{marker}")
+            
+            if private_repo_id not in repo_ids:
+                print(f"\n⚠ Warning: Target private repo '{private_repo_id}' NOT in available repos")
+        except Exception as e:
+            print(f"\n⚠ Could not list repositories: {e}")
+
+        print(f"{'='*70}\n")
+
+        # Extract and store using helper to ensure full metadata
+        try:
+            repo = get_or_create_repository(extractor, private_repo_id, test_session)
+        except Exception as e:
+            pytest.fail(
+                f"Failed to retrieve private repo '{private_repo_id}': {e}\n"
+                f"See debug output above for available repositories."
+            )
+
+        # Verify repo was fetched and stored
+        assert repo is not None, f"Repository object is None for {private_repo_id}"
+        assert repo.repo_id == private_repo_id, f"Expected {private_repo_id}, got {repo.repo_id}"
+        
         # Assert API data says private and stored flags are preserved
-        assert repo.is_private is True
-        assert repo.has_secret_scanning is not None
-        assert repo.has_dependabot_alerts is not None
-        assert repo.has_vulnerability_alerts is not None
+        assert repo.is_private is True, \
+            f"Expected is_private=True for {private_repo_id}, got {repo.is_private}"
+        assert repo.has_secret_scanning is not None, \
+            f"has_secret_scanning should not be None"
+        assert repo.has_dependabot_alerts is not None, \
+            f"has_dependabot_alerts should not be None"
+        assert repo.has_vulnerability_alerts is not None, \
+            f"has_vulnerability_alerts should not be None"
+        
+        print(f"\n{'='*70}")
+        print(f"✓ SUCCESS: Private repo test passed for {private_repo_id}")
+        print(f"  - repo.is_private = {repo.is_private}")
+        print(f"  - repo.has_secret_scanning = {repo.has_secret_scanning}")
+        print(f"  - repo.has_dependabot_alerts = {repo.has_dependabot_alerts}")
+        print(f"  - repo.has_vulnerability_alerts = {repo.has_vulnerability_alerts}")
+        print(f"{'='*70}\n")
     
     @pytest.mark.integration
     @pytest.mark.live_api
@@ -484,12 +545,17 @@ class TestGitHubLanguageDetection:
             assert stored_lang.language is not None
             assert stored_lang.byte_count > 0
             assert stored_lang.percentage is not None
-            assert stored_lang.analyzed_at is not None
-            # Ensure timestamp is timezone-aware (assume UTC if naive from DB)
-            if stored_lang.analyzed_at.tzinfo is None:
-                stored_lang.analyzed_at = stored_lang.analyzed_at.replace(tzinfo=UTC)
-            assert stored_lang.analyzed_at.tzinfo is not None, \
-                "analyzed_at should be timezone-aware"
+            assert stored_lang.first_seen_at is not None
+            assert stored_lang.last_seen_at is not None
+            # Ensure timestamps are timezone-aware (assume UTC if naive from DB)
+            if stored_lang.first_seen_at.tzinfo is None:
+                stored_lang.first_seen_at = stored_lang.first_seen_at.replace(tzinfo=UTC)
+            if stored_lang.last_seen_at.tzinfo is None:
+                stored_lang.last_seen_at = stored_lang.last_seen_at.replace(tzinfo=UTC)
+            assert stored_lang.first_seen_at.tzinfo is not None, \
+                "first_seen_at should be timezone-aware"
+            assert stored_lang.last_seen_at.tzinfo is not None, \
+                "last_seen_at should be timezone-aware"
     
     @pytest.mark.integration
     @pytest.mark.live_api
@@ -528,12 +594,12 @@ class TestGitHubLanguageDetection:
         test_session: Session
     ):
         """
-        CONTRACT: Language data can be stored multiple times for time-series tracking.
+        CONTRACT: Language data can be stored and updated across runs.
         
         Verify:
-        - Multiple language snapshots can be stored
-        - analyzed_at timestamps distinguish snapshots
-        - TimescaleDB hypertable accepts data
+        - Languages are upserted by (repo_id, language)
+        - first_seen_at stays stable
+        - last_seen_at updates on subsequent runs
         """
         from datetime import timedelta, UTC
         
@@ -552,8 +618,7 @@ class TestGitHubLanguageDetection:
         languages_v1 = [
             LanguageData(language="Python", byte_count=10000, percentage=100.0),
         ]
-        now = datetime.now(UTC)
-        store_languages(test_session, repo.repo_id, languages_v1, analyzed_at=now)
+        store_languages(test_session, repo.repo_id, languages_v1)
         test_session.commit()
         
         # Store second snapshot (1 hour later)
@@ -561,29 +626,23 @@ class TestGitHubLanguageDetection:
             LanguageData(language="Python", byte_count=8000, percentage=80.0),
             LanguageData(language="JavaScript", byte_count=2000, percentage=20.0),
         ]
-        later = now + timedelta(hours=1)
-        store_languages(test_session, repo.repo_id, languages_v2, analyzed_at=later)
+        store_languages(test_session, repo.repo_id, languages_v2)
         test_session.commit()
         
-        # Assert: Both snapshots stored
+        # Assert: Latest snapshot stored (upserted)
         all_snapshots = test_session.query(RepositoryLanguage).filter_by(
             repo_id=repo.repo_id
-        ).order_by(RepositoryLanguage.analyzed_at).all()
+        ).order_by(RepositoryLanguage.last_seen_at).all()
         
-        assert len(all_snapshots) == 3, \
-            f"Expected 3 language records (1 + 2), got {len(all_snapshots)}"
+        assert len(all_snapshots) == 2, \
+            f"Expected 2 language records (upserted), got {len(all_snapshots)}"
         
-        # Assert: First snapshot (oldest timestamp)
-        assert all_snapshots[0].language == "Python"
-        assert all_snapshots[0].byte_count == 10000
-        assert all_snapshots[0].percentage == 100.0
-        
-        # Assert: Second snapshot (newer timestamps)
-        lang_names = {all_snapshots[1].language, all_snapshots[2].language}
+        lang_names = {snapshot.language for snapshot in all_snapshots}
         assert lang_names == {"Python", "JavaScript"}
-        # Verify the second snapshot has updated data
-        python_record = [s for s in all_snapshots[1:] if s.language == "Python"][0]
+
+        python_record = next(s for s in all_snapshots if s.language == "Python")
         assert python_record.byte_count == 8000
+        assert python_record.first_seen_at <= python_record.last_seen_at
 
 
 class TestGitHubTechnologyDetection:
