@@ -32,11 +32,18 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: test_azure_devops
       TIMESCALEDB_TELEMETRY: off
+      # PostgreSQL tuning for 7.75GB RAM, 2 CPUs
+      POSTGRES_MAX_CONNECTIONS: "100"
+      POSTGRES_SHARED_BUFFERS: "1900MB"
+      POSTGRES_EFFECTIVE_CACHE_SIZE: "5850MB"
+      POSTGRES_WORK_MEM: "9MB"
+      POSTGRES_MAINTENANCE_WORK_MEM: "475MB"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d test_azure_devops"]
+      test: ["CMD-SHELL", "pg_isready -h localhost -U postgres -d test_azure_devops"]
       interval: 5s
       timeout: 3s
       retries: 10
+      start_period: 10s
     networks:
       - test-network
     # Use tmpfs for in-memory database (faster, destroyed after run)
