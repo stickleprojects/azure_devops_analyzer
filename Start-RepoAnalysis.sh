@@ -96,22 +96,11 @@ start_infrastructure() {
     (
         cd "$PROJECT_ROOT" || exit 1
 
-        local services=("${DOCKER_CORE_SERVICES[@]}")
-        if [ "$RUN_DIRECT" != "true" ]; then
-            services+=("$DOCKER_WORKER_SERVICE")
-        fi
-
         write_info "Pulling Docker images..."
-        run_docker_compose pull "${services[@]}" >/dev/null 2>&1
+        run_docker_compose pull >/dev/null 2>&1
 
-        write_info "Starting services..."
-        if [ "$RUN_DIRECT" = "true" ]; then
-            write_info "  - Running in DIRECT mode (no Celery workers)"
-            run_docker_compose up -d "${DOCKER_CORE_SERVICES[@]}" >/dev/null 2>&1
-        else
-            write_info "  - Running in CELERY mode with worker monitoring"
-            run_docker_compose up -d "${services[@]}" >/dev/null 2>&1
-        fi
+        write_info "Starting all services (scheduler, celery-beat, workers, monitoring)..."
+        run_docker_compose up -d >/dev/null 2>&1
 
         write_info "Waiting for services to be healthy..."
         wait_for_healthy "analyzer-timescaledb" "$MAX_HEALTH_CHECK_RETRIES" "$HEALTH_CHECK_INTERVAL" >/dev/null
@@ -184,7 +173,10 @@ show_access_info() {
  RabbitMQ:        localhost:5672
  RabbitMQ UI:     ${RABBITMQ_MANAGEMENT_URL}
  Flower UI:       ${FLOWER_URL} (task monitoring)
- Grafana UI:      ${GRAFANA_URL} (admin/admin)
+ Grafana UI:      ${GRAFANA_URL} (no auth required)
+ Scheduler:       Running (APScheduler for periodic extractions)
+ Celery Beat:     Running (Celery periodic task scheduler)
+ Celery Worker:   Running (background task processing)
 
  DATABASE CONNECTION:
  --------------------
