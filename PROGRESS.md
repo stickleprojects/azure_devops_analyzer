@@ -2,6 +2,75 @@
 
 ---
 
+## Session: 2026-02-20 - Documentation Cleanup: Remove Misleading Caching Docs
+
+### Summary
+
+Removed three misleading/redundant documentation files that incorrectly described caching behavior and corrected misleading docstrings. The cleanup ensures documentation accurately reflects the implementation.
+
+### Problem Identified
+
+- **test-caching-isolation.md**: Described caching problems with `get_repositories()`, but this method is intentionally NOT cached
+- **test-private-repo-verification.md**: Redundant with existing comprehensive test suite
+- **worker-instrumentation.md**: Outdated/incomplete content
+- **Misleading docstring**: `get_repositories()` had a "CACHE KEY NOTE" section despite not using the `@cached` decorator
+
+### Changes
+
+1. **Deleted Misleading Documentation**
+   - `docs/04-implementation/test-caching-isolation.md` - Described non-existent caching behavior
+   - `docs/04-implementation/test-private-repo-verification.md` - Redundant test verification guide
+   - `docs/04-implementation/worker-instrumentation.md` - Outdated instrumentation guide
+
+2. **Fixed Misleading Docstring**
+   - `src/extractors/github/extractor.py` - `get_repositories()` method
+   - Removed incorrect "CACHE KEY NOTE" section
+   - Added clear note: "This method is NOT cached to ensure fresh repository lists on every call"
+   - Clarified why: Repository visibility and availability can change between runs
+
+3. **Updated References**
+   - `SOLUTION-SUMMARY.md` - Removed all references to deleted documentation
+   - Simplified token access warnings
+   - Updated "Next Steps" to reference debug output instead of deleted docs
+
+### Rationale
+
+**Why `get_repositories()` should NOT be cached:**
+- Repository visibility can change (public ↔ private)
+- New repositories may be created between runs
+- Organization membership changes affect accessible repos
+- Fresh data ensures accurate extraction every time
+
+**Other methods correctly cached:**
+- `get_branches()`, `get_file_tree()`, `get_file_content()`, `get_languages()` - All properly use `@cached` decorator
+- These methods are scoped to specific repositories and benefit from caching
+
+### Files Modified
+
+- `src/extractors/github/extractor.py` - Fixed docstring
+- `SOLUTION-SUMMARY.md` - Removed references to deleted docs
+
+### Files Deleted
+
+- `docs/04-implementation/test-caching-isolation.md` (176 lines)
+- `docs/04-implementation/test-private-repo-verification.md` (estimated ~300+ lines)
+- `docs/04-implementation/worker-instrumentation.md` (estimated ~500+ lines)
+- **Total**: ~1,000 lines of misleading/outdated documentation removed
+
+### Git Info
+
+- **Branch**: `main`
+- **Commit**: `549b27b` - "docs: remove misleading and redundant documentation"
+- **Pre-commit checks**: ✅ Passed (Python syntax, imports validated)
+- **Push status**: ✅ Successfully pushed to origin/main
+
+### Status
+
+- **Documentation accuracy**: ✅ Complete - All docs now match implementation
+- **Code clarity**: ✅ Complete - Docstrings accurately describe behavior
+
+---
+
 ## Session: 2026-02-13 - File Cache Completion
 
 ### Summary

@@ -38,16 +38,18 @@ This folder contains planning documents for future initiatives, architectural de
 
 ---
 
-## Open Issues & Action Items (Prioritized)
+## Current Implementation Guides
 
-- **Critical**: Fix GitHub repo selection and visibility handling to include org/user private repos; add pagination and rate-limit/backoff to repository listing. [src/extractors/github/extractor.py](../../src/extractors/github/extractor.py#L55-L193)
-- **Major**: Add pagination/backoff for commits and pull requests to avoid truncation and rate-limit failures. [src/extractors/github/extractor.py](../../src/extractors/github/extractor.py#L139-L193)
-- **Major**: Improve workflow transaction model (single unit-of-work per repo) and structured logging with org/repo context; avoid separate sessions for scan decision vs writes. [src/workflows/github_analysis.py](../../src/workflows/github_analysis.py#L63-L206)
-- **Major**: Implement real maintenance tasks or unschedule stubs (cleanup/backup) to avoid false confidence. [src/scheduler/tasks.py](../../src/scheduler/tasks.py#L29-L61)
-- **Major**: Harden contributor identity (avoid collapsing users on empty/noreply emails; separate author/committer). [src/database/storage.py](../../src/database/storage.py#L118-L178)
-- **Major**: Build and wire a code-quality analyzer to populate quality/tech-debt metrics expected by models/dashboards. [src/analyzers](../../src/analyzers) [src/database/models/quality.py](../../src/database/models/quality.py)
-- **Minor**: Add input validation and ensure no secret leakage in client logs/config. [src/extractors/github/client.py](../../src/extractors/github/client.py) [src/extractors/azure_devops/client.py](../../src/extractors/azure_devops/client.py)
-- **Minor**: Expand tests beyond import checks—cover workflow happy/error paths, pagination/backoff, dependency parsing per ecosystem, and storage idempotency. [tests](../../tests)
+### Completed Features
+
+- ✅ **File-based caching** - [file-cache-plan.md](file-cache-plan.md) & [caching-strategy.md](caching-strategy.md)
+- ✅ **GitHub private repo access** - [github-private-repo-access.md](github-private-repo-access.md)
+- ✅ **Contributor/team allocation** - [contributor-team-allocation-strategy.md](contributor-team-allocation-strategy.md)
+
+### Future Planning
+
+- 📋 **Parallelization** - [parallelization-plan.md](parallelization-plan.md) - Multi-worker strategy
+- 📋 **Infrastructure scaling** - [infrastructure-options.md](infrastructure-options.md) - K8s vs Docker Compose
 
 ## Implementation Phases
 
