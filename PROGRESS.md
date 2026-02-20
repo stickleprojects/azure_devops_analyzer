@@ -36,12 +36,14 @@ Removed three misleading/redundant documentation files that incorrectly describe
 ### Rationale
 
 **Why `get_repositories()` should NOT be cached:**
+
 - Repository visibility can change (public ↔ private)
 - New repositories may be created between runs
 - Organization membership changes affect accessible repos
 - Fresh data ensures accurate extraction every time
 
 **Other methods correctly cached:**
+
 - `get_branches()`, `get_file_tree()`, `get_file_content()`, `get_languages()` - All properly use `@cached` decorator
 - These methods are scoped to specific repositories and benefit from caching
 
