@@ -28,6 +28,7 @@ from src.database.models import (
     ExtractionRun,
     ExtractionMetric,
 )
+from src.database.models.service import Service, RepositoryService
 from src.extractors.base import (
     OrganizationData,
     RepositoryData,
@@ -330,6 +331,35 @@ def get_or_create_team(
     return team
 
 
+def get_or_create_service(
+    session: Session,
+    service_name: str,
+    purpose: Optional[str] = None,
+) -> Service:
+    """
+    Get existing service or create a new one.
+
+    Args:
+        session: Database session.
+        service_name: Service name.
+        purpose: Service purpose description.
+
+    Returns:
+        Service instance.
+    """
+    service = session.query(Service).filter_by(name=service_name).first()
+    if not service:
+        service = Service(
+            name=service_name,
+            purpose=purpose or f"Auto-created from repository.json",
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+        session.add(service)
+        session.flush()
+    return service
+
+
 def store_organization(
     session: Session,
     org_data: OrganizationData,
@@ -429,6 +459,15 @@ def store_repository(
             )
             team_id = team.team_id
 
+    # Get or create service if service_name is provided
+    service_id = None
+    if repo_data.service_name:
+        service = get_or_create_service(
+            session,
+            repo_data.service_name,
+        )
+        service_id = service.service_id
+
     if not repo:
         repo = Repository(
             repo_id=repo_data.repo_id,
@@ -471,6 +510,22 @@ def store_repository(
         repo.has_dependabot_alerts = repo_data.has_dependabot_alerts
         repo.pushed_at = repo_data.pushed_at
         repo.updated_at = repo_data.updated_at
+
+    # Link repository to service if service_name was provided
+    if service_id:
+        # Check if link already exists
+        existing_link = session.query(RepositoryService).filter_by(
+            repo_id=repo.repo_id,
+            service_id=service_id,
+        ).first()
+        if not existing_link:
+            repo_service = RepositoryService(
+                repo_id=repo.repo_id,
+                service_id=service_id,
+                linked_at=datetime.now(UTC),
+            )
+            session.add(repo_service)
+            session.flush()
 
     return repo
 

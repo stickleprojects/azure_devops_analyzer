@@ -1,0 +1,359 @@
+"""
+Flask API for triggering on-demand repository rescans.
+
+Provides HTTP endpoints to trigger GitHub and Azure DevOps extraction tasks.
+Useful for dashboard integration and manual rescan triggers.
+
+Usage:
+    python -m src.api.rescan
+    
+    Then access:
+    POST http://localhost:5000/api/rescan/github
+    POST http://localhost:5000/api/rescan/azure-devops
+    POST http://localhost:5000/api/compute/service-metrics
+"""
+
+import logging
+from flask import Flask, jsonify, request
+from src.scheduler.celery_app import celery_app
+from src.database import get_session
+from src.database.models.repository import Repository
+
+logger = logging.getLogger(__name__)
+
+# Create Flask app
+app = Flask(__name__)
+
+
+@app.route("/api/rescan/github", methods=["GET", "POST"])
+def trigger_github_rescan():
+    """
+    Trigger an on-demand GitHub repository rescan.
+    
+    Sends the run_github_extraction task to Celery for immediate execution.
+    
+    Accepts:
+        GET /api/rescan/github (from dashboard links)
+        POST /api/rescan/github (from API calls)
+    
+    Returns:
+        JSON with task_id and status
+    """
+    try:
+        logger.info("Triggering GitHub rescan via API")
+        
+        # Send task to Celery
+        task = celery_app.send_task("tasks.run_github_extraction")
+        
+        logger.info(f"GitHub rescan task submitted: {task.id}")
+        
+        return jsonify({
+            "status": "submitted",
+            "task_id": task.id,
+            "message": "GitHub extraction task queued for immediate execution",
+        }), 202
+        
+    except Exception as e:
+        logger.error(f"Failed to trigger GitHub rescan: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+        }), 500
+
+
+@app.route("/api/rescan/azure-devops", methods=["GET", "POST"])
+def trigger_azure_rescan():
+    """
+    Trigger an on-demand Azure DevOps repository rescan.
+    
+    Sends the run_azure_devops_extraction_task task to Celery for immediate execution.
+    
+    Accepts:
+        GET /api/rescan/azure-devops (from dashboard links)
+        POST /api/rescan/azure-devops (from API calls)
+    
+    Returns:
+        JSON with task_id and status
+    """
+    try:
+        logger.info("Triggering Azure DevOps rescan via API")
+        
+        # Send task to Celery
+        task = celery_app.send_task("tasks.run_azure_devops_extraction_task")
+        
+        logger.info(f"Azure DevOps rescan task submitted: {task.id}")
+        
+        return jsonify({
+            "status": "submitted",
+            "task_id": task.id,
+            "message": "Azure DevOps extraction task queued for immediate execution",
+        }), 202
+        
+    except Exception as e:
+        logger.error(f"Failed to trigger Azure DevOps rescan: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+        }), 500
+
+
+@app.route("/api/rescan/repository/<path:repo_id>", methods=["POST", "DELETE"])
+def force_rescan_repository(repo_id: str):
+    """
+    Force a rescan of a specific repository by clearing its last_analyzed_at timestamp.
+    
+    This bypasses the min_scan_interval check and allows immediate re-extraction.
+    
+    Args:
+        repo_id: Repository identifier (URL-encoded)
+        
+    Methods:
+        POST   - Clear last_analyzed_at (prepare for rescan)
+        DELETE - Same as POST (RESTful alternative)
+        
+    Examples:
+        POST /api/rescan/repository/stickleprojects%2Fazure_devops_analyzer
+        POST /api/rescan/repository/12345678-1234-1234-1234-123456789abc
+    
+    Returns:
+        JSON with status and repository info
+    """
+    try:
+        logger.info(f"Force rescan requested for repository: {repo_id}")
+        
+        session = get_session()
+        try:
+            # Find the repository
+            repo = session.query(Repository).filter_by(repo_id=repo_id).first()
+            
+            if not repo:
+                return jsonify({
+                    "status": "error",
+                    "message": f"Repository not found: {repo_id}",
+                }), 404
+            
+            # Store previous timestamp
+            previous_analyzed_at = repo.last_analyzed_at
+            
+            # Clear the last_analyzed_at to force rescan
+            repo.last_analyzed_at = None
+            session.commit()
+            
+            logger.info(
+                f"Cleared last_analyzed_at for {repo.name} "
+                f"(was: {previous_analyzed_at})"
+            )
+            
+            return jsonify({
+                "status": "success",
+                "repository": {
+                    "repo_id": repo.repo_id,
+                    "name": repo.name,
+                    "previous_analyzed_at": previous_analyzed_at.isoformat() if previous_analyzed_at else None,
+                },
+                "message": f"Repository {repo.name} marked for forced rescan. Trigger a platform rescan to process it.",
+                "next_steps": [
+                    "POST /api/rescan/github (if GitHub repo)",
+                    "POST /api/rescan/azure-devops (if Azure DevOps repo)",
+                ],
+            }), 200
+            
+        finally:
+            session.close()
+            
+    except Exception as e:
+        logger.error(f"Failed to force rescan for repository {repo_id}: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+        }), 500
+
+
+@app.route("/api/repositories", methods=["GET"])
+def list_repositories():
+    """
+    List all repositories in the database.
+    
+    Query Parameters:
+        limit (int): Maximum number of repositories to return (default: 100)
+        offset (int): Offset for pagination (default: 0)
+        search (str): Filter by repository name (case-insensitive partial match)
+        
+    Returns:
+        JSON with list of repositories
+    """
+    try:
+        limit = min(int(request.args.get('limit', 100)), 1000)
+        offset = int(request.args.get('offset', 0))
+        search = request.args.get('search', '').strip()
+        
+        session = get_session()
+        try:
+            query = session.query(Repository).filter(Repository.is_active == True)
+            
+            if search:
+                query = query.filter(Repository.name.ilike(f'%{search}%'))
+            
+            total = query.count()
+            repos = query.order_by(Repository.name).limit(limit).offset(offset).all()
+            
+            return jsonify({
+                "status": "success",
+                "total": total,
+                "count": len(repos),
+                "limit": limit,
+                "offset": offset,
+                "repositories": [
+                    {
+                        "repo_id": r.repo_id,
+                        "name": r.name,
+                        "url": r.url,
+                        "last_analyzed_at": r.last_analyzed_at.isoformat() if r.last_analyzed_at else None,
+                        "is_active": r.is_active,
+                    }
+                    for r in repos
+                ],
+            }), 200
+            
+        finally:
+            session.close()
+            
+    except Exception as e:
+        logger.error(f"Failed to list repositories: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+        }), 500
+
+
+@app.route("/api/compute/service-metrics", methods=["GET", "POST"])
+def compute_service_metrics():
+    """
+    Trigger service metrics computation.
+    
+    Computes and persists service-level metrics for repositories.
+    
+    Query Parameters / JSON Body:
+        service_id (int, optional): Specific service ID (omit for all services)
+        period_start (str, optional): Start date YYYY-MM-DD (default: first day of current month)
+        period_end (str, optional): End date YYYY-MM-DD (default: today)
+        
+    Examples:
+        GET  /api/compute/service-metrics
+        POST /api/compute/service-metrics
+        GET  /api/compute/service-metrics?service_id=5
+        POST /api/compute/service-metrics?period_start=2025-01-01&period_end=2025-12-31
+        POST /api/compute/service-metrics
+             Content-Type: application/json
+             {"service_id": 5, "period_start": "2025-01-01"}
+    
+    Returns:
+        JSON with task_id and status
+    """
+    try:
+        # Extract parameters from query string or JSON body
+        if request.is_json:
+            params = request.get_json()
+        else:
+            params = request.args.to_dict()
+        
+        service_id = params.get('service_id')
+        period_start = params.get('period_start')
+        period_end = params.get('period_end')
+        
+        # Convert service_id to int if provided
+        if service_id is not None:
+            try:
+                service_id = int(service_id)
+            except ValueError:
+                return jsonify({
+                    "status": "error",
+                    "message": "service_id must be an integer",
+                }), 400
+        
+        logger.info(
+            f"Triggering service metrics computation via API "
+            f"(service_id={service_id}, period_start={period_start}, period_end={period_end})"
+        )
+        
+        # Send task to Celery
+        task = celery_app.send_task(
+            "tasks.compute_service_metrics",
+            kwargs={
+                "service_id": service_id,
+                "period_start": period_start,
+                "period_end": period_end,
+            }
+        )
+        
+        logger.info(f"Service metrics computation task submitted: {task.id}")
+        
+        response_data = {
+            "status": "submitted",
+            "task_id": task.id,
+            "message": "Service metrics computation task queued for execution",
+            "parameters": {
+                "service_id": service_id or "all",
+                "period_start": period_start or "first day of current month",
+                "period_end": period_end or "today",
+            }
+        }
+        
+        return jsonify(response_data), 202
+        
+    except Exception as e:
+        logger.error(f"Failed to trigger service metrics computation: {e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+        }), 500
+
+
+@app.route("/health", methods=["GET"])
+def health_check():
+    """
+    Health check endpoint.
+    
+    Returns:
+        JSON with status
+    """
+    try:
+        # Verify Celery connection
+        celery_app.Control().inspect().ping()
+        status = "healthy"
+        code = 200
+    except Exception as e:
+        logger.warning(f"Health check: Celery connection issue: {e}")
+        status = "degraded"
+        code = 503
+    
+    return jsonify({
+        "status": status,
+        "service": "extraction-api",
+    }), code
+
+
+@app.errorhandler(404)
+def not_found(e):
+    """Handle 404 errors."""
+    return jsonify({
+        "status": "error",
+        "message": "Endpoint not found",
+    }), 404
+
+
+@app.errorhandler(405)
+def method_not_allowed(e):
+    """Handle 405 errors."""
+    return jsonify({
+        "status": "error",
+        "message": "Method not allowed. Rescan endpoints accept GET or POST.",
+    }), 405
+
+
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+    app.run(host="0.0.0.0", port=5000, debug=False)

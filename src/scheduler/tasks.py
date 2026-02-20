@@ -1,9 +1,16 @@
 import logging
+from datetime import datetime, UTC
 from typing import Optional
 
 from src.scheduler.celery_app import celery_app
 from src.workflows.github_analysis import GitHubAnalysisWorkflow, ExtractionLimits
 from src.workflows.azure_devops_analysis import run_azure_devops_extraction
+from src.database import get_session
+from src.database.models.service import Service
+from src.database.service_analytics import (
+    compute_service_metrics,
+    compute_all_services_metrics,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +50,7 @@ def run_github_extraction(self):
         return {"status": "error", "message": str(e)}
 
 
-@celery_app.task(name="tasks.run_azure_devops_extraction", bind=True)
+@celery_app.task(name="tasks.run_azure_devops_extraction_task", bind=True)
 def run_azure_devops_extraction_task(self):
     """
     Execute Azure DevOps repository extraction and analysis workflow.
@@ -81,3 +88,126 @@ def backup_database():
     # TODO: Implement backup logic
     logger.info("Database backup completed.")
     return {"status": "completed", "type": "backup"}
+
+
+@celery_app.task(name="tasks.compute_service_metrics", bind=True)
+def compute_service_metrics_task(
+    self,
+    service_id: Optional[int] = None,
+    period_start: Optional[str] = None,
+    period_end: Optional[str] = None,
+):
+    """
+    Compute and persist service-level metrics.
+    
+    Args:
+        service_id: Specific service ID to compute metrics for (None = all services)
+        period_start: Start date in ISO format (YYYY-MM-DD). Default: first day of current month
+        period_end: End date in ISO format (YYYY-MM-DD). Default: today
+        
+    Returns:
+        Dictionary with status and computed metrics summary
+    """
+    logger.info(
+        f"Starting service metrics computation task: {self.request.id} "
+        f"(service_id={service_id}, period_start={period_start}, period_end={period_end})"
+    )
+    
+    try:
+        # Parse dates
+        if period_start:
+            start_dt = datetime.fromisoformat(period_start).replace(tzinfo=UTC)
+        else:
+            # Default to first day of current month
+            now = datetime.now(UTC)
+            start_dt = datetime(now.year, now.month, 1, tzinfo=UTC)
+        
+        if period_end:
+            end_dt = datetime.fromisoformat(period_end).replace(tzinfo=UTC)
+        else:
+            # Default to today (end of day)
+            end_dt = datetime.now(UTC).replace(hour=23, minute=59, second=59)
+        
+        # Validate period
+        if end_dt <= start_dt:
+            error_msg = "Period end must be after period start"
+            logger.error(error_msg)
+            return {"status": "error", "message": error_msg}
+        
+        logger.info(f"Computing metrics for period: {start_dt.date()} to {end_dt.date()}")
+        
+        # Get database session
+        session = get_session()
+        
+        try:
+            if service_id is None:
+                # Compute for all services
+                logger.info("Computing metrics for all services...")
+                metrics = compute_all_services_metrics(
+                    session,
+                    period_start=start_dt,
+                    period_end=end_dt,
+                )
+                
+                logger.info(f"Computed metrics for {len(metrics)} service(s)")
+                
+                # Persist to database
+                session.add_all(metrics)
+                session.commit()
+                
+                # Build summary
+                summary = {
+                    "services_processed": len(metrics),
+                    "total_repositories": sum(m.total_repositories for m in metrics),
+                    "total_commits": sum(m.total_commits for m in metrics),
+                    "total_prs": sum(m.total_prs_created for m in metrics),
+                }
+                
+                logger.info(f"✓ Persisted {len(metrics)} service metric(s) to database")
+                return {"status": "success", "summary": summary}
+            else:
+                # Compute for single service
+                logger.info(f"Computing metrics for service {service_id}...")
+                
+                # Verify service exists
+                service = session.get(Service, service_id)
+                if not service:
+                    error_msg = f"Service {service_id} not found"
+                    logger.error(error_msg)
+                    return {"status": "error", "message": error_msg}
+                
+                metric = compute_service_metrics(
+                    session,
+                    service_id=service_id,
+                    period_start=start_dt,
+                    period_end=end_dt,
+                )
+                
+                # Persist to database
+                session.add(metric)
+                session.commit()
+                
+                # Build summary
+                summary = {
+                    "service_id": service_id,
+                    "service_name": service.name,
+                    "total_repositories": metric.total_repositories,
+                    "active_repositories": metric.active_repositories,
+                    "total_commits": metric.total_commits,
+                    "total_prs_created": metric.total_prs_created,
+                    "unique_contributors": metric.unique_contributors,
+                }
+                
+                logger.info(f"✓ Persisted service metric to database")
+                return {"status": "success", "summary": summary}
+        finally:
+            session.close()
+    
+    except ValueError as e:
+        error_msg = f"Invalid argument: {e}"
+        logger.error(error_msg)
+        return {"status": "error", "message": error_msg}
+    except Exception as e:
+        error_msg = f"Failed to compute service metrics: {e}"
+        logger.exception(error_msg)
+        return {"status": "error", "message": str(e)}

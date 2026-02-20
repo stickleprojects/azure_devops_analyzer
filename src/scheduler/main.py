@@ -20,7 +20,7 @@ DEFAULT_CONFIG_PATH = "/app/config/scheduler.yaml"
 
 TASKS_BY_PLATFORM = {
     "github": "tasks.run_github_extraction",
-    "azure_devops": "tasks.run_azure_devops_extraction",
+    "azure_devops": "tasks.run_azure_devops_extraction_task",
 }
 
 MAINTENANCE_TASKS = {
