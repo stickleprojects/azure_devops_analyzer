@@ -2,6 +2,59 @@
 
 ---
 
+## Session: 2026-02-20 (Evening cont.) - Service Analytics Module Complete
+
+### Summary
+
+Implemented `src/database/service_analytics.py` — the core aggregation module for FR-10.4. Mirrors the team_analytics.py pattern. All 7 existing unit tests still pass; pre-commit checks clean.
+
+### Changes
+
+1. **New: `src/database/service_analytics.py`**
+   - `compute_service_metrics()` — aggregates across all repos for a service, returns unpersisted ServiceMetric
+   - `get_service_metrics()` — retrieves historical metrics with optional time range filter
+   - `get_latest_service_metrics()` — most recent metrics for a service
+   - `compute_all_services_metrics()` — batch compute for all services (scheduled jobs)
+   - 6 private helpers for contributor, quality, PR, and security aggregation
+
+### Key Implementation Notes
+
+- Field names verified against actual models (plan had several wrong names):
+  - `commit_count` / `pr_created` (not `commits` / `prs_created`)
+  - `CodeQualityMetric.timestamp` (not `recorded_at`)
+  - Vulnerability severity on `Vulnerability` model, not `Dependency`
+- `repo_id` is `String(255)` throughout — not an int
+- Security metrics are point-in-time (no period filter) — dependencies = current state
+- Batch compute catches per-service exceptions so one failure doesn't abort the run
+
+### Git
+
+- **Commit**: `e6c234a` - feat: add service analytics module for FR-10.4 service-level metrics
+
+### Feature Status: Service-Level-Metrics (FR-10.4)
+
+**Progress**: ~50% Complete (3 of 6 implementation steps)
+
+**✅ Complete**:
+
+- Step 1: Database migration (`database/migrations/010_add_service_metrics.sql`)
+- Step 2: ServiceMetric model (`src/database/models/service_metric.py`)
+- Step 3: Service Analytics Module (`src/database/service_analytics.py`)
+
+**❌ Remaining Work**:
+
+- **Step 4: Integration Tests** (~2 hours)
+  - File: `tests/contract/integration/test_service_analytics.py`
+
+- **Step 5: Service Overview Dashboard** (~2-3 hours)
+  - File: `dashboards/service-overview.json`
+
+- **Step 6: Grafana Provisioning** (~15 min)
+  - Update `grafana/provisioning/dashboards/dashboards.yml`
+  - Update `dashboards/dashboard-home.json`
+
+---
+
 ## Session: 2026-02-20 (Evening) - Test Script Enhancement & Service-Metrics Status
 
 ### Summary
