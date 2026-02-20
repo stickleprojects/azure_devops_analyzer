@@ -2,7 +2,102 @@
 
 ---
 
-## Session: 2026-02-20 - Documentation Cleanup: Remove Misleading Caching Docs
+## Session: 2026-02-20 (Evening) - Test Script Enhancement & Service-Metrics Status
+
+### Summary
+
+Enhanced the Docker test runner script to accept explicit test paths, enabling targeted test execution. Verified service-level-metrics feature is ~33% complete with model and database migration in place.
+
+### Changes
+
+1. **Enhanced Test Script**: `scripts/run-tests-docker.sh`
+   - Added support for passing explicit test file or pattern as a positional argument
+   - Updated argument parsing to handle non-flag arguments as test paths
+   - Added new conditional branch to run specific tests when path is provided
+   - Updated help documentation with examples
+
+**New Usage**:
+
+```bash
+./scripts/run-tests-docker.sh                              # All tests (excluding live API)
+./scripts/run-tests-docker.sh tests/unit/test_service_metric_model.py  # Specific test file
+./scripts/run-tests-docker.sh tests/unit/test_*.py         # Pattern-based tests
+./scripts/run-tests-docker.sh tests/path/to/test.py --keep-db  # Combine with flags
+```
+
+2. **Tested Successfully**
+   - Ran `./scripts/run-tests-docker.sh tests/unit/test_service_metric_model.py`
+   - All 7 tests passed (test_create_service_metric_minimal, etc.)
+
+### Feature Status: Service-Level-Metrics (FR-10.4)
+
+**Progress**: ~33% Complete (2 of 6 implementation steps)
+
+**✅ Complete**:
+
+- Step 1: Database migration (`database/migrations/010_add_service_metrics.sql`)
+  - Service_metrics hypertable created with all required fields
+  - TimescaleDB chunking configured (1-month intervals)
+  - Indexes created for performance
+- Step 2: ServiceMetric model (`src/database/models/service_metric.py`)
+  - All fields defined correctly
+  - Relationships to Service entity established
+  - Unit tests created and passing
+
+**❌ Remaining Work**:
+
+- **Step 3: Service Analytics Module** (~2-3 hours)
+  - File: `src/database/service_analytics.py`
+  - Core functions needed:
+    - `compute_service_metrics()` - Main aggregation function
+    - `get_service_metrics()` - Historical retrieval
+    - `get_latest_service_metrics()` - Latest metrics
+    - `compute_all_services_metrics()` - Batch compute
+    - Helper functions for aggregating contributor, quality, PR, security metrics
+  - Blueprint: Mirror `src/database/team_analytics.py` pattern
+
+- **Step 4: Integration Tests** (~2 hours)
+  - File: `tests/contract/integration/test_service_analytics.py`
+  - Test aggregation logic across multiple repositories
+  - Test edge cases (no repos, time ranges, etc.)
+  - Minimum 8 tests, 80%+ coverage
+
+- **Step 5: Service Overview Dashboard** (~2-3 hours)
+  - File: `dashboards/service-overview.json`
+  - Copy pattern from `dashboards/team-overview.json`
+  - Required panels:
+    - Summary stats (repos, commits, contributors, vulnerabilities)
+    - Activity charts (commits, PRs over time)
+    - Quality metrics (coverage, maintainability)
+    - Security dashboard (vulnerabilities, EOL deps)
+    - Repository breakdown table
+  - Template variables: service_id, time_range
+
+- **Step 6: Grafana Provisioning** (~15 min)
+  - Update `grafana/provisioning/dashboards/dashboards.yml`
+  - Add service-overview.json to provisioning list
+  - Update `dashboards/dashboard-home.json` with navigation link
+
+### Reference Materials
+
+- Implementation plan: `.ai/plans/fr-10.4-service-metrics-plan.md`
+- Team analytics pattern (blueprint): `src/database/team_analytics.py`
+- Team dashboard pattern: `dashboards/team-overview.json`
+
+### Next Steps (Tomorrow)
+
+1. Implement `src/database/service_analytics.py` with aggregation functions
+2. Create integration tests in `tests/contract/integration/test_service_analytics.py`
+3. Build Grafana dashboard `dashboards/service-overview.json`
+4. Update provisioning and test end-to-end
+
+### Estimated Time to Completion
+
+Total remaining work: **8-10 hours** (spread across multiple steps)
+
+---
+
+## Session: 2026-02-20 (Morning) - Documentation Cleanup: Remove Misleading Caching Docs
 
 ### Summary
 
