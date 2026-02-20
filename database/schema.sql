@@ -573,6 +573,61 @@ CREATE TABLE repository_services (
 CREATE INDEX idx_repo_service_repo ON repository_services(repo_id);
 CREATE INDEX idx_repo_service_service ON repository_services(service_id);
 
+-- Service metrics (Time-series)
+CREATE TABLE service_metrics (
+    id SERIAL,
+    service_id INTEGER NOT NULL REFERENCES services(service_id) ON DELETE CASCADE,
+    period_start TIMESTAMPTZ NOT NULL,
+    period_end TIMESTAMPTZ NOT NULL,
+    
+    -- Repository counts
+    total_repositories INTEGER DEFAULT 0,
+    active_repositories INTEGER DEFAULT 0,  -- repos with commits in period
+    
+    -- Commit metrics (aggregated from contributor_metrics)
+    total_commits INTEGER DEFAULT 0,
+    total_lines_added INTEGER DEFAULT 0,
+    total_lines_removed INTEGER DEFAULT 0,
+    total_files_modified INTEGER DEFAULT 0,
+    
+    -- Pull request metrics
+    total_prs_created INTEGER DEFAULT 0,
+    total_prs_merged INTEGER DEFAULT 0,
+    avg_pr_review_time_hours NUMERIC(10,2),
+    
+    -- Quality metrics (averaged across repos)
+    avg_test_coverage NUMERIC(5,2),
+    avg_maintainability_index NUMERIC(5,2),
+    total_quality_issues INTEGER DEFAULT 0,
+    
+    -- Security metrics
+    total_vulnerabilities INTEGER DEFAULT 0,
+    critical_vulnerabilities INTEGER DEFAULT 0,
+    high_vulnerabilities INTEGER DEFAULT 0,
+    
+    -- Dependency health
+    total_dependencies INTEGER DEFAULT 0,
+    eol_dependencies INTEGER DEFAULT 0,
+    
+    -- Activity metrics
+    unique_contributors INTEGER DEFAULT 0,
+    
+    -- Audit
+    computed_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    
+    PRIMARY KEY (id, period_start)
+);
+
+SELECT create_hypertable('service_metrics', 'period_start',
+    chunk_time_interval => INTERVAL '1 month',
+    if_not_exists => TRUE
+);
+
+CREATE INDEX idx_service_metrics_service_period ON service_metrics(service_id, period_start DESC);
+CREATE INDEX idx_service_metrics_period ON service_metrics(period_start DESC, period_end DESC);
+
+COMMENT ON TABLE service_metrics IS 'Aggregated metrics across all repositories belonging to a service. Time-series data stored in TimescaleDB hypertable with 1-month chunks.';
+
 -- =============================================================================
 -- PERFORMANCE INDEXES
 -- =============================================================================
