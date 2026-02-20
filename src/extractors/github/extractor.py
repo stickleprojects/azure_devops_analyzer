@@ -144,6 +144,10 @@ class GitHubExtractor(RepositoryExtractor):
         """
         List repositories for an organization or user with pagination and rate limiting.
         
+        NOTE: This method is NOT cached to ensure fresh repository lists on every call.
+        Repository visibility and availability can change between runs, so we always
+        fetch the current list from the API.
+        
         Args:
             organization: Organization or username to list repos for
             project: Optional project name (GitHub doesn't use this, but API requires it)
@@ -154,10 +158,6 @@ class GitHubExtractor(RepositoryExtractor):
                            - For authenticated user: Both true and false work correctly
                            - For organizations: Private repos fetched if you're a member
                            - For other users: Private repos NOT accessible (GitHub API limitation)
-                           
-        CACHE KEY NOTE:
-            The cache key includes `include_private`, ensuring separate cache entries
-            for public-only vs all-repos calls, preventing stale data mismatches.
             
         Logging:
             This method logs which endpoint was used and whether private repos are

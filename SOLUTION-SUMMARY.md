@@ -239,13 +239,13 @@ Available repositories (8 total):
 FAILED pytest.fail(f"See debug output above for available repositories.")
 ```
 
-**What this means**: Token doesn't have access (check token scope or ownership). See [test-private-repo-verification.md](docs/04-implementation/test-private-repo-verification.md) for full diagnosis guide.
+**What this means**: Token doesn't have access (check token scope or ownership).
 
 ---
 
 ## Documentation
 
-### 1. Caching Strategy Deep Dive
+### Caching Strategy Deep Dive
 
 📄 [docs/04-implementation/caching-strategy.md](docs/04-implementation/caching-strategy.md)
 
@@ -255,17 +255,6 @@ Covers:
 - Which methods ARE cached and why
 - How cache keys work with parameters
 - Production implications
-
-### 2. Test Verification Guide
-
-📄 [docs/04-implementation/test-private-repo-verification.md](docs/04-implementation/test-private-repo-verification.md)
-
-Covers:
-
-- Complete test flow walkthrough
-- Prerequisite checklist
-- Expected output patterns
-- Failure diagnosis for each scenario
 
 ---
 
@@ -277,7 +266,6 @@ Covers:
 | [src/config/github.py](src/config/github.py#L27-L35)                                                                           | Added `@property username` and `@property org`                                                | Backward compatibility with test code                            |
 | [tests/contract/integration/test_github_extraction_e2e.py](tests/contract/integration/test_github_extraction_e2e.py#L136-L188) | Enhanced debug block, exception handling, assertions                                          | Comprehensive test debugging and clear error messages            |
 | [docs/04-implementation/caching-strategy.md](docs/04-implementation/caching-strategy.md)                                       | NEW                                                                                           | Comprehensive caching documentation                              |
-| [docs/04-implementation/test-private-repo-verification.md](docs/04-implementation/test-private-repo-verification.md)           | NEW                                                                                           | Test verification and diagnosis guide                            |
 
 ---
 
@@ -295,7 +283,7 @@ Covers:
 
 1. **Run the test**: Execute the private repo test with the commands above
 2. **If it passes**: ✅ System is complete and working
-3. **If it fails**: Check [test-private-repo-verification.md](docs/04-implementation/test-private-repo-verification.md) failure diagnosis section
+3. **If it fails**: Review the debug output to diagnose token scope or repository access issues
 
 ---
 
