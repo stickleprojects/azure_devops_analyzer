@@ -2,6 +2,49 @@
 
 ---
 
+## Session: 2026-02-20 (Night cont.) - Service Overview Dashboard & Grafana Provisioning
+
+### Summary
+
+Completed FR-10.4 with steps 5 and 6: created the Service Overview Grafana dashboard and wired it into the home dashboard nav.
+
+### Changes
+
+1. **New: `dashboards/service-overview.json`** (uid: `service-overview`)
+   - Service selector variable (multi-select query against `services` table)
+   - **Service Summary** — 6 stat cards: Total Repos, Active Repos, Unique Contributors, Total Commits, PRs Merged, Critical Vulns; all via `DISTINCT ON (service_id)` latest-record pattern
+   - **Activity Trends** — Commit Activity (bar, per service) + PR Throughput (Created vs Merged, two targets)
+   - **Quality Metrics** — 4 stats (coverage %, maintainability index, quality issues, avg PR review time in hours) + Quality Trends line chart (coverage + maintainability over time)
+   - **Security & Dependencies** — 4 stats (critical/high vulns, EOL deps, total deps) + Vulnerabilities by Severity pie (live query through `repository_services`) + Vulnerability Trend line
+   - **Repository Breakdown** — full-width table with per-repo commits/contributors/PRs/vulns, colour-coded cells, drill-through link to repo-deep-dive
+   - All time-series panels use `$__timeFilter(period_start)` to respect Grafana time picker
+
+2. **Updated: `dashboards/dashboard-home.json`**
+   - Replaced "System Status" placeholder panel with "Service Overview" nav card
+   - Links to `/d/service-overview`
+
+3. **`grafana/provisioning/dashboards/dashboards.yml`** — no changes required
+   - Uses `type: file` directory scanning; `service-overview.json` is auto-discovered
+
+### Git
+
+No commit yet — ready to commit.
+
+### Feature Status: Service-Level-Metrics (FR-10.4)
+
+**Progress**: ✅ 100% Complete (6 of 6 implementation steps)**
+
+**✅ All Steps Complete**:
+
+- Step 1: Database migration (`database/migrations/010_add_service_metrics.sql`)
+- Step 2: ServiceMetric model (`src/database/models/service_metric.py`)
+- Step 3: Service Analytics Module (`src/database/service_analytics.py`)
+- Step 4: Integration Tests (`tests/contract/integration/test_service_analytics.py`) — 19 tests
+- Step 5: Service Overview Dashboard (`dashboards/service-overview.json`) ← completed this session
+- Step 6: Grafana Provisioning (`dashboards/dashboard-home.json`) ← completed this session
+
+---
+
 ## Session: 2026-02-20 (Night) - Service Analytics Integration Tests
 
 ### Summary

@@ -646,11 +646,11 @@
             },
             "id": 14,
             "options": {
-                "content": "# System Information\n\n**Data collection and system health**\n\n- Last analysis timestamps\n- Repository scan status\n- Data freshness indicators\n- System performance metrics\n- Analysis coverage statistics\n\n*More dashboards coming soon...*",
+                "content": "# Service Overview\n\n**Service-level analytics aggregated across repositories**\n\n- Service health at a glance\n- Commit and PR activity by service\n- Code quality and test coverage trends\n- Security vulnerabilities and EOL dependencies\n- Repository breakdown per service\n\n[View Service Overview →](/d/service-overview)",
                 "mode": "markdown"
             },
             "pluginVersion": "11.0.0",
-            "title": "System Status",
+            "title": "Service Overview",
             "type": "text"
         }
     ],
