@@ -10,7 +10,7 @@ import logging
 from datetime import datetime, UTC
 from typing import Optional
 
-from sqlalchemy import func, select, and_
+from sqlalchemy import case, func, select, and_
 from sqlalchemy.orm import Session
 
 from src.database.models.contributor import ContributorMetric
@@ -295,10 +295,10 @@ def _aggregate_security_metrics(
         select(
             func.count(func.distinct(Dependency.id)).label("total_vulnerable_deps"),
             func.sum(
-                func.case((Vulnerability.severity == "CRITICAL", 1), else_=0)
+                case((Vulnerability.severity == "CRITICAL", 1), else_=0)
             ).label("critical_vulns"),
             func.sum(
-                func.case((Vulnerability.severity == "HIGH", 1), else_=0)
+                case((Vulnerability.severity == "HIGH", 1), else_=0)
             ).label("high_vulns"),
         )
         .select_from(Dependency)
@@ -311,7 +311,7 @@ def _aggregate_security_metrics(
         select(
             func.count(Dependency.id).label("total_deps"),
             func.sum(
-                func.case((Dependency.is_eol.is_(True), 1), else_=0)
+                case((Dependency.is_eol.is_(True), 1), else_=0)
             ).label("eol_deps"),
         ).where(Dependency.repo_id.in_(repo_ids))
     ).one()
@@ -377,4 +377,19 @@ def _empty_service_metric(
         period_start=period_start,
         period_end=period_end,
         computed_at=datetime.now(UTC),
+        total_repositories=0,
+        active_repositories=0,
+        total_commits=0,
+        total_lines_added=0,
+        total_lines_removed=0,
+        total_files_modified=0,
+        total_prs_created=0,
+        total_prs_merged=0,
+        total_quality_issues=0,
+        total_vulnerabilities=0,
+        critical_vulnerabilities=0,
+        high_vulnerabilities=0,
+        total_dependencies=0,
+        eol_dependencies=0,
+        unique_contributors=0,
     )

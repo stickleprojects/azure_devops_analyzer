@@ -2,6 +2,59 @@
 
 ---
 
+## Session: 2026-02-20 (Night) - Service Analytics Integration Tests
+
+### Summary
+
+Wrote 19 integration tests for `src/database/service_analytics.py` (FR-10.4 Step 4).
+Also fixed two bugs in the module discovered by the tests.
+
+### Changes
+
+1. **New: `tests/contract/integration/test_service_analytics.py`** (19 tests, all passing)
+   - `TestComputeEdgeCases` — ValueError for unknown service; zeros for no-repo service
+   - `TestAggregateContributorMetrics` — cross-repo commit/PR/line sums; period boundary filtering; total_repositories count
+   - `TestAggregateQualityMetrics` — averaged coverage & maintainability; null when no data
+   - `TestAggregatePRMetrics` — merged PR counting; avg review time in hours
+   - `TestAggregateSecurityMetrics` — vuln counts by severity; EOL dependency count
+   - `TestUniqueContributorsAndActiveRepos` — cross-repo contributor dedup; active repo exclusion
+   - `TestGetServiceMetrics` — DESC ordering; time-range filtering; latest metric; None when empty
+   - `TestBatchCompute` — all-services batch; per-service failure isolation
+
+2. **Fixed: `src/database/service_analytics.py`** (2 bugs)
+   - `func.case(...)` → `case(...)` (wrong SQLAlchemy API — `func.case` doesn't exist)
+   - `_empty_service_metric()` now explicitly sets all integer fields to 0 (SQLAlchemy `default=` is only applied at INSERT, not object construction)
+
+3. **Updated: `tests/contract/integration/conftest.py`**
+   - Added `service_metrics` to hypertable cleanup list (DELETE)
+   - Added `repository_services` and `services` to truncate cleanup list
+
+### Git
+
+No commit yet — ready to commit.
+
+### Feature Status: Service-Level-Metrics (FR-10.4)
+
+**Progress**: ~67% Complete (4 of 6 implementation steps)
+
+**✅ Complete**:
+
+- Step 1: Database migration
+- Step 2: ServiceMetric model
+- Step 3: Service Analytics Module
+- Step 4: Integration Tests ← completed this session
+
+**❌ Remaining Work**:
+
+- **Step 5: Service Overview Dashboard** (~2-3 hours)
+  - File: `dashboards/service-overview.json`
+
+- **Step 6: Grafana Provisioning** (~15 min)
+  - Update `grafana/provisioning/dashboards/dashboards.yml`
+  - Update `dashboards/dashboard-home.json`
+
+---
+
 ## Session: 2026-02-20 (Evening cont.) - Service Analytics Module Complete
 
 ### Summary
