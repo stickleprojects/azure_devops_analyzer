@@ -441,12 +441,200 @@
       "type": "stat"
     },
     {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "service" },
+            "properties": [
+              { "id": "displayName", "value": "Service" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "total_repositories" },
+            "properties": [
+              { "id": "displayName", "value": "Total Repos" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "active_repositories" },
+            "properties": [
+              { "id": "displayName", "value": "Active Repos" },
+              {
+                "id": "custom.cellOptions",
+                "value": { "mode": "gradient", "type": "color-background" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red", "value": null },
+                    { "color": "yellow", "value": 1 },
+                    { "color": "green", "value": 3 }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "unique_contributors" },
+            "properties": [
+              { "id": "displayName", "value": "Contributors" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "total_commits" },
+            "properties": [
+              { "id": "displayName", "value": "Commits" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "total_prs_merged" },
+            "properties": [
+              { "id": "displayName", "value": "PRs Merged" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "critical_vulnerabilities" },
+            "properties": [
+              { "id": "displayName", "value": "Critical Vulns" },
+              {
+                "id": "custom.cellOptions",
+                "value": { "mode": "gradient", "type": "color-background" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 1 },
+                    { "color": "red", "value": 3 }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "test_coverage_pct" },
+            "properties": [
+              { "id": "displayName", "value": "Test Coverage" },
+              { "id": "unit", "value": "percent" },
+              {
+                "id": "custom.cellOptions",
+                "value": { "mode": "gradient", "type": "color-background" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "red", "value": null },
+                    { "color": "yellow", "value": 50 },
+                    { "color": "green", "value": 80 }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "avg_pr_review_hrs" },
+            "properties": [
+              { "id": "displayName", "value": "Avg PR Review" },
+              { "id": "unit", "value": "h" },
+              {
+                "id": "custom.cellOptions",
+                "value": { "mode": "gradient", "type": "color-background" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 4 },
+                    { "color": "red", "value": 24 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 21,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": false,
+            "displayName": "service"
+          }
+        ]
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  s.name as service,\n  latest.total_repositories,\n  latest.active_repositories,\n  latest.unique_contributors,\n  latest.total_commits,\n  latest.total_prs_merged,\n  latest.critical_vulnerabilities,\n  ROUND(latest.avg_test_coverage::numeric, 1) as test_coverage_pct,\n  ROUND(latest.avg_pr_review_time_hours::numeric, 1) as avg_pr_review_hrs\nFROM (\n  SELECT DISTINCT ON (sm.service_id)\n    sm.service_id,\n    sm.total_repositories,\n    sm.active_repositories,\n    sm.unique_contributors,\n    sm.total_commits,\n    sm.total_prs_merged,\n    sm.critical_vulnerabilities,\n    sm.avg_test_coverage,\n    sm.avg_pr_review_time_hours\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest\nJOIN services s ON latest.service_id = s.service_id\nORDER BY s.name;",
+          "refId": "A"
+        }
+      ],
+      "description": "Latest-period snapshot for each service. **Active Repos** — repos with ≥1 commit in the period (red=0, yellow=1–2, green≥3). **Critical Vulns** — critical severity vulnerabilities (green=0, yellow=1–2, red≥3). **Test Coverage** — average across repos (red<50%, yellow 50–79%, green≥80%). **Avg PR Review** — mean open-to-merge time (green<4 h, yellow 4–24 h, red≥24 h).",
+      "title": "Services at a Glance",
+      "type": "table"
+    },
+    {
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 5
+        "y": 13
       },
       "id": 101,
       "panels": [],
@@ -511,7 +699,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 6
+        "y": 14
       },
       "id": 7,
       "options": {
@@ -634,7 +822,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 6
+        "y": 14
       },
       "id": 8,
       "options": {
@@ -686,7 +874,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14
+        "y": 22
       },
       "id": 102,
       "panels": [],
@@ -729,7 +917,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 15
+        "y": 23
       },
       "id": 9,
       "options": {
@@ -798,7 +986,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 15
+        "y": 23
       },
       "id": 10,
       "options": {
@@ -867,7 +1055,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 15
+        "y": 23
       },
       "id": 11,
       "options": {
@@ -937,7 +1125,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 15
+        "y": 23
       },
       "id": 12,
       "options": {
@@ -1029,7 +1217,7 @@
         "h": 8,
         "w": 24,
         "x": 0,
-        "y": 19
+        "y": 27
       },
       "id": 13,
       "options": {
@@ -1079,7 +1267,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 27
+        "y": 35
       },
       "id": 103,
       "panels": [],
@@ -1121,7 +1309,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 28
+        "y": 36
       },
       "id": 14,
       "options": {
@@ -1190,7 +1378,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 28
+        "y": 36
       },
       "id": 15,
       "options": {
@@ -1259,7 +1447,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 28
+        "y": 36
       },
       "id": 16,
       "options": {
@@ -1320,7 +1508,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 28
+        "y": 36
       },
       "id": 17,
       "options": {
@@ -1440,7 +1628,7 @@
         "h": 8,
         "w": 8,
         "x": 0,
-        "y": 32
+        "y": 40
       },
       "id": 18,
       "options": {
@@ -1568,7 +1756,7 @@
         "h": 8,
         "w": 16,
         "x": 8,
-        "y": 32
+        "y": 40
       },
       "id": 19,
       "options": {
@@ -1618,7 +1806,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 40
+        "y": 48
       },
       "id": 104,
       "panels": [],
@@ -1794,7 +1982,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 41
+        "y": 49
       },
       "id": 20,
       "options": {

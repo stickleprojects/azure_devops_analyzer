@@ -652,6 +652,44 @@
             "pluginVersion": "11.0.0",
             "title": "Service Overview",
             "type": "text"
+        },
+        {
+            "datasource": {
+                "type": "postgres",
+                "uid": "TimescaleDB"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 6,
+                "w": 8,
+                "x": 0,
+                "y": 20
+            },
+            "id": 15,
+            "options": {
+                "content": "# Administration\n\n**System administration and operational controls**\n\n- Trigger full platform rescans (GitHub / Azure DevOps)\n- Monitor active extraction jobs and progress\n- Identify stale and never-scanned repositories\n- Force-rescan individual repositories\n- Access Celery Flower monitoring UI\n\n[Open Administration →](/d/admin-dashboard)",
+                "mode": "markdown"
+            },
+            "pluginVersion": "11.0.0",
+            "title": "Administration",
+            "type": "text"
         }
     ],
     "refresh": "30s",
