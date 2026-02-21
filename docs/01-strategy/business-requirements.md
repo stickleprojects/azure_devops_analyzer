@@ -5,9 +5,9 @@
 | Field            | Value                      |
 | ---------------- | -------------------------- |
 | Project Name     | Repository Analysis System |
-| Document Version | 1.0                        |
+| Document Version | 1.3                        |
 | Status           | Draft                      |
-| Last Updated     | 2026-01-17                 |
+| Last Updated     | 2026-02-21                 |
 
 ## Executive Summary
 
@@ -173,6 +173,17 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 | FR-13.7 | System shall display team member aggregates on Team Overview dashboard             | Medium   | Team Overview shows per-member stats (commits, PRs, reviews) with drill-down to contributor |
 | FR-13.8 | System shall support filtering dashboards by team                                  | Medium   | All relevant dashboards can be filtered to show only team members' activity                 |
 
+### FR-14: Administrative Dashboard
+
+| ID      | Requirement                                                                          | Priority | Acceptance Criteria                                                                            |
+| ------- | ------------------------------------------------------------------------------------ | -------- | ---------------------------------------------------------------------------------------------- |
+| FR-14.1 | System shall provide a dedicated administrative dashboard                            | High     | Centralized admin interface accessible to system administrators                                |
+| FR-14.2 | Admin dashboard shall include contextual help text for all administrative operations | High     | Each administrative function has clear documentation and usage guidance                        |
+| FR-14.3 | System shall provide force rescan functionality through the admin dashboard          | High     | Administrators can trigger immediate repository rescans regardless of configured intervals     |
+| FR-14.4 | Admin dashboard shall consolidate all administrative controls in one location        | Medium   | All system administrative functions (rescans, configuration, status monitoring) centralized    |
+| FR-14.5 | System shall provide status visibility for ongoing administrative operations         | Medium   | Dashboard displays current extraction jobs, queue status, and system health metrics            |
+| FR-14.6 | Admin dashboard shall support per-platform administrative actions                    | Medium   | Separate controls for GitHub and Azure DevOps operations with platform-specific configurations |
+
 ## Non-Functional Requirements
 
 ### NFR-1: Performance
@@ -300,6 +311,7 @@ The following items are explicitly excluded from this project:
 | 1.0     | 2026-01-17 | System | Initial draft based on README and documentation analysis                    |
 | 1.1     | 2026-01-18 | System | Added FR-11: Team Management and Contributor Linking                        |
 | 1.2     | 2026-01-19 | System | Added FR-5: Dependency EOL/Vulnerability Dashboard, FR-6: Tech Radar Export |
+| 1.3     | 2026-02-21 | System | Added FR-14: Administrative Dashboard with help text and rescan controls    |
 
 ## Approval
 

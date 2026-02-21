@@ -5,9 +5,9 @@
 | Field            | Value                      |
 | ---------------- | -------------------------- |
 | Project Name     | Repository Analysis System |
-| Document Version | 2.2                        |
+| Document Version | 2.3                        |
 | Status           | Active                     |
-| Last Updated     | 2026-02-09                 |
+| Last Updated     | 2026-02-21                 |
 
 ## Status Legend
 
@@ -64,10 +64,11 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 27       | 4       | 14          | 45    |
+| Functional Requirements     | 27       | 4       | 33          | 64    |
 | Non-Functional Requirements | 9        | 6       | 4           | 19    |
 
 **Note:** FR-11.2, FR-11.3, FR-11.5 updated to Complete - Team management data layer fully implemented with 11 passing integration tests (2026-01-29).
+**Note:** FR-12, FR-13, FR-14 added 2026-02-21 - Service mapping, enhanced team management, and administrative dashboard requirements added.
 
 ---
 
@@ -227,6 +228,52 @@
 
 ---
 
+### FR-12: Service-Repository Mapping
+
+| ID      | Requirement                                                                       | Priority | Status          | Notes                                                                      |
+| ------- | --------------------------------------------------------------------------------- | -------- | --------------- | -------------------------------------------------------------------------- |
+| FR-12.1 | System shall support defining services with name, purpose, and CMDB identifier    | High     | :x: Not Started | Service entity design needed                                               |
+| FR-12.2 | System shall support many-to-many relationships between repositories and services | High     | :x: Not Started | Junction table required for repository-service mapping                     |
+| FR-12.3 | System shall track which repositories contribute to each service                  | High     | :x: Not Started | Queryable service composition required                                     |
+| FR-12.4 | System shall aggregate metrics at the service level                               | Medium   | :x: Not Started | Dashboard views showing combined metrics for all repositories in a service |
+| FR-12.5 | System shall support repositories belonging to multiple services                  | Medium   | :x: Not Started | Many-to-many relationship supports cross-service repository contributions  |
+
+**FR-12 Summary:** 0/5 Complete, 0/5 Partial, 5/5 Not Started
+
+---
+
+### FR-13: Team Management and Contributor Linking
+
+| ID      | Requirement                                                                        | Priority | Status          | Notes                                                                                   |
+| ------- | ---------------------------------------------------------------------------------- | -------- | --------------- | --------------------------------------------------------------------------------------- |
+| FR-13.1 | System shall support defining teams with name, description, and optional CMDB link | High     | :x: Not Started | Team entity design needed (note: different from FR-11 teams)                            |
+| FR-13.2 | System shall support many-to-many relationships between contributors and teams     | High     | :x: Not Started | Contributor-team junction table required                                                |
+| FR-13.3 | System shall track team membership with effective dates (start/end)                | Medium   | :x: Not Started | Historical team membership tracking needed                                              |
+| FR-13.4 | System shall support team hierarchy (parent/child teams)                           | Low      | :x: Not Started | Nested team structure with aggregated metrics at parent level                           |
+| FR-13.5 | System shall aggregate contributor metrics at the team level                       | High     | :x: Not Started | Team-level totals for commits, PRs, reviews, lines changed                              |
+| FR-13.6 | System shall provide Individual Contributor Dashboard                              | Medium   | :x: Not Started | Dashboard showing personal commits, PRs authored, reviews given across all repositories |
+| FR-13.7 | System shall display team member aggregates on Team Overview dashboard             | Medium   | :x: Not Started | Team Overview shows per-member stats with drill-down to contributor                     |
+| FR-13.8 | System shall support filtering dashboards by team                                  | Medium   | :x: Not Started | All relevant dashboards can be filtered to show only team members' activity             |
+
+**FR-13 Summary:** 0/8 Complete, 0/8 Partial, 8/8 Not Started
+
+---
+
+### FR-14: Administrative Dashboard
+
+| ID      | Requirement                                                                          | Priority | Status          | Notes                                                                                          |
+| ------- | ------------------------------------------------------------------------------------ | -------- | --------------- | ---------------------------------------------------------------------------------------------- |
+| FR-14.1 | System shall provide a dedicated administrative dashboard                            | High     | :x: Not Started | Centralized admin interface accessible to system administrators                                |
+| FR-14.2 | Admin dashboard shall include contextual help text for all administrative operations | High     | :x: Not Started | Each administrative function requires clear documentation and usage guidance                   |
+| FR-14.3 | System shall provide force rescan functionality through the admin dashboard          | High     | :x: Not Started | Administrators can trigger immediate repository rescans regardless of configured intervals     |
+| FR-14.4 | Admin dashboard shall consolidate all administrative controls in one location        | Medium   | :x: Not Started | All system administrative functions (rescans, configuration, status monitoring) centralized    |
+| FR-14.5 | System shall provide status visibility for ongoing administrative operations         | Medium   | :x: Not Started | Dashboard displays current extraction jobs, queue status, and system health metrics            |
+| FR-14.6 | Admin dashboard shall support per-platform administrative actions                    | Medium   | :x: Not Started | Separate controls for GitHub and Azure DevOps operations with platform-specific configurations |
+
+**FR-14 Summary:** 0/6 Complete, 0/6 Partial, 6/6 Not Started
+
+---
+
 ## Non-Functional Requirements Status
 
 ### NFR-1: Performance
@@ -256,14 +303,14 @@
 
 ### NFR-3: Observability
 
-| ID      | Requirement                                                   | Priority | Status          | Notes                                                                                                 |
-| ------- | ------------------------------------------------------------- | -------- | --------------- | ----------------------------------------------------------------------------------------------------- |
-| NFR-3.1 | Workers shall emit structured metrics for extraction progress | High     | :white_check_mark: Complete | Metrics captured per run and repository with platform context                                           |
-| NFR-3.2 | Workers shall emit health check endpoints                     | Medium   | :x: Not Started | HTTP endpoint returning worker status, queue depth, last successful extraction                        |
-| NFR-3.3 | Workers shall log extraction events with correlation IDs      | High     | :x: Not Started | Structured logging with repository_id, platform, task_id for tracing                                  |
-| NFR-3.4 | System shall store extraction metrics in TimescaleDB          | High     | :white_check_mark: Complete | `extraction_metrics` table tracking run/repo timing, status, and records extracted                     |
-| NFR-3.5 | Grafana shall display worker health and extraction rate       | High     | :white_check_mark: Complete | Extraction progress dashboard panels for rate, status, and activity                                    |
-| NFR-3.6 | System shall track Celery task metrics                        | Medium   | :x: Not Started | Task success/failure counts, execution time percentiles, queue depth over time                        |
+| ID      | Requirement                                                   | Priority | Status                      | Notes                                                                              |
+| ------- | ------------------------------------------------------------- | -------- | --------------------------- | ---------------------------------------------------------------------------------- |
+| NFR-3.1 | Workers shall emit structured metrics for extraction progress | High     | :white_check_mark: Complete | Metrics captured per run and repository with platform context                      |
+| NFR-3.2 | Workers shall emit health check endpoints                     | Medium   | :x: Not Started             | HTTP endpoint returning worker status, queue depth, last successful extraction     |
+| NFR-3.3 | Workers shall log extraction events with correlation IDs      | High     | :x: Not Started             | Structured logging with repository_id, platform, task_id for tracing               |
+| NFR-3.4 | System shall store extraction metrics in TimescaleDB          | High     | :white_check_mark: Complete | `extraction_metrics` table tracking run/repo timing, status, and records extracted |
+| NFR-3.5 | Grafana shall display worker health and extraction rate       | High     | :white_check_mark: Complete | Extraction progress dashboard panels for rate, status, and activity                |
+| NFR-3.6 | System shall track Celery task metrics                        | Medium   | :x: Not Started             | Task success/failure counts, execution time percentiles, queue depth over time     |
 
 **NFR-3 Summary:** 3/6 Complete, 0/6 Partial, 3/6 Not Started
 
@@ -397,4 +444,4 @@
 | 1.9     | 2026-01-25 | System | **FR-6 Paused**: Implementation complete but metrics calculation disabled temporarily for performance optimization. Code remains in place and fully tested. Reason: Complex 7-query aggregation impacts extraction speed. See CONTRIBUTOR_METRICS_GUIDE.md |
 | 2.0     | 2026-01-25 | System | **FR-1.5 and FR-8.2 Complete**: README and metadata extraction now implemented for both GitHub and Azure DevOps platforms. Platform parity achieved for core documentation features.                                                                       |
 | 2.1     | 2026-01-25 | System | **Observability Requirements Added**: FR-9.5 (extraction progress monitoring) and NFR-3 (worker observability) with 6 new requirements for metrics, health checks, structured logging, and Grafana dashboards                                              |
-| 2.2     | 2026-02-09 | System | **Progress Monitoring Complete**: FR-9.5 complete, NFR-3.1/3.4/3.5 complete after extraction progress tracking, TimescaleDB storage, and Grafana dashboard validation                                         |
+| 2.2     | 2026-02-09 | System | **Progress Monitoring Complete**: FR-9.5 complete, NFR-3.1/3.4/3.5 complete after extraction progress tracking, TimescaleDB storage, and Grafana dashboard validation                                                                                      |
