@@ -2,6 +2,42 @@
 
 ---
 
+## Session: 2026-02-21 - Investigation: Development Feedback Loop & Test Coverage
+
+### Summary
+
+Completed investigation into development workflow friction and test coverage gaps. Documented current state, identified automation opportunities, and defined fixture factory requirements.
+
+### Investigation Completed
+
+**File**: `.ai/investigations/dev-feedback-and-test-coverage.md`
+
+**Problem 1: Development Feedback Loop** ✅ Fully answered
+- **Iteration cost**: 30-min scans (API-bound, non-optimizable) + few min manual verification
+- **Current verification**: Manual SQL checks (all tables populated) + Grafana panel review
+- **Automation target**: Canary repo inner join query (commits + PRs + deps + langs all present)
+- **Solution approach**: Option C — Python fixture API + JSON storage for both fast unit tests and post-scan verification
+
+**Problem 2: Realistic Test Coverage** ⏳ Partially answered
+- **Real-world patterns**: To be collected via AI analysis of actual repositories and GitHub browsing
+- **Fixture strategy**: Snapshot utility + JSON format viable; no structured capture process currently exists
+- **Coexistence model**: Fixture-based tests for logic correctness + real scan verification for end-to-end validation
+
+**Synthesis table**: Half filled with clear solution implications
+
+### Next Steps (Blocked on)
+
+1. **Collect real-world repository patterns** (5–10 concrete examples via AI analysis)
+2. **Investigate current mock strategy** (how extractors are mocked, TechnologyDetector inputs, existing fixtures)
+3. **Complete P2 answers** in investigation doc
+4. **Design fixture factory** (Python API spec, JSON schema, post-scan verification script, capture utility)
+
+### Git
+
+No commit — investigation doc saved but work in progress pending pattern collection.
+
+---
+
 ## Session: 2026-02-21 - Administrative Dashboard (FR-14)
 
 ### Summary
