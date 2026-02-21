@@ -2,6 +2,46 @@
 
 ---
 
+## Session: 2026-02-21 - Administrative Dashboard (FR-14)
+
+### Summary
+
+Implemented FR-14 in full: created `dashboards/admin-dashboard.json` as a consolidated admin interface, retired `dashboards/extraction-progress.json` (content absorbed), and added an Administration nav card to the home dashboard.
+
+### Changes
+
+1. **New: `dashboards/admin-dashboard.json`** (uid: `admin-dashboard`)
+   - **Extraction Controls** — help text + "Force Rescan — GitHub", "Force Rescan — Azure DevOps", "Compute Service Metrics" action panels (stat panels with panel-level links to `localhost:5000` API endpoints)
+   - **System Status** — Active Runs (stat), Latest Run Progress % (stat), API Health link (stat → `/health`), Celery Flower link (stat → `:5555`)
+   - **Extraction Activity** — Cache Hit Rate (stat), Extraction Rate (timeseries)
+   - **Recent Runs** — table of last 20 `extraction_runs` records
+   - **Repository Staleness** — help text with per-repo rescan API usage, Stale Repositories (7+ days) table, Never Scanned table
+   - **Recent Repository Activity** — table joining `extraction_metrics` + `repositories` (last 50)
+
+2. **Deleted: `dashboards/extraction-progress.json`** — all content consolidated into admin-dashboard
+
+3. **Updated: `dashboards/dashboard-home.json`** — added Administration nav card (id=15) at y=20
+
+4. **Updated: `docs/01-strategy/requirements-status.md`** — FR-14.1–FR-14.6 all marked Complete; summary updated to 45 complete
+
+### Git
+
+No commit yet — ready to commit.
+
+### Feature Status: Administrative Dashboard (FR-14)
+
+**Progress**: ✅ 100% Complete (6 of 6 sub-requirements)**
+
+**All Complete:**
+- FR-14.1: Dedicated administrative dashboard (`admin-dashboard.json`)
+- FR-14.2: Contextual help text in all sections
+- FR-14.3: Force rescan via platform buttons + per-repo API documentation
+- FR-14.4: All controls consolidated in one dashboard
+- FR-14.5: Active Runs, Progress %, extraction rate, recent runs, repo activity
+- FR-14.6: Per-platform GitHub vs Azure DevOps action panels
+
+---
+
 ## Session: 2026-02-20 (Night cont.) - Service Overview Dashboard & Grafana Provisioning
 
 ### Summary

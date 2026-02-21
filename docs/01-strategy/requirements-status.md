@@ -64,11 +64,12 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 39       | 9       | 24          | 72    |
+| Functional Requirements     | 45       | 9       | 18          | 72    |
 | Non-Functional Requirements | 9        | 6       | 4           | 19    |
 
 **Note:** FR-13.2, FR-13.3, FR-13.5 (formerly FR-11.2, FR-11.3, FR-11.5) updated to Complete - Team management data layer fully implemented with 11 passing integration tests (2026-01-29).
 **Note:** Requirements renumbered 2026-02-21 - Added missing FR-5 (Dependency Dashboard) and FR-6 (Tech Radar), renumbered FR-5→FR-7 through FR-11→FR-13 to align with business-requirements.md, added FR-14 (Administrative Dashboard).
+**Note:** FR-14.1–FR-14.6 updated to Complete - Administrative Dashboard implemented (`dashboards/admin-dashboard.json`) with extraction controls, system status, repository staleness views, and contextual help text (2026-02-21).
 
 ---
 
@@ -263,14 +264,14 @@
 
 | ID      | Requirement                                                                          | Priority | Status          | Notes                                                                                          |
 | ------- | ------------------------------------------------------------------------------------ | -------- | --------------- | ---------------------------------------------------------------------------------------------- |
-| FR-14.1 | System shall provide a dedicated administrative dashboard                            | High     | :x: Not Started | Centralized admin interface accessible to system administrators                                |
-| FR-14.2 | Admin dashboard shall include contextual help text for all administrative operations | High     | :x: Not Started | Each administrative function requires clear documentation and usage guidance                   |
-| FR-14.3 | System shall provide force rescan functionality through the admin dashboard          | High     | :x: Not Started | Administrators can trigger immediate repository rescans regardless of configured intervals     |
-| FR-14.4 | Admin dashboard shall consolidate all administrative controls in one location        | Medium   | :x: Not Started | All system administrative functions (rescans, configuration, status monitoring) centralized    |
-| FR-14.5 | System shall provide status visibility for ongoing administrative operations         | Medium   | :x: Not Started | Dashboard displays current extraction jobs, queue status, and system health metrics            |
-| FR-14.6 | Admin dashboard shall support per-platform administrative actions                    | Medium   | :x: Not Started | Separate controls for GitHub and Azure DevOps operations with platform-specific configurations |
+| FR-14.1 | System shall provide a dedicated administrative dashboard                            | High     | :white_check_mark: Complete | `dashboards/admin-dashboard.json` (uid: `admin-dashboard`) — linked from Home dashboard nav card - 2026-02-21 |
+| FR-14.2 | Admin dashboard shall include contextual help text for all administrative operations | High     | :white_check_mark: Complete | Markdown text panels explain each section: extraction controls, per-repo rescan API usage, staleness criteria - 2026-02-21 |
+| FR-14.3 | System shall provide force rescan functionality through the admin dashboard          | High     | :white_check_mark: Complete | "Force Rescan — GitHub" and "Force Rescan — Azure DevOps" stat panels link to `/api/rescan/{platform}`; per-repo rescan documented via `POST /api/rescan/repository/{id}` - 2026-02-21 |
+| FR-14.4 | Admin dashboard shall consolidate all administrative controls in one location        | Medium   | :white_check_mark: Complete | Single dashboard consolidates: extraction controls, system status (Active Runs, Progress %, API Health, Flower), extraction activity, recent runs, repository staleness tables - 2026-02-21 |
+| FR-14.5 | System shall provide status visibility for ongoing administrative operations         | Medium   | :white_check_mark: Complete | Active Runs stat, Latest Run Progress %, Extraction Rate timeseries, Recent Runs table, Recent Repository Activity table, links to API Health and Flower UI - 2026-02-21 |
+| FR-14.6 | Admin dashboard shall support per-platform administrative actions                    | Medium   | :white_check_mark: Complete | Separate "Force Rescan — GitHub" and "Force Rescan — Azure DevOps" action panels with platform-specific API endpoints - 2026-02-21 |
 
-**FR-14 Summary:** 0/6 Complete, 0/6 Partial, 6/6 Not Started
+**FR-14 Summary:** 6/6 Complete, 0/6 Partial, 0/6 Not Started
 
 ---
 
