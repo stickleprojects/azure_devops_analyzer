@@ -7,6 +7,7 @@
 # Usage:
 #   ./scripts/run-tests-docker.sh              # Run all tests (excluding live API)
 #   ./scripts/run-tests-docker.sh --live-api   # Run live API tests only
+#   ./scripts/run-tests-docker.sh <test_path>  # Run specific test file or pattern
 #   ./scripts/run-tests-docker.sh --keep-db    # Keep database for debugging
 #   ./scripts/run-tests-docker.sh --help       # Show help
 #
@@ -29,6 +30,7 @@ COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.test.yml"
 RESULTS_DIR="${PROJECT_ROOT}/test-results"
 KEEP_DB=false
 RUN_LIVE_API=false
+TEST_PATH=""
 ENV_FILE="${PROJECT_ROOT}/.env"
 RESOLVED_ENV_FILE="${PROJECT_ROOT}/.env.resolved"
 RESOLVE_SCRIPT="${PROJECT_ROOT}/scripts/resolve_env.sh"
@@ -68,9 +70,10 @@ Runs integration tests for GitHub AND Azure DevOps extraction in fully isolated
 Docker environment with dedicated test database.
 
 USAGE:
-    $0 [OPTIONS]
+    $0 [OPTIONS] [TEST_PATH]
 
 OPTIONS:
+    TEST_PATH       Run specific test file or pattern (e.g., tests/unit/test_*.py, tests/unit/extractors/test_cache.py)
     --live-api      Run live API tests (tests marked with @pytest.mark.live_api)
                     Includes both GitHub and Azure DevOps platform tests
     --keep-db       Keep test database after run (for debugging)
@@ -80,6 +83,12 @@ OPTIONS:
 EXAMPLES:
     # Run all GitHub and Azure DevOps integration tests (excluding live API)
     $0
+
+    # Run specific test file
+    $0 tests/unit/extractors/test_cache.py
+
+    # Run tests matching a pattern
+    $0 tests/unit/test_*.py
 
     # Run only live API tests for both GitHub and Azure DevOps
     $0 --live-api
@@ -157,10 +166,15 @@ while [[ $# -gt 0 ]]; do
             show_help
             exit 0
             ;;
-        *)
+        -*)
             log_error "Unknown option: $1"
             echo "Use --help for usage information"
             exit 2
+            ;;
+        *)
+            # Treat as test path
+            TEST_PATH="$1"
+            shift
             ;;
     esac
 done
@@ -221,6 +235,23 @@ if [ "$RUN_LIVE_API" = true ]; then
                       -vv \
                -m 'live_api' \
                --junit-xml=/app/test-results/junit-live-api.xml \
+               -o junit_family=xunit2 \
+               -o junit_logging=all \
+             -p no:cacheprovider \
+               -rs \
+               --tb=long \
+               --capture=no" || TEST_EXIT_CODE=$?
+elif [ -n "$TEST_PATH" ]; then
+    log_info "Running specific test: $TEST_PATH"
+    echo
+    
+    # Run specific test path
+    TEST_EXIT_CODE=0
+    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
+        sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
+               pytest '$TEST_PATH' \
+                      -vv \
+               --junit-xml=/app/test-results/junit.xml \
                -o junit_family=xunit2 \
                -o junit_logging=all \
              -p no:cacheprovider \

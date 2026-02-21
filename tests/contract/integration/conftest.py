@@ -190,6 +190,7 @@ def cleanup_database(test_session):
             "code_quality_metrics",
             "branch_metrics",
             "contributor_metrics",
+            "service_metrics",
         ]
         
         for table in hypertables:
@@ -203,7 +204,7 @@ def cleanup_database(test_session):
         # Use RESTART IDENTITY to reset auto-increment sequences
         truncate_tables = [
             "team_metrics",
-            "team_contributors", 
+            "team_contributors",
             "vulnerabilities",
             "pr_comments",
             "pr_reviews",
@@ -211,7 +212,9 @@ def cleanup_database(test_session):
             "commits",
             "contributors",
             "branches",
+            "repository_services",
             "repositories",
+            "services",
             "teams",
             "projects",
             "organizations",

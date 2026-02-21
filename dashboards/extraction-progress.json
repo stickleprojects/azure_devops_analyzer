@@ -73,6 +73,186 @@
             "mode": "absolute",
             "steps": [
               {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 0,
+        "y": 3
+      },
+      "id": 9,
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "cloud",
+          "includeVars": false,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": true,
+          "title": "Trigger Rescan",
+          "type": "absolute",
+          "url": "http://localhost:5000/api/rescan/github"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [],
+      "title": "Force Rescan - GitHub",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "blue",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 8,
+        "y": 3
+      },
+      "id": 10,
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "cloud",
+          "includeVars": false,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": true,
+          "title": "Trigger Rescan",
+          "type": "absolute",
+          "url": "http://localhost:5000/api/rescan/azure-devops"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [],
+      "title": "Force Rescan - Azure DevOps",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 8,
+        "x": 16,
+        "y": 3
+      },
+      "id": 11,
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "calculator-alt",
+          "includeVars": false,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": true,
+          "title": "Compute Metrics",
+          "type": "absolute",
+          "url": "http://localhost:5000/api/compute/service-metrics"
+        }
+      ],
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [],
+      "title": "Compute Service Metrics",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
                 "color": "green",
                 "value": null
               }
@@ -85,7 +265,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 3
+        "y": 6
       },
       "id": 2,
       "options": {
@@ -145,7 +325,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 3
+        "y": 6
       },
       "id": 3,
       "options": {
@@ -235,7 +415,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 3
+        "y": 6
       },
       "id": 4,
       "options": {
@@ -282,7 +462,7 @@
         "h": 7,
         "w": 24,
         "x": 0,
-        "y": 9
+        "y": 12
       },
       "id": 5,
       "options": {
@@ -341,7 +521,7 @@
         "h": 6,
         "w": 6,
         "x": 0,
-        "y": 16
+        "y": 19
       },
       "id": 7,
       "options": {
@@ -462,7 +642,7 @@
         "h": 6,
         "w": 18,
         "x": 6,
-        "y": 16
+        "y": 19
       },
       "id": 8,
       "options": {
@@ -509,7 +689,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 22
+        "y": 25
       },
       "id": 6,
       "options": {

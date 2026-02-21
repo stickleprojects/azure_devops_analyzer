@@ -218,6 +218,46 @@ services:
       - analyzer-network
 
   # ===========================================
+  # Extraction API - Flask REST API for manual rescans
+  # Handles: On-demand GitHub and Azure DevOps rescan triggers
+  # Provides: HTTP endpoints for dashboard integration
+  # ===========================================
+  extraction-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: analyzer-extraction-api
+    restart: unless-stopped
+    command: python -m src.api.rescan
+    environment:
+      # Database configuration
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      # RabbitMQ/Celery configuration
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./src:/app/src:ro
+      - ./config:/app/config:ro
+    depends_on:
+      db-migrations:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - analyzer-network
+
+  # ===========================================
   # Flower - Celery monitoring dashboard
   # Provides: Real-time task monitoring, worker status
   # ===========================================

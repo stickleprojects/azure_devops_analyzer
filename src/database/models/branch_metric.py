@@ -24,7 +24,7 @@ class BranchMetric(Base):
 
     __tablename__ = "branch_metrics"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     branch_id: Mapped[int] = mapped_column(
         ForeignKey("branches.branch_id", ondelete="CASCADE")
     )

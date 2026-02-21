@@ -2,7 +2,251 @@
 
 ---
 
-## Session: 2026-02-20 - Documentation Cleanup: Remove Misleading Caching Docs
+## Session: 2026-02-20 (Night cont.) - Service Overview Dashboard & Grafana Provisioning
+
+### Summary
+
+Completed FR-10.4 with steps 5 and 6: created the Service Overview Grafana dashboard and wired it into the home dashboard nav.
+
+### Changes
+
+1. **New: `dashboards/service-overview.json`** (uid: `service-overview`)
+   - Service selector variable (multi-select query against `services` table)
+   - **Service Summary** — 6 stat cards: Total Repos, Active Repos, Unique Contributors, Total Commits, PRs Merged, Critical Vulns; all via `DISTINCT ON (service_id)` latest-record pattern
+   - **Activity Trends** — Commit Activity (bar, per service) + PR Throughput (Created vs Merged, two targets)
+   - **Quality Metrics** — 4 stats (coverage %, maintainability index, quality issues, avg PR review time in hours) + Quality Trends line chart (coverage + maintainability over time)
+   - **Security & Dependencies** — 4 stats (critical/high vulns, EOL deps, total deps) + Vulnerabilities by Severity pie (live query through `repository_services`) + Vulnerability Trend line
+   - **Repository Breakdown** — full-width table with per-repo commits/contributors/PRs/vulns, colour-coded cells, drill-through link to repo-deep-dive
+   - All time-series panels use `$__timeFilter(period_start)` to respect Grafana time picker
+
+2. **Updated: `dashboards/dashboard-home.json`**
+   - Replaced "System Status" placeholder panel with "Service Overview" nav card
+   - Links to `/d/service-overview`
+
+3. **`grafana/provisioning/dashboards/dashboards.yml`** — no changes required
+   - Uses `type: file` directory scanning; `service-overview.json` is auto-discovered
+
+### Git
+
+No commit yet — ready to commit.
+
+### Feature Status: Service-Level-Metrics (FR-10.4)
+
+**Progress**: ✅ 100% Complete (6 of 6 implementation steps)**
+
+**✅ All Steps Complete**:
+
+- Step 1: Database migration (`database/migrations/010_add_service_metrics.sql`)
+- Step 2: ServiceMetric model (`src/database/models/service_metric.py`)
+- Step 3: Service Analytics Module (`src/database/service_analytics.py`)
+- Step 4: Integration Tests (`tests/contract/integration/test_service_analytics.py`) — 19 tests
+- Step 5: Service Overview Dashboard (`dashboards/service-overview.json`) ← completed this session
+- Step 6: Grafana Provisioning (`dashboards/dashboard-home.json`) ← completed this session
+
+---
+
+## Session: 2026-02-20 (Night) - Service Analytics Integration Tests
+
+### Summary
+
+Wrote 19 integration tests for `src/database/service_analytics.py` (FR-10.4 Step 4).
+Also fixed two bugs in the module discovered by the tests.
+
+### Changes
+
+1. **New: `tests/contract/integration/test_service_analytics.py`** (19 tests, all passing)
+   - `TestComputeEdgeCases` — ValueError for unknown service; zeros for no-repo service
+   - `TestAggregateContributorMetrics` — cross-repo commit/PR/line sums; period boundary filtering; total_repositories count
+   - `TestAggregateQualityMetrics` — averaged coverage & maintainability; null when no data
+   - `TestAggregatePRMetrics` — merged PR counting; avg review time in hours
+   - `TestAggregateSecurityMetrics` — vuln counts by severity; EOL dependency count
+   - `TestUniqueContributorsAndActiveRepos` — cross-repo contributor dedup; active repo exclusion
+   - `TestGetServiceMetrics` — DESC ordering; time-range filtering; latest metric; None when empty
+   - `TestBatchCompute` — all-services batch; per-service failure isolation
+
+2. **Fixed: `src/database/service_analytics.py`** (2 bugs)
+   - `func.case(...)` → `case(...)` (wrong SQLAlchemy API — `func.case` doesn't exist)
+   - `_empty_service_metric()` now explicitly sets all integer fields to 0 (SQLAlchemy `default=` is only applied at INSERT, not object construction)
+
+3. **Updated: `tests/contract/integration/conftest.py`**
+   - Added `service_metrics` to hypertable cleanup list (DELETE)
+   - Added `repository_services` and `services` to truncate cleanup list
+
+### Git
+
+No commit yet — ready to commit.
+
+### Feature Status: Service-Level-Metrics (FR-10.4)
+
+**Progress**: ~67% Complete (4 of 6 implementation steps)
+
+**✅ Complete**:
+
+- Step 1: Database migration
+- Step 2: ServiceMetric model
+- Step 3: Service Analytics Module
+- Step 4: Integration Tests ← completed this session
+
+**❌ Remaining Work**:
+
+- **Step 5: Service Overview Dashboard** (~2-3 hours)
+  - File: `dashboards/service-overview.json`
+
+- **Step 6: Grafana Provisioning** (~15 min)
+  - Update `grafana/provisioning/dashboards/dashboards.yml`
+  - Update `dashboards/dashboard-home.json`
+
+---
+
+## Session: 2026-02-20 (Evening cont.) - Service Analytics Module Complete
+
+### Summary
+
+Implemented `src/database/service_analytics.py` — the core aggregation module for FR-10.4. Mirrors the team_analytics.py pattern. All 7 existing unit tests still pass; pre-commit checks clean.
+
+### Changes
+
+1. **New: `src/database/service_analytics.py`**
+   - `compute_service_metrics()` — aggregates across all repos for a service, returns unpersisted ServiceMetric
+   - `get_service_metrics()` — retrieves historical metrics with optional time range filter
+   - `get_latest_service_metrics()` — most recent metrics for a service
+   - `compute_all_services_metrics()` — batch compute for all services (scheduled jobs)
+   - 6 private helpers for contributor, quality, PR, and security aggregation
+
+### Key Implementation Notes
+
+- Field names verified against actual models (plan had several wrong names):
+  - `commit_count` / `pr_created` (not `commits` / `prs_created`)
+  - `CodeQualityMetric.timestamp` (not `recorded_at`)
+  - Vulnerability severity on `Vulnerability` model, not `Dependency`
+- `repo_id` is `String(255)` throughout — not an int
+- Security metrics are point-in-time (no period filter) — dependencies = current state
+- Batch compute catches per-service exceptions so one failure doesn't abort the run
+
+### Git
+
+- **Commit**: `e6c234a` - feat: add service analytics module for FR-10.4 service-level metrics
+
+### Feature Status: Service-Level-Metrics (FR-10.4)
+
+**Progress**: ~50% Complete (3 of 6 implementation steps)
+
+**✅ Complete**:
+
+- Step 1: Database migration (`database/migrations/010_add_service_metrics.sql`)
+- Step 2: ServiceMetric model (`src/database/models/service_metric.py`)
+- Step 3: Service Analytics Module (`src/database/service_analytics.py`)
+
+**❌ Remaining Work**:
+
+- **Step 4: Integration Tests** (~2 hours)
+  - File: `tests/contract/integration/test_service_analytics.py`
+
+- **Step 5: Service Overview Dashboard** (~2-3 hours)
+  - File: `dashboards/service-overview.json`
+
+- **Step 6: Grafana Provisioning** (~15 min)
+  - Update `grafana/provisioning/dashboards/dashboards.yml`
+  - Update `dashboards/dashboard-home.json`
+
+---
+
+## Session: 2026-02-20 (Evening) - Test Script Enhancement & Service-Metrics Status
+
+### Summary
+
+Enhanced the Docker test runner script to accept explicit test paths, enabling targeted test execution. Verified service-level-metrics feature is ~33% complete with model and database migration in place.
+
+### Changes
+
+1. **Enhanced Test Script**: `scripts/run-tests-docker.sh`
+   - Added support for passing explicit test file or pattern as a positional argument
+   - Updated argument parsing to handle non-flag arguments as test paths
+   - Added new conditional branch to run specific tests when path is provided
+   - Updated help documentation with examples
+
+**New Usage**:
+
+```bash
+./scripts/run-tests-docker.sh                              # All tests (excluding live API)
+./scripts/run-tests-docker.sh tests/unit/test_service_metric_model.py  # Specific test file
+./scripts/run-tests-docker.sh tests/unit/test_*.py         # Pattern-based tests
+./scripts/run-tests-docker.sh tests/path/to/test.py --keep-db  # Combine with flags
+```
+
+2. **Tested Successfully**
+   - Ran `./scripts/run-tests-docker.sh tests/unit/test_service_metric_model.py`
+   - All 7 tests passed (test_create_service_metric_minimal, etc.)
+
+### Feature Status: Service-Level-Metrics (FR-10.4)
+
+**Progress**: ~33% Complete (2 of 6 implementation steps)
+
+**✅ Complete**:
+
+- Step 1: Database migration (`database/migrations/010_add_service_metrics.sql`)
+  - Service_metrics hypertable created with all required fields
+  - TimescaleDB chunking configured (1-month intervals)
+  - Indexes created for performance
+- Step 2: ServiceMetric model (`src/database/models/service_metric.py`)
+  - All fields defined correctly
+  - Relationships to Service entity established
+  - Unit tests created and passing
+
+**❌ Remaining Work**:
+
+- **Step 3: Service Analytics Module** (~2-3 hours)
+  - File: `src/database/service_analytics.py`
+  - Core functions needed:
+    - `compute_service_metrics()` - Main aggregation function
+    - `get_service_metrics()` - Historical retrieval
+    - `get_latest_service_metrics()` - Latest metrics
+    - `compute_all_services_metrics()` - Batch compute
+    - Helper functions for aggregating contributor, quality, PR, security metrics
+  - Blueprint: Mirror `src/database/team_analytics.py` pattern
+
+- **Step 4: Integration Tests** (~2 hours)
+  - File: `tests/contract/integration/test_service_analytics.py`
+  - Test aggregation logic across multiple repositories
+  - Test edge cases (no repos, time ranges, etc.)
+  - Minimum 8 tests, 80%+ coverage
+
+- **Step 5: Service Overview Dashboard** (~2-3 hours)
+  - File: `dashboards/service-overview.json`
+  - Copy pattern from `dashboards/team-overview.json`
+  - Required panels:
+    - Summary stats (repos, commits, contributors, vulnerabilities)
+    - Activity charts (commits, PRs over time)
+    - Quality metrics (coverage, maintainability)
+    - Security dashboard (vulnerabilities, EOL deps)
+    - Repository breakdown table
+  - Template variables: service_id, time_range
+
+- **Step 6: Grafana Provisioning** (~15 min)
+  - Update `grafana/provisioning/dashboards/dashboards.yml`
+  - Add service-overview.json to provisioning list
+  - Update `dashboards/dashboard-home.json` with navigation link
+
+### Reference Materials
+
+- Implementation plan: `.ai/plans/fr-10.4-service-metrics-plan.md`
+- Team analytics pattern (blueprint): `src/database/team_analytics.py`
+- Team dashboard pattern: `dashboards/team-overview.json`
+
+### Next Steps (Tomorrow)
+
+1. Implement `src/database/service_analytics.py` with aggregation functions
+2. Create integration tests in `tests/contract/integration/test_service_analytics.py`
+3. Build Grafana dashboard `dashboards/service-overview.json`
+4. Update provisioning and test end-to-end
+
+### Estimated Time to Completion
+
+Total remaining work: **8-10 hours** (spread across multiple steps)
+
+---
+
+## Session: 2026-02-20 (Morning) - Documentation Cleanup: Remove Misleading Caching Docs
 
 ### Summary
 
@@ -36,12 +280,14 @@ Removed three misleading/redundant documentation files that incorrectly describe
 ### Rationale
 
 **Why `get_repositories()` should NOT be cached:**
+
 - Repository visibility can change (public ↔ private)
 - New repositories may be created between runs
 - Organization membership changes affect accessible repos
 - Fresh data ensures accurate extraction every time
 
 **Other methods correctly cached:**
+
 - `get_branches()`, `get_file_tree()`, `get_file_content()`, `get_languages()` - All properly use `@cached` decorator
 - These methods are scoped to specific repositories and benefit from caching
 
