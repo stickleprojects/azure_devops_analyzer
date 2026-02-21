@@ -64,11 +64,11 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 27       | 4       | 33          | 64    |
+| Functional Requirements     | 39       | 9       | 24          | 72    |
 | Non-Functional Requirements | 9        | 6       | 4           | 19    |
 
-**Note:** FR-11.2, FR-11.3, FR-11.5 updated to Complete - Team management data layer fully implemented with 11 passing integration tests (2026-01-29).
-**Note:** FR-12, FR-13, FR-14 added 2026-02-21 - Service mapping, enhanced team management, and administrative dashboard requirements added.
+**Note:** FR-13.2, FR-13.3, FR-13.5 (formerly FR-11.2, FR-11.3, FR-11.5) updated to Complete - Team management data layer fully implemented with 11 passing integration tests (2026-01-29).
+**Note:** Requirements renumbered 2026-02-21 - Added missing FR-5 (Dependency Dashboard) and FR-6 (Tech Radar), renumbered FR-5→FR-7 through FR-11→FR-13 to align with business-requirements.md, added FR-14 (Administrative Dashboard).
 
 ---
 
@@ -127,135 +127,135 @@
 
 ---
 
-### FR-5: Code Quality Analysis
+### FR-5: Dependency Vulnerability and EOL Tracking Dashboard
 
-| ID     | Requirement                                          | Priority | Status                         | Notes                                                                                             |
-| ------ | ---------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------- |
-| FR-5.1 | System shall calculate code complexity metrics       | High     | :large_orange_diamond: Partial | `CodeQualityMetric` has complexity fields; analysis engine not implemented                        |
-| FR-5.2 | System shall identify code issues by category        | High     | :large_orange_diamond: Partial | `CodeIssue` entity with type (bug, vulnerability, code_smell) and severity; no analysis           |
-| FR-5.3 | System shall calculate maintainability index         | Medium   | :large_orange_diamond: Partial | `maintainability_index` field exists; no calculation logic                                        |
-| FR-5.4 | System shall track test coverage percentage          | Medium   | :large_orange_diamond: Partial | `test_coverage` field exists; no integration with test runners                                    |
-| FR-5.5 | System shall estimate technical debt in time units   | Medium   | :large_orange_diamond: Partial | `technical_debt_minutes` field exists; no calculation logic                                       |
-| FR-5.6 | System shall track repository health metrics         | Medium   | :white_check_mark: Complete    | Repository size, issue counts, archive status, and license info captured - implemented 2026-01-18 |
-| FR-5.7 | System shall track commit GPG signature verification | Medium   | :white_check_mark: Complete    | GPG verification status and reason captured for all commits - implemented 2026-01-18              |
+| ID     | Requirement                                                                                 | Priority | Status                      | Notes                                                                        |
+| ------ | ------------------------------------------------------------------------------------------- | -------- | --------------------------- | ---------------------------------------------------------------------------- |
+| FR-5.1 | System shall provide a comprehensive dashboard showing all dependencies across repositories | High     | :x: Not Started             | Dashboard aggregation of unique libraries and usage patterns needed          |
+| FR-5.2 | System shall display dependency versions, EOL status, and vulnerability counts per library  | High     | :x: Not Started             | Library card views with version, EOL date, and CVE count                     |
+| FR-5.3 | System shall allow filtering dashboard by organization, team, service, and repository       | High     | :x: Not Started             | Filter controls for drill-down from portfolio to repository level            |
+| FR-5.4 | System shall highlight libraries with critical vulnerabilities or upcoming EOL dates        | High     | :x: Not Started             | Visual indicators (badges/colors) for Critical CVEs and EOL < 90 days        |
+| FR-5.5 | System shall show which repositories depend on each library                                 | Medium   | :x: Not Started             | Repository list with version information for each dependency                 |
+| FR-5.6 | System shall track library adoption trends (how many repos using over time)                 | Medium   | :x: Not Started             | Historical adoption curve for each library                                   |
+| FR-5.7 | System shall integrate EOL data from endoflife.date and vulnerability data from OSV.dev     | High     | :white_check_mark: Complete | Data sources integrated via EOLClient and OSVClient - implemented 2026-01-24 |
 
-**FR-5 Summary:** 2/7 Complete, 5/7 Partial
+**FR-5 Summary:** 1/7 Complete, 0/7 Partial, 6/7 Not Started
 
 ---
 
-### FR-6: Contributor Analytics
+### FR-6: Thoughtworks Tech Radar Publication
+
+| ID     | Requirement                                                                                       | Priority | Status          | Notes                                                           |
+| ------ | ------------------------------------------------------------------------------------------------- | -------- | --------------- | --------------------------------------------------------------- |
+| FR-6.1 | System shall generate a Thoughtworks Tech Radar based on actual library usage across organization | High     | :x: Not Started | Radar generation in JSON format compatible with TW Radar viewer |
+| FR-6.2 | System shall categorize libraries into Thoughtworks Tech Radar rings (Adopt, Trial, Assess, Hold) | High     | :x: Not Started | Categorization based on adoption metrics and recommendations    |
+| FR-6.3 | System shall populate radar with organization's actual technology stack from dependency analysis  | High     | :x: Not Started | All detected libraries with 2+ repositories appear on radar     |
+| FR-6.4 | System shall include Thoughtworks recommended libraries as potential Trial/Assess options         | Medium   | :x: Not Started | Recommended libraries highlighted separately with rationale     |
+| FR-6.5 | System shall display radar with configurable move history and publication timeline                | Medium   | :x: Not Started | Radar shows technology migrations and categorization changes    |
+| FR-6.6 | System shall provide endpoint to publish/export radar for sharing with stakeholders               | High     | :x: Not Started | REST API endpoint; HTML visualization compatible with viewers   |
+| FR-6.7 | System shall track blips with metadata (adoption date, vulnerability status, EOL impact)          | Medium   | :x: Not Started | Each technology entry includes context-specific metadata        |
+
+**FR-6 Summary:** 0/7 Complete, 0/7 Partial, 7/7 Not Started
+
+---
+
+### FR-7: Code Quality Analysis
+
+| ID     | Requirement                                          | Priority | Status                         | Notes                                                                                             |
+| ------ | ---------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------- |
+| FR-7.1 | System shall calculate code complexity metrics       | High     | :large_orange_diamond: Partial | `CodeQualityMetric` has complexity fields; analysis engine not implemented                        |
+| FR-7.2 | System shall identify code issues by category        | High     | :large_orange_diamond: Partial | `CodeIssue` entity with type (bug, vulnerability, code_smell) and severity; no analysis           |
+| FR-7.3 | System shall calculate maintainability index         | Medium   | :large_orange_diamond: Partial | `maintainability_index` field exists; no calculation logic                                        |
+| FR-7.4 | System shall track test coverage percentage          | Medium   | :large_orange_diamond: Partial | `test_coverage` field exists; no integration with test runners                                    |
+| FR-7.5 | System shall estimate technical debt in time units   | Medium   | :large_orange_diamond: Partial | `technical_debt_minutes` field exists; no calculation logic                                       |
+| FR-7.6 | System shall track repository health metrics         | Medium   | :white_check_mark: Complete    | Repository size, issue counts, archive status, and license info captured - implemented 2026-01-18 |
+| FR-7.7 | System shall track commit GPG signature verification | Medium   | :white_check_mark: Complete    | GPG verification status and reason captured for all commits - implemented 2026-01-18              |
+
+**FR-7 Summary:** 2/7 Complete, 5/7 Partial
+
+---
+
+### FR-8: Contributor Analytics
 
 **STATUS: PAUSED** - Implementation complete but disabled for performance optimization
 
 | ID     | Requirement                                                     | Priority | Status                      | Notes                                                                                                                                                 |
 | ------ | --------------------------------------------------------------- | -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-6.1 | System shall track unique contributors per repository           | High     | :white_check_mark: Complete | `Contributor` entity with email-based identification; integrated into both GitHub and Azure DevOps workflows                                          |
-| FR-6.2 | System shall calculate contributor metrics                      | High     | :pause_button: **Paused**   | Implementation complete but calculation disabled - see CONTRIBUTOR_METRICS_GUIDE.md; requires performance optimization before re-enabling             |
-| FR-6.3 | System shall track commit patterns (frequency, message quality) | Medium   | :white_check_mark: Complete | `ContributorAnalyzer.analyze_commit_message()` scores conventional commits, imperative mood, issue references; integrated into workflows - 2026-01-24 |
-| FR-6.4 | System shall track active days per contributor                  | Medium   | :pause_button: **Paused**   | Implementation complete but disabled; active_days calculated via `COUNT(DISTINCT date())` - re-enable when metrics calculation optimized              |
+| FR-8.1 | System shall track unique contributors per repository           | High     | :white_check_mark: Complete | `Contributor` entity with email-based identification; integrated into both GitHub and Azure DevOps workflows                                          |
+| FR-8.2 | System shall calculate contributor metrics                      | High     | :pause_button: **Paused**   | Implementation complete but calculation disabled - see CONTRIBUTOR_METRICS_GUIDE.md; requires performance optimization before re-enabling             |
+| FR-8.3 | System shall track commit patterns (frequency, message quality) | Medium   | :white_check_mark: Complete | `ContributorAnalyzer.analyze_commit_message()` scores conventional commits, imperative mood, issue references; integrated into workflows - 2026-01-24 |
+| FR-8.4 | System shall track active days per contributor                  | Medium   | :pause_button: **Paused**   | Implementation complete but disabled; active_days calculated via `COUNT(DISTINCT date())` - re-enable when metrics calculation optimized              |
 
-**FR-6 Summary:** 2/4 Active, 2/4 Paused (Implementation: 4/4 Complete)
+**FR-8 Summary:** 2/4 Active, 2/4 Paused (Implementation: 4/4 Complete)
 
 ---
 
-### FR-7: Pull Request Analysis
+### FR-9: Pull Request Analysis
 
 | ID     | Requirement                             | Priority | Status                      | Notes                                                                          |
 | ------ | --------------------------------------- | -------- | --------------------------- | ------------------------------------------------------------------------------ |
-| FR-7.1 | System shall track PR lifecycle         | High     | :white_check_mark: Complete | `PullRequest` entity with status, timestamps for created/updated/merged/closed |
-| FR-7.2 | System shall calculate PR size metrics  | High     | :white_check_mark: Complete | Fields: files_changed, lines_added, lines_removed, size_classification enum    |
-| FR-7.3 | System shall track review activity      | High     | :white_check_mark: Complete | `PRReview` entity with reviewer, vote (-10 to +10), and timestamps             |
-| FR-7.4 | System shall identify PR quality issues | Medium   | :x: Not Started             | `quality_flags` array field exists but no analysis logic                       |
+| FR-9.1 | System shall track PR lifecycle         | High     | :white_check_mark: Complete | `PullRequest` entity with status, timestamps for created/updated/merged/closed |
+| FR-9.2 | System shall calculate PR size metrics  | High     | :white_check_mark: Complete | Fields: files_changed, lines_added, lines_removed, size_classification enum    |
+| FR-9.3 | System shall track review activity      | High     | :white_check_mark: Complete | `PRReview` entity with reviewer, vote (-10 to +10), and timestamps             |
+| FR-9.4 | System shall identify PR quality issues | Medium   | :x: Not Started             | `quality_flags` array field exists but no analysis logic                       |
 
-**FR-7 Summary:** 3/4 Complete, 0/4 Partial, 1/4 Not Started
-
----
-
-### FR-8: Repository Summarization
-
-| ID     | Requirement                                              | Priority | Status                         | Notes                                                                                                                                                                                                          |
-| ------ | -------------------------------------------------------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-8.1 | System shall generate AI-powered repository summaries    | Medium   | :large_orange_diamond: Partial | `RepositorySummary` entity with summary, purpose, target_audience fields; AI integration not wired                                                                                                             |
-| FR-8.2 | System shall extract and index README content            | High     | :white_check_mark: Complete    | `ReadmeFile` entity exists; full-text search index defined. **Both platforms**: ✅ Implemented via base `get_readme_files()` with scope detection. Workflows store via `_process_readme_files()` - 2026-01-25. |
-| FR-8.3 | System shall track which AI model generated each summary | Low      | :white_check_mark: Complete    | `model_used` field on RepositorySummary entity                                                                                                                                                                 |
-
-**FR-8 Summary:** 2/3 Complete, 1/3 Partial
+**FR-9 Summary:** 3/4 Complete, 0/4 Partial, 1/4 Not Started
 
 ---
 
-### FR-9: Visualization and Reporting
+### FR-10: Repository Summarization
 
-| ID     | Requirement                                             | Priority | Status                         | Notes                                                                                                                                                        |
-| ------ | ------------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR-9.1 | System shall provide Grafana dashboards for all metrics | High     | :white_check_mark: Complete    | 7 dashboards implemented: Team Overview, Repository Overview, Repository Deep-Dive, Pull Requests, Contributor Analytics, Security Dashboard, Dashboard Home |
-| FR-9.2 | System shall support time-range filtering               | High     | :white_check_mark: Complete    | All dashboards use Grafana time picker; navigation preserves time range                                                                                      |
-| FR-9.3 | System shall support drill-down navigation              | Medium   | :white_check_mark: Complete    | Repository names in tables link to Deep-Dive dashboard; cross-dashboard navigation links on all dashboards                                                   |
-| FR-9.4 | System shall provide security-focused dashboard views   | High     | :large_orange_diamond: Partial | Security metrics included in Team Overview and Repository Deep-Dive (vulnerabilities, EOL deps); dedicated Security dashboard not yet created                |
-| FR-9.5 | System shall display extraction progress monitoring     | High     | :white_check_mark: Complete    | Extraction progress dashboard with run + per-repo metrics                                                                                                    |
+| ID      | Requirement                                              | Priority | Status                         | Notes                                                                                                                                                                                                          |
+| ------- | -------------------------------------------------------- | -------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-10.1 | System shall generate AI-powered repository summaries    | Medium   | :large_orange_diamond: Partial | `RepositorySummary` entity with summary, purpose, target_audience fields; AI integration not wired                                                                                                             |
+| FR-10.2 | System shall extract and index README content            | High     | :white_check_mark: Complete    | `ReadmeFile` entity exists; full-text search index defined. **Both platforms**: ✅ Implemented via base `get_readme_files()` with scope detection. Workflows store via `_process_readme_files()` - 2026-01-25. |
+| FR-10.3 | System shall track which AI model generated each summary | Low      | :white_check_mark: Complete    | `model_used` field on RepositorySummary entity                                                                                                                                                                 |
 
-**FR-9 Summary:** 4/5 Complete, 1/5 Partial, 0/5 Not Started
+**FR-10 Summary:** 2/3 Complete, 1/3 Partial
 
 ---
 
-### FR-10: Service-Repository Mapping
+### FR-11: Visualization and Reporting
 
-| ID      | Requirement                                                      | Priority | Status                      | Notes                                                                                                      |
-| ------- | ---------------------------------------------------------------- | -------- | --------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| FR-10.1 | System shall support defining services                           | High     | :white_check_mark: Complete | `Service` entity with name, description, cmdb_id, tags - [entities/service.py](../src/entities/service.py) |
-| FR-10.2 | System shall support many-to-many relationships                  | High     | :white_check_mark: Complete | `RepositoryService` junction table implemented                                                             |
-| FR-10.3 | System shall track which repositories contribute to each service | High     | :white_check_mark: Complete | Relationship queryable via ORM                                                                             |
-| FR-10.4 | System shall aggregate metrics at the service level              | Medium   | :x: Not Started             | No aggregation queries or views implemented                                                                |
-| FR-10.5 | System shall support repositories belonging to multiple services | Medium   | :white_check_mark: Complete | Many-to-many relationship supports this                                                                    |
+| ID      | Requirement                                             | Priority | Status                         | Notes                                                                                                                                                        |
+| ------- | ------------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-11.1 | System shall provide Grafana dashboards for all metrics | High     | :white_check_mark: Complete    | 7 dashboards implemented: Team Overview, Repository Overview, Repository Deep-Dive, Pull Requests, Contributor Analytics, Security Dashboard, Dashboard Home |
+| FR-11.2 | System shall support time-range filtering               | High     | :white_check_mark: Complete    | All dashboards use Grafana time picker; navigation preserves time range                                                                                      |
+| FR-11.3 | System shall support drill-down navigation              | Medium   | :white_check_mark: Complete    | Repository names in tables link to Deep-Dive dashboard; cross-dashboard navigation links on all dashboards                                                   |
+| FR-11.4 | System shall provide security-focused dashboard views   | High     | :large_orange_diamond: Partial | Security metrics included in Team Overview and Repository Deep-Dive (vulnerabilities, EOL deps); dedicated Security dashboard not yet created                |
 
-**FR-10 Summary:** 4/5 Complete, 0/5 Partial, 1/5 Not Started
-
----
-
-### FR-11: Team Management and Contributor Linking
-
-| ID      | Requirement                                                          | Priority | Status                      | Notes                                                                                                                                                       |
-| ------- | -------------------------------------------------------------------- | -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-11.1 | System shall support defining teams with name, description           | High     | :white_check_mark: Complete | `Team` entity implemented with name, description, organization_id - [models/team.py](../src/database/models/team.py)                                        |
-| FR-11.2 | System shall support many-to-many relationships (contributors-teams) | High     | :white_check_mark: Complete | `TeamContributor` junction table with unique constraint - [models/team_contributor.py](../src/database/models/team_contributor.py) - Implemented 2026-01-29 |
-| FR-11.3 | System shall track team membership with effective dates              | Medium   | :white_check_mark: Complete | `TeamContributor` tracks `effective_start_date` and `effective_end_date` for historical membership - Implemented 2026-01-29                                 |
-| FR-11.4 | System shall support team hierarchy (parent/child teams)             | Low      | :x: Not Started             | Optional nested team structure - not required for current sprint                                                                                            |
-| FR-11.5 | System shall aggregate contributor metrics at team level             | High     | :white_check_mark: Complete | `TeamMetric` model with 6 aggregate functions in `team_analytics.py` service module - Implemented 2026-01-29                                                |
-| FR-11.6 | System shall provide Individual Contributor Dashboard                | Medium   | :x: Not Started             | Personal dashboard showing commits, PRs, reviews across repos - Blocked pending dashboard integration framework                                             |
-| FR-11.7 | System shall display team member aggregates on Team Overview         | Medium   | :x: Not Started             | Per-member stats with drill-down to Individual Contributor view - Blocked pending dashboard integration framework                                           |
-| FR-11.8 | System shall support filtering dashboards by team                    | Medium   | :x: Not Started             | Team template variable on relevant dashboards - Blocked pending dashboard integration framework                                                             |
-
-**FR-11 Summary:** 5/8 Complete, 0/8 Partial, 3/8 Not Started (3 dashboard features blocked pending integration framework)
+**FR-11 Summary:** 3/4 Complete, 1/4 Partial, 0/4 Not Started
 
 ---
 
 ### FR-12: Service-Repository Mapping
 
-| ID      | Requirement                                                                       | Priority | Status          | Notes                                                                      |
-| ------- | --------------------------------------------------------------------------------- | -------- | --------------- | -------------------------------------------------------------------------- |
-| FR-12.1 | System shall support defining services with name, purpose, and CMDB identifier    | High     | :x: Not Started | Service entity design needed                                               |
-| FR-12.2 | System shall support many-to-many relationships between repositories and services | High     | :x: Not Started | Junction table required for repository-service mapping                     |
-| FR-12.3 | System shall track which repositories contribute to each service                  | High     | :x: Not Started | Queryable service composition required                                     |
-| FR-12.4 | System shall aggregate metrics at the service level                               | Medium   | :x: Not Started | Dashboard views showing combined metrics for all repositories in a service |
-| FR-12.5 | System shall support repositories belonging to multiple services                  | Medium   | :x: Not Started | Many-to-many relationship supports cross-service repository contributions  |
+| ID      | Requirement                                                      | Priority | Status                      | Notes                                                                                                      |
+| ------- | ---------------------------------------------------------------- | -------- | --------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| FR-12.1 | System shall support defining services                           | High     | :white_check_mark: Complete | `Service` entity with name, description, cmdb_id, tags - [entities/service.py](../src/entities/service.py) |
+| FR-12.2 | System shall support many-to-many relationships                  | High     | :white_check_mark: Complete | `RepositoryService` junction table implemented                                                             |
+| FR-12.3 | System shall track which repositories contribute to each service | High     | :white_check_mark: Complete | Relationship queryable via ORM                                                                             |
+| FR-12.4 | System shall aggregate metrics at the service level              | Medium   | :x: Not Started             | No aggregation queries or views implemented                                                                |
+| FR-12.5 | System shall support repositories belonging to multiple services | Medium   | :white_check_mark: Complete | Many-to-many relationship supports this                                                                    |
 
-**FR-12 Summary:** 0/5 Complete, 0/5 Partial, 5/5 Not Started
+**FR-12 Summary:** 4/5 Complete, 0/5 Partial, 1/5 Not Started
 
 ---
 
 ### FR-13: Team Management and Contributor Linking
 
-| ID      | Requirement                                                                        | Priority | Status          | Notes                                                                                   |
-| ------- | ---------------------------------------------------------------------------------- | -------- | --------------- | --------------------------------------------------------------------------------------- |
-| FR-13.1 | System shall support defining teams with name, description, and optional CMDB link | High     | :x: Not Started | Team entity design needed (note: different from FR-11 teams)                            |
-| FR-13.2 | System shall support many-to-many relationships between contributors and teams     | High     | :x: Not Started | Contributor-team junction table required                                                |
-| FR-13.3 | System shall track team membership with effective dates (start/end)                | Medium   | :x: Not Started | Historical team membership tracking needed                                              |
-| FR-13.4 | System shall support team hierarchy (parent/child teams)                           | Low      | :x: Not Started | Nested team structure with aggregated metrics at parent level                           |
-| FR-13.5 | System shall aggregate contributor metrics at the team level                       | High     | :x: Not Started | Team-level totals for commits, PRs, reviews, lines changed                              |
-| FR-13.6 | System shall provide Individual Contributor Dashboard                              | Medium   | :x: Not Started | Dashboard showing personal commits, PRs authored, reviews given across all repositories |
-| FR-13.7 | System shall display team member aggregates on Team Overview dashboard             | Medium   | :x: Not Started | Team Overview shows per-member stats with drill-down to contributor                     |
-| FR-13.8 | System shall support filtering dashboards by team                                  | Medium   | :x: Not Started | All relevant dashboards can be filtered to show only team members' activity             |
+| ID      | Requirement                                                          | Priority | Status                      | Notes                                                                                                                                                       |
+| ------- | -------------------------------------------------------------------- | -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-13.1 | System shall support defining teams with name, description           | High     | :white_check_mark: Complete | `Team` entity implemented with name, description, organization_id - [models/team.py](../src/database/models/team.py)                                        |
+| FR-13.2 | System shall support many-to-many relationships (contributors-teams) | High     | :white_check_mark: Complete | `TeamContributor` junction table with unique constraint - [models/team_contributor.py](../src/database/models/team_contributor.py) - Implemented 2026-01-29 |
+| FR-13.3 | System shall track team membership with effective dates              | Medium   | :white_check_mark: Complete | `TeamContributor` tracks `effective_start_date` and `effective_end_date` for historical membership - Implemented 2026-01-29                                 |
+| FR-13.4 | System shall support team hierarchy (parent/child teams)             | Low      | :x: Not Started             | Optional nested team structure - not required for current sprint                                                                                            |
+| FR-13.5 | System shall aggregate contributor metrics at team level             | High     | :white_check_mark: Complete | `TeamMetric` model with 6 aggregate functions in `team_analytics.py` service module - Implemented 2026-01-29                                                |
+| FR-13.6 | System shall provide Individual Contributor Dashboard                | Medium   | :x: Not Started             | Personal dashboard showing commits, PRs, reviews across repos - Blocked pending dashboard integration framework                                             |
+| FR-13.7 | System shall display team member aggregates on Team Overview         | Medium   | :x: Not Started             | Per-member stats with drill-down to Individual Contributor view - Blocked pending dashboard integration framework                                           |
+| FR-13.8 | System shall support filtering dashboards by team                    | Medium   | :x: Not Started             | Team template variable on relevant dashboards - Blocked pending dashboard integration framework                                                             |
 
-**FR-13 Summary:** 0/8 Complete, 0/8 Partial, 8/8 Not Started
+**FR-13 Summary:** 5/8 Complete, 0/8 Partial, 3/8 Not Started (3 dashboard features blocked pending integration framework)
 
 ---
 
