@@ -13,12 +13,14 @@ Completed investigation into development workflow friction and test coverage gap
 **File**: `.ai/investigations/dev-feedback-and-test-coverage.md`
 
 **Problem 1: Development Feedback Loop** ✅ Fully answered
+
 - **Iteration cost**: 30-min scans (API-bound, non-optimizable) + few min manual verification
 - **Current verification**: Manual SQL checks (all tables populated) + Grafana panel review
 - **Automation target**: Canary repo inner join query (commits + PRs + deps + langs all present)
 - **Solution approach**: Option C — Python fixture API + JSON storage for both fast unit tests and post-scan verification
 
 **Problem 2: Realistic Test Coverage** ⏳ Partially answered
+
 - **Real-world patterns**: To be collected via AI analysis of actual repositories and GitHub browsing
 - **Fixture strategy**: Snapshot utility + JSON format viable; no structured capture process currently exists
 - **Coexistence model**: Fixture-based tests for logic correctness + real scan verification for end-to-end validation
@@ -66,9 +68,10 @@ No commit yet — ready to commit.
 
 ### Feature Status: Administrative Dashboard (FR-14)
 
-**Progress**: ✅ 100% Complete (6 of 6 sub-requirements)**
+**Progress**: ✅ 100% Complete (6 of 6 sub-requirements)\*\*
 
 **All Complete:**
+
 - FR-14.1: Dedicated administrative dashboard (`admin-dashboard.json`)
 - FR-14.2: Contextual help text in all sections
 - FR-14.3: Force rescan via platform buttons + per-repo API documentation
@@ -108,7 +111,7 @@ No commit yet — ready to commit.
 
 ### Feature Status: Service-Level-Metrics (FR-10.4)
 
-**Progress**: ✅ 100% Complete (6 of 6 implementation steps)**
+**Progress**: ✅ 100% Complete (6 of 6 implementation steps)\*\*
 
 **✅ All Steps Complete**:
 
