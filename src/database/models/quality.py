@@ -25,7 +25,7 @@ class CodeQualityMetric(Base):
 
     __tablename__ = "code_quality_metrics"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     repo_id: Mapped[str] = mapped_column(
         String(255), ForeignKey("repositories.repo_id", ondelete="CASCADE")
     )

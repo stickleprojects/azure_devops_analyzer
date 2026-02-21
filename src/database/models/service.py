@@ -12,6 +12,7 @@ from src.database.models.base import Base
 
 if TYPE_CHECKING:
     from src.database.models.repository import Repository
+    from src.database.models.service_metric import ServiceMetric
 
 
 class Service(Base):
@@ -29,6 +30,9 @@ class Service(Base):
     # Relationships
     repository_services: Mapped[list["RepositoryService"]] = relationship(
         back_populates="service", cascade="all, delete-orphan"
+    )
+    metrics: Mapped[list["ServiceMetric"]] = relationship(
+        "ServiceMetric", back_populates="service", cascade="all, delete-orphan"
     )
 
     @property

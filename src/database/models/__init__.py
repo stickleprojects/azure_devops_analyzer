@@ -16,6 +16,7 @@ from src.database.models.pull_request import PRComment, PRReview, PullRequest
 from src.database.models.quality import CodeIssue, CodeQualityMetric
 from src.database.models.repository import Branch, Repository
 from src.database.models.service import RepositoryService, Service
+from src.database.models.service_metric import ServiceMetric
 from src.database.models.summary import ReadmeFile, RepositorySummary
 from src.database.models.team import Team
 from src.database.models.team_contributor import TeamContributor
@@ -62,4 +63,5 @@ __all__ = [
     # Service
     "Service",
     "RepositoryService",
+    "ServiceMetric",
 ]
