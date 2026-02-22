@@ -1,6 +1,6 @@
 # Investigation: Development Feedback Loop & Realistic Test Coverage
 
-**Status**: Open — answers to be filled in before solution design begins
+**Status**: Complete — all answers filled in; solution design in `.ai/plans/013-fixture-factory-plan.md`
 **Created**: 2026-02-21
 **Related plans**: `.ai/plans/011-technology-detection-persistence-plan.md`
 
@@ -160,15 +160,32 @@ _Goal: Name the patterns that triggered features but couldn't be tested._
 
 **Answers:**
 
-> _Patterns encountered (list)_:
+> _Patterns encountered (list)_: Derived from TechnologyDetector detection rules and common real-world repository structures.
 >
-> 1. [To be filled in via AI analysis of real repositories and GitHub browsing]
-> 2. [To be filled in via AI analysis of real repositories and GitHub browsing]
-> 3. [To be filled in via AI analysis of real repositories and GitHub browsing]
+> **Common baseline** (detector handles these well — good regression anchors):
 >
-> _File tree alone vs. content required_: [Pending pattern collection]
+> 1. **Python service** — `requirements.txt` + `Dockerfile` + `.github/workflows/ci.yml`. Single language, clear stack.
+> 2. **React SPA** — `package.json` + `tsconfig.json` + `.github/workflows/`. Pure frontend, no backend manifest.
+> 3. **Java Maven + Jenkins** — `pom.xml` + `Jenkinsfile`. No containerisation, traditional CI.
 >
-> _Rare-but-important vs. common-baseline_: [Pending pattern collection]
+> **Rare-but-important** (edge cases that expose detection assumptions):
+>
+> 4. **Full-stack monorepo** — Python backend at root (`requirements.txt`) + React frontend in `frontend/` (`frontend/package.json`). Both package managers present simultaneously. Tests multi-language co-detection.
+> 5. **Legacy .NET migration** — `.csproj` + `packages.config` both present alongside `azure-pipelines.yml`. Tests that both old and new .NET dependency signals are captured.
+> 6. **Dual CI migration** — both `Jenkinsfile` AND `.github/workflows/ci.yml` in same repo. Tests that both CI platforms are reported (not just the first match).
+> 7. **Python dependency ambiguity** — both `Pipfile` AND `requirements.txt` at root. Tests behaviour when multiple Python package manager signals conflict.
+> 8. **Go microservice** — only `go.mod` + `Dockerfile`. No CI config, no test framework config, sparse file tree. Tests minimal-signal detection.
+> 9. **Empty/stub repo** — only `README.md`. No code or config files. Should return an empty (or near-empty) `TechnologyDetection` without errors.
+> 10. **Deeply-nested manifests** — no manifests at root; all under `services/api/requirements.txt` and `services/web/package.json`. Tests whether manifest discovery and language detection traverse subdirectories correctly.
+>
+> _File tree alone vs. content required_:
+> - Patterns 1–9: **File tree alone** is sufficient to exercise technology detection (`TechnologyDetector.detect()` only uses path strings).
+> - Pattern 10: File tree alone sufficient for detection; file content only needed for manifest parsing / dependency extraction tests.
+> - File content (manifest strings) is only needed when testing dependency parsing specifically.
+>
+> _Rare-but-important vs. common-baseline_:
+> - Patterns 1–3: Common baseline — every realistic scenario library should include these.
+> - Patterns 4–10: Rare-but-important — each exposes a specific assumption in the detector or manifest discovery logic.
 
 ---
 
@@ -189,15 +206,15 @@ _Goal: Understand what already exists and what the actual gap is._
 
 **Answers:**
 
-> _How extractor is currently mocked_: [To be investigated]
+> _How extractor is currently mocked_: Primary pattern is `mocker.patch.object(extractor, "get_file_tree", return_value=[...])` and `mocker.patch.object(extractor, "get_file_content", side_effect=fn)` (pytest-mock). Secondary patterns: direct attribute injection (`ext._git_client = Mock()`) and `@patch` decorator. No fake extractor class exists. No JSON fixture files exist for extractor output. Manifest content is inline string literals in test functions.
 >
-> _TechnologyDetector inputs needed_: [To be investigated]
+> _TechnologyDetector inputs needed_: `file_names: List[str]` — just the path strings from `FileTreeItem.path` (required). `language_data: List[Dict]` — `[{"language": "Python"}]` from repository_stack (optional). The `file_tree` parameter exists but is not used by the current detector logic at all.
 >
-> _File path list sufficient for detector?_: [To be investigated]
+> _File path list sufficient for detector?_: Yes. The detector does not read file contents — it only pattern-matches against path strings and file extensions. A list like `["requirements.txt", "Dockerfile", ".github/workflows/ci.yml"]` is a complete, meaningful test input.
 >
-> _Manifest files used as fixtures?_: [To be investigated]
+> _Manifest files used as fixtures?_: Yes — as inline strings in test functions (e.g., `"flask==2.0.1\nrequests>=2.28.0"`). No separate fixture files exist. File tree is mocked using `FileTreeItem` objects, not real files on disk.
 >
-> _Most realistic existing fixture_: [To be investigated]
+> _Most realistic existing fixture_: `tests/fixtures/sample_data.py` — 8 factory functions for `RepositoryData`, `CommitData`, `PullRequestData`, `BranchData`, `DependencyData`, `ReadmeData`, `OrganizationData`. No `TechnologyDetection` factory. No composite "full repo" scenario builder. No file-tree scenario fixtures.
 
 ---
 
@@ -291,18 +308,18 @@ Fill this in once you have answered the theme questions above. Each row asks: gi
 | P1-B: What "correct" looks like    | Canary repo inner join query: all datasets (commits, PRs, deps, langs) present and connected | Verification is deterministic and expressible as a SQL assertion. Easy to automate.                                                                     |
 | P1-C: Data injection feasibility   | No—need real scan to validate full pipeline end-to-end                                       | Direct DB injection insufficient. Real scan + automated verification is the path forward.                                                               |
 | P1-D: Automation boundary          | Option C: Python fixture API + JSON fixtures for both unit tests and post-scan verification  | Solution must provide: (1) Fixture factory for on-demand mock repo generation, (2) Post-scan verification script, (3) JSON storage for reproducibility. |
-| P2-A: Real-world pattern inventory | [Pending AI analysis of real repositories and GitHub]                                        | Fixture factory design depends on these patterns. High priority to collect.                                                                             |
-| P2-B: Current mock strategy        | [To be investigated]                                                                         | May inform whether existing mock infrastructure can be extended or needs redesign for fixture factory.                                                  |
+| P2-A: Real-world pattern inventory | 10 patterns identified: 3 common baseline (Python service, React SPA, Java Maven) + 7 edge cases (full-stack monorepo, legacy .NET, dual CI, Python ambiguity, Go sparse, empty repo, deep-nested manifests). File tree alone drives detection for all 10. | Fixture library needs ≥1 JSON scenario per pattern. Factory must support nested file paths (e.g., `frontend/package.json`). Edge cases validate detector assumptions. |
+| P2-B: Current mock strategy        | `mocker.patch.object` is dominant. No fixture extractor class exists. No JSON fixture files for extractor output. `sample_data.py` has 8 factory functions but no `TechnologyDetection` factory and no composite scenario builder. Manifest content is inline strings. | Fixture factory fills a real gap. Extend `sample_data.py` with `TechnologyDetection` factory. Add `FixtureExtractor` class reading from JSON scenarios. No redesign of existing mocks needed — they coexist. |
 | P2-C: Capture/replay feasibility   | Snapshot utility + JSON format viable. No structured capture process currently exists.       | Solution should include a utility to capture extractor output as JSON from real repos, commit as fixtures.                                              |
 | P2-D: Fixture vs. live repo        | Fixture + real scan coexistence model preferred. Fixture extractor likely viable.            | Fixtures for fast iteration and edge-case testing; real scans for end-to-end validation. Reduces test repo dependencies.                                |
 
 **Decision checklist** (answer after synthesis table is filled):
 
-- [ ] Is a fixture library the right foundation, or is a different approach indicated?
-- [ ] Does the feedback loop problem require new test infrastructure, or just better use of what exists?
-- [ ] Are there any patterns that genuinely cannot be represented as fixtures and require live platform access?
-- [ ] What is the smallest change that would meaningfully improve day-to-day development?
-- [ ] Should both problems be solved together (shared fixture strategy) or separately?
+- [x] **Is a fixture library the right foundation?** Yes. `TechnologyDetector.detect()` only needs a `List[str]` of file paths — no live API, no file content. Fixtures can drive it completely. A `FixtureExtractor` reading from JSON is a natural fit for the well-defined `RepositoryExtractor` interface.
+- [x] **Does the feedback loop problem require new infrastructure?** Yes. The canary verification script does not exist. The post-scan PASS/FAIL check is new work. The fixture factory is also net-new, though it builds on `sample_data.py`'s existing pattern.
+- [x] **Are there patterns that genuinely require live platform access?** Yes, one category: extractor-layer edge cases (pagination, auth token handling, encoding of exotic file names). These cannot be covered by fixtures. Mitigated by keeping real-scan integration tests alongside fixture-based unit tests.
+- [x] **Smallest meaningful improvement?** Two targeted additions: (1) `sample_technology_detection()` factory in `sample_data.py` so TechnologyDetector tests don't build output by hand, and (2) a `python-docker.json` scenario file + `FixtureExtractor` so the first fixture-driven test can be written immediately.
+- [x] **Solve together or separately?** Together. The same JSON scenario files serve as both unit-test inputs (for detector/manifest logic) and canary repo templates (for post-scan verification). A shared fixture strategy is the unifying solution.
 
 ---
 
