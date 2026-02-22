@@ -76,7 +76,7 @@ See [agents/](agents/) directory for complete guide collection.
 
 The `.ai/patterns/` directory contains reusable patterns for AI-assisted development:
 
-- [ollama-docker-codegen.md](.ai/patterns/ollama-docker-codegen.md) - Local LLM code generation using Ollama
+- [ollama-fixture-and-code-generation.md](.ai/patterns/ollama-fixture-and-code-generation.md) - Local LLM code generation using Ollama
   - Used for test fixture generation, boilerplate code, utilities
   - Example: Test fixture generation uses this pattern for all fixture, extractor, and verification code
   - See `scripts/generate-test-fixtures.sh` and `.ai/ollama-prompts/` for working examples
@@ -122,7 +122,7 @@ Generates:
 - Factory functions for test data construction
 - Includes branches, commits, and pull requests for workflow testing
 
-See [.ai/patterns/ollama-docker-codegen.md](.ai/patterns/ollama-docker-codegen.md) for details on the generation pattern.
+See [.ai/patterns/ollama-fixture-and-code-generation.md](.ai/patterns/ollama-fixture-and-code-generation.md) for details on the generation pattern.
 
 ## Repository Structure
 

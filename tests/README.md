@@ -75,7 +75,7 @@ bash scripts/generate-test-fixtures.sh --step B  # Generate FixtureExtractor cla
 - Edge cases (dual dependencies, nested manifests, empty repos)
 - Commit history, branches, and pull requests for workflow testing
 
-**See:** [.ai/patterns/ollama-docker-codegen.md](.ai/patterns/ollama-docker-codegen.md) for the generation pattern.
+**See:** [.ai/patterns/ollama-fixture-and-code-generation.md](.ai/patterns/ollama-fixture-and-code-generation.md) for the generation pattern.
 
 ### Using Scenarios in Tests
 

@@ -43,7 +43,7 @@ Utility scripts for the Azure DevOps Analyzer project.
 - Model available: `ollama pull qwen3-coder:30b`
 - Docker running (scripts execute inside containers)
 
-**Pattern documentation:** [.ai/patterns/ollama-docker-codegen.md](../.ai/patterns/ollama-docker-codegen.md)
+**Pattern documentation:** [.ai/patterns/ollama-fixture-and-code-generation.md](../.ai/patterns/ollama-fixture-and-code-generation.md)
 
 ### `run_coverage.sh`
 

@@ -72,7 +72,7 @@ _For planning what comes next and evaluating options_
 
 _For leveraging AI-powered code generation and development patterns_
 
-- [ollama-docker-codegen.md](../.ai/patterns/ollama-docker-codegen.md) — Local LLM-based code generation pattern
+- [ollama-fixture-and-code-generation.md](../.ai/patterns/ollama-fixture-and-code-generation.md) — Local LLM-based code generation pattern
   - Generate test fixtures, utilities, and boilerplate code
   - Example: `bash scripts/generate-test-fixtures.sh` generates 10 test scenarios
   - Uses Ollama with Docker for reproducible, local AI assistance
