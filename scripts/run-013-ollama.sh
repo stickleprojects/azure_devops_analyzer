@@ -38,13 +38,40 @@ done
 info()  { echo ""; echo "==> $*"; }
 check() { echo "  [check] $*"; }
 
-# Run any Python script inside Docker with the project mounted at /app
+# Run any Python script inside Docker with the project mounted at /app.
+# MSYS_NO_PATHCONV=1 prevents Git Bash on Windows from mangling /app into
+# C:/Program Files/Git/app.
 run_docker_python() {
-    docker run --rm \
+    MSYS_NO_PATHCONV=1 docker run --rm \
         -v "$PROJECT_ROOT:/app" \
         -w /app \
         python:3.12-slim \
         "$@"
+}
+
+# Validate a generated Python file
+validate_python_file() {
+    local file="$1"
+    local min_lines="${2:-20}"
+    
+    if [ ! -f "$file" ]; then
+        echo "  [FAIL] File not created: $file"
+        return 1
+    fi
+    
+    local lines=$(wc -l < "$file" 2>/dev/null || echo "0")
+    if [ "$lines" -lt "$min_lines" ]; then
+        echo "  [WARN] File suspiciously small: $lines lines (expected >$min_lines)"
+        echo "         Please review: $file"
+    fi
+    
+    if ! python -m py_compile "$file" 2>/dev/null; then
+        echo "  [FAIL] Syntax errors in: $file"
+        return 1
+    fi
+    
+    echo "  [OK] $file validated ($lines lines)"
+    return 0
 }
 
 # Lazy Ollama check — runs once, skipped on subsequent calls.
@@ -81,6 +108,18 @@ run_ollama_generate() {
             "$@"
 }
 
+# Enhanced generation with automatic validation
+# Usage: run_ollama_generate_safe <prompt-file> <output-file> <min-lines> [--context <file>] ...
+run_ollama_generate_safe() {
+    local prompt="$1"
+    local output="$2"
+    local min_lines="${3:-20}"
+    shift 3
+    
+    run_ollama_generate "$prompt" "$output" "$@"
+    validate_python_file "$output" "$min_lines"
+}
+
 # ── Preflight ─────────────────────────────────────────────────────────────────
 info "Preflight checks"
 
@@ -97,19 +136,27 @@ echo "Ollama URL : $OLLAMA_URL"
 echo "Steps      : ${STEP:-A B C D E}"
 echo ""
 
-# ── Step A: JSON fixtures (pure stdlib generator — no LLM) ────────────────────
+# ── Step A: Generate fixture generator script + run it ───────────────────────
 run_step_a() {
-    info "Step A: Generating JSON fixture files (no LLM, via Docker)"
+    info "Step A1: Generating scripts/generate-013-fixtures.py"
+    run_ollama_generate_safe \
+        "$PROMPTS/013-A-generate-fixtures.md" \
+        "scripts/generate-013-fixtures.py" \
+        100
+    echo "  Done — scripts/generate-013-fixtures.py"
+    
+    info "Step A2: Running generated script to create JSON fixture files"
     run_docker_python python scripts/generate-013-fixtures.py
-    echo "  Done — 10 files written to tests/fixtures/scenarios/"
+    echo "  Done — 10 files written to tests/fixtures/scenarios/generated/"
 }
 
 # ── Step B: FixtureExtractor ──────────────────────────────────────────────────
 run_step_b() {
     info "Step B: Generating tests/fixtures/fixture_extractor.py"
-    run_ollama_generate \
+    run_ollama_generate_safe \
         "$PROMPTS/013-B-fixture-extractor.md" \
         "tests/fixtures/fixture_extractor.py" \
+        30 \
         --context "src/extractors/base.py"
     echo "  Done — tests/fixtures/fixture_extractor.py"
 }
@@ -118,9 +165,10 @@ run_step_b() {
 run_step_c() {
     info "Step C: Extending tests/fixtures/sample_data.py"
     # Pass the existing file as context so the model can produce the full updated file.
-    run_ollama_generate \
+    run_ollama_generate_safe \
         "$PROMPTS/013-C-factory-functions.md" \
         "tests/fixtures/sample_data.py" \
+        200 \
         --context "tests/fixtures/sample_data.py" \
         --context "src/analyzers/technology_detector.py"
     echo "  Done — tests/fixtures/sample_data.py"
@@ -129,9 +177,10 @@ run_step_c() {
 # ── Step D: capture_snapshot.py ───────────────────────────────────────────────
 run_step_d() {
     info "Step D: Generating scripts/capture_snapshot.py"
-    run_ollama_generate \
+    run_ollama_generate_safe \
         "$PROMPTS/013-D-capture-snapshot.md" \
         "scripts/capture_snapshot.py" \
+        40 \
         --context "src/extractors/base.py" \
         --context "src/extractors/factory.py"
     echo "  Done — scripts/capture_snapshot.py"
@@ -140,9 +189,10 @@ run_step_d() {
 # ── Step E: verify_canary.py ──────────────────────────────────────────────────
 run_step_e() {
     info "Step E: Generating scripts/verify_canary.py"
-    run_ollama_generate \
+    run_ollama_generate_safe \
         "$PROMPTS/013-E-verify-canary.md" \
-        "scripts/verify_canary.py"
+        "scripts/verify_canary.py" \
+        50
     echo "  Done — scripts/verify_canary.py"
 }
 

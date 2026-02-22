@@ -33,9 +33,17 @@ def call_ollama(model, messages, ollama_url, timeout=600):
 
 
 def extract_code_block(text):
-    """Return the last fenced code block, or the full text if none found."""
+    """Return the largest fenced code block, or the full text if none found.
+    
+    Prefers the largest block to avoid extracting usage examples instead of implementations.
+    """
     blocks = re.findall(r"```(?:\w+)?\n(.*?)```", text, re.DOTALL)
     if blocks:
+        # Prefer largest block to avoid usage examples
+        largest = max(blocks, key=len)
+        if len(largest.strip()) > 50:  # Minimum viable code
+            return largest.strip()
+        # If all blocks are tiny, fall back to last one (original behavior)
         return blocks[-1].strip()
     return text.strip()
 

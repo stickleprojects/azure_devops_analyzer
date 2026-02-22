@@ -36,6 +36,7 @@ def sample_technology_detection(
 ```
 
 Implementation rules:
+
 - Default each list argument to `[]` when `None` (use `or []` inside the function body,
   not as a default value, to avoid mutable default argument issues).
 - `language_confidence` defaults to `0.75`.
@@ -55,16 +56,42 @@ def sample_file_tree(scenario_name: str) -> list[FileTreeItem]:
 ```
 
 Implementation rules:
-- Resolve path as:
-  `pathlib.Path(__file__).parent / "scenarios" / f"{scenario_name}.json"`
+
+- Try loading scenario from these paths in order:
+  1. `pathlib.Path(__file__).parent / "scenarios" / "generated" / f"{scenario_name}.json"`
+  2. `pathlib.Path(__file__).parent / "scenarios" / f"{scenario_name}.json"`
+- Use the first path that exists.
 - Load JSON, read the `"file_names"` list.
 - Return `[FileTreeItem(path=p, is_directory=False, size=100) for p in file_names]`.
-- Raise `FileNotFoundError` with a clear message if the scenario file does not exist.
+- Raise `FileNotFoundError` with a clear message if neither path exists.
 
 ---
 
 ## Output
 
-Write the **complete updated content** of `tests/fixtures/sample_data.py`, including
-all existing functions unchanged, plus the two new functions and any new imports added
-at the top. Do not remove or alter any existing code.
+Write the **complete updated content** of `tests/fixtures/sample_data.py` as a single code block, including
+all existing functions unchanged, plus the two new functions and any new imports added at the top.
+
+CRITICAL: Do not remove or alter any existing code. This must be the FULL file content.
+
+Your response must contain a single Python code block with the complete file:
+
+```python
+"""Shared test data fixtures for database tests.
+...existing content...
+"""
+
+# all existing imports plus new ones
+
+# all existing functions unchanged
+
+# new function 1
+def sample_technology_detection(...):
+    ...
+
+# new function 2
+def sample_file_tree(...):
+    ...
+```
+
+Do NOT include commentary, usage examples, or multiple code blocks in your response.

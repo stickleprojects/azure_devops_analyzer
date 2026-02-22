@@ -3,6 +3,9 @@
 
 No LLM needed — all scenario data is deterministic from the plan spec.
 
+AI-generated fixtures are placed in tests/fixtures/scenarios/generated/ to distinguish
+them from manually created scenarios.
+
 Usage:
     python scripts/generate-013-fixtures.py
 """
@@ -10,7 +13,7 @@ Usage:
 import json
 import pathlib
 
-SCENARIOS_DIR = pathlib.Path(__file__).parent.parent / "tests" / "fixtures" / "scenarios"
+SCENARIOS_DIR = pathlib.Path(__file__).parent.parent / "tests" / "fixtures" / "scenarios" / "generated"
 
 SCENARIOS = [
     {
