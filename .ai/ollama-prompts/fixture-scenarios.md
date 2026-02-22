@@ -1,7 +1,7 @@
 ````markdown
-# Task: Create scripts/generate-013-fixtures.py
+# Task: Create scripts/generate-fixture-scenarios.py
 
-Create `scripts/generate-013-fixtures.py` — a Python script that generates 10 diverse test
+Create `scripts/generate-fixture-scenarios.py` — a Python script that generates 10 diverse test
 scenario JSON files for testing the technology detection system.
 
 ## Purpose
@@ -166,21 +166,21 @@ import pathlib
 
 ## Output
 
-Write ONLY the complete, runnable Python source for `scripts/generate-013-fixtures.py` as a single code block.
+Write ONLY the complete, runnable Python source for `scripts/generate-fixture-scenarios.py` as a single code block.
 
 Your response must be structured EXACTLY as:
 
 ```python
 #!/usr/bin/env python3
-"""Generate test fixture JSON files for plan 013.
+"""Generate test fixture JSON files for the test fixture system.
 
-No LLM needed — all scenario data is deterministic from the plan spec.
+No LLM needed — all scenario data is deterministic from the spec.
 
 AI-generated fixtures are placed in tests/fixtures/scenarios/generated/ to distinguish
 them from manually created scenarios.
 
 Usage:
-    python scripts/generate-013-fixtures.py
+    python scripts/generate-fixture-scenarios.py
 """
 
 import json

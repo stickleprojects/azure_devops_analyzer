@@ -68,6 +68,27 @@ _For planning what comes next and evaluating options_
 
 ---
 
+### 🤖 [AI Patterns & Tools](../.ai/patterns/) — Development Automation
+
+_For leveraging AI-powered code generation and development patterns_
+
+- [ollama-docker-codegen.md](../.ai/patterns/ollama-docker-codegen.md) — Local LLM-based code generation pattern
+  - Generate test fixtures, utilities, and boilerplate code
+  - Example: `bash scripts/generate-test-fixtures.sh` generates 10 test scenarios
+  - Uses Ollama with Docker for reproducible, local AI assistance
+
+**Prompts** (`.ai/ollama-prompts/`):
+
+- `fixture-scenarios.md` — Test scenario JSON generation
+- `fixture-extractor.md` — FixtureExtractor class generation
+- `fixture-factories.md` — Test data factory functions
+- `repo-snapshot.md` — Live repo snapshot capture
+- `canary-verification.md` — Post-scan verification script
+
+**Start here if you're**: Setting up test fixtures, automating code generation, creating test data
+
+---
+
 ## Document Types
 
 | Type             | Purpose                        | Example                                            |

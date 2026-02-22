@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# run-013-ollama.sh
+# generate-test-fixtures.sh
 #
-# Executes plan 013 deliverables using a local Ollama model.
+# Generates test fixture infrastructure using a local Ollama model.
 # Everything runs inside Docker — no host Python or Aider required.
 #
 # Usage:
-#   bash scripts/run-013-ollama.sh [--model <model>] [--step A|B|C|D|E]
+#   bash scripts/generate-test-fixtures.sh [--model <model>] [--step A|B|C|D|E]
 #
 # Options:
 #   --model   Ollama model name (default: qwen3-coder:30b)
@@ -138,15 +138,15 @@ echo ""
 
 # ── Step A: Generate fixture generator script + run it ───────────────────────
 run_step_a() {
-    info "Step A1: Generating scripts/generate-013-fixtures.py"
+    info "Step A1: Generating scripts/generate-fixture-scenarios.py"
     run_ollama_generate_safe \
-        "$PROMPTS/013-A-generate-fixtures.md" \
-        "scripts/generate-013-fixtures.py" \
+        "$PROMPTS/fixture-scenarios.md" \
+        "scripts/generate-fixture-scenarios.py" \
         100
-    echo "  Done — scripts/generate-013-fixtures.py"
+    echo "  Done — scripts/generate-fixture-scenarios.py"
     
     info "Step A2: Running generated script to create JSON fixture files"
-    run_docker_python python scripts/generate-013-fixtures.py
+    run_docker_python python scripts/generate-fixture-scenarios.py
     echo "  Done — 10 files written to tests/fixtures/scenarios/generated/"
 }
 
@@ -154,7 +154,7 @@ run_step_a() {
 run_step_b() {
     info "Step B: Generating tests/fixtures/fixture_extractor.py"
     run_ollama_generate_safe \
-        "$PROMPTS/013-B-fixture-extractor.md" \
+        "$PROMPTS/fixture-extractor.md" \
         "tests/fixtures/fixture_extractor.py" \
         30 \
         --context "src/extractors/base.py"
@@ -166,7 +166,7 @@ run_step_c() {
     info "Step C: Extending tests/fixtures/sample_data.py"
     # Pass the existing file as context so the model can produce the full updated file.
     run_ollama_generate_safe \
-        "$PROMPTS/013-C-factory-functions.md" \
+        "$PROMPTS/fixture-factories.md" \
         "tests/fixtures/sample_data.py" \
         200 \
         --context "tests/fixtures/sample_data.py" \
@@ -178,7 +178,7 @@ run_step_c() {
 run_step_d() {
     info "Step D: Generating scripts/capture_snapshot.py"
     run_ollama_generate_safe \
-        "$PROMPTS/013-D-capture-snapshot.md" \
+        "$PROMPTS/repo-snapshot.md" \
         "scripts/capture_snapshot.py" \
         40 \
         --context "src/extractors/base.py" \
@@ -190,7 +190,7 @@ run_step_d() {
 run_step_e() {
     info "Step E: Generating scripts/verify_canary.py"
     run_ollama_generate_safe \
-        "$PROMPTS/013-E-verify-canary.md" \
+        "$PROMPTS/canary-verification.md" \
         "scripts/verify_canary.py" \
         50
     echo "  Done — scripts/verify_canary.py"

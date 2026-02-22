@@ -72,6 +72,15 @@ The `agents/` directory contains comprehensive guides for AI-driven development:
 
 See [agents/](agents/) directory for complete guide collection.
 
+### AI Development Patterns
+
+The `.ai/patterns/` directory contains reusable patterns for AI-assisted development:
+
+- [ollama-docker-codegen.md](.ai/patterns/ollama-docker-codegen.md) - Local LLM code generation using Ollama
+  - Used for test fixture generation, boilerplate code, utilities
+  - Example: Test fixture generation uses this pattern for all fixture, extractor, and verification code
+  - See `scripts/generate-test-fixtures.sh` and `.ai/ollama-prompts/` for working examples
+
 ## Session Start Guide
 
 At the start of your session:
@@ -92,6 +101,28 @@ Start with [docs/README.md](docs/README.md) for role-based navigation, then revi
 - Python 3.11+
 - Grafana 10+
 - RabbitMQ 3.12+
+
+## AI-Powered Development
+
+This project leverages local LLMs (Ollama) for automated code generation:
+
+### Test Fixture Generation
+
+Generate realistic test scenarios covering multiple tech stacks, CI/CD platforms, and edge cases:
+
+```bash
+# Requires Ollama running with qwen3-coder:30b model
+bash scripts/generate-test-fixtures.sh
+```
+
+Generates:
+
+- 10 diverse repository scenarios (Python/Docker, React, Java, .NET, Go, etc.)
+- Fixture extractor for loading scenarios in tests
+- Factory functions for test data construction
+- Includes branches, commits, and pull requests for workflow testing
+
+See [.ai/patterns/ollama-docker-codegen.md](.ai/patterns/ollama-docker-codegen.md) for details on the generation pattern.
 
 ## Repository Structure
 

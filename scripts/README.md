@@ -4,6 +4,47 @@ Utility scripts for the Azure DevOps Analyzer project.
 
 ## Available Scripts
 
+### `generate-test-fixtures.sh`
+
+**NEW:** Generates test fixture scenarios and supporting code using Ollama (local LLM).
+
+**Usage:**
+
+```bash
+# Generate all fixtures and code (requires Ollama with qwen3-coder:30b)
+./scripts/generate-test-fixtures.sh
+
+# Generate specific step
+./scripts/generate-test-fixtures.sh --step A  # Fixture generator script + JSON scenarios
+./scripts/generate-test-fixtures.sh --step B  # FixtureExtractor class
+./scripts/generate-test-fixtures.sh --step C  # Factory functions
+./scripts/generate-test-fixtures.sh --step D  # Snapshot capture script
+./scripts/generate-test-fixtures.sh --step E  # Canary verification script
+
+# Use different model
+./scripts/generate-test-fixtures.sh --model qwen3-coder-next:latest
+```
+
+**What it generates:**
+
+- 10 diverse test scenario JSON files covering multiple tech stacks
+- `FixtureExtractor` class for loading scenarios in tests
+- Factory functions for test data (`sample_technology_detection`, `sample_file_tree`)
+- Utility scripts for snapshot capture and verification
+
+**Output locations:**
+
+- Scenarios: `tests/fixtures/scenarios/generated/`
+- Code: `tests/fixtures/fixture_extractor.py`, `scripts/generate-fixture-scenarios.py`
+
+**Prerequisites:**
+
+- Ollama running at `localhost:11434`
+- Model available: `ollama pull qwen3-coder:30b`
+- Docker running (scripts execute inside containers)
+
+**Pattern documentation:** [.ai/patterns/ollama-docker-codegen.md](../.ai/patterns/ollama-docker-codegen.md)
+
 ### `run_coverage.sh`
 
 Runs pytest with comprehensive coverage analysis for Python source code.

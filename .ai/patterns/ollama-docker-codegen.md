@@ -12,10 +12,10 @@ Nothing runs on the host — Docker + Ollama only.
 
 ## Fixed infrastructure (already in repo)
 
-| File                         | Role                                                                                                        |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `scripts/ollama-generate.py` | Calls Ollama `/api/chat`, extracts code block, writes output. Pure stdlib — runs inside `python:3.12-slim`. |
-| `scripts/run-013-ollama.sh`  | Reference orchestration script — copy and adapt for new plans.                                              |
+| File                                | Role                                                                                                        |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `scripts/ollama-generate.py`        | Calls Ollama `/api/chat`, extracts code block, writes output. Pure stdlib — runs inside `python:3.12-slim`. |
+| `scripts/generate-test-fixtures.sh` | Reference orchestration script — copy and adapt for new use cases.                                          |
 
 ---
 
@@ -34,7 +34,7 @@ Each prompt must include:
 **2. Copy the orchestration script**
 
 ```bash
-cp scripts/run-013-ollama.sh scripts/run-<plan-id>-ollama.sh
+cp scripts/generate-test-fixtures.sh scripts/generate-<feature>-fixtures.sh
 ```
 
 Update the step functions: point each one at the right prompt, output path, and `--context` files.
@@ -42,9 +42,9 @@ Update the step functions: point each one at the right prompt, output path, and 
 **3. Run it**
 
 ```bash
-bash scripts/run-<plan-id>-ollama.sh           # all steps
-bash scripts/run-<plan-id>-ollama.sh --step B  # one step
-bash scripts/run-<plan-id>-ollama.sh --model qwen3-coder-next:latest  # larger model
+bash scripts/generate-<feature>-fixtures.sh           # all steps
+bash scripts/generate-<feature>-fixtures.sh --step B  # one step
+bash scripts/generate-<feature>-fixtures.sh --model qwen3-coder-next:latest  # larger model
 ```
 
 ---
@@ -55,7 +55,7 @@ bash scripts/run-<plan-id>-ollama.sh --model qwen3-coder-next:latest  # larger m
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | New file             | "Write the complete, runnable Python source for `path/to/file.py`."                                                      |
 | Extend existing file | "Write the **complete updated content** of `path/to/file.py`, including all existing code unchanged plus the additions." |
-| JSON data            | Use LLM to generate a Python script that produces the JSON files (see `013-A-generate-fixtures.md` example).             |
+| JSON data            | Use LLM to generate a Python script that produces the JSON files (see `fixture-scenarios.md` example).                   |
 
 Never say "append" or "patch" — the script overwrites the whole file.
 
@@ -223,7 +223,7 @@ Usage in step functions:
 run_step_b() {
     info "Step B: Generating tests/fixtures/fixture_extractor.py"
     run_ollama_generate_safe \
-        "$PROMPTS/013-B-fixture-extractor.md" \
+        "$PROMPTS/fixture-extractor.md" \
         "tests/fixtures/fixture_extractor.py" \
         30 \
         --context "src/extractors/base.py"
