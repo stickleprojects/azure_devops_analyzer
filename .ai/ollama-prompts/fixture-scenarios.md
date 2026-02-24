@@ -38,7 +38,30 @@ Each scenario is a dict with these keys:
     { "name": "develop", "latest_commit_sha": "def789ghi012" }
   ],
   "commits": [
-    // NOTE: this  array should contain multiple commits (5-20 typical)
+    {
+      "sha": "aaa111bbb222",
+      "message": "Initial project setup",
+      "author_email": "developer@example.com",
+      "author_name": "Developer",
+      "committer_email": "developer@example.com",
+      "committer_name": "Developer",
+      "commit_date": "2026-01-05T09:00:00",
+      "files_changed": 5,
+      "lines_added": 120,
+      "lines_removed": 0
+    },
+    {
+      "sha": "bbb222ccc333",
+      "message": "Add CI pipeline",
+      "author_email": "ci-bot@example.com",
+      "author_name": "CI Bot",
+      "committer_email": "ci-bot@example.com",
+      "committer_name": "CI Bot",
+      "commit_date": "2026-01-10T11:15:00",
+      "files_changed": 2,
+      "lines_added": 30,
+      "lines_removed": 5
+    },
     {
       "sha": "abc123def456",
       "message": "Add Docker support",
@@ -53,10 +76,25 @@ Each scenario is a dict with these keys:
     }
   ],
   "pull_requests": [
-    // NOTE: this  array should contain multiple prs (2-10 typical)
     {
       "pr_number": 1,
       "platform_pr_id": "pr-1",
+      "title": "Initial project setup",
+      "description": "Bootstrap project structure and dependencies",
+      "source_branch": "feature/init",
+      "target_branch": "main",
+      "author_email": "developer@example.com",
+      "author_name": "Developer",
+      "status": "merged",
+      "created_at": "2026-01-04T08:00:00",
+      "merged_at": "2026-01-05T09:00:00",
+      "files_changed": 5,
+      "lines_added": 120,
+      "lines_removed": 0
+    },
+    {
+      "pr_number": 2,
+      "platform_pr_id": "pr-2",
       "title": "Add Docker support",
       "description": "Adds Dockerfile and docker-compose configuration",
       "source_branch": "feature/docker",
@@ -69,10 +107,32 @@ Each scenario is a dict with these keys:
       "files_changed": 3,
       "lines_added": 45,
       "lines_removed": 12
+    },
+    {
+      "pr_number": 3,
+      "platform_pr_id": "pr-3",
+      "title": "Improve error handling",
+      "description": "Work in progress",
+      "source_branch": "feature/error-handling",
+      "target_branch": "main",
+      "author_email": "developer@example.com",
+      "author_name": "Developer",
+      "status": "open",
+      "created_at": "2026-01-16T09:00:00",
+      "merged_at": null,
+      "files_changed": 2,
+      "lines_added": 18,
+      "lines_removed": 4
     }
   ]
 }
 ```
+
+**Array size requirements** (when the field is present):
+
+- `commits`: 5–20 entries, ordered oldest to newest by `commit_date`
+- `pull_requests`: 2–10 entries; mix of `"merged"`, `"open"`, and `"closed"` statuses
+- `branches`: at least `"main"` plus 1–3 feature/develop branches
 
 **Optional fields**: `branches`, `commits`, and `pull_requests` are optional. Include them for scenarios
 that need to test commit/PR analysis, but can be omitted for simple technology detection tests.
