@@ -4,9 +4,107 @@ Utility scripts for the Azure DevOps Analyzer project.
 
 ## Available Scripts
 
+### `ollama-generate.py`
+
+Core Ollama API caller used by all orchestration scripts. Runs inside Docker (`python:3.12-slim`) — no host Python dependencies required.
+
+**Usage:**
+
+```bash
+docker run --rm -v "$PROJECT_ROOT:/app" -w /app python:3.12-slim \
+    python scripts/ollama-generate.py \
+    --model qwen3-coder:30b \
+    --prompt .ai/ollama-prompts/fixture-scenarios.md \
+    --output scripts/generated/generate-fixture-scenarios.py \
+    [--context src/extractors/base.py] \
+    [--ollama-url http://host.docker.internal:11434] \
+    [--num-ctx 8192] \
+    [--raw]
+```
+
+**What it does:**
+
+- Calls the Ollama `/api/chat` endpoint with streaming
+- Injects optional context files as a system message (for extending existing classes)
+- Extracts the largest fenced code block from the response (avoids capturing usage examples)
+- Shows live token/s progress and final performance stats
+- Writes the extracted code directly to `--output`
+
+**Flags:**
+
+| Flag | Description |
+|------|-------------|
+| `--model` | Ollama model name (e.g. `qwen3-coder:30b`) |
+| `--prompt` | Markdown prompt file |
+| `--output` | Destination file path |
+| `--context FILE` | Read-only context file shown as system message (repeatable) |
+| `--ollama-url` | Ollama base URL (default: `http://host.docker.internal:11434`) |
+| `--num-ctx` | Context window tokens (default: 8192) |
+| `--raw` | Write full model response instead of extracting code block |
+
+**Pattern documentation:** [.ai/patterns/ollama-fixture-and-code-generation.md](../.ai/patterns/ollama-fixture-and-code-generation.md)
+
+---
+
+### `capture_snapshot.py`
+
+Captures a live repository snapshot and saves it as a fixture scenario JSON file. Used to create realistic test fixtures from real repositories.
+
+**Usage (run inside Docker):**
+
+```bash
+docker compose run --rm scheduler python scripts/capture_snapshot.py \
+    owner/repo \
+    --platform github \
+    --output tests/fixtures/scenarios/captured/my-repo.json \
+    [--branch main]
+```
+
+**Arguments:**
+
+| Argument | Description |
+|----------|-------------|
+| `repo_id` | Repository identifier (e.g. `owner/repo` for GitHub) |
+| `--platform` | `github` or `azure_devops` |
+| `--output` | Path to write scenario JSON |
+| `--branch` | Branch to scan (default: repository default branch) |
+
+**Output format:** Fixture scenario JSON matching the schema in [.ai/ollama-prompts/fixture-scenarios.md](../.ai/ollama-prompts/fixture-scenarios.md). Captured snapshots should be placed in `tests/fixtures/scenarios/captured/` to distinguish them from generated scenarios.
+
+---
+
+### `verify_canary.py`
+
+Verifies that a canary repository has complete data in the database after a scan. Eliminates manual SQL checks post-scan.
+
+**Usage (run inside Docker):**
+
+```bash
+docker compose run --rm scheduler \
+    python scripts/verify_canary.py --repo-id my-canary-repo
+```
+
+**Environment variables required:**
+
+- `DATABASE_URL` — PostgreSQL connection string
+
+**What it checks:**
+
+| Check | Query |
+|-------|-------|
+| `commits` | Commits exist for the repo |
+| `pull_requests` | Pull requests exist for the repo |
+| `dependencies` | Dependencies exist for the repo |
+| `languages` | Languages exist for the repo |
+| `canary_join` | All four tables joinable for the repo (full inner join) |
+
+Exits `0` if all checks pass, `1` if any fail.
+
+---
+
 ### `generate-test-fixtures.sh`
 
-**NEW:** Generates test fixture scenarios and supporting code using Ollama (local LLM).
+Generates test fixture scenarios and supporting code using Ollama (local LLM).
 
 **Usage:**
 
