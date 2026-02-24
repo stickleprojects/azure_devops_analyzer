@@ -38,6 +38,7 @@ Each scenario is a dict with these keys:
     { "name": "develop", "latest_commit_sha": "def789ghi012" }
   ],
   "commits": [
+    // NOTE: this  array should contain multiple commits (5-20 typical)
     {
       "sha": "abc123def456",
       "message": "Add Docker support",
@@ -52,6 +53,7 @@ Each scenario is a dict with these keys:
     }
   ],
   "pull_requests": [
+    // NOTE: this  array should contain multiple prs (2-10 typical)
     {
       "pr_number": 1,
       "platform_pr_id": "pr-1",

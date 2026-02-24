@@ -43,6 +43,7 @@ check() { echo "  [check] $*"; }
 # C:/Program Files/Git/app.
 run_docker_python() {
     MSYS_NO_PATHCONV=1 docker run --rm \
+        -e PYTHONUNBUFFERED=1 \
         -v "$PROJECT_ROOT:/app" \
         -w /app \
         python:3.12-slim \
@@ -138,15 +139,15 @@ echo ""
 
 # ── Step A: Generate fixture generator script + run it ───────────────────────
 run_step_a() {
-    info "Step A1: Generating scripts/generate-fixture-scenarios.py"
+    info "Step A1: Generating scripts/generated/generate-fixture-scenarios.py"
     run_ollama_generate_safe \
         "$PROMPTS/fixture-scenarios.md" \
-        "scripts/generate-fixture-scenarios.py" \
+        "scripts/generated/generate-fixture-scenarios.py" \
         100
-    echo "  Done — scripts/generate-fixture-scenarios.py"
+    echo "  Done — scripts/generated/generate-fixture-scenarios.py"
     
     info "Step A2: Running generated script to create JSON fixture files"
-    run_docker_python python scripts/generate-fixture-scenarios.py
+    run_docker_python python scripts/generated/generate-fixture-scenarios.py
     echo "  Done — 10 files written to tests/fixtures/scenarios/generated/"
 }
 

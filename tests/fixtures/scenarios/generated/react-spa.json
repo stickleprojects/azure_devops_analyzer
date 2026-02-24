@@ -1,0 +1,77 @@
+{
+  "name": "react-spa",
+  "description": "React SPA with TypeScript and GitHub Actions",
+  "file_names": [
+    "package.json",
+    "tsconfig.json",
+    "src/App.tsx",
+    "src/index.tsx",
+    ".github/workflows/ci.yml"
+  ],
+  "language_data": [
+    {
+      "language": "TypeScript",
+      "byte_count": 18000,
+      "percentage": 90.0
+    },
+    {
+      "language": "HTML",
+      "byte_count": 1400,
+      "percentage": 7.0
+    },
+    {
+      "language": "CSS",
+      "byte_count": 600,
+      "percentage": 3.0
+    }
+  ],
+  "manifests": [
+    {
+      "file_path": "package.json",
+      "content": "{\n  \"name\": \"my-react-app\",\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\",\n    \"typescript\": \"^5.0.0\"\n  }\n}",
+      "ecosystem": "npm"
+    }
+  ],
+  "branches": [
+    {
+      "name": "main",
+      "latest_commit_sha": "abc123def456"
+    },
+    {
+      "name": "develop",
+      "latest_commit_sha": "def789ghi012"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "abc123def456",
+      "message": "Initial React setup",
+      "author_email": "developer@example.com",
+      "author_name": "Developer",
+      "committer_email": "developer@example.com",
+      "committer_name": "Developer",
+      "commit_date": "2026-01-15T10:30:00",
+      "files_changed": 3,
+      "lines_added": 45,
+      "lines_removed": 12
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "platform_pr_id": "pr-1",
+      "title": "Initial React setup",
+      "description": "Sets up React app with TypeScript",
+      "source_branch": "feature/react-setup",
+      "target_branch": "main",
+      "author_email": "developer@example.com",
+      "author_name": "Developer",
+      "status": "merged",
+      "created_at": "2026-01-12T14:00:00",
+      "merged_at": "2026-01-15T10:30:00",
+      "files_changed": 3,
+      "lines_added": 45,
+      "lines_removed": 12
+    }
+  ]
+}

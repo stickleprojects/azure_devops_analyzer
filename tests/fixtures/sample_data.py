@@ -233,9 +233,17 @@ def sample_technology_detection(
 
 def sample_file_tree(scenario_name: str) -> list[FileTreeItem]:
     """Load a named scenario and return its file tree as FileTreeItem objects."""
-    scenario_path = pathlib.Path(__file__).parent / "scenarios" / f"{scenario_name}.json"
-    if not scenario_path.exists():
-        raise FileNotFoundError(f"Scenario file not found: {scenario_path}")
+    scenario_path1 = pathlib.Path(__file__).parent / "scenarios" / "generated" / f"{scenario_name}.json"
+    scenario_path2 = pathlib.Path(__file__).parent / "scenarios" / f"{scenario_name}.json"
+    
+    scenario_path = None
+    if scenario_path1.exists():
+        scenario_path = scenario_path1
+    elif scenario_path2.exists():
+        scenario_path = scenario_path2
+    
+    if not scenario_path:
+        raise FileNotFoundError(f"Scenario file not found: {scenario_name}")
     
     with open(scenario_path, 'r') as f:
         data = json.load(f)

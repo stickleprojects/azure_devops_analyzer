@@ -1,0 +1,72 @@
+{
+  "name": "deep-nested-manifests",
+  "description": "Manifests only in subdirectories (edge case)",
+  "file_names": [
+    "services/api/requirements.txt",
+    "services/web/package.json",
+    "services/api/src/main.py",
+    "services/web/src/App.tsx"
+  ],
+  "language_data": [
+    {
+      "language": "Python",
+      "byte_count": 10000,
+      "percentage": 50.0
+    },
+    {
+      "language": "TypeScript",
+      "byte_count": 8000,
+      "percentage": 50.0
+    }
+  ],
+  "manifests": [
+    {
+      "file_path": "services/api/requirements.txt",
+      "content": "fastapi==0.92.0\nuvicorn==0.17.6\n",
+      "ecosystem": "pypi"
+    },
+    {
+      "file_path": "services/web/package.json",
+      "content": "{\"name\": \"react-app\", \"dependencies\": {\"react\": \"^18.2.0\", \"axios\": \"^1.3.4\"}}",
+      "ecosystem": "npm"
+    }
+  ],
+  "branches": [
+    {
+      "name": "main",
+      "latest_commit_sha": "stu234uvw567"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "stu234uvw567",
+      "message": "Add nested manifests",
+      "author_email": "developer@example.com",
+      "author_name": "Developer",
+      "committer_email": "developer@example.com",
+      "committer_name": "Developer",
+      "commit_date": "2026-02-12T14:00:00",
+      "files_changed": 4,
+      "lines_added": 75,
+      "lines_removed": 0
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 9,
+      "platform_pr_id": "pr-9",
+      "title": "Add nested manifests",
+      "description": "Adds manifests in subdirectories for edge case testing",
+      "source_branch": "feature/nested-manifests",
+      "target_branch": "main",
+      "author_email": "developer@example.com",
+      "author_name": "Developer",
+      "status": "merged",
+      "created_at": "2026-02-11T09:00:00",
+      "merged_at": "2026-02-12T14:00:00",
+      "files_changed": 4,
+      "lines_added": 75,
+      "lines_removed": 0
+    }
+  ]
+}

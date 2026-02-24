@@ -1,0 +1,29 @@
+{
+  "name": "python-dual-deps",
+  "description": "Python with both Pipfile and requirements.txt",
+  "file_names": [
+    "Pipfile",
+    "Pipfile.lock",
+    "requirements.txt",
+    "app.py"
+  ],
+  "language_data": [
+    {
+      "language": "Python",
+      "byte_count": 12000,
+      "percentage": 100.0
+    }
+  ],
+  "manifests": [
+    {
+      "file_path": "Pipfile",
+      "content": "[packages]\nflask = \"==3.0.0\"\npytest = \"==7.4.0\"",
+      "ecosystem": "pypi"
+    },
+    {
+      "file_path": "requirements.txt",
+      "content": "flask==3.0.0\npytest==7.4.0\n",
+      "ecosystem": "pypi"
+    }
+  ]
+}
