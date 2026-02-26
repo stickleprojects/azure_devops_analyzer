@@ -14,13 +14,14 @@
 # Prerequisites:
 #   Docker running
 #   Ollama running at http://localhost:11434 (reachable as host.docker.internal from Docker)
-
+# Performance:
+# 
 set -euo pipefail
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # ── Config ────────────────────────────────────────────────────────────────────
-MODEL="${OLLAMA_MODEL:-qwen3-coder:30b}"
+MODEL="${OLLAMA_MODEL:-qwen2.5-coder:14b}"
 OLLAMA_URL="${OLLAMA_URL:-http://host.docker.internal:11434}"
 PROMPTS=".ai/ollama-prompts"
 STEP=""
