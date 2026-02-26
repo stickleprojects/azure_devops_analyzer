@@ -106,7 +106,7 @@ Pass via `--context` flags. The script injects them as a system message before t
 
 ```bash
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-MODEL="${OLLAMA_MODEL:-qwen3-coder:30b}"
+MODEL="${OLLAMA_MODEL:-qwen2.5-coder:14b}"
 OLLAMA_URL="${OLLAMA_URL:-http://host.docker.internal:11434}"
 
 run_docker_python() {
@@ -160,13 +160,13 @@ After running the script, verify each output file:
 
 ## Model selection guidance
 
-| Task complexity                | Recommended model                              | Notes                                     |
-| ------------------------------ | ---------------------------------------------- | ----------------------------------------- |
-| Implementing known interface   | `qwen3-coder:30b`                              | Fast, good at following specs             |
-| Extending existing file        | `qwen3-coder:30b` or larger                    | Needs to preserve existing code correctly |
-| CLI script with multiple steps | `qwen3-coder:30b` or `qwen3-coder-next:latest` | More complex logic                        |
-| Pure data transformation       | `qwen3-coder:30b`                              | Straightforward                           |
-| Complex business logic         | Use Claude in main session                     | More expensive but reliable               |
+| Task complexity                | Recommended model                           | Notes                                     |
+| ------------------------------ | ------------------------------------------- | ----------------------------------------- |
+| Implementing known interface   | `qwen2.5-coder:14b`                         | Fast, good at following specs             |
+| Extending existing file        | `qwen2.5-coder:14b` or larger               | Needs to preserve existing code correctly |
+| CLI script with multiple steps | `qwen2.5-coder:14b` or `qwen3-coder:latest` | More complex logic                        |
+| Pure data transformation       | `qwen2.5-coder:14b`                         | Straightforward                           |
+| Complex business logic         | Use Claude in main session                  | More expensive but reliable               |
 
 **If generation fails with default model:**
 

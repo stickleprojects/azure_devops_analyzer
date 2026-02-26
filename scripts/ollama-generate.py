@@ -4,7 +4,7 @@ Call the Ollama API to generate a file. Runs inside Docker.
 
 Usage:
     python scripts/ollama-generate.py \
-        --model qwen3-coder:30b \
+        --model qwen2.5-coder:14b \
         --prompt .ai/ollama-prompts/013-B-fixture-extractor.md \
         --output tests/fixtures/fixture_extractor.py \
         [--context src/extractors/base.py ...] \

@@ -79,7 +79,7 @@ The `.ai/patterns/` directory contains reusable patterns for AI-assisted develop
 - [ollama-fixture-and-code-generation.md](.ai/patterns/ollama-fixture-and-code-generation.md) - Local LLM code generation using Ollama
   - Used for test fixture generation, boilerplate code, utilities
   - Example: Test fixture generation uses this pattern for all fixture, extractor, and verification code
-  - See `scripts/generate-test-fixtures.sh` and `.ai/ollama-prompts/` for working examples
+  - See `scripts/README.md` and `.ai/ollama-prompts/` for working examples
 
 ## Session Start Guide
 
@@ -111,13 +111,20 @@ This project leverages local LLMs (Ollama) for automated code generation:
 Generate realistic test scenarios covering multiple tech stacks, CI/CD platforms, and edge cases:
 
 ```bash
-# Requires Ollama running with qwen3-coder:30b model
-bash scripts/generate-test-fixtures.sh
+# Validate config-driven fixture config
+python scripts/validate-fixture-config.py
+
+# Generate seed generator script
+python scripts/ollama-generate.py \
+  --model qwen2.5-coder:14b \
+  --prompt .ai/ollama-prompts/fixture-repo-seeds.md \
+  --output scripts/generated/generate-repo-seeds.py \
+  --context tests/fixtures/scenarios/config.json
 ```
 
 Generates:
 
-- 10 diverse repository scenarios (Python/Docker, React, Java, .NET, Go, etc.)
+- N diverse repository scenarios (count derived from `repo_sets` in config)
 - Fixture extractor for loading scenarios in tests
 - Factory functions for test data construction
 - Includes branches, commits, and pull requests for workflow testing

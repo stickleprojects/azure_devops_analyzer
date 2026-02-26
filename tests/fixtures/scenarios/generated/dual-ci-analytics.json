@@ -1,6 +1,6 @@
 {
-  "name": "python-dual-deps",
-  "description": "Python with both Pipfile and requirements.txt",
+  "name": "dual-ci-analytics",
+  "description": "Dual CI service for analytics domain",
   "languages": [
     "Python"
   ],

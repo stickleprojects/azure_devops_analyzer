@@ -1,0 +1,12 @@
+{
+  "name": "edge-case-empty-archive",
+  "description": "Empty repository (edge case)",
+  "languages": [],
+  "file_names": [
+    "README.md"
+  ],
+  "manifests": {},
+  "branches": [
+    "main"
+  ]
+}

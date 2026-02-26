@@ -74,12 +74,13 @@ _For leveraging AI-powered code generation and development patterns_
 
 - [ollama-fixture-and-code-generation.md](../.ai/patterns/ollama-fixture-and-code-generation.md) — Local LLM-based code generation pattern
   - Generate test fixtures, utilities, and boilerplate code
-  - Example: `bash scripts/generate-test-fixtures.sh` generates 10 test scenarios
+  - Example: `python scripts/ollama-generate.py --prompt .ai/ollama-prompts/fixture-repo-seeds.md ...`
   - Uses Ollama with Docker for reproducible, local AI assistance
 
 **Prompts** (`.ai/ollama-prompts/`):
 
-- `fixture-scenarios.md` — Test scenario JSON generation
+- `fixture-repo-seeds.md` — Seed generator for config-driven scenarios
+- `fixture-repo-enrichment.md` — Per-repo enrichment (adds commits/PRs)
 - `fixture-extractor.md` — FixtureExtractor class generation
 - `fixture-factories.md` — Test data factory functions
 - `repo-snapshot.md` — Live repo snapshot capture

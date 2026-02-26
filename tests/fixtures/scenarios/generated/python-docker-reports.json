@@ -1,6 +1,6 @@
 {
-  "name": "python-dual-deps",
-  "description": "Python with both Pipfile and requirements.txt",
+  "name": "python-docker-reports",
+  "description": "Python reports system with Docker support",
   "languages": [
     "Python"
   ],

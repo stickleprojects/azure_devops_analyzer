@@ -1,6 +1,6 @@
 {
-  "name": "empty-stub",
-  "description": "Empty repository for stub (edge case)",
+  "name": "empty-handoff",
+  "description": "Empty repository for handoff (edge case)",
   "languages": [],
   "file_names": [],
   "manifests": {},

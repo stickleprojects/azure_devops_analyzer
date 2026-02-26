@@ -13,9 +13,9 @@ Core Ollama API caller used by all orchestration scripts. Runs inside Docker (`p
 ```bash
 docker run --rm -v "$PROJECT_ROOT:/app" -w /app python:3.12-slim \
     python scripts/ollama-generate.py \
-    --model qwen3-coder:30b \
-    --prompt .ai/ollama-prompts/fixture-scenarios.md \
-    --output scripts/generated/generate-fixture-scenarios.py \
+    --model qwen2.5-coder:14b \
+    --prompt .ai/ollama-prompts/fixture-repo-seeds.md \
+    --output scripts/generated/generate-repo-seeds.py \
     [--context src/extractors/base.py] \
     [--ollama-url http://host.docker.internal:11434] \
     [--num-ctx 8192] \
@@ -32,15 +32,15 @@ docker run --rm -v "$PROJECT_ROOT:/app" -w /app python:3.12-slim \
 
 **Flags:**
 
-| Flag | Description |
-|------|-------------|
-| `--model` | Ollama model name (e.g. `qwen3-coder:30b`) |
-| `--prompt` | Markdown prompt file |
-| `--output` | Destination file path |
-| `--context FILE` | Read-only context file shown as system message (repeatable) |
-| `--ollama-url` | Ollama base URL (default: `http://host.docker.internal:11434`) |
-| `--num-ctx` | Context window tokens (default: 8192) |
-| `--raw` | Write full model response instead of extracting code block |
+| Flag             | Description                                                    |
+| ---------------- | -------------------------------------------------------------- |
+| `--model`        | Ollama model name (e.g. `qwen2.5-coder:14b`)                   |
+| `--prompt`       | Markdown prompt file                                           |
+| `--output`       | Destination file path                                          |
+| `--context FILE` | Read-only context file shown as system message (repeatable)    |
+| `--ollama-url`   | Ollama base URL (default: `http://host.docker.internal:11434`) |
+| `--num-ctx`      | Context window tokens (default: 8192)                          |
+| `--raw`          | Write full model response instead of extracting code block     |
 
 **Pattern documentation:** [.ai/patterns/ollama-fixture-and-code-generation.md](../.ai/patterns/ollama-fixture-and-code-generation.md)
 
@@ -62,12 +62,12 @@ docker compose run --rm scheduler python scripts/capture_snapshot.py \
 
 **Arguments:**
 
-| Argument | Description |
-|----------|-------------|
-| `repo_id` | Repository identifier (e.g. `owner/repo` for GitHub) |
-| `--platform` | `github` or `azure_devops` |
-| `--output` | Path to write scenario JSON |
-| `--branch` | Branch to scan (default: repository default branch) |
+| Argument     | Description                                          |
+| ------------ | ---------------------------------------------------- |
+| `repo_id`    | Repository identifier (e.g. `owner/repo` for GitHub) |
+| `--platform` | `github` or `azure_devops`                           |
+| `--output`   | Path to write scenario JSON                          |
+| `--branch`   | Branch to scan (default: repository default branch)  |
 
 **Output format:** Fixture scenario JSON matching the schema in [.ai/ollama-prompts/fixture-scenarios.md](../.ai/ollama-prompts/fixture-scenarios.md). Captured snapshots should be placed in `tests/fixtures/scenarios/captured/` to distinguish them from generated scenarios.
 
@@ -90,45 +90,71 @@ docker compose run --rm scheduler \
 
 **What it checks:**
 
-| Check | Query |
-|-------|-------|
-| `commits` | Commits exist for the repo |
-| `pull_requests` | Pull requests exist for the repo |
-| `dependencies` | Dependencies exist for the repo |
-| `languages` | Languages exist for the repo |
-| `canary_join` | All four tables joinable for the repo (full inner join) |
+| Check           | Query                                                   |
+| --------------- | ------------------------------------------------------- |
+| `commits`       | Commits exist for the repo                              |
+| `pull_requests` | Pull requests exist for the repo                        |
+| `dependencies`  | Dependencies exist for the repo                         |
+| `languages`     | Languages exist for the repo                            |
+| `canary_join`   | All four tables joinable for the repo (full inner join) |
 
 Exits `0` if all checks pass, `1` if any fail.
 
 ---
 
-### `generate-test-fixtures.sh`
+### `generate-fixtures.sh`
 
-Generates test fixture scenarios and supporting code using Ollama (local LLM).
+Config-driven fixture generation (Plan 014) using templates and repo sets.
 
 **Usage:**
 
 ```bash
-# Generate all fixtures and code (requires Ollama with qwen3-coder:30b)
-./scripts/generate-test-fixtures.sh
+# Full run: validate config, generate seeds, enrich all repos
+./scripts/generate-fixtures.sh
 
-# Generate specific step
-./scripts/generate-test-fixtures.sh --step A  # Fixture generator script + JSON scenarios
-./scripts/generate-test-fixtures.sh --step B  # FixtureExtractor class
-./scripts/generate-test-fixtures.sh --step C  # Factory functions
-./scripts/generate-test-fixtures.sh --step D  # Snapshot capture script
-./scripts/generate-test-fixtures.sh --step E  # Canary verification script
+# Run a single step
+./scripts/generate-fixtures.sh --step validate
+./scripts/generate-fixtures.sh --step seeds
+./scripts/generate-fixtures.sh --step enrich
+```
 
+---
+
+### `validate-fixture-config.py`
+
+Validates the config-driven fixture generation format in `tests/fixtures/scenarios/config.json`.
+
+**Usage:**
+
+```bash
+python scripts/validate-fixture-config.py
+```
+
+Checks:
+
+- Required top-level keys (`patterns`, `repo_templates`, `repo_sets`)
+- Range sanity (min <= median <= max)
+- PR status sums to 1.0 (or all zero)
+- Template references are valid
+- Expanded repo names are unique
+
+---
+
+### Config-Driven Fixture Generation (Plan 014)
+
+Two-layer generation using config templates and repo sets:
+
+```bash
 # Use different model
-./scripts/generate-test-fixtures.sh --model qwen3-coder-next:latest
+./scripts/generate-fixtures.sh --model qwen3-coder-next:latest
 ```
 
 **What it generates:**
 
-- 10 diverse test scenario JSON files covering multiple tech stacks
-- `FixtureExtractor` class for loading scenarios in tests
-- Factory functions for test data (`sample_technology_detection`, `sample_file_tree`)
-- Utility scripts for snapshot capture and verification
+- N test scenario JSON files (count derived from `repo_sets`)
+- Seed generator script (`scripts/generated/generate-repo-seeds.py`)
+- Per-repo enrichment scripts (`scripts/generated/enrich-<name>.py`)
+- Utility scripts for snapshot capture and verification (unchanged)
 
 **Output locations:**
 
@@ -138,7 +164,7 @@ Generates test fixture scenarios and supporting code using Ollama (local LLM).
 **Prerequisites:**
 
 - Ollama running at `localhost:11434`
-- Model available: `ollama pull qwen3-coder:30b`
+- Model available: `ollama pull qwen2.5-coder:14b`
 - Docker running (scripts execute inside containers)
 
 **Pattern documentation:** [.ai/patterns/ollama-fixture-and-code-generation.md](../.ai/patterns/ollama-fixture-and-code-generation.md)

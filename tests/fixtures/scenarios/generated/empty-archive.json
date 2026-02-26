@@ -1,6 +1,6 @@
 {
-  "name": "empty-stub",
-  "description": "Empty repository for stub (edge case)",
+  "name": "empty-archive",
+  "description": "Empty repository for archive (edge case)",
   "languages": [],
   "file_names": [],
   "manifests": {},

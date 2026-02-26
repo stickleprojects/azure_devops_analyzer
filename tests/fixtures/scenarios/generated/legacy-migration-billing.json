@@ -1,0 +1,33 @@
+{
+  "name": "legacy-migration-billing",
+  "description": "Legacy billing system undergoing migration",
+  "languages": [
+    "C#"
+  ],
+  "file_names": [
+    "tests/AppTests.cs",
+    "obj/",
+    "packages.config",
+    "App.csproj",
+    "src/Program.cs",
+    "app.config",
+    "bin/"
+  ],
+  "manifests": {
+    "csharp": [
+      {
+        "type": "packages.config",
+        "content": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<packages>\n  <package id=\"Newtonsoft.Json\" version=\"13.0.1\" targetFramework=\"net472\" />\n</packages>"
+      },
+      {
+        "type": ".csproj",
+        "content": "<Project Sdk=\"Microsoft.NET.Sdk\">\n\n  <PropertyGroup>\n    <OutputType>Exe</OutputType>\n    <TargetFramework>net472</TargetFramework>\n  </PropertyGroup>\n\n  <ItemGroup>\n    <PackageReference Include=\"Newtonsoft.Json\" Version=\"13.0.1\" />\n  </ItemGroup>\n\n</Project>"
+      }
+    ]
+  },
+  "branches": [
+    "main",
+    "develop",
+    "feature/-1"
+  ]
+}

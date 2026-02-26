@@ -1,33 +1,39 @@
 {
   "name": "deep-nested-manifests",
-  "description": "Manifests only in subdirectories (edge case)",
+  "description": "Manifests only in subdirectories",
+  "languages": [
+    "Python",
+    "TypeScript"
+  ],
   "file_names": [
-    "services/api/requirements.txt",
-    "services/web/package.json",
-    "services/*/src/..."
+    "README.md",
+    "tests/test_app.py",
+    "config.yaml",
+    "src/index.js",
+    "public/index.html",
+    "package.json",
+    "app.py",
+    "requirements.txt",
+    "tsconfig.json"
   ],
-  "language_data": [
-    {
-      "language": "Python",
-      "byte_count": 12000,
-      "percentage": 50.0
-    },
-    {
-      "language": "TypeScript",
-      "byte_count": 12000,
-      "percentage": 50.0
-    }
-  ],
-  "manifests": [
-    {
-      "file_path": "services/api/requirements.txt",
-      "content": "flask==3.0.0\nrequests==2.31.0\n",
-      "ecosystem": "pypi"
-    },
-    {
-      "file_path": "services/web/package.json",
-      "content": "{\n  \"name\": \"web-app\",\n  \"dependencies\": {\n    \"react\": \"^18.2.0\"\n  }\n}",
-      "ecosystem": "npm"
-    }
+  "manifests": {
+    "python": [
+      {
+        "type": "requirements.txt",
+        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
+      }
+    ],
+    "typescript": [
+      {
+        "type": "tsconfig.json",
+        "content": "{\n  \"compilerOptions\": {\n    \"target\": \"es6\",\n    \"module\": \"commonjs\"\n  }\n}"
+      }
+    ]
+  },
+  "branches": [
+    "main",
+    "develop",
+    "feature/service-1",
+    "feature/service-2"
   ]
 }

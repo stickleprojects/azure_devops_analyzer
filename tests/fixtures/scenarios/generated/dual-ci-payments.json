@@ -1,6 +1,6 @@
 {
-  "name": "python-dual-deps",
-  "description": "Python with both Pipfile and requirements.txt",
+  "name": "dual-ci-payments",
+  "description": "Dual CI service for payments domain",
   "languages": [
     "Python"
   ],

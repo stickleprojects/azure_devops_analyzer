@@ -5,7 +5,7 @@
 **Addresses**: Problem 1 (dev feedback loop) + Problem 2 (realistic test coverage gap)
 **Generation Pattern**: Ollama-in-Docker (see `.ai/patterns/ollama-fixture-and-code-generation.md`)
 
-**Implementation Summary**: All deliverables are generated using local LLM (Ollama with qwen3-coder:30b) following detailed prompts in `.ai/ollama-prompts/013-*.md`. Regenerate anytime with `bash scripts/run-013-ollama.sh`. Generated test scenarios now support branches, commits, and pull requests for workflow testing.
+**Implementation Summary**: All deliverables are generated using local LLM (Ollama with qwen2.5-coder:14b) following detailed prompts in `.ai/ollama-prompts/013-*.md`. Regenerate anytime with `bash scripts/run-013-ollama.sh`. Generated test scenarios now support branches, commits, and pull requests for workflow testing.
 
 **Key Features Delivered**:
 
@@ -38,7 +38,7 @@ Two related gaps:
 
 ### Generation Infrastructure
 
-All code is generated using Ollama (qwen3-coder:30b model) running in Docker containers:
+All code is generated using Ollama (qwen2.5-coder:14b model) running in Docker containers:
 
 **Orchestration**: `bash scripts/run-013-ollama.sh`
 

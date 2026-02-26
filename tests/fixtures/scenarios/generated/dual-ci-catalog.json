@@ -1,6 +1,6 @@
 {
-  "name": "python-dual-deps",
-  "description": "Python with both Pipfile and requirements.txt",
+  "name": "dual-ci-catalog",
+  "description": "Dual CI service for catalog domain",
   "languages": [
     "Python"
   ],
