@@ -4,10 +4,11 @@
 
 For detailed operational specifics and reference material, see:
 
-- `.ai/instructions.md` - Full operational details, pre-commit validation gates, project conventions
+- `.ai/operations.md` - Project conventions, procedures, pre-commit validation gates
 - `agents/02a-architecture-guardian.md` - Deep dive on architecture boundaries
 - `agents/04a-test-guardian.md` - Deep dive on test integrity
 - `agents/07-session-continuity-agent.md` - Deep dive on session tracking
+- `agents/00-documentation-standards.md` - Documentation guidelines
 
 **Session Start**: When user greets you, activate session continuity mode:
 
