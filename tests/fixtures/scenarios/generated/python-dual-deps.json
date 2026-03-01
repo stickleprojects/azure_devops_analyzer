@@ -1,27 +1,36 @@
 {
   "name": "python-dual-deps",
-  "description": "Python with both Pipfile and requirements.txt",
+  "description": "python-dual-deps repository",
   "languages": [
     "Python"
   ],
   "file_names": [
-    "README.md",
-    "tests/test_app.py",
-    "config.yaml",
-    "app.py",
-    "requirements.txt"
+    "main.py",
+    "src/module.py",
+    "tests/test_module.py",
+    "setup.py"
   ],
   "manifests": {
-    "python": [
+    "pipenv": [
+      {
+        "type": "Pipfile",
+        "content": "[packages]\nflask = \"^2.3.0\"\nrequests = \"^2.31.0\""
+      },
+      {
+        "type": "Pipfile.lock",
+        "content": "{\"_meta\": {\"sources\": [{\"url\": \"https://pypi.org/simple\", \"verify_ssl\": true}]}\"default\": {\"flask\": {\"version\": \"==2.3.0\"}, \"requests\": {\"version\": \"==2.31.0\"}}}"
+      }
+    ],
+    "pip": [
       {
         "type": "requirements.txt",
-        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
+        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0"
       }
     ]
   },
   "branches": [
     "main",
     "develop",
-    "feature/-1"
+    "feature/deps"
   ]
 }

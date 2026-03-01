@@ -104,12 +104,16 @@ run_enrich() {
         name="$(basename "$seed" .json)"
         local output="scripts/generated/enrich-${name}.py"
 
-        info "Generating enrichment script for ${name}"
-        run_ollama_generate \
-            .ai/ollama-prompts/fixture-repo-enrichment.md \
-            "$output" \
-            --context tests/fixtures/scenarios/config.json \
-            --context "$seed"
+        if [[ -f "$output" ]]; then
+            info "Skipping script generation for ${name} (already exists)"
+        else
+            info "Generating enrichment script for ${name}"
+            run_ollama_generate \
+                .ai/ollama-prompts/fixture-repo-enrichment.md \
+                "$output" \
+                --context tests/fixtures/scenarios/config.json \
+                --context "$seed"
+        fi
 
         info "Running enrichment for ${name}"
         run_docker_python python "$output" "$seed"

@@ -108,28 +108,32 @@ This project leverages local LLMs (Ollama) for automated code generation:
 
 ### Test Fixture Generation
 
-Generate realistic test scenarios covering multiple tech stacks, CI/CD platforms, and edge cases:
+Generate realistic test scenarios using a two-layer Ollama pipeline:
+
+- **Layer 1 — Seeds**: one Ollama call generates `generate-repo-seeds.py`, which writes compact seed JSON files (structure, languages, manifests, branches) for every repo in config
+- **Layer 2 — Enrichment**: for each seed, a second Ollama call generates a per-repo `enrich-<name>.py` script that adds realistic commits and pull requests in-place
 
 ```bash
-# Validate config-driven fixture config
-python scripts/validate-fixture-config.py
+# Run the full pipeline (validate → seeds → enrich)
+./scripts/generate-fixtures.sh
 
-# Generate seed generator script
-python scripts/ollama-generate.py \
-  --model qwen2.5-coder:14b \
-  --prompt .ai/ollama-prompts/fixture-repo-seeds.md \
-  --output scripts/generated/generate-repo-seeds.py \
-  --context tests/fixtures/scenarios/config.json
+# Run a single step
+./scripts/generate-fixtures.sh --step validate
+./scripts/generate-fixtures.sh --step seeds
+./scripts/generate-fixtures.sh --step enrich
+
+# Use a different model
+./scripts/generate-fixtures.sh --model qwen2.5-coder:7b
 ```
 
-Generates:
+**Prerequisites:** Ollama running at `localhost:11434`, Docker running, model pulled (`ollama pull qwen2.5-coder:14b`).
 
-- N diverse repository scenarios (count derived from `repo_sets` in config)
-- Fixture extractor for loading scenarios in tests
-- Factory functions for test data construction
-- Includes branches, commits, and pull requests for workflow testing
+**Output:**
 
-See [.ai/patterns/ollama-fixture-and-code-generation.md](.ai/patterns/ollama-fixture-and-code-generation.md) for details on the generation pattern.
+- Seed + enriched scenario JSONs → `tests/fixtures/scenarios/generated/`
+- Generated scripts → `scripts/generated/` (version-controlled, re-runnable)
+
+See [scripts/README.md](scripts/README.md) for full reference and step-by-step details.
 
 ## Repository Structure
 

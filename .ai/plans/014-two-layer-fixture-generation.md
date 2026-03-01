@@ -1,6 +1,6 @@
 # Plan 014: Two-Layer Fixture Generation
 
-**Status**: 🔲 Not started
+**Status**: 🔶 In progress — Layer 1 seeds complete; Layer 2 enrichment prompt fixed; 2/33 repos enriched
 **Depends on**: Plan 013 (fixture factory infrastructure already in place)
 **Problem**: Ollama context window overflow when scaling up commits/PRs per scenario
 **Solution**: Split the single monolithic generation call into seeds + per-repo enrichment layers

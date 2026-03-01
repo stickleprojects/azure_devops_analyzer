@@ -5,23 +5,319 @@
     "Python"
   ],
   "file_names": [
-    "README.md",
-    "tests/test_app.py",
-    "config.yaml",
     "app.py",
-    "requirements.txt"
+    "tests/test_app.py",
+    "scripts/CI_script.sh"
   ],
   "manifests": {
     "python": [
       {
         "type": "requirements.txt",
-        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
+        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0"
+      },
+      {
+        "type": "Jenkinsfile",
+        "content": "pipeline { agent any; stages { stage('Build') { steps { echo 'Building..' } } } }"
       }
     ]
   },
   "branches": [
     "main",
     "develop",
-    "feature/-1"
+    "feature/ci"
+  ],
+  "commits": [
+    {
+      "commit_hash": "07a4fd5bdd0d88002e104b5c5181ac3ed63ebae4",
+      "author_name": "Alice Williams",
+      "author_email": "alice.williams@sample.net",
+      "committer_name": "Alice Williams",
+      "committer_email": "alice.williams@sample.net",
+      "message": "Fix requirements issue",
+      "commit_date": "2025-12-11T21:07:35.149078+00:00Z",
+      "files_changed": 2,
+      "lines_added": 83,
+      "lines_removed": 37
+    },
+    {
+      "commit_hash": "3568e2ef160e8ac0c5fa2e0b7c060139f0d481b6",
+      "author_name": "David Smith",
+      "author_email": "david.smith@example.com",
+      "committer_name": "Charlie Smith",
+      "committer_email": "charlie.smith@example.com",
+      "message": "Update CI/CD pipeline",
+      "commit_date": "2025-12-13T21:07:35.149078+00:00Z",
+      "files_changed": 6,
+      "lines_added": 78,
+      "lines_removed": 42
+    },
+    {
+      "commit_hash": "055342a0875c29026a1cb90c09b43a126ba3b979",
+      "author_name": "Bob Smith",
+      "author_email": "bob.smith@example.com",
+      "committer_name": "Bob Smith",
+      "committer_email": "bob.smith@example.com",
+      "message": "Improve Flask API",
+      "commit_date": "2025-12-15T21:07:35.149078+00:00Z",
+      "files_changed": 5,
+      "lines_added": 77,
+      "lines_removed": 34
+    },
+    {
+      "commit_hash": "507d251a6ed0d3c8407bff29e4bbfe71eaab6708",
+      "author_name": "Bob Brown",
+      "author_email": "bob.brown@test.org",
+      "committer_name": "Charlie Brown",
+      "committer_email": "charlie.brown@sample.net",
+      "message": "Add unit tests",
+      "commit_date": "2025-12-19T21:07:35.149078+00:00Z",
+      "files_changed": 7,
+      "lines_added": 51,
+      "lines_removed": 32
+    },
+    {
+      "commit_hash": "c03b77577e68337d939b635f9d7420c6dc2c1d84",
+      "author_name": "Charlie Johnson",
+      "author_email": "charlie.johnson@sample.net",
+      "committer_name": "Charlie Johnson",
+      "committer_email": "charlie.johnson@sample.net",
+      "message": "Update CI/CD pipeline",
+      "commit_date": "2025-12-22T21:07:35.149078+00:00Z",
+      "files_changed": 4,
+      "lines_added": 93,
+      "lines_removed": 1
+    },
+    {
+      "commit_hash": "600eb74b04c2141a86c3a201f763a40bc9a9933e",
+      "author_name": "Bob Smith",
+      "author_email": "bob.smith@sample.net",
+      "committer_name": "Alice Smith",
+      "committer_email": "bob.smith@sample.net",
+      "message": "Add Docker support",
+      "commit_date": "2025-12-24T21:07:35.149078+00:00Z",
+      "files_changed": 2,
+      "lines_added": 19,
+      "lines_removed": 16
+    },
+    {
+      "commit_hash": "9add3b65586de68afd2c837a36a5a2ed1e052810",
+      "author_name": "Bob Williams",
+      "author_email": "bob.williams@sample.net",
+      "committer_name": "Bob Williams",
+      "committer_email": "bob.williams@sample.net",
+      "message": "Improve Flask API",
+      "commit_date": "2025-12-29T21:07:35.149078+00:00Z",
+      "files_changed": 6,
+      "lines_added": 65,
+      "lines_removed": 35
+    },
+    {
+      "commit_hash": "a1befdf58f4b22a63378c22e9f3fcde694a78cbf",
+      "author_name": "Alice Smith",
+      "author_email": "alice.smith@example.com",
+      "committer_name": "Alice Smith",
+      "committer_email": "alice.smith@example.com",
+      "message": "Fix requirements issue",
+      "commit_date": "2026-01-01T21:07:35.149078+00:00Z",
+      "files_changed": 8,
+      "lines_added": 73,
+      "lines_removed": 4
+    },
+    {
+      "commit_hash": "1f550a1ec8e34a3fd2f6eab02027205e6e97368e",
+      "author_name": "Alice Jones",
+      "author_email": "alice.jones@example.com",
+      "committer_name": "Alice Jones",
+      "committer_email": "alice.jones@example.com",
+      "message": "Update CI/CD pipeline",
+      "commit_date": "2026-01-05T21:07:35.149078+00:00Z",
+      "files_changed": 4,
+      "lines_added": 32,
+      "lines_removed": 37
+    },
+    {
+      "commit_hash": "f422eab8cf0441bd4f28bf608a7f6a6108c9d8d8",
+      "author_name": "Eve Johnson",
+      "author_email": "eve.johnson@sample.net",
+      "committer_name": "Bob Williams",
+      "committer_email": "bob.williams@example.com",
+      "message": "Fix requirements issue",
+      "commit_date": "2026-01-10T21:07:35.149078+00:00Z",
+      "files_changed": 4,
+      "lines_added": 13,
+      "lines_removed": 11
+    },
+    {
+      "commit_hash": "c8539800e6036a0bcc6b83dcb9191bf0590decfe",
+      "author_name": "David Johnson",
+      "author_email": "david.johnson@sample.net",
+      "committer_name": "David Johnson",
+      "committer_email": "david.johnson@sample.net",
+      "message": "Add unit tests",
+      "commit_date": "2026-01-14T21:07:35.149078+00:00Z",
+      "files_changed": 8,
+      "lines_added": 85,
+      "lines_removed": 50
+    },
+    {
+      "commit_hash": "b630fba8fa28780e96763e7e88607b98d01e6a28",
+      "author_name": "Charlie Johnson",
+      "author_email": "charlie.johnson@sample.net",
+      "committer_name": "Eve Johnson",
+      "committer_email": "charlie.johnson@sample.net",
+      "message": "Add unit tests",
+      "commit_date": "2026-01-19T21:07:35.149078+00:00Z",
+      "files_changed": 7,
+      "lines_added": 62,
+      "lines_removed": 1
+    },
+    {
+      "commit_hash": "da544868b5e864dcc78963a96bc62dc95cf6c6c8",
+      "author_name": "Charlie Johnson",
+      "author_email": "charlie.johnson@sample.net",
+      "committer_name": "Charlie Johnson",
+      "committer_email": "charlie.johnson@test.org",
+      "message": "Improve Flask API",
+      "commit_date": "2026-01-21T21:07:35.149078+00:00Z",
+      "files_changed": 4,
+      "lines_added": 40,
+      "lines_removed": 17
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Improve Flask API",
+      "description": "Added Improve Flask API",
+      "status": "merged",
+      "created_at": "2026-02-05T21:07:35.149078+00:00Z",
+      "author_name": "David Smith",
+      "author_email": "david.smith@sample.net",
+      "review_comments": 0,
+      "commits_count": 3,
+      "files_changed": 4,
+      "lines_added": 200,
+      "lines_removed": 54,
+      "merged_at": "2026-02-17T21:07:35.149078+00:00Z"
+    },
+    {
+      "pr_number": 2,
+      "title": "Fix requirements issue",
+      "description": "Added Fix requirements issue",
+      "status": "merged",
+      "created_at": "2026-01-02T21:07:35.149078+00:00Z",
+      "author_name": "Alice Jones",
+      "author_email": "alice.jones@sample.net",
+      "review_comments": 0,
+      "commits_count": 4,
+      "files_changed": 11,
+      "lines_added": 169,
+      "lines_removed": 31,
+      "merged_at": "2026-01-22T21:07:35.149078+00:00Z"
+    },
+    {
+      "pr_number": 3,
+      "title": "Improve Flask API",
+      "description": "Added Improve Flask API",
+      "status": "merged",
+      "created_at": "2026-01-18T21:07:35.149078+00:00Z",
+      "author_name": "Alice Brown",
+      "author_email": "alice.brown@test.org",
+      "review_comments": 4,
+      "commits_count": 4,
+      "files_changed": 12,
+      "lines_added": 137,
+      "lines_removed": 41,
+      "merged_at": "2026-01-22T21:07:35.149078+00:00Z"
+    },
+    {
+      "pr_number": 4,
+      "title": "Update CI/CD pipeline",
+      "description": "Added Update CI/CD pipeline",
+      "status": "merged",
+      "created_at": "2025-12-16T21:07:35.149078+00:00Z",
+      "author_name": "Bob Jones",
+      "author_email": "bob.jones@example.com",
+      "review_comments": 5,
+      "commits_count": 3,
+      "files_changed": 10,
+      "lines_added": 33,
+      "lines_removed": 66,
+      "merged_at": "2026-01-15T21:07:35.149078+00:00Z"
+    },
+    {
+      "pr_number": 5,
+      "title": "Improve Flask API",
+      "description": "Added Improve Flask API",
+      "status": "open",
+      "created_at": "2026-01-02T21:07:35.149078+00:00Z",
+      "author_name": "Eve Johnson",
+      "author_email": "eve.johnson@example.com",
+      "review_comments": 4,
+      "commits_count": 1,
+      "files_changed": 6,
+      "lines_added": 97,
+      "lines_removed": 71
+    },
+    {
+      "pr_number": 6,
+      "title": "Improve Flask API",
+      "description": "Added Improve Flask API",
+      "status": "merged",
+      "created_at": "2025-12-18T21:07:35.149078+00:00Z",
+      "author_name": "Bob Smith",
+      "author_email": "bob.smith@sample.net",
+      "review_comments": 5,
+      "commits_count": 4,
+      "files_changed": 7,
+      "lines_added": 40,
+      "lines_removed": 33,
+      "merged_at": "2026-01-09T21:07:35.149078+00:00Z"
+    },
+    {
+      "pr_number": 7,
+      "title": "Fix requirements issue",
+      "description": "Added Fix requirements issue",
+      "status": "merged",
+      "created_at": "2025-12-21T21:07:35.149078+00:00Z",
+      "author_name": "Alice Brown",
+      "author_email": "alice.brown@sample.net",
+      "review_comments": 4,
+      "commits_count": 1,
+      "files_changed": 12,
+      "lines_added": 182,
+      "lines_removed": 27,
+      "merged_at": "2026-02-25T21:07:35.149078+00:00Z"
+    },
+    {
+      "pr_number": 8,
+      "title": "Fix requirements issue",
+      "description": "Added Fix requirements issue",
+      "status": "merged",
+      "created_at": "2026-02-10T21:07:35.149078+00:00Z",
+      "author_name": "Bob Jones",
+      "author_email": "bob.jones@test.org",
+      "review_comments": 2,
+      "commits_count": 5,
+      "files_changed": 12,
+      "lines_added": 130,
+      "lines_removed": 70,
+      "merged_at": "2026-02-10T21:07:35.149078+00:00Z"
+    },
+    {
+      "pr_number": 9,
+      "title": "Improve Flask API",
+      "description": "Added Improve Flask API",
+      "status": "merged",
+      "created_at": "2026-02-21T21:07:35.149078+00:00Z",
+      "author_name": "Eve Williams",
+      "author_email": "eve.williams@example.com",
+      "review_comments": 1,
+      "commits_count": 4,
+      "files_changed": 5,
+      "lines_added": 59,
+      "lines_removed": 32,
+      "merged_at": "2026-02-26T21:07:35.149078+00:00Z"
+    }
   ]
 }

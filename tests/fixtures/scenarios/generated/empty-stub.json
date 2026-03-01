@@ -2,7 +2,9 @@
   "name": "empty-stub",
   "description": "Empty repository for stub (edge case)",
   "languages": [],
-  "file_names": [],
+  "file_names": [
+    "README.md"
+  ],
   "manifests": {},
   "branches": [
     "main",

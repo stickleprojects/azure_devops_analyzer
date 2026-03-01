@@ -2,7 +2,9 @@
   "name": "empty-archive",
   "description": "Empty repository for archive (edge case)",
   "languages": [],
-  "file_names": [],
+  "file_names": [
+    "README.md"
+  ],
   "manifests": {},
   "branches": [
     "main",

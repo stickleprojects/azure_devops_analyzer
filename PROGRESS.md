@@ -2,6 +2,71 @@
 
 ---
 
+## Session: 2026-03-01 (Afternoon) — Enrichment Prompt Debug + Architecture Review
+
+### Summary
+
+Diagnosed and fixed 6 codegen bugs in the Layer 2 enrichment prompt and hand-patched 2
+generated scripts. Confirmed the two-layer fixture generation architecture is sound.
+Full run for remaining 31 repos is the next step.
+
+### Root Cause Resolved (from last session)
+
+The Ollama-generated enrichment scripts expected `sys.argv[2]` for config because the prompt
+said config is "provided as `--context` to Ollama" — the model misread this as an instruction
+to the generated script. Fixed by rewriting the Input section to say:
+> "Extract the config entry matching this repo's `name` field and embed the values as
+> hardcoded Python constants at the top of the generated script."
+
+### Bugs Fixed in Prompt + Generated Scripts
+
+All 6 bugs are documented in detail in `.ai/investigations/014-enrichment-codegen-findings.md`.
+
+| # | Bug | Prompt fix |
+|---|-----|------------|
+| 1 | Missing `import tempfile` | Listed all required imports explicitly |
+| 2 | `NamedTemporaryFile` in binary mode | Added `mode='w'` + explanation |
+| 3 | Validates `languages` field (seeds use `language_data`) | Corrected field names |
+| 4 | Idempotency triggers on Layer 1 placeholder commit | Use `len(commits) >= COMMIT_MIN` |
+| 5 | Variables used in dict literal before assignment | Explicit pre-assignment instruction |
+| 6 | PR dates read from `seed_data["commits"]` | Use fixed 90-day window from `datetime.now()` |
+
+### Config Structure Clarified
+
+`tests/fixtures/scenarios/config.json` has three sections:
+- `patterns`: commit/PR sizing (min/max/median) by pattern type
+- `repo_templates`: themes (commit messages, PR titles) + pattern reference per template
+- `repo_sets`: instances — maps templates → seed filenames (some via `name_template` + services)
+
+Service-family repos (e.g. `python-docker-billing`) have no direct config entry; Ollama must
+match by prefix to the `python-docker` template. Confirmed this works correctly in both test scripts.
+
+### Scripts Patched
+
+- `scripts/generated/enrich-deep-nested-manifests.py` — bugs 1, 2, 3, 4 patched; `[OK]` confirmed
+- `scripts/generated/enrich-python-docker.py` — bugs 3, 4, 5, 6 patched; `[OK]` confirmed; 20 commits, 5 PRs
+
+### Files Changed
+
+- `.ai/ollama-prompts/fixture-repo-enrichment.md` — 6 prompt fixes
+- `scripts/generated/enrich-deep-nested-manifests.py` — hand-patched
+- `scripts/generated/enrich-python-docker.py` — hand-patched
+- `.ai/investigations/014-enrichment-codegen-findings.md` — new investigation doc
+- `.ai/plans/014-two-layer-fixture-generation.md` — status updated
+
+### Next Steps
+
+1. Run full enrichment for remaining 31 seed files:
+   ```bash
+   bash scripts/generate-fixtures.sh --step enrich 2>&1 | tee fixture-enrich.log
+   ```
+2. For each generated script that fails, apply the same pattern of fixes (see investigation doc)
+3. Verify all 33 seeds have `commits` (≥15) and `pull_requests` (≥5) after enrichment
+4. Commit all enriched seeds + prompt changes + investigation doc
+5. Run tests: `bash scripts/run-tests-docker.sh`
+
+---
+
 ## Session: 2026-02-26 (Night) - Fixture Generation Script Debugging
 
 ### Summary

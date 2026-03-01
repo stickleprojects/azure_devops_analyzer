@@ -1,33 +1,31 @@
 {
   "name": "react-spa",
-  "description": "React single-page application with TypeScript",
+  "description": "react-spa repository",
   "languages": [
     "TypeScript",
     "JavaScript"
   ],
   "file_names": [
-    "package.json",
-    "src/index.js",
+    "src/index.tsx",
     "public/index.html",
-    "tsconfig.json"
+    "vite.config.ts",
+    ".eslintrc"
   ],
   "manifests": {
-    "typescript": [
-      {
-        "type": "tsconfig.json",
-        "content": "{\n  \"compilerOptions\": {\n    \"target\": \"es6\",\n    \"module\": \"commonjs\"\n  }\n}"
-      }
-    ],
     "javascript": [
       {
         "type": "package.json",
-        "content": "{\n  \"name\": \"example-app\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"react\": \"^17.0.2\"\n  }\n}"
+        "content": "{\"name\": \"react-app\", \"version\": \"1.0.0\", \"dependencies\": {\"react\": \"^17.0.2\"}}"
+      },
+      {
+        "type": "tsconfig.json",
+        "content": "{\"compilerOptions\": {\"target\": \"ES6\", \"module\": \"commonjs\"}, \"include\": [\"src\"]}"
       }
     ]
   },
   "branches": [
     "main",
     "develop",
-    "feature/-1"
+    "feature/spa"
   ]
 }

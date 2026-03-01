@@ -6,10 +6,11 @@
   ],
   "file_names": [
     "README.md",
-    "tests/test_app.py",
-    "config.yaml",
+    "Dockerfile",
+    "requirements.txt",
     "app.py",
-    "requirements.txt"
+    "tests/test_app.py",
+    "config.yaml"
   ],
   "manifests": {
     "python": [
@@ -22,6 +23,6 @@
   "branches": [
     "main",
     "develop",
-    "feature/-1"
+    "feature/docker"
   ]
 }

@@ -1,39 +1,34 @@
 {
   "name": "fullstack-monorepo",
-  "description": "Monorepo with backend API and frontend services",
+  "description": "fullstack-monorepo repository",
   "languages": [
     "Python",
     "TypeScript"
   ],
   "file_names": [
-    "README.md",
-    "tests/test_app.py",
-    "config.yaml",
-    "src/index.js",
-    "public/index.html",
-    "package.json",
-    "app.py",
-    "requirements.txt",
-    "tsconfig.json"
+    "backend/app.py",
+    "frontend/src/App.js",
+    "services/auth/auth.js",
+    "shared/utils.js",
+    "docker-compose.yml"
   ],
   "manifests": {
     "python": [
       {
         "type": "requirements.txt",
-        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
+        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0"
       }
     ],
     "typescript": [
       {
-        "type": "tsconfig.json",
-        "content": "{\n  \"compilerOptions\": {\n    \"target\": \"es6\",\n    \"module\": \"commonjs\"\n  }\n}"
+        "type": "package.json",
+        "content": "{\"name\": \"frontend-app\", \"version\": \"1.0.0\", \"dependencies\": {\"react\": \"^17.0.2\"}}"
       }
     ]
   },
   "branches": [
     "main",
     "develop",
-    "feature/service-1",
-    "feature/service-2"
+    "feature/monorepo"
   ]
 }

@@ -4,9 +4,9 @@
     "single-language": {
       "description": "Single-stack repository with one primary language",
       "commits": {
-        "min": 15,
-        "max": 25,
-        "median": 20
+        "min": 7,
+        "max": 12,
+        "median": 10
       },
       "commit_metadata": {
         "files_changed": {
@@ -56,9 +56,9 @@
     "frontend-spa": {
       "description": "Frontend single-page app (TypeScript/JavaScript)",
       "commits": {
-        "min": 15,
-        "max": 25,
-        "median": 20
+        "min": 7,
+        "max": 12,
+        "median": 10
       },
       "commit_metadata": {
         "files_changed": {
@@ -108,9 +108,9 @@
     "fullstack-monorepo": {
       "description": "Monorepo with multiple services and overlapping languages",
       "commits": {
-        "min": 25,
-        "max": 40,
-        "median": 32
+        "min": 12,
+        "max": 20,
+        "median": 16
       },
       "commit_metadata": {
         "files_changed": {
@@ -160,9 +160,9 @@
     "legacy-migration": {
       "description": "Legacy project undergoing modernization with mixed approaches",
       "commits": {
-        "min": 20,
-        "max": 30,
-        "median": 25
+        "min": 10,
+        "max": 15,
+        "median": 12
       },
       "commit_metadata": {
         "files_changed": {
@@ -212,9 +212,9 @@
     "dual-ci": {
       "description": "Repository with dual CI systems or complex build setup",
       "commits": {
-        "min": 12,
-        "max": 20,
-        "median": 16
+        "min": 6,
+        "max": 10,
+        "median": 8
       },
       "commit_metadata": {
         "files_changed": {
