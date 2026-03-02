@@ -1,34 +1,39 @@
 {
   "name": "fullstack-monorepo",
-  "description": "fullstack-monorepo repository",
+  "description": "Monorepo with backend API and frontend services",
   "languages": [
     "Python",
     "TypeScript"
   ],
   "file_names": [
-    "backend/app.py",
-    "frontend/src/App.js",
-    "services/auth/auth.js",
-    "shared/utils.js",
-    "docker-compose.yml"
+    "README.md",
+    "Dockerfile",
+    "requirements.txt",
+    "app.py",
+    "tests/test_app.py",
+    "config.yaml",
+    "src/index.js",
+    "public/index.html",
+    "vite.config.ts",
+    ".eslintrc.json"
   ],
   "manifests": {
     "python": [
       {
         "type": "requirements.txt",
-        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0"
+        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
       }
     ],
-    "typescript": [
+    "javascript": [
       {
         "type": "package.json",
-        "content": "{\"name\": \"frontend-app\", \"version\": \"1.0.0\", \"dependencies\": {\"react\": \"^17.0.2\"}}"
+        "content": "{\n  \"name\": \"react-app\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\"\n  },\n  \"devDependencies\": {\n    \"@vitejs/plugin-react\": \"^3.0.0\",\n    \"vite\": \"^4.0.0\"\n  }\n}"
       }
     ]
   },
   "branches": [
     "main",
     "develop",
-    "feature/monorepo"
+    "feature/docker"
   ]
 }

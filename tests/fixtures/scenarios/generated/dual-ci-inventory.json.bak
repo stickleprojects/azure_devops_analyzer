@@ -1,6 +1,6 @@
 {
-  "name": "python-docker-payroll",
-  "description": "Python python-docker-payroll system with Docker support",
+  "name": "dual-ci-inventory",
+  "description": "Dual CI service for dual-ci-inventory domain",
   "languages": [
     "Python"
   ],

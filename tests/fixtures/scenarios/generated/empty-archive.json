@@ -1,6 +1,6 @@
 {
   "name": "empty-archive",
-  "description": "Empty repository for archive (edge case)",
+  "description": "Empty repository for empty-archive (edge case)",
   "languages": [],
   "file_names": [
     "README.md"
@@ -8,6 +8,7 @@
   "manifests": {},
   "branches": [
     "main",
-    "develop"
+    "develop",
+    "feature/docker"
   ]
 }

@@ -3,289 +3,188 @@
 
 import json
 from pathlib import Path
-import sys
 
-# Define default templates for file and manifest generation
-def generate_file_names(template_name, service=None):
-    """Generate typical file names based on template."""
-    if template_name == "python-docker":
-        return [
-            "README.md",
+# Define a default list of repositories if config.json is not found
+default_repos = [
+    {"name": "repo1", "languages": ["Python"]},
+    {"name": "repo2", "languages": ["JavaScript"]},
+    # Add more default repos as needed
+]
+
+def load_config(config_path):
+    """Load the configuration from a JSON file."""
+    try:
+        with open(config_path, 'r') as f:
+            config = json.load(f)
+        return config
+    except FileNotFoundError:
+        print(f"Error: {config_path} not found. Using default repository list.", file=sys.stderr)
+        return {"repo_sets": [{"names": [repo["name"] for repo in default_repos]}]}
+
+def generate_file_names(languages):
+    """Generate a list of typical file names based on languages."""
+    files = ["README.md"]
+    if "Python" in languages:
+        files.extend([
             "Dockerfile",
             "requirements.txt",
             "app.py",
             "tests/test_app.py",
             "config.yaml"
-        ]
-    elif template_name == "go-microservice":
-        return [
+        ])
+    if "Go" in languages:
+        files.extend([
             "main.go",
             "cmd/main.go",
-            "internal/handlers.go",
+            "internal/endpoint.go",
             "Makefile"
-        ]
-    elif template_name == "react-spa":
-        return [
-            "src/index.tsx",
+        ])
+    if "TypeScript" in languages or "JavaScript" in languages:
+        files.extend([
+            "src/index.js",
             "public/index.html",
             "vite.config.ts",
-            ".eslintrc"
-        ]
-    elif template_name == "fullstack-monorepo":
-        return [
-            "backend/app.py",
-            "frontend/src/App.js",
-            "services/auth/auth.js",
-            "shared/utils.js",
-            "docker-compose.yml"
-        ]
-    elif template_name == "java-maven-jenkins":
-        return [
-            "src/main/java/com/example/Main.java",
-            "src/test/java/com/example/TestClass.java",
-            ".mvn/wrapper/maven-wrapper.properties",
-            "settings.xml"
-        ]
-    elif template_name == "legacy-migration":
-        return [
-            "src/BillingService.cs",
-            "tests/BillingServiceTests.cs",
-            "bin/",
-            "obj/"
-        ]
-    elif template_name == "dual-ci":
-        return [
-            "app.py",
-            "tests/test_app.py",
-            "scripts/CI_script.sh"
-        ]
-    elif template_name == "python-dual-deps":
-        return [
-            "main.py",
-            "src/module.py",
-            "tests/test_module.py",
-            "setup.py"
-        ]
-    elif template_name == "edge-case-empty":
-        return [
-            "README.md"
-        ]
-    elif template_name == "deep-nested-manifests":
-        return [
-            "services/backend/app.py",
-            "services/frontend/src/App.js",
-            "shared/config.yaml",
-            "scripts/deploy.sh",
-            "terraform/main.tf"
-        ]
-    else:
-        return []
+            ".eslintrc.json"
+        ])
+    if "Java" in languages:
+        files.extend([
+            "pom.xml",
+            "Jenkinsfile",
+            "settings.xml",
+            "src/main/java/Main.java",
+            "src/test/java/Tests.java"
+        ])
+    if "C#" in languages:
+        files.extend([
+            "packages.config",
+            ".csproj",
+            "app.config",
+            "src/Program.cs",
+            "tests/Tests.cs"
+        ])
+    return files
 
-def generate_manifests(template_name, service=None):
-    """Generate typical manifests based on template."""
-    if template_name == "python-docker":
-        return {
-            "python": [
-                {
-                    "type": "requirements.txt",
-                    "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
-                }
-            ]
-        }
-    elif template_name == "go-microservice":
-        return {
-            "go": [
-                {
-                    "type": "go.mod",
-                    "content": "module example.com/microservice\n\ngo 1.18\nrequire github.com/gin-gonic/gin v1.7.4"
-                },
-                {
-                    "type": "go.sum",
-                    "content": "# go.sum contents omitted for brevity"
-                }
-            ]
-        }
-    elif template_name == "react-spa":
-        return {
-            "javascript": [
-                {
-                    "type": "package.json",
-                    "content": '{"name": "react-app", "version": "1.0.0", "dependencies": {"react": "^17.0.2"}}'
-                },
-                {
-                    "type": "tsconfig.json",
-                    "content": '{"compilerOptions": {"target": "ES6", "module": "commonjs"}, "include": ["src"]}'
-                }
-            ]
-        }
-    elif template_name == "fullstack-monorepo":
-        return {
-            "python": [
-                {
-                    "type": "requirements.txt",
-                    "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0"
-                }
-            ],
-            "typescript": [
-                {
-                    "type": "package.json",
-                    "content": '{"name": "frontend-app", "version": "1.0.0", "dependencies": {"react": "^17.0.2"}}'
-                }
-            ]
-        }
-    elif template_name == "java-maven-jenkins":
-        return {
-            "maven": [
-                {
-                    "type": "pom.xml",
-                    "content": '<project><modelVersion>4.0.0</modelVersion><groupId>com.example</groupId><artifactId>app</artifactId><version>1.0-SNAPSHOT</version></project>'
-                },
-                {
-                    "type": "Jenkinsfile",
-                    "content": "pipeline { agent any; stages { stage('Build') { steps { echo 'Building..' } } } }"
-                }
-            ]
-        }
-    elif template_name == "legacy-migration":
-        return {
-            "csharp": [
-                {
-                    "type": "packages.config",
-                    "content": "<packages><package id=\"Newtonsoft.Json\" version=\"13.0.1\" targetFramework=\"net472\" /></packages>"
-                },
-                {
-                    "type": ".csproj",
-                    "content": '<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>'
-                }
-            ]
-        }
-    elif template_name == "dual-ci":
-        return {
-            "python": [
-                {
-                    "type": "requirements.txt",
-                    "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0"
-                },
-                {
-                    "type": "Jenkinsfile",
-                    "content": "pipeline { agent any; stages { stage('Build') { steps { echo 'Building..' } } } }"
-                }
-            ]
-        }
-    elif template_name == "python-dual-deps":
-        return {
-            "pipenv": [
-                {
-                    "type": "Pipfile",
-                    "content": "[packages]\nflask = \"^2.3.0\"\nrequests = \"^2.31.0\""
-                },
-                {
-                    "type": "Pipfile.lock",
-                    "content": "{\"_meta\": {\"sources\": [{\"url\": \"https://pypi.org/simple\", \"verify_ssl\": true}]}\"default\": {\"flask\": {\"version\": \"==2.3.0\"}, \"requests\": {\"version\": \"==2.31.0\"}}}"
-                }
-            ],
-            "pip": [
-                {
-                    "type": "requirements.txt",
-                    "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0"
-                }
-            ]
-        }
-    elif template_name == "edge-case-empty":
-        return {}
-    elif template_name == "deep-nested-manifests":
-        return {
-            "python": [
-                {
-                    "type": "requirements.txt",
-                    "content": "# Python dependencies\nFlask==2.3.0"
-                }
-            ],
-            "typescript": [
-                {
-                    "type": "package.json",
-                    "content": '{"name": "frontend-app", "version": "1.0.0", "dependencies": {"react": "^17.0.2"}}'
-                }
-            ]
-        }
-    else:
-        return {}
+def generate_manifests(languages):
+    """Generate a list of typical manifests based on languages."""
+    manifests = {}
+    if "Python" in languages:
+        manifests["python"] = [
+            {
+                "type": "requirements.txt",
+                "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
+            }
+        ]
+    if "Go" in languages:
+        manifests["go"] = [
+            {
+                "type": "go.mod",
+                "content": """module example.com/microservice
 
-def main():
-    # Define paths
-    config_path = Path("tests/fixtures/scenarios/config.json")
-    output_dir = Path("tests/fixtures/scenarios/generated/")
-    
-    # Ensure output directory exists
-    output_dir.mkdir(parents=True, exist_ok=True)
+go 1.19
 
-    # Load configuration
-    try:
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-    except FileNotFoundError:
-        print("Error: config.json not found. Using fallback configuration.", file=sys.stderr)
-        config = {
-            "repo_sets": [
-                {"template": "python-docker", "names": ["python-docker"]},
-                {"template": "go-microservice", "names": ["go-microservice"]},
-                {"template": "react-spa", "names": ["react-spa"]},
-                {"template": "fullstack-monorepo", "names": ["fullstack-monorepo"]},
-                {"template": "java-maven-jenkins", "names": ["java-maven-jenkins"]},
-                {"template": "legacy-migration", "names": ["legacy-migration"]},
-                {"template": "dual-ci", "names": ["dual-ci"]},
-                {"template": "python-dual-deps", "names": ["python-dual-deps"]},
-                {"template": "edge-case-empty", "names": ["edge-case-empty"]},
-                {"template": "deep-nested-manifests", "names": ["deep-nested-manifests"]}
-            ]
-        }
+require (
+\tgithub.com/gin-gonic/gin v1.8.4
+)"""
+            }
+        ]
+    if "TypeScript" in languages or "JavaScript" in languages:
+        manifests["javascript"] = [
+            {
+                "type": "package.json",
+                "content": """{
+  "name": "react-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^3.0.0",
+    "vite": "^4.0.0"
+  }
+}"""
+            }
+        ]
+    if "Java" in languages:
+        manifests["java"] = [
+            {
+                "type": "pom.xml",
+                "content": """<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>com.example</groupId>
+    <artifactId>app</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</project>"""
+            }
+        ]
+    if "C#" in languages:
+        manifests["csharp"] = [
+            {
+                "type": "packages.config",
+                "content": """<?xml version="1.0" encoding="utf-8"?>
+<packages>
+  <package id="Newtonsoft.Json" version="13.0.1" targetFramework="net472" />
+</packages>"""
+            }
+        ]
+    return manifests
 
-    # Process each repo set
-    for repo_set in config["repo_sets"]:
-        if "name_template" in repo_set:
-            names = [repo_set["name_template"].format(service=service) for service in repo_set.get("services", [])]
-            descriptions = [repo_set["description_template"].format(service=service) for service in repo_set.get("services", [])]
-        elif "names" in repo_set:
+def generate_branches():
+    """Generate a list of typical branches."""
+    return ["main", "develop", "feature/docker"]
+
+def expand_repos(config):
+    """Expand concrete repos from repo_sets using repo_templates."""
+    expanded_repos = []
+    for repo_set in config.get("repo_sets", []):
+        template_name = repo_set["template"]
+        template = config["repo_templates"][template_name]
+        
+        if "names" in repo_set:
             names = repo_set["names"]
-            descriptions = [f"{repo_set['template']} repository"] * len(names)
+        elif "name_template" in repo_set and "services" in repo_set:
+            names = [repo_set["name_template"].format(service=service) for service in repo_set["services"]]
         else:
-            continue
-
-        # Generate seed JSONs
-        for name, description in zip(names, descriptions):
-            template_name = repo_set.get("template", "unknown")
-            if template_name not in config["repo_templates"]:
-                print(f"Warning: Template '{template_name}' not found. Skipping {name}.", file=sys.stderr)
-                continue
-
-            template = config["repo_templates"][template_name]
-            languages = template.get("languages", [])
-            files = generate_file_names(template_name)
-            manifests = generate_manifests(template_name)
-
-            # Define branches
-            branches = ["main", "develop"]
-            if template_name != "edge-case-empty":
-                branches.append(f"feature/{template_name.split('-')[-1]}")
-
-            # Create seed JSON
-            seed = {
+            names = [template_name]
+        
+        for name in names:
+            description = template.get("description")
+            if "description_template" in repo_set:
+                description = repo_set["description_template"].format(service=name)
+            
+            repo = {
                 "name": name,
                 "description": description,
-                "languages": languages,
-                "file_names": files,
-                "manifests": manifests,
-                "branches": branches
+                "languages": template["languages"],
+                "file_names": generate_file_names(template["languages"]),
+                "manifests": generate_manifests(template["languages"]),
+                "branches": generate_branches()
             }
+            expanded_repos.append(repo)
+    
+    return expanded_repos
 
-            # Write to output file
-            output_file = output_dir / f"{name}.json"
-            with open(output_file, 'w') as f:
-                json.dump(seed, f, indent=2)
-            
-            print(f"[OK] Created {output_file.name}")
+def write_repo_seeds(expanded_repos, output_dir):
+    """Write each expanded repo to a JSON file."""
+    if not output_dir.exists():
+        output_dir.mkdir(parents=True)
+    
+    for repo in expanded_repos:
+        repo_file = output_dir / f"{repo['name']}.json"
+        with open(repo_file, 'w') as f:
+            json.dump(repo, f, indent=2)
+        print(f"[OK] Created {repo_file.name}")
 
-    print(f"[OK] Generated {len(names)} seed files")
+def main():
+    config_path = Path("tests/fixtures/scenarios/config.json")
+    config = load_config(config_path)
+    
+    expanded_repos = expand_repos(config)
+    write_repo_seeds(expanded_repos, Path("tests/fixtures/scenarios/generated"))
+    
+    print(f"[OK] Generated {len(expanded_repos)} seed files")
 
 if __name__ == "__main__":
     main()

@@ -1,29 +1,28 @@
 {
   "name": "dual-ci-search",
-  "description": "Dual CI service for search domain",
+  "description": "Dual CI service for dual-ci-search domain",
   "languages": [
     "Python"
   ],
   "file_names": [
+    "README.md",
+    "Dockerfile",
+    "requirements.txt",
     "app.py",
     "tests/test_app.py",
-    "scripts/CI_script.sh"
+    "config.yaml"
   ],
   "manifests": {
     "python": [
       {
         "type": "requirements.txt",
-        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0"
-      },
-      {
-        "type": "Jenkinsfile",
-        "content": "pipeline { agent any; stages { stage('Build') { steps { echo 'Building..' } } } }"
+        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
       }
     ]
   },
   "branches": [
     "main",
     "develop",
-    "feature/ci"
+    "feature/docker"
   ]
 }

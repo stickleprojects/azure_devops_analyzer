@@ -1,30 +1,28 @@
 {
   "name": "java-maven-jenkins",
-  "description": "java-maven-jenkins repository",
+  "description": "Java project using Maven build system and Jenkins CI",
   "languages": [
     "Java"
   ],
   "file_names": [
-    "src/main/java/com/example/Main.java",
-    "src/test/java/com/example/TestClass.java",
-    ".mvn/wrapper/maven-wrapper.properties",
-    "settings.xml"
+    "README.md",
+    "pom.xml",
+    "Jenkinsfile",
+    "settings.xml",
+    "src/main/java/Main.java",
+    "src/test/java/Tests.java"
   ],
   "manifests": {
-    "maven": [
+    "java": [
       {
         "type": "pom.xml",
-        "content": "<project><modelVersion>4.0.0</modelVersion><groupId>com.example</groupId><artifactId>app</artifactId><version>1.0-SNAPSHOT</version></project>"
-      },
-      {
-        "type": "Jenkinsfile",
-        "content": "pipeline { agent any; stages { stage('Build') { steps { echo 'Building..' } } } }"
+        "content": "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\n         xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n    <modelVersion>4.0.0</modelVersion>\n    <groupId>com.example</groupId>\n    <artifactId>app</artifactId>\n    <version>1.0-SNAPSHOT</version>\n</project>"
       }
     ]
   },
   "branches": [
     "main",
     "develop",
-    "feature/jenkins"
+    "feature/docker"
   ]
 }

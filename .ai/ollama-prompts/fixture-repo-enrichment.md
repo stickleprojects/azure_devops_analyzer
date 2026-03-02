@@ -1,5 +1,12 @@
 # Prompt: Generate Per-Repo Fixture Enrichment Script
 
+> **RETIRED** — This prompt is no longer used. Enrichment is now handled by the static
+> `scripts/enrich-repo.py` script, which reads themes and sizing directly from
+> `tests/fixtures/scenarios/config.json` at runtime. No Ollama call is needed for
+> the enrich step. See `scripts/generate-fixtures.sh` for the updated pipeline.
+
+
+
 You are a Python code generation expert. Your task is to write a complete, runnable Python script that enriches a fixture repository seed with realistic commits and pull requests.
 
 ## Context

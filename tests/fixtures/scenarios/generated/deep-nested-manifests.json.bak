@@ -7,32 +7,33 @@
   ],
   "file_names": [
     "README.md",
-    "services/backend/requirements.txt",
-    "services/frontend/package.json",
-    "shared/pyproject.toml",
-    "services/backend/src/main.py",
-    "services/frontend/src/App.tsx",
-    "shared/utils.py",
-    "scripts/deploy.sh",
-    "terraform/main.tf"
+    "Dockerfile",
+    "requirements.txt",
+    "app.py",
+    "tests/test_app.py",
+    "config.yaml",
+    "src/index.js",
+    "public/index.html",
+    "vite.config.ts",
+    ".eslintrc.json"
   ],
   "manifests": {
     "python": [
       {
-        "type": "services/backend/requirements.txt",
-        "content": "Flask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
+        "type": "requirements.txt",
+        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
       }
     ],
     "javascript": [
       {
-        "type": "services/frontend/package.json",
-        "content": "{\n  \"name\": \"frontend\",\n  \"version\": \"0.1.0\",\n  \"scripts\": {\n    \"dev\": \"vite\",\n    \"build\": \"tsc && vite build\"\n  },\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\"\n  },\n  \"devDependencies\": {\n    \"@types/react\": \"^18.0.0\",\n    \"typescript\": \"^5.0.0\",\n    \"vite\": \"^4.0.0\"\n  }\n}"
+        "type": "package.json",
+        "content": "{\n  \"name\": \"react-app\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\"\n  },\n  \"devDependencies\": {\n    \"@vitejs/plugin-react\": \"^3.0.0\",\n    \"vite\": \"^4.0.0\"\n  }\n}"
       }
     ]
   },
   "branches": [
     "main",
     "develop",
-    "feature/nested-structure"
+    "feature/docker"
   ]
 }

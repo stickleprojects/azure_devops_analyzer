@@ -1,6 +1,6 @@
 {
-  "name": "python-docker-payroll",
-  "description": "Python python-docker-payroll system with Docker support",
+  "name": "dual-ci-billing",
+  "description": "Dual CI service for dual-ci-billing domain",
   "languages": [
     "Python"
   ],

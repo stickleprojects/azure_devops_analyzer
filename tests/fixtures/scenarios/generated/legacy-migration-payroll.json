@@ -1,30 +1,28 @@
 {
   "name": "legacy-migration-payroll",
-  "description": "Legacy payroll system undergoing migration",
+  "description": "Legacy legacy-migration-payroll system undergoing migration",
   "languages": [
     "C#"
   ],
   "file_names": [
-    "src/BillingService.cs",
-    "tests/BillingServiceTests.cs",
-    "bin/",
-    "obj/"
+    "README.md",
+    "packages.config",
+    ".csproj",
+    "app.config",
+    "src/Program.cs",
+    "tests/Tests.cs"
   ],
   "manifests": {
     "csharp": [
       {
         "type": "packages.config",
-        "content": "<packages><package id=\"Newtonsoft.Json\" version=\"13.0.1\" targetFramework=\"net472\" /></packages>"
-      },
-      {
-        "type": ".csproj",
-        "content": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><OutputType>Exe</OutputType></PropertyGroup></Project>"
+        "content": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<packages>\n  <package id=\"Newtonsoft.Json\" version=\"13.0.1\" targetFramework=\"net472\" />\n</packages>"
       }
     ]
   },
   "branches": [
     "main",
     "develop",
-    "feature/migration"
+    "feature/docker"
   ]
 }

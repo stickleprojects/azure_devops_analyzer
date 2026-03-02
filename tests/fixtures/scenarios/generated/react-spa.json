@@ -1,31 +1,28 @@
 {
   "name": "react-spa",
-  "description": "react-spa repository",
+  "description": "React single-page application with TypeScript",
   "languages": [
     "TypeScript",
     "JavaScript"
   ],
   "file_names": [
-    "src/index.tsx",
+    "README.md",
+    "src/index.js",
     "public/index.html",
     "vite.config.ts",
-    ".eslintrc"
+    ".eslintrc.json"
   ],
   "manifests": {
     "javascript": [
       {
         "type": "package.json",
-        "content": "{\"name\": \"react-app\", \"version\": \"1.0.0\", \"dependencies\": {\"react\": \"^17.0.2\"}}"
-      },
-      {
-        "type": "tsconfig.json",
-        "content": "{\"compilerOptions\": {\"target\": \"ES6\", \"module\": \"commonjs\"}, \"include\": [\"src\"]}"
+        "content": "{\n  \"name\": \"react-app\",\n  \"version\": \"1.0.0\",\n  \"dependencies\": {\n    \"react\": \"^18.2.0\",\n    \"react-dom\": \"^18.2.0\"\n  },\n  \"devDependencies\": {\n    \"@vitejs/plugin-react\": \"^3.0.0\",\n    \"vite\": \"^4.0.0\"\n  }\n}"
       }
     ]
   },
   "branches": [
     "main",
     "develop",
-    "feature/spa"
+    "feature/docker"
   ]
 }

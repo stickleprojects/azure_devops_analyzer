@@ -1,30 +1,27 @@
 {
   "name": "go-microservice",
-  "description": "go-microservice repository",
+  "description": "Go microservice with HTTP handlers",
   "languages": [
     "Go"
   ],
   "file_names": [
+    "README.md",
     "main.go",
     "cmd/main.go",
-    "internal/handlers.go",
+    "internal/endpoint.go",
     "Makefile"
   ],
   "manifests": {
     "go": [
       {
         "type": "go.mod",
-        "content": "module example.com/microservice\n\ngo 1.18\nrequire github.com/gin-gonic/gin v1.7.4"
-      },
-      {
-        "type": "go.sum",
-        "content": "# go.sum contents omitted for brevity"
+        "content": "module example.com/microservice\n\ngo 1.19\n\nrequire (\n\tgithub.com/gin-gonic/gin v1.8.4\n)"
       }
     ]
   },
   "branches": [
     "main",
     "develop",
-    "feature/microservice"
+    "feature/docker"
   ]
 }
