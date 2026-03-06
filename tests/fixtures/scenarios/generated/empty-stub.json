@@ -1,10 +1,17 @@
 {
   "name": "empty-stub",
-  "description": "Empty repository for stub (edge case)",
+  "description": "Empty repository for empty-stub (edge case)",
   "languages": [],
-  "file_names": [],
+  "file_names": [
+    "README.md"
+  ],
   "manifests": {},
-  "branches": [],
+  "branches": [
+    "main",
+    "develop",
+    "feature/empty",
+    "feature/stub"
+  ],
   "commits": [],
   "pull_requests": []
 }
