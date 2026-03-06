@@ -8,6 +8,7 @@ For detailed operational specifics and reference material, see:
 - `agents/02a-architecture-guardian.md` - Deep dive on architecture boundaries
 - `agents/04a-test-guardian.md` - Deep dive on test integrity
 - `agents/07-session-continuity-agent.md` - Deep dive on session tracking
+- `.ai/agents/08-ollama-delegation.md` - Ollama MCP tool delegation policy (use to reduce Claude token usage)
 
 **Session Start**: When user greets you, activate session continuity mode:
 

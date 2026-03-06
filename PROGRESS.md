@@ -2,6 +2,29 @@
 
 ---
 
+## Session: 2026-03-06 — Generated Fixtures Not Wired Into Tests
+
+### Summary
+
+Investigated whether `scripts/generate-fixtures.sh` output is consumed by the test suite.
+**Finding: it is not.** The generated JSON files exist but no test code loads them.
+
+### Finding
+
+- `scripts/generate-fixtures.sh` generates JSON seed files into `tests/fixtures/scenarios/generated/`
+- **No test `.py` file references `scenarios/generated/`** — confirmed via codebase grep
+- Only other generator scripts (`scripts/run-enrich.py`, `scripts/generated/generate-repo-seeds.py`, etc.) reference those paths
+- `tests/README.md` mentions the path but no test actually loads the files
+
+### Next Steps
+
+1. Audit existing tests to understand how fixtures are currently loaded (manual stubs? inline data?)
+2. Identify which tests would benefit from the generated scenarios
+3. Wire `tests/fixtures/scenarios/generated/*.json` into the appropriate test(s)
+4. Confirm tests pass with the generated fixture data: `bash scripts/run-tests-docker.sh`
+
+---
+
 ## Session: 2026-03-01 (Afternoon) — Enrichment Prompt Debug + Architecture Review
 
 ### Summary

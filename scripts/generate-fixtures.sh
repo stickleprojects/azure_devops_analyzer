@@ -93,18 +93,7 @@ run_seeds() {
 
 run_enrich() {
     info "Enriching seed JSON files"
-    local seeds=(tests/fixtures/scenarios/generated/*.json)
-    if [[ ${#seeds[@]} -eq 1 && "${seeds[0]}" == "tests/fixtures/scenarios/generated/*.json" ]]; then
-        echo "ERROR: No seed JSON files found. Run --step seeds first."
-        exit 1
-    fi
-
-    for seed in "${seeds[@]}"; do
-        local name
-        name="$(basename "$seed" .json)"
-        info "Running enrichment for ${name}"
-        run_docker_python python scripts/enrich-repo.py "$seed" tests/fixtures/scenarios/config.json
-    done
+    run_docker_python python scripts/run-enrich.py tests/fixtures/scenarios/config.json
 }
 
 info "Preflight checks"

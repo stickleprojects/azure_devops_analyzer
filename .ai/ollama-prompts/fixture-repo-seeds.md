@@ -12,8 +12,8 @@ The fixture system uses a two-layer generation approach:
 You have access to `tests/fixtures/scenarios/config.json` which defines:
 
 - `patterns`: 6 reusable repo type templates
-- `repo_templates`: base repository definitions (name, pattern, languages, themes)
-- `repo_sets`: generation rules that expand templates into concrete repos
+- `repo_templates`: dict keyed by template name (e.g. `"python-docker"`). Each value has `pattern`, `languages`, `commit_message_themes`, `pr_title_themes`, `overrides`. **There is no `"name"` field inside the value** — the key IS the name.
+- `repo_sets`: generation rules that expand templates into concrete repos. Each entry has `template` (key into `repo_templates`), and either `names` (list) or `name_template`+`services`. Optionally has `description_template`. These fields are on `repo_sets` entries, NOT on `repo_templates` values.
 
 ## Task
 
@@ -25,9 +25,11 @@ Generate a complete Python script: `scripts/generated/generate-repo-seeds.py`
 
 1. Load config.json
 2. Expand concrete repos from `repo_sets` using `repo_templates`
-   - If `names` provided, use those exact names
-   - If `name_template` + `services` provided, generate names by substituting `{service}`
-   - If `description_template` provided, override description using `{service}` token
+   - Look up `repo_set["template"]` in `repo_templates` to get the template dict
+   - If `repo_set` has `names`, use those exact names
+   - If `repo_set` has `name_template` + `services`, expand names: `name_template.format(service=s)` for each service
+   - Resolved `name` comes from the loop above — **never from the template dict**
+   - If `repo_set` has `description_template`, compute description: `description_template.format(service=service)`; otherwise fall back to `template.get("description")`
 3. For each expanded repo:
    - Create seed JSON with: `name`, `description`, `languages`, `file_names`, `manifests`, `branches`
    - Write to `tests/fixtures/scenarios/generated/{name}.json`
@@ -138,7 +140,7 @@ Based on `config.json`, generate seeds by expanding these templates and sets:
 
 ## Guidelines
 
-- **File lists**: 8–15 files per repo (more for monorepos)
+- **File lists**: 8–15 files per repo (more for monorepos). **Do not use a hardcoded `DEFAULT_FILES` dict keyed by template name** — derive `file_names` and `manifests` dynamically from the template's `languages` list.
 - **Manifests**: Include realistic content snippets (no placeholders like `...`)
 - **Branches**: Include `main`, `develop`, 1–2 feature branches
 - **Language awareness**: Match file types to declared languages
