@@ -1,0 +1,263 @@
+{
+  "name": "legacy-migration-billing",
+  "description": "Legacy billing system undergoing migration",
+  "languages": [
+    "C#"
+  ],
+  "file_names": [
+    "README.md",
+    "packages.config",
+    "app.config",
+    ".csproj"
+  ],
+  "manifests": {
+    "packages.config": "<packages><package id=\"Newtonsoft.Json\" version=\"13.0.1\" /></packages>",
+    ".csproj": "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><TargetFramework>net5.0</TargetFramework></PropertyGroup></Project>"
+  },
+  "branches": [
+    "develop",
+    "main"
+  ],
+  "commits": [
+    {
+      "commit_hash": "8aec7d0b8ad851ebb5f855b3a9378e8c0dd055ac",
+      "author_name": "Alice Brown",
+      "author_email": "alice.brown@example.com",
+      "committer_name": "Eve Jones",
+      "committer_email": "eve.jones@example.com",
+      "message": "Update Nuget packages",
+      "commit_date": "2025-12-07T22:44:17Z",
+      "files_changed": 4,
+      "lines_added": 60,
+      "lines_removed": 67
+    },
+    {
+      "commit_hash": "5161dab4c505ae82a73fed64450809b564bcbf83",
+      "author_name": "Eve Jones",
+      "author_email": "eve.jones@sample.net",
+      "committer_name": "David Brown",
+      "committer_email": "david.brown@test.org",
+      "message": "Migrate to modern .csproj",
+      "commit_date": "2025-12-09T22:44:17Z",
+      "files_changed": 4,
+      "lines_added": 143,
+      "lines_removed": 17
+    },
+    {
+      "commit_hash": "f96a72c1f1ec6ec40c86b631a55b5564d01846cb",
+      "author_name": "David Smith",
+      "author_email": "david.smith@sample.net",
+      "committer_name": "David Smith",
+      "committer_email": "david.smith@sample.net",
+      "message": "Migrate to modern .csproj",
+      "commit_date": "2025-12-10T22:44:17Z",
+      "files_changed": 10,
+      "lines_added": 48,
+      "lines_removed": 46
+    },
+    {
+      "commit_hash": "bafa7fac2dad73b6d24cecfff7086618b106c2e0",
+      "author_name": "David Smith",
+      "author_email": "david.smith@test.org",
+      "committer_name": "Bob Jones",
+      "committer_email": "bob.jones@example.com",
+      "message": "Fix compatibility issues",
+      "commit_date": "2025-12-15T22:44:17Z",
+      "files_changed": 8,
+      "lines_added": 34,
+      "lines_removed": 46
+    },
+    {
+      "commit_hash": "ceda3e4b9866e9766c084645680a3b395af6010c",
+      "author_name": "Eve Williams",
+      "author_email": "eve.williams@sample.net",
+      "committer_name": "David Williams",
+      "committer_email": "david.williams@test.org",
+      "message": "Update Nuget packages",
+      "commit_date": "2025-12-27T22:44:17Z",
+      "files_changed": 4,
+      "lines_added": 69,
+      "lines_removed": 75
+    },
+    {
+      "commit_hash": "105c1cfa2b7faba3a6d3d664a8c85ed780b4a452",
+      "author_name": "Alice Johnson",
+      "author_email": "alice.johnson@example.com",
+      "committer_name": "Alice Johnson",
+      "committer_email": "alice.johnson@sample.net",
+      "message": "Upgrade to new API",
+      "commit_date": "2026-02-04T22:44:17Z",
+      "files_changed": 3,
+      "lines_added": 102,
+      "lines_removed": 67
+    },
+    {
+      "commit_hash": "9b2eca18a812a861efa31450480623ffd114a0dd",
+      "author_name": "Alice Williams",
+      "author_email": "alice.williams@test.org",
+      "committer_name": "Charlie Johnson",
+      "committer_email": "charlie.johnson@sample.net",
+      "message": "Migrate to modern .csproj",
+      "commit_date": "2026-02-05T22:44:17Z",
+      "files_changed": 9,
+      "lines_added": 112,
+      "lines_removed": 84
+    },
+    {
+      "commit_hash": "8a910fa057d0a054e9219e94bab4a7bd18850445",
+      "author_name": "Eve Brown",
+      "author_email": "eve.brown@sample.net",
+      "committer_name": "Charlie Williams",
+      "committer_email": "charlie.williams@test.org",
+      "message": "Migrate to modern .csproj",
+      "commit_date": "2026-02-22T22:44:17Z",
+      "files_changed": 10,
+      "lines_added": 147,
+      "lines_removed": 14
+    },
+    {
+      "commit_hash": "f3ca5a66e1ccd82198c61c5c2360f74111077ae1",
+      "author_name": "Alice Williams",
+      "author_email": "alice.williams@example.com",
+      "committer_name": "Alice Williams",
+      "committer_email": "alice.williams@test.org",
+      "message": "Update Nuget packages",
+      "commit_date": "2026-02-26T22:44:17Z",
+      "files_changed": 9,
+      "lines_added": 85,
+      "lines_removed": 24
+    },
+    {
+      "commit_hash": "556b89e879a11ea0583a6883ddefc70cd81a083d",
+      "author_name": "David Jones",
+      "author_email": "david.jones@test.org",
+      "committer_name": "Eve Jones",
+      "committer_email": "eve.jones@example.com",
+      "message": "Fix compatibility issues",
+      "commit_date": "2026-02-27T22:44:17Z",
+      "files_changed": 9,
+      "lines_added": 49,
+      "lines_removed": 42
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Migrate to modern .csproj",
+      "description": "Added Remove legacy references",
+      "status": "open",
+      "created_at": "2025-12-23T22:44:17Z",
+      "author_name": "Charlie Brown",
+      "author_email": "charlie.brown@test.org",
+      "review_comments": 1,
+      "commits_count": 5,
+      "files_changed": 9,
+      "lines_added": 168,
+      "lines_removed": 26
+    },
+    {
+      "pr_number": 2,
+      "title": "Upgrade to new API",
+      "description": "Added Update Nuget packages",
+      "status": "closed",
+      "created_at": "2026-03-01T22:44:17Z",
+      "author_name": "David Jones",
+      "author_email": "david.jones@test.org",
+      "review_comments": 4,
+      "commits_count": 2,
+      "files_changed": 10,
+      "lines_added": 69,
+      "lines_removed": 48,
+      "closed_at": "2026-03-02T22:44:17Z"
+    },
+    {
+      "pr_number": 3,
+      "title": "Update Nuget packages",
+      "description": "Added Remove legacy references",
+      "status": "merged",
+      "created_at": "2026-02-21T22:44:17Z",
+      "author_name": "Alice Smith",
+      "author_email": "alice.smith@sample.net",
+      "review_comments": 3,
+      "commits_count": 2,
+      "files_changed": 11,
+      "lines_added": 77,
+      "lines_removed": 31,
+      "merged_at": "2026-02-23T22:44:17Z"
+    },
+    {
+      "pr_number": 4,
+      "title": "Fix compatibility issues",
+      "description": "Added Fix compatibility issues",
+      "status": "merged",
+      "created_at": "2025-12-18T22:44:17Z",
+      "author_name": "Charlie Johnson",
+      "author_email": "charlie.johnson@example.com",
+      "review_comments": 4,
+      "commits_count": 1,
+      "files_changed": 10,
+      "lines_added": 167,
+      "lines_removed": 74,
+      "merged_at": "2026-01-15T22:44:17Z"
+    },
+    {
+      "pr_number": 5,
+      "title": "Remove legacy references",
+      "description": "Added Migrate to modern .csproj",
+      "status": "merged",
+      "created_at": "2026-01-08T22:44:17Z",
+      "author_name": "David Johnson",
+      "author_email": "david.johnson@test.org",
+      "review_comments": 0,
+      "commits_count": 5,
+      "files_changed": 9,
+      "lines_added": 207,
+      "lines_removed": 119,
+      "merged_at": "2026-02-01T22:44:17Z"
+    },
+    {
+      "pr_number": 6,
+      "title": "Migrate to modern .csproj",
+      "description": "Added Update Nuget packages",
+      "status": "merged",
+      "created_at": "2026-01-13T22:44:17Z",
+      "author_name": "David Jones",
+      "author_email": "david.jones@example.com",
+      "review_comments": 3,
+      "commits_count": 1,
+      "files_changed": 12,
+      "lines_added": 227,
+      "lines_removed": 21,
+      "merged_at": "2026-02-14T22:44:17Z"
+    },
+    {
+      "pr_number": 7,
+      "title": "Update Nuget packages",
+      "description": "Added Remove legacy references",
+      "status": "open",
+      "created_at": "2026-02-18T22:44:17Z",
+      "author_name": "Eve Williams",
+      "author_email": "eve.williams@test.org",
+      "review_comments": 5,
+      "commits_count": 1,
+      "files_changed": 10,
+      "lines_added": 236,
+      "lines_removed": 52
+    },
+    {
+      "pr_number": 8,
+      "title": "Update Nuget packages",
+      "description": "Added Migrate to modern .csproj",
+      "status": "merged",
+      "created_at": "2025-12-18T22:44:17Z",
+      "author_name": "Eve Brown",
+      "author_email": "eve.brown@sample.net",
+      "review_comments": 0,
+      "commits_count": 1,
+      "files_changed": 15,
+      "lines_added": 247,
+      "lines_removed": 112,
+      "merged_at": "2026-01-15T22:44:17Z"
+    }
+  ]
+}

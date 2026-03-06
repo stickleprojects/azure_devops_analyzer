@@ -1,11 +1,11 @@
-# Plan 013: Fixture Factory & Post-Scan Verification
+# Test Fixture Factory & Post-Scan Verification
 
 **Status**: ✅ Complete
 **Source**: `.ai/investigations/dev-feedback-and-test-coverage.md` (complete)
 **Addresses**: Problem 1 (dev feedback loop) + Problem 2 (realistic test coverage gap)
 **Generation Pattern**: Ollama-in-Docker (see `.ai/patterns/ollama-fixture-and-code-generation.md`)
 
-**Implementation Summary**: All deliverables are generated using local LLM (Ollama with qwen2.5-coder:14b) following detailed prompts in `.ai/ollama-prompts/013-*.md`. Regenerate anytime with `bash scripts/run-013-ollama.sh`. Generated test scenarios now support branches, commits, and pull requests for workflow testing.
+**Implementation Summary**: All deliverables are generated using local LLM (Ollama with qwen2.5-coder:14b) following detailed prompts in `.ai/ollama-prompts/fixture-*.md`. Regenerate anytime with `bash scripts/generate-test-fixtures.sh`. Generated test scenarios now support branches, commits, and pull requests for workflow testing.
 
 **Key Features Delivered**:
 
@@ -40,7 +40,7 @@ Two related gaps:
 
 All code is generated using Ollama (qwen2.5-coder:14b model) running in Docker containers:
 
-**Orchestration**: `bash scripts/run-013-ollama.sh`
+**Orchestration**: `bash scripts/generate-test-fixtures.sh`
 
 - Executes 5 generation steps sequentially (A through E)
 - Validates output after each step (syntax check, line count)
@@ -55,13 +55,13 @@ All code is generated using Ollama (qwen2.5-coder:14b model) running in Docker c
 - Pure stdlib implementation (no external dependencies)
 - Writes generated code directly to target files
 
-**Prompts**: `.ai/ollama-prompts/013-*.md`
+**Prompts**: `.ai/ollama-prompts/fixture-*.md`
 
-- 013-A: Generates Python script that creates 10 scenario JSON files
-- 013-B: Generates FixtureExtractor class with branch/commit/PR support
-- 013-C: Generates factory functions extending sample_data.py
-- 013-D: Generates capture_snapshot.py for live repository capture
-- 013-E: Generates verify_canary.py for post-scan validation
+- `fixture-scenarios.md`: Generates Python script that creates 10 scenario JSON files
+- `fixture-extractor.md`: Generates FixtureExtractor class with branch/commit/PR support
+- `fixture-factories.md`: Generates factory functions extending sample_data.py
+- `repo-snapshot.md`: Generates capture_snapshot.py for live repository capture
+- `canary-verification.md`: Generates verify_canary.py for post-scan validation
 
 **Pattern Documentation**: `.ai/patterns/ollama-fixture-and-code-generation.md`
 
@@ -107,10 +107,10 @@ This enables testing of branch-aware extraction, commit history analysis, and PR
 - **Extractor**: `tests/fixtures/fixture_extractor.py` tries `generated/` first, falls back to parent
 - **Documentation**: Comprehensive guides added to 5 README files:
   - `tests/README.md` - Usage guide with examples
-  - `scripts/README.md` - run-013-ollama.sh reference
+  - `scripts/README.md` - generate-test-fixtures.sh reference
   - `README.md` - Quick start for new developers
   - `docs/README.md` - Navigation to AI patterns
-  - `.ai/plans/013-fixture-factory-plan.md` - This file
+  - `.ai/plans/test-fixtures.md` - This file
 
 ---
 
@@ -356,16 +356,16 @@ Files can be regenerated anytime with improvements or model updates:
 
 ```bash
 # Regenerate all files
-bash scripts/run-013-ollama.sh
+bash scripts/generate-test-fixtures.sh
 
 # Regenerate specific step
-bash scripts/run-013-ollama.sh --step B
+bash scripts/generate-test-fixtures.sh --step B
 
 # Try different model
-bash scripts/run-013-ollama.sh --model codellama:13b
+bash scripts/generate-test-fixtures.sh --model codellama:13b
 ```
 
-Generated files are deterministic but can be customized by editing prompts in `.ai/ollama-prompts/013-*.md`.
+Generated files are deterministic but can be customized by editing prompts in `.ai/ollama-prompts/fixture-*.md`.
 
 ### ��� Usage in Tests
 

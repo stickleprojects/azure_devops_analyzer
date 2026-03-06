@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/azure-devops-analyzer/fixtures/config.schema.json",
+  "title": "Fixture Scenario Config",
+  "type": "object",
+  "required": ["patterns", "repo_templates", "repo_sets"],
+  "additionalProperties": false,
+  "properties": {
+    "patterns": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/patternDef" }
+    },
+    "repo_templates": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/templateDef" }
+    },
+    "repo_sets": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/repoSetDef" }
+    }
+  },
+  "$defs": {
+    "rangeDef": {
+      "type": "object",
+      "required": ["min", "max", "median"],
+      "additionalProperties": false,
+      "properties": {
+        "min": { "type": "integer" },
+        "max": { "type": "integer" },
+        "median": { "type": "integer" }
+      }
+    },
+    "diffstatDef": {
+      "type": "object",
+      "required": ["files_changed", "lines_added", "lines_removed"],
+      "additionalProperties": false,
+      "properties": {
+        "files_changed": { "$ref": "#/$defs/rangeDef" },
+        "lines_added": { "$ref": "#/$defs/rangeDef" },
+        "lines_removed": { "$ref": "#/$defs/rangeDef" }
+      }
+    },
+    "prStatusDef": {
+      "type": "object",
+      "required": ["merged", "open", "closed"],
+      "additionalProperties": false,
+      "properties": {
+        "merged": { "type": "number" },
+        "open": { "type": "number" },
+        "closed": { "type": "number" }
+      }
+    },
+    "patternDef": {
+      "type": "object",
+      "required": [
+        "description",
+        "commits",
+        "commit_metadata",
+        "pull_requests",
+        "pr_metadata",
+        "pr_status"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "commits": { "$ref": "#/$defs/rangeDef" },
+        "commit_metadata": { "$ref": "#/$defs/diffstatDef" },
+        "pull_requests": { "$ref": "#/$defs/rangeDef" },
+        "pr_metadata": { "$ref": "#/$defs/diffstatDef" },
+        "pr_status": { "$ref": "#/$defs/prStatusDef" }
+      }
+    },
+    "templateDef": {
+      "type": "object",
+      "required": [
+        "description",
+        "pattern",
+        "languages",
+        "commit_message_themes",
+        "pr_title_themes",
+        "overrides"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "description": { "type": "string" },
+        "pattern": { "type": "string" },
+        "languages": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "commit_message_themes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "pr_title_themes": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "overrides": { "type": "object" }
+      }
+    },
+    "repoSetDef": {
+      "oneOf": [
+        { "$ref": "#/$defs/namesSetDef" },
+        { "$ref": "#/$defs/templatedSetDef" }
+      ]
+    },
+    "namesSetDef": {
+      "type": "object",
+      "required": ["template", "names"],
+      "additionalProperties": false,
+      "properties": {
+        "template": { "type": "string" },
+        "names": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      }
+    },
+    "templatedSetDef": {
+      "type": "object",
+      "required": ["template", "name_template", "services"],
+      "additionalProperties": false,
+      "properties": {
+        "template": { "type": "string" },
+        "name_template": {
+          "type": "string",
+          "pattern": ".*\\{service\\}.*"
+        },
+        "description_template": {
+          "type": "string",
+          "pattern": ".*\\{service\\}.*"
+        },
+        "services": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "overrides": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/overrideDef" }
+        }
+      }
+    },
+    "overrideDef": {
+      "type": "object",
+      "required": ["overrides"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "service": { "type": "string" },
+        "overrides": { "type": "object" }
+      },
+      "anyOf": [{ "required": ["name"] }, { "required": ["service"] }]
+    }
+  }
+}

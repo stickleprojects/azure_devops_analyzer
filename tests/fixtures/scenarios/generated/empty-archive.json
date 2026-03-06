@@ -1,0 +1,10 @@
+{
+  "name": "empty-archive",
+  "description": "Empty repository for archive (edge case)",
+  "languages": [],
+  "file_names": [],
+  "manifests": {},
+  "branches": [],
+  "commits": [],
+  "pull_requests": []
+}

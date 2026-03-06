@@ -14,7 +14,11 @@ from src.extractors.base import (
     DependencyData,
     ReadmeData,
     Platform,
+    FileTreeItem,
 )
+from src.analyzers.technology_detector import TechnologyDetection
+import json
+import pathlib
 
 
 def sample_organization_data(
@@ -174,3 +178,75 @@ def sample_readme_data(
         content=content,
         file_path=file_path,
     )
+
+
+def sample_technology_detection(
+    programming_languages: list[str] | None = None,
+    frameworks: list[str] | None = None,
+    databases: list[str] | None = None,
+    deployment_platforms: list[str] | None = None,
+    build_tools: list[str] | None = None,
+    testing_frameworks: list[str] | None = None,
+    ci_cd_platforms: list[str] | None = None,
+    primary_language: str | None = "Python",
+    overall_confidence: float = 0.75,
+) -> TechnologyDetection:
+    """Factory for TechnologyDetection with sensible defaults."""
+    # Handle None values for lists
+    programming_languages = programming_languages or []
+    frameworks = frameworks or []
+    databases = databases or []
+    deployment_platforms = deployment_platforms or []
+    build_tools = build_tools or []
+    testing_frameworks = testing_frameworks or []
+    ci_cd_platforms = ci_cd_platforms or []
+    
+    # Collect all technologies
+    all_tech = list(set(
+        programming_languages +
+        frameworks +
+        databases +
+        deployment_platforms +
+        build_tools +
+        testing_frameworks +
+        ci_cd_platforms
+    ))
+    all_tech.sort()
+    
+    return TechnologyDetection(
+        programming_languages=programming_languages,
+        frameworks=frameworks,
+        databases=databases,
+        deployment_platforms=deployment_platforms,
+        build_tools=build_tools,
+        testing_frameworks=testing_frameworks,
+        ci_cd_platforms=ci_cd_platforms,
+        documentation_tools=[],
+        language_confidence=0.75,
+        framework_confidence=0.5,
+        overall_confidence=overall_confidence,
+        all_technologies=all_tech,
+        primary_language=primary_language,
+        analyzed_at=datetime.now(UTC)
+    )
+
+
+def sample_file_tree(scenario_name: str) -> list[FileTreeItem]:
+    """Load a named scenario and return its file tree as FileTreeItem objects."""
+    scenario_path1 = pathlib.Path(__file__).parent / "scenarios" / "generated" / f"{scenario_name}.json"
+    scenario_path2 = pathlib.Path(__file__).parent / "scenarios" / f"{scenario_name}.json"
+    
+    scenario_path = None
+    if scenario_path1.exists():
+        scenario_path = scenario_path1
+    elif scenario_path2.exists():
+        scenario_path = scenario_path2
+    
+    if not scenario_path:
+        raise FileNotFoundError(f"Scenario file not found: {scenario_name}")
+    
+    with open(scenario_path, 'r') as f:
+        data = json.load(f)
+    
+    file_names = data.get("file_names", [])
+    return [FileTreeItem(path=p, is_directory=False, size=100) for p in file_names]

@@ -39,7 +39,14 @@
       "Bash(docker ps:*)",
       "Bash(source:*)",
       "Bash(run_docker_compose:*)",
-      "Bash(docker restart:*)"
+      "Bash(docker restart:*)",
+      "Read(//c/Users/stick/AppData/Roaming/Claude/**)",
+      "Read(//c/Users/stick/AppData/Local/AnthropicClaude/**)",
+      "Bash(xargs grep -l \"claude\\\\|mcp\")",
+      "Bash(xargs grep -li \"claude\\\\|ollama\\\\|mcp\")",
+      "Bash(xargs ls -la)",
+      "Bash(sort -k5 -n -r)",
+      "Bash(xargs grep -l \"claude\")"
     ]
   }
 }

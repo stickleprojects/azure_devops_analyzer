@@ -29,3 +29,5 @@ build
 *.egg
 auth
 /.cache
+
+*.bak

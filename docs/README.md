@@ -68,6 +68,28 @@ _For planning what comes next and evaluating options_
 
 ---
 
+### 🤖 [AI Patterns & Tools](../.ai/patterns/) — Development Automation
+
+_For leveraging AI-powered code generation and development patterns_
+
+- [ollama-fixture-and-code-generation.md](../.ai/patterns/ollama-fixture-and-code-generation.md) — Local LLM-based code generation pattern
+  - Generate test fixtures, utilities, and boilerplate code
+  - Example: `python scripts/ollama-generate.py --prompt .ai/ollama-prompts/fixture-repo-seeds.md ...`
+  - Uses Ollama with Docker for reproducible, local AI assistance
+
+**Prompts** (`.ai/ollama-prompts/`):
+
+- `fixture-repo-seeds.md` — Seed generator for config-driven scenarios
+- `fixture-repo-enrichment.md` — Per-repo enrichment (adds commits/PRs)
+- `fixture-extractor.md` — FixtureExtractor class generation
+- `fixture-factories.md` — Test data factory functions
+- `repo-snapshot.md` — Live repo snapshot capture
+- `canary-verification.md` — Post-scan verification script
+
+**Start here if you're**: Setting up test fixtures, automating code generation, creating test data
+
+---
+
 ## Document Types
 
 | Type             | Purpose                        | Example                                            |
@@ -134,5 +156,5 @@ _For planning what comes next and evaluating options_
 
 ---
 
-**Last Updated**: 2026-01-19  
+**Last Updated**: 2026-02-24
 **Organized for**: Easy navigation and discovery

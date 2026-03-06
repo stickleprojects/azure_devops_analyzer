@@ -4,10 +4,11 @@
 
 For detailed operational specifics and reference material, see:
 
-- `.ai/instructions.md` - Full operational details, pre-commit validation gates, project conventions
+- `.ai/operations.md` - Project conventions, pre-commit validation gates, common procedures
 - `agents/02a-architecture-guardian.md` - Deep dive on architecture boundaries
 - `agents/04a-test-guardian.md` - Deep dive on test integrity
 - `agents/07-session-continuity-agent.md` - Deep dive on session tracking
+- `.ai/agents/08-ollama-delegation.md` - Ollama MCP tool delegation policy (use to reduce Claude token usage)
 
 **Session Start**: When user greets you, activate session continuity mode:
 
@@ -18,3 +19,5 @@ For detailed operational specifics and reference material, see:
 5. Either summarize incomplete work or present backlog priorities
 
 **Remember**: Principles over rules. When uncertain, identify which principle applies and use judgment.
+
+**Tools**: Tell the user if any tools or MCPs are listed in .ai\agents or elsewhere but something is preventing those tools from being used

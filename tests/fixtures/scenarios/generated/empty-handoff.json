@@ -1,0 +1,10 @@
+{
+  "name": "empty-handoff",
+  "description": "Empty repository for handoff (edge case)",
+  "languages": [],
+  "file_names": [],
+  "manifests": {},
+  "branches": [],
+  "commits": [],
+  "pull_requests": []
+}

@@ -1,0 +1,571 @@
+{
+  "$schema": "./config.schema.json",
+  "patterns": {
+    "single-language": {
+      "description": "Single-stack repository with one primary language",
+      "commits": {
+        "min": 7,
+        "max": 12,
+        "median": 10
+      },
+      "commit_metadata": {
+        "files_changed": {
+          "min": 2,
+          "max": 8,
+          "median": 4
+        },
+        "lines_added": {
+          "min": 10,
+          "max": 100,
+          "median": 40
+        },
+        "lines_removed": {
+          "min": 0,
+          "max": 50,
+          "median": 10
+        }
+      },
+      "pull_requests": {
+        "min": 5,
+        "max": 10,
+        "median": 7
+      },
+      "pr_metadata": {
+        "files_changed": {
+          "min": 3,
+          "max": 12,
+          "median": 6
+        },
+        "lines_added": {
+          "min": 30,
+          "max": 200,
+          "median": 100
+        },
+        "lines_removed": {
+          "min": 5,
+          "max": 80,
+          "median": 30
+        }
+      },
+      "pr_status": {
+        "merged": 0.7,
+        "open": 0.2,
+        "closed": 0.1
+      }
+    },
+    "frontend-spa": {
+      "description": "Frontend single-page app (TypeScript/JavaScript)",
+      "commits": {
+        "min": 7,
+        "max": 12,
+        "median": 10
+      },
+      "commit_metadata": {
+        "files_changed": {
+          "min": 2,
+          "max": 8,
+          "median": 4
+        },
+        "lines_added": {
+          "min": 10,
+          "max": 100,
+          "median": 40
+        },
+        "lines_removed": {
+          "min": 0,
+          "max": 50,
+          "median": 10
+        }
+      },
+      "pull_requests": {
+        "min": 5,
+        "max": 10,
+        "median": 7
+      },
+      "pr_metadata": {
+        "files_changed": {
+          "min": 3,
+          "max": 12,
+          "median": 6
+        },
+        "lines_added": {
+          "min": 30,
+          "max": 200,
+          "median": 100
+        },
+        "lines_removed": {
+          "min": 5,
+          "max": 80,
+          "median": 30
+        }
+      },
+      "pr_status": {
+        "merged": 0.7,
+        "open": 0.2,
+        "closed": 0.1
+      }
+    },
+    "fullstack-monorepo": {
+      "description": "Monorepo with multiple services and overlapping languages",
+      "commits": {
+        "min": 12,
+        "max": 20,
+        "median": 16
+      },
+      "commit_metadata": {
+        "files_changed": {
+          "min": 4,
+          "max": 15,
+          "median": 8
+        },
+        "lines_added": {
+          "min": 50,
+          "max": 500,
+          "median": 150
+        },
+        "lines_removed": {
+          "min": 20,
+          "max": 200,
+          "median": 50
+        }
+      },
+      "pull_requests": {
+        "min": 8,
+        "max": 15,
+        "median": 11
+      },
+      "pr_metadata": {
+        "files_changed": {
+          "min": 6,
+          "max": 20,
+          "median": 12
+        },
+        "lines_added": {
+          "min": 100,
+          "max": 800,
+          "median": 300
+        },
+        "lines_removed": {
+          "min": 50,
+          "max": 300,
+          "median": 100
+        }
+      },
+      "pr_status": {
+        "merged": 0.7,
+        "open": 0.2,
+        "closed": 0.1
+      }
+    },
+    "legacy-migration": {
+      "description": "Legacy project undergoing modernization with mixed approaches",
+      "commits": {
+        "min": 10,
+        "max": 15,
+        "median": 12
+      },
+      "commit_metadata": {
+        "files_changed": {
+          "min": 3,
+          "max": 10,
+          "median": 6
+        },
+        "lines_added": {
+          "min": 20,
+          "max": 150,
+          "median": 60
+        },
+        "lines_removed": {
+          "min": 10,
+          "max": 100,
+          "median": 40
+        }
+      },
+      "pull_requests": {
+        "min": 6,
+        "max": 12,
+        "median": 9
+      },
+      "pr_metadata": {
+        "files_changed": {
+          "min": 4,
+          "max": 15,
+          "median": 8
+        },
+        "lines_added": {
+          "min": 40,
+          "max": 250,
+          "median": 120
+        },
+        "lines_removed": {
+          "min": 20,
+          "max": 150,
+          "median": 70
+        }
+      },
+      "pr_status": {
+        "merged": 0.6,
+        "open": 0.3,
+        "closed": 0.1
+      }
+    },
+    "dual-ci": {
+      "description": "Repository with dual CI systems or complex build setup",
+      "commits": {
+        "min": 6,
+        "max": 10,
+        "median": 8
+      },
+      "commit_metadata": {
+        "files_changed": {
+          "min": 2,
+          "max": 6,
+          "median": 3
+        },
+        "lines_added": {
+          "min": 10,
+          "max": 80,
+          "median": 30
+        },
+        "lines_removed": {
+          "min": 0,
+          "max": 40,
+          "median": 8
+        }
+      },
+      "pull_requests": {
+        "min": 4,
+        "max": 8,
+        "median": 6
+      },
+      "pr_metadata": {
+        "files_changed": {
+          "min": 2,
+          "max": 8,
+          "median": 4
+        },
+        "lines_added": {
+          "min": 20,
+          "max": 120,
+          "median": 50
+        },
+        "lines_removed": {
+          "min": 5,
+          "max": 60,
+          "median": 20
+        }
+      },
+      "pr_status": {
+        "merged": 0.8,
+        "open": 0.2,
+        "closed": 0.0
+      }
+    },
+    "edge-case-empty": {
+      "description": "Empty repository (edge case testing)",
+      "commits": {
+        "min": 0,
+        "max": 0,
+        "median": 0
+      },
+      "commit_metadata": {
+        "files_changed": {
+          "min": 0,
+          "max": 0,
+          "median": 0
+        },
+        "lines_added": {
+          "min": 0,
+          "max": 0,
+          "median": 0
+        },
+        "lines_removed": {
+          "min": 0,
+          "max": 0,
+          "median": 0
+        }
+      },
+      "pull_requests": {
+        "min": 0,
+        "max": 0,
+        "median": 0
+      },
+      "pr_metadata": {
+        "files_changed": {
+          "min": 0,
+          "max": 0,
+          "median": 0
+        },
+        "lines_added": {
+          "min": 0,
+          "max": 0,
+          "median": 0
+        },
+        "lines_removed": {
+          "min": 0,
+          "max": 0,
+          "median": 0
+        }
+      },
+      "pr_status": {
+        "merged": 0.0,
+        "open": 0.0,
+        "closed": 0.0
+      }
+    }
+  },
+  "repo_templates": {
+    "python-docker": {
+      "description": "Python project with Docker support and Flask API",
+      "pattern": "single-language",
+      "languages": ["Python"],
+      "commit_message_themes": [
+        "Docker setup",
+        "Flask endpoint",
+        "pytest configuration",
+        "requirements update",
+        "CI/CD pipeline"
+      ],
+      "pr_title_themes": [
+        "Add Docker support",
+        "Improve Flask API",
+        "Add unit tests",
+        "Fix requirements issue",
+        "Update CI/CD pipeline"
+      ],
+      "overrides": {}
+    },
+    "react-spa": {
+      "description": "React single-page application with TypeScript",
+      "pattern": "frontend-spa",
+      "languages": ["TypeScript", "JavaScript"],
+      "commit_message_themes": [
+        "Add React component",
+        "Update TypeScript config",
+        "Refactor async/await",
+        "Fix styling issues",
+        "Add storybook story"
+      ],
+      "pr_title_themes": [
+        "Add React component",
+        "Improve component reusability",
+        "Fix TypeScript warnings",
+        "Update styling",
+        "Add storybook documentation"
+      ],
+      "overrides": {}
+    },
+    "java-maven-jenkins": {
+      "description": "Java project using Maven build system and Jenkins CI",
+      "pattern": "single-language",
+      "languages": ["Java"],
+      "commit_message_themes": [
+        "Add Spring component",
+        "Configure Maven plugin",
+        "Update dependency version",
+        "Add unit test",
+        "Jenkins stage setup"
+      ],
+      "pr_title_themes": [
+        "Add Spring service",
+        "Update Maven dependencies",
+        "Improve test coverage",
+        "Add Jenkinsfile stage",
+        "Fix integration test"
+      ],
+      "overrides": {}
+    },
+    "fullstack-monorepo": {
+      "description": "Monorepo with backend API and frontend services",
+      "pattern": "fullstack-monorepo",
+      "languages": ["Python", "TypeScript"],
+      "commit_message_themes": [
+        "Backend API implementation",
+        "Frontend component",
+        "monorepo structure",
+        "shared utilities",
+        "cross-service communication"
+      ],
+      "pr_title_themes": [
+        "Add backend service",
+        "Add React component",
+        "Improve shared library",
+        "Cross-service integration",
+        "Enhance deployment pipeline"
+      ],
+      "overrides": {}
+    },
+    "legacy-migration": {
+      "description": "Legacy .NET project with mixed package formats",
+      "pattern": "legacy-migration",
+      "languages": ["C#"],
+      "commit_message_themes": [
+        "Migrate to modern .csproj",
+        "Update Nuget packages",
+        "Remove legacy references",
+        "Upgrade to new API",
+        "Fix compatibility issues"
+      ],
+      "pr_title_themes": [
+        "Migrate to modern .csproj",
+        "Update Nuget packages",
+        "Remove legacy references",
+        "Upgrade to new API",
+        "Fix compatibility issues"
+      ],
+      "overrides": {}
+    },
+    "dual-ci": {
+      "description": "Dual CI: both Jenkins and GitHub Actions",
+      "pattern": "dual-ci",
+      "languages": ["Python"],
+      "commit_message_themes": [
+        "Jenkinsfile stage",
+        "GitHub Actions workflow",
+        "CI/CD improvement",
+        "build optimization",
+        "pipeline trigger fix"
+      ],
+      "pr_title_themes": [
+        "Add Jenkins stage",
+        "Add GitHub Actions workflow",
+        "Improve build speed",
+        "Fix CI trigger",
+        "Standardize CI configuration"
+      ],
+      "overrides": {}
+    },
+    "python-dual-deps": {
+      "description": "Python with both Pipfile and requirements.txt",
+      "pattern": "dual-ci",
+      "languages": ["Python"],
+      "commit_message_themes": [
+        "Pipfile lock update",
+        "requirements.txt sync",
+        "Dependency upgrade",
+        "Fix security vulnerability",
+        "Dependency cleanup"
+      ],
+      "pr_title_themes": [
+        "Update Pipfile dependencies",
+        "Sync requirements with Pipfile",
+        "Update to latest stable",
+        "Fix security vulnerability",
+        "Remove unused dependency"
+      ],
+      "overrides": {}
+    },
+    "go-microservice": {
+      "description": "Go microservice with HTTP handlers",
+      "pattern": "single-language",
+      "languages": ["Go"],
+      "commit_message_themes": [
+        "Add Gin router",
+        "Implement middleware",
+        "Optimize concurrency",
+        "Update go.mod",
+        "Improve error handling"
+      ],
+      "pr_title_themes": [
+        "Add Gin router",
+        "Implement middleware",
+        "Optimize concurrency",
+        "Update go.mod",
+        "Improve error handling"
+      ],
+      "overrides": {}
+    },
+    "edge-case-empty": {
+      "description": "Empty repository (edge case)",
+      "pattern": "edge-case-empty",
+      "languages": [],
+      "commit_message_themes": [],
+      "pr_title_themes": [],
+      "overrides": {}
+    },
+    "deep-nested-manifests": {
+      "description": "Manifests only in subdirectories",
+      "pattern": "fullstack-monorepo",
+      "languages": ["Python", "TypeScript"],
+      "commit_message_themes": [
+        "Service API implementation",
+        "service structure",
+        "monorepo layout",
+        "package isolation",
+        "cross-service communication"
+      ],
+      "pr_title_themes": [
+        "Add service implementation",
+        "Improve service isolation",
+        "Restructure services directory",
+        "Add cross-service integration",
+        "Enhance package organization"
+      ],
+      "overrides": {}
+    }
+  },
+  "repo_sets": [
+    {
+      "template": "python-docker",
+      "name_template": "python-docker-{service}",
+      "description_template": "Python {service} system with Docker support",
+      "services": ["billing", "inventory", "payroll", "invoices", "reports"]
+    },
+    {
+      "template": "react-spa",
+      "names": ["react-spa"]
+    },
+    {
+      "template": "java-maven-jenkins",
+      "names": ["java-maven-jenkins"]
+    },
+    {
+      "template": "fullstack-monorepo",
+      "names": ["fullstack-monorepo"]
+    },
+    {
+      "template": "legacy-migration",
+      "name_template": "legacy-migration-{service}",
+      "description_template": "Legacy {service} system undergoing migration",
+      "services": ["billing", "inventory", "payroll"],
+      "overrides": []
+    },
+    {
+      "template": "dual-ci",
+      "name_template": "dual-ci-{service}",
+      "description_template": "Dual CI service for {service} domain",
+      "services": [
+        "auth",
+        "billing",
+        "catalog",
+        "payments",
+        "analytics",
+        "notifications",
+        "search",
+        "orders",
+        "inventory",
+        "gateway"
+      ],
+      "overrides": []
+    },
+    {
+      "template": "python-dual-deps",
+      "names": ["python-dual-deps"]
+    },
+    {
+      "template": "go-microservice",
+      "names": ["go-microservice"]
+    },
+    {
+      "template": "edge-case-empty",
+      "name_template": "empty-{service}",
+      "description_template": "Empty repository for {service} (edge case)",
+      "services": ["stub", "archive", "handoff"],
+      "overrides": []
+    },
+    {
+      "template": "deep-nested-manifests",
+      "names": ["deep-nested-manifests"]
+    }
+  ]
+}

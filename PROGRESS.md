@@ -2,6 +2,361 @@
 
 ---
 
+## Session: 2026-03-06 (Late Evening) — feat/013 Complete, AI Tooling Housekeeping
+
+### Summary
+
+Feature 013 declared complete. Reviewed MCP tool usage and token efficiency across
+all AI instruction files and applied fixes. Branch is ready to merge.
+
+### What Was Done
+
+- Audited CLAUDE.md, principles.md, operations.md, and 08-ollama-delegation.md for
+  token waste, broken references, and missing documentation
+- Fixed stale `instructions.md` reference in CLAUDE.md → now points to `operations.md`
+- Removed 40-line duplicate pre-commit gates block from `principles.md` (was also in
+  `operations.md`) — replaced with a one-liner pointer
+- Added `.ai/agents/` and `.ai/patterns/` to key directories map in `operations.md`
+- Linked `agents/05-code-review.md` from the "Do NOT delegate" section in delegation policy
+- Added `mcp__mermaid__*` tools to the delegation table
+- Committed Plan 015 plan doc to this branch before closing it
+
+### Next Steps
+
+- Merge `feat/013-ollama-codegen-tooling` → `main`
+- Start `feat/015-fixture-integration-tests` to implement Plan 015:
+  1. Fix 4 schema mismatches in `tests/fixtures/fixture_extractor.py`
+  2. Create `tests/contract/integration/test_fixture_scenarios.py` (18 test cases)
+  3. Run `bash scripts/run-tests-docker.sh` to verify
+
+---
+
+## Session: 2026-03-06 (Evening) — Plan 015 Written, Not Yet Implemented
+
+### Summary
+
+Audited the test suite and designed the fixture wiring approach. Plan written to
+`.ai/plans/015-wire-fixture-integration-tests.md`. No code changed this session.
+
+### Key Findings
+
+- `FixtureExtractor` exists and is ready to use but has 4 JSON schema mismatches with
+  the generated fixtures (must be fixed before anything else):
+  - `get_commits`: reads `c["sha"]` but generated JSON has `c["commit_hash"]`
+  - `get_file_content`: expects list of `{file_path, content}` but manifests is a dict
+  - `get_branches`: expects list of objects but generated JSON has list of strings
+  - `get_languages`: reads `language_data` key but generated JSON has `languages` (strings)
+- The right wiring target is **integration tests**, not unit tests — fixtures simulate
+  real repos the live API can't reach
+- Storage layer (`src/database/storage.py`) is fully injectable and testable directly
+- `test_session` and `organization` conftest fixtures in `tests/contract/integration/conftest.py`
+  are ready to use in the new test file
+
+### Next Steps (Plan 015)
+
+1. Fix 4 schema mismatches in `tests/fixtures/fixture_extractor.py`
+2. Create `tests/contract/integration/test_fixture_scenarios.py` — parametrized over
+   6 scenarios (go-microservice, java-maven-jenkins, fullstack-monorepo, dual-ci-analytics,
+   deep-nested-manifests, empty-stub), testing commits/PRs/languages stored correctly
+3. Run `bash scripts/run-tests-docker.sh` to verify 18 new test cases pass
+
+---
+
+## Session: 2026-03-06 — Generated Fixtures Not Wired Into Tests
+
+### Summary
+
+Investigated whether `scripts/generate-fixtures.sh` output is consumed by the test suite.
+**Finding: it is not.** The generated JSON files exist but no test code loads them.
+
+### Finding
+
+- `scripts/generate-fixtures.sh` generates JSON seed files into `tests/fixtures/scenarios/generated/`
+- **No test `.py` file references `scenarios/generated/`** — confirmed via codebase grep
+- Only other generator scripts (`scripts/run-enrich.py`, `scripts/generated/generate-repo-seeds.py`, etc.) reference those paths
+- `tests/README.md` mentions the path but no test actually loads the files
+
+### Next Steps
+
+1. Audit existing tests to understand how fixtures are currently loaded (manual stubs? inline data?)
+2. Identify which tests would benefit from the generated scenarios
+3. Wire `tests/fixtures/scenarios/generated/*.json` into the appropriate test(s)
+4. Confirm tests pass with the generated fixture data: `bash scripts/run-tests-docker.sh`
+
+---
+
+## Session: 2026-03-01 (Afternoon) — Enrichment Prompt Debug + Architecture Review
+
+### Summary
+
+Diagnosed and fixed 6 codegen bugs in the Layer 2 enrichment prompt and hand-patched 2
+generated scripts. Confirmed the two-layer fixture generation architecture is sound.
+Full run for remaining 31 repos is the next step.
+
+### Root Cause Resolved (from last session)
+
+The Ollama-generated enrichment scripts expected `sys.argv[2]` for config because the prompt
+said config is "provided as `--context` to Ollama" — the model misread this as an instruction
+to the generated script. Fixed by rewriting the Input section to say:
+> "Extract the config entry matching this repo's `name` field and embed the values as
+> hardcoded Python constants at the top of the generated script."
+
+### Bugs Fixed in Prompt + Generated Scripts
+
+All 6 bugs are documented in detail in `.ai/investigations/014-enrichment-codegen-findings.md`.
+
+| # | Bug | Prompt fix |
+|---|-----|------------|
+| 1 | Missing `import tempfile` | Listed all required imports explicitly |
+| 2 | `NamedTemporaryFile` in binary mode | Added `mode='w'` + explanation |
+| 3 | Validates `languages` field (seeds use `language_data`) | Corrected field names |
+| 4 | Idempotency triggers on Layer 1 placeholder commit | Use `len(commits) >= COMMIT_MIN` |
+| 5 | Variables used in dict literal before assignment | Explicit pre-assignment instruction |
+| 6 | PR dates read from `seed_data["commits"]` | Use fixed 90-day window from `datetime.now()` |
+
+### Config Structure Clarified
+
+`tests/fixtures/scenarios/config.json` has three sections:
+- `patterns`: commit/PR sizing (min/max/median) by pattern type
+- `repo_templates`: themes (commit messages, PR titles) + pattern reference per template
+- `repo_sets`: instances — maps templates → seed filenames (some via `name_template` + services)
+
+Service-family repos (e.g. `python-docker-billing`) have no direct config entry; Ollama must
+match by prefix to the `python-docker` template. Confirmed this works correctly in both test scripts.
+
+### Scripts Patched
+
+- `scripts/generated/enrich-deep-nested-manifests.py` — bugs 1, 2, 3, 4 patched; `[OK]` confirmed
+- `scripts/generated/enrich-python-docker.py` — bugs 3, 4, 5, 6 patched; `[OK]` confirmed; 20 commits, 5 PRs
+
+### Files Changed
+
+- `.ai/ollama-prompts/fixture-repo-enrichment.md` — 6 prompt fixes
+- `scripts/generated/enrich-deep-nested-manifests.py` — hand-patched
+- `scripts/generated/enrich-python-docker.py` — hand-patched
+- `.ai/investigations/014-enrichment-codegen-findings.md` — new investigation doc
+- `.ai/plans/014-two-layer-fixture-generation.md` — status updated
+
+### Next Steps
+
+1. Run full enrichment for remaining 31 seed files:
+   ```bash
+   bash scripts/generate-fixtures.sh --step enrich 2>&1 | tee fixture-enrich.log
+   ```
+2. For each generated script that fails, apply the same pattern of fixes (see investigation doc)
+3. Verify all 33 seeds have `commits` (≥15) and `pull_requests` (≥5) after enrichment
+4. Commit all enriched seeds + prompt changes + investigation doc
+5. Run tests: `bash scripts/run-tests-docker.sh`
+
+---
+
+## Session: 2026-02-26 (Night) - Fixture Generation Script Debugging
+
+### Summary
+
+Debugged and fixed `scripts/generate-fixtures.sh` to properly run the fixture enrichment pipeline. Identified argument passing issues in the bash orchestrator that were preventing enrichment scripts from executing.
+
+### Work Completed
+
+**File**: `scripts/generate-fixtures.sh`
+
+#### Issue 1: Missing Config Argument to Enrichment Scripts
+
+- **Problem**: Enrichment script invocation was missing the config JSON argument
+- **Initial Fix Attempt**: Added `tests/fixtures/scenarios/config.json` as second argument
+- **Root Cause**: Enrichment scripts only expect seed file path as `sys.argv[1]`; config is embedded via `--context` flags during Ollama code generation
+- **Resolution**: ✅ Reverted to single-argument call: `python "$output" "$seed"`
+
+#### Issue 2: Script Argument Validation Bug
+
+- **Observed**: Script stops with "Usage: enrich-{repo}.py <seed_json_path>" indicating argument count mismatch
+- **Root Cause**: The generated enrichment script validates `len(sys.argv) != 2` but was receiving 3+ arguments
+- **Investigation**: Added debug line to print `sys.argv` for next session diagnosis
+
+#### Generated Script Status
+
+- **File**: `scripts/generated/enrich-deep-nested-manifests.py`
+- **Status**: Ollama code generation worked; script structure is correct
+- **CRITICAL FINDING**: Regenerated script now expects `len(sys.argv) == 3`, meaning:
+  - `sys.argv[0]` = script name
+  - `sys.argv[1]` = seed-path
+  - `sys.argv[2]` = config-json (as string)
+- **This explains the "Usage" errors**: Bash script passes only seed file, but script expects config JSON
+
+### Critical Issue for Tomorrow
+
+The Ollama code generation produced a script with a **different API than original Plan 014 design**:
+
+- **Original Design**: Enrichment script reads config embedded via Ollama `--context` flags
+- **Actual Output**: Script expects config JSON as command-line argument
+
+**Two options to fix**:
+
+1. **Fix the prompt** (`.ai/ollama-prompts/fixture-repo-enrichment.md`) to NOT require config as argument
+   - Instead, config should be embedded into the generated script via Ollama context
+   - This is how Layer 2 enrichment was designed in Plan 014
+
+2. **Fix the bash script** to pass config JSON as second argument
+   - Get the config from `tests/fixtures/scenarios/config.json`
+   - Extract the matching repo's config entry
+   - Pass it as JSON string to enrichment script
+
+**Recommended approach**: Fix the prompt, NOT the bash script—the original design was cleaner.
+
+### Previous Next Steps (Update Below)
+
+~~1. **Verify full pipeline completion**~~
+~~ - Run: `./scripts/generate-fixtures.sh --step all 2>&1 | tee fixture-output.log`~~
+~~ - Check for any remaining enrichment failures~~
+
+**Priority Action for Tomorrow**:
+
+- Read `.ai/ollama-prompts/fixture-repo-enrichment.md` to understand what context is being passed
+- **Decision**: Should the enrichment script take config as argument, or embed it?
+  - If embed: Fix prompt to generate `config = {...}` at top of generated script
+  - If argument: Fix bash script to extract & pass JSON config
+- Regenerate enrichment scripts with corrected prompt
+- Re-run pipeline: `./scripts/generate-fixtures.sh --step enrich`
+- Commit once all repos enriched successfully
+
+### Git Status
+
+**Modified**: `scripts/generate-fixtures.sh`
+**Generated**: `scripts/generated/enrich-deep-nested-manifests.py` (Ollama-generated, may need regeneration)
+**Modified**: `PROGRESS.md` (session notes)
+**Uncommitted**: All changes
+
+### Branch
+
+- Current: `feat/013-ollama-codegen-tooling`
+- PR: https://github.com/stickleprojects/azure_devops_analyzer/pull/25
+
+---
+
+## Session: Current - Plan 014: Scalable Fixture Config Architecture
+
+### Summary
+
+Refactored Plan 014 from hardcoded 10-repo sizing table to config-driven architecture. Designed scalable `config.json` with reusable patterns, comprehensive commit/PR metadata, and per-repo message themes.
+
+### Work Completed
+
+**File**: `.ai/plans/014-config-structure-review.md` (new proposal document)
+
+#### Context
+
+- User identified Plan 014 had unclear sections and a hardcoded 10-repo "Sizing & Data Distribution" table
+- Plan 013 (fixture factory with Ollama code gen) was approved; Plan 014 extends to make fixture generation scalable beyond 10 repos
+- Two-layer approach: Layer 1 generates seed JSON files, Layer 2 enriches per-repo with commits/PRs
+
+#### Design Decisions
+
+1. **Config-driven patterns**: 6 reusable repo templates (`single-language`, `frontend-spa`, `fullstack-monorepo`, `legacy-migration`, `dual-ci`, `edge-case-empty`)
+2. **Per-repo customization**: Each of 10 test repos references a pattern + provides language list + theme overrides
+3. **Metadata completeness**: Both commit AND PR data fully specified (diffstat ranges + message themes)
+
+#### Detailed Structure
+
+**Config file**: `tests/fixtures/scenarios/config.json`
+
+**Patterns dict** (6 types):
+
+```json
+"single-language": {
+  "commits": { "min": 15, "max": 25, "median": 20 },
+  "commit_metadata": {
+    "files_changed": { "min": 2, "max": 8, "median": 4 },
+    "lines_added": { "min": 10, "max": 100, "median": 40 },
+    "lines_removed": { "min": 0, "max": 50, "median": 10 }
+  },
+  "pull_requests": { "min": 5, "max": 10, "median": 7 },
+  "pr_metadata": {
+    "files_changed": { "min": 3, "max": 12, "median": 6 },
+    "lines_added": { "min": 30, "max": 200, "median": 100 },
+    "lines_removed": { "min": 5, "max": 80, "median": 30 }
+  },
+  "pr_status": { "merged": 0.70, "open": 0.20, "closed": 0.10 }
+}
+```
+
+**Repos array** (10 repos):
+
+- Each references a pattern, specifies languages, provides commit + PR message themes
+- Example (python-docker):
+  - Pattern: single-language
+  - Languages: Python
+  - commit_message_themes: ["Docker setup", "Flask endpoint", ...]
+  - **pr_title_themes**: ["Add Docker support", "Improve Flask API", "Add unit tests", ...] ← added per user feedback
+
+#### Key Additions (User Feedback Addressed)
+
+**Issue**: "You forgot to model pull requests"
+
+**Resolution**: Added comprehensive PR data modeling:
+
+1. `commit_metadata` per pattern (files_changed, lines_added, lines_removed ranges)
+2. `pr_metadata` per pattern (equivalent diffstat ranges for PRs)
+3. `pr_title_themes[]` per repo (curated PR title suggestions matching tech stack)
+
+**Impact**: Enrichment script now has:
+
+- Realistic diffstat value ranges for both commits and PRs
+- Themed message suggestions for authentic test data generation
+
+### Architecture Notes
+
+**Layer 1 (Seed Generation)**:
+
+- Ollama generates `generate-repo-seeds.py` script
+- Script reads config.json, outputs 10 seed JSON files
+- Each seed contains: name, description, languages, file_names, manifests, branches (NO commits/PRs)
+
+**Layer 2 (Per-Repo Enrichment)**:
+
+- For each repo: Ollama generates `enrich-{name}.py` script
+- Script reads seed JSON + corresponding config entry
+- Looks up pattern info, applies sizing/themes
+- Generates 15–25 realistic commits with 70–100 LOC changes
+- Generates 5–10 realistic PRs with 30–200 LOC changes
+- Writes enriched seed back to file
+
+### Benefits
+
+✅ **Scalable**: Add new repos by extending `repos[]` array (no code changes)
+✅ **Reusable**: 6 patterns serve as templates (single-language, frontend-spa, fullstack, legacy, dual-ci, edge-case)
+✅ **Extensible**: New patterns just add entry to `patterns{}` dict
+✅ **Customizable**: Per-repo themes tailored to tech stack (Python vs Go vs .NET)
+✅ **Data-complete**: Both commit and PR generation fully specified with metadata ranges
+
+### Outstanding Questions (Pending User Feedback)
+
+5 design decisions remain for user input:
+
+1. **Context window strategy**: Pass entire `repos[i]` + `patterns[pattern]` to enrichment prompt, or just pattern dict?
+2. **Override precedence**: Merge or replace pattern values when repo specifies overrides?
+3. **Commit theme format**: Simple strings or structured objects with frequency weights?
+4. **Median field utility**: Keep as generation hint or omit to let script pick random [min, max]?
+5. **PR status distribution**: Keep per-pattern or make per-repo?
+
+### Next Steps
+
+**Blocked on**: User feedback on 5 design questions above
+
+**After feedback received**:
+
+1. Update main plan (`.ai/plans/014-two-layer-fixture-generation.md`) to reference config structure
+2. Create 2 new prompt files:
+   - `.ai/ollama-prompts/fixture-repo-seeds.md` (instructs seed generation)
+   - `.ai/ollama-prompts/fixture-repo-enrichment.md` (instructs enrichment)
+3. Implement Python orchestrator: `scripts/generate-fixtures.py`
+4. Implement bash launcher: `scripts/generate-fixtures.sh`
+
+### Git Status
+
+Uncommitted: Changes to `.ai/plans/014-config-structure-review.md` (added PR metadata summary + status note)
+
+---
+
 ## Session: 2026-02-21 - Investigation: Development Feedback Loop & Test Coverage
 
 ### Summary
@@ -398,14 +753,42 @@ Removed three misleading/redundant documentation files that incorrectly describe
 
 ## Session: 2026-02-13 - File Cache Completion
 
-### Summary
-
-Finalized the file-based extractor cache by preventing cross-test cache leakage while keeping cache tests valid. User ran the full Docker test suite successfully after the fix.
-
 ### Changes
 
 1. **Test Isolation for File Cache**
    - Added an autouse pytest fixture that clears the file cache between tests
+2. **All 5 design questions finalized** (user approved all recommendations):
+   - Context window: Pass full repo + pattern config
+   - Overrides: Merge with pattern (shallow merge)
+   - Themes: Simple strings (random.choice() for uniform distribution)
+   - Median field: Keep (used as generation target ±2)
+
+### Design Status: ✅ COMPLETE
+
+- PR status: Per-pattern only (consistent "health" per pattern type)
+
+### Deliverables Created
+
+**Files created**:
+
+1. **`.ai/ollama-prompts/fixture-repo-seeds.md`** — Layer 1 prompt for seed generation
+   - Instructs Ollama to generate `scripts/generated/generate-repo-seeds.py`
+   - Script reads config.json, outputs 10 seed JSON files (structural only, no commits/PRs)
+   - All 10 repo definitions with realistic file/manifest templates
+
+2. **`.ai/ollama-prompts/fixture-repo-enrichment.md`** — Layer 2 prompt for per-repo enrichment
+   - Instructs Ollama to generate `scripts/generated/enrich-{name}.py` scripts
+   - Specifies commit generation (15–30 per repo, language-appropriate themes)
+   - Specifies PR generation (5–15 per repo, themed titles)
+   - Includes metadata ranges (files_changed, lines_added, lines_removed)
+   - Includes idempotency + error handling requirements
+   - Includes date chronology rules (PRs must respect commit dates)
+     - `edge-case-empty`: 0 commits, 0 PRs (no data)
+
+   - Each pattern specifies:
+     - `commit_metadata`: files_changed/lines_added/lines_removed ranges
+     - `pr_metadata`: equivalent ranges for PRs
+     - Empty `overrides` dict (reserved for future per-repo customization)
    - Prevents cached values from leaking across unit tests while preserving file cache behavior within each test
 
 ### Files Modified

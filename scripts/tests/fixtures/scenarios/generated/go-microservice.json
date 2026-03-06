@@ -1,0 +1,62 @@
+{
+  "name": "go-microservice",
+  "description": "Go microservice with sparse file tree",
+  "file_names": [
+    "go.mod",
+    "go.sum",
+    "main.go",
+    "Dockerfile"
+  ],
+  "language_data": [
+    {
+      "language": "Go",
+      "byte_count": 14000,
+      "percentage": 100.0
+    }
+  ],
+  "manifests": [
+    {
+      "file_path": "go.mod",
+      "content": "module example.com/myservice\n\ngo 1.19\n\nrequire (\n    github.com/gin-gonic/gin v1.7.5\n)",
+      "ecosystem": "golang"
+    }
+  ],
+  "branches": [
+    {
+      "name": "main",
+      "latest_commit_sha": "rst901stu234"
+    }
+  ],
+  "commits": [
+    {
+      "sha": "rst901stu234",
+      "message": "Initial Go microservice setup",
+      "author_email": "developer@example.com",
+      "author_name": "Developer",
+      "committer_email": "developer@example.com",
+      "committer_name": "Developer",
+      "commit_date": "2026-02-05T11:45:00",
+      "files_changed": 4,
+      "lines_added": 70,
+      "lines_removed": 0
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 8,
+      "platform_pr_id": "pr-8",
+      "title": "Initial Go microservice setup",
+      "description": "Sets up a Go microservice with Docker",
+      "source_branch": "feature/go-microservice",
+      "target_branch": "main",
+      "author_email": "developer@example.com",
+      "author_name": "Developer",
+      "status": "merged",
+      "created_at": "2026-02-04T16:45:00",
+      "merged_at": "2026-02-05T11:45:00",
+      "files_changed": 4,
+      "lines_added": 70,
+      "lines_removed": 0
+    }
+  ]
+}
