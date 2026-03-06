@@ -2,6 +2,37 @@
 
 ---
 
+## Session: 2026-03-06 (Evening) — Plan 015 Written, Not Yet Implemented
+
+### Summary
+
+Audited the test suite and designed the fixture wiring approach. Plan written to
+`.ai/plans/015-wire-fixture-integration-tests.md`. No code changed this session.
+
+### Key Findings
+
+- `FixtureExtractor` exists and is ready to use but has 4 JSON schema mismatches with
+  the generated fixtures (must be fixed before anything else):
+  - `get_commits`: reads `c["sha"]` but generated JSON has `c["commit_hash"]`
+  - `get_file_content`: expects list of `{file_path, content}` but manifests is a dict
+  - `get_branches`: expects list of objects but generated JSON has list of strings
+  - `get_languages`: reads `language_data` key but generated JSON has `languages` (strings)
+- The right wiring target is **integration tests**, not unit tests — fixtures simulate
+  real repos the live API can't reach
+- Storage layer (`src/database/storage.py`) is fully injectable and testable directly
+- `test_session` and `organization` conftest fixtures in `tests/contract/integration/conftest.py`
+  are ready to use in the new test file
+
+### Next Steps (Plan 015)
+
+1. Fix 4 schema mismatches in `tests/fixtures/fixture_extractor.py`
+2. Create `tests/contract/integration/test_fixture_scenarios.py` — parametrized over
+   6 scenarios (go-microservice, java-maven-jenkins, fullstack-monorepo, dual-ci-analytics,
+   deep-nested-manifests, empty-stub), testing commits/PRs/languages stored correctly
+3. Run `bash scripts/run-tests-docker.sh` to verify 18 new test cases pass
+
+---
+
 ## Session: 2026-03-06 — Generated Fixtures Not Wired Into Tests
 
 ### Summary

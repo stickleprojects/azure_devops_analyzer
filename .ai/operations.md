@@ -142,12 +142,17 @@ See `agents/07-session-continuity-agent.md` for detailed session tracking patter
 .ai/
   ├─ principles.md           ← Mental framework (7 core principles)
   ├─ operations.md           ← This file (conventions & procedures)
-  └─ instructions.md         ← Legacy reference (being phased out)
+  ├─ instructions.md         ← Legacy redirect (being phased out, ignore)
+  ├─ agents/
+  │   └─ 08-ollama-delegation.md  ← Ollama MCP tool delegation policy
+  └─ patterns/
+      └─ ollama-fixture-and-code-generation.md  ← Ollama codegen pattern
 
 agents/
   ├─ 00-documentation-standards.md
   ├─ 02a-architecture-guardian.md  ← Reference when validating architecture
   ├─ 04a-test-guardian.md          ← Reference when modifying tests
+  ├─ 05-code-review.md             ← How to perform code review (Claude only)
   └─ 07-session-continuity-agent.md ← Reference for session tracking
 
 src/

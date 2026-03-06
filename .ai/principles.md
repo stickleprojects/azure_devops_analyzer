@@ -105,46 +105,7 @@ Protected boundaries:
 
 ## Pre-Commit Validation Gates
 
-These gates must pass before any commit (ordered by what to check first):
-
-### ✅ Gate 1: Branch Verification
-
-```bash
-git status
-# Must show: "On branch feat/..." (not main)
-```
-
-### ✅ Gate 2: Architecture Boundaries
-
-Review changes against `agents/02a-architecture-guardian.md`:
-
-- Extractors don't contain analysis or database writes? ✓
-- Analyzers are platform-agnostic? ✓
-- Database layer is single point for DB writes? ✓
-- Workflows are orchestration only? ✓
-
-### ✅ Gate 3: Test Status
-
-```bash
-bash scripts/run-tests-docker.sh
-# Must show: exit code 0, no failures, no skipped tests
-```
-
-### ✅ Gate 4: Test Guardian (if modifying tests)
-
-Before changing any test, check `agents/04a-test-guardian.md`:
-
-- Modifying contract tests? Requires documented requirement change + approval
-- Modifying implementation tests? Fine if contracts still pass
-- Never skip/disable tests to make builds pass
-
-### ✅ Gate 5: Documentation
-
-If modifying docs, verify:
-
-- Code examples ≤ 15 lines, ≤ 3 per section
-- Code ≤ 30% of total document
-- Explanations in prose before code examples
+Five gates must pass before any commit. Full details in `.ai/operations.md`.
 
 ---
 
@@ -152,7 +113,7 @@ If modifying docs, verify:
 
 **For Claude & GitHub Copilot**:
 
-Both agents reference `.ai/instructions.md` (full details) for operational specifics. Use these 7 principles as your mental framework. When a rule or instruction seems unclear or conflicting, apply the relevant principle to make a judgment call.
+Both agents reference `.ai/operations.md` (full details) for operational specifics. Use these 7 principles as your mental framework. When a rule or instruction seems unclear or conflicting, apply the relevant principle to make a judgment call.
 
 **Not all rules are equally important:**
 
