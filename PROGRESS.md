@@ -2,6 +2,32 @@
 
 ---
 
+## Session: 2026-03-06 (Night) - Plan 015 Implemented and Verified
+
+### Summary
+
+Plan 015 is now implemented. Fixture-backed integration tests are wired into the
+contract integration suite and validated with Docker test execution.
+
+### What Was Done
+
+- Updated `tests/fixtures/fixture_extractor.py` to align with generated scenario schema:
+  - `commit_hash` support in `get_commits()`
+  - dict-based manifest lookup in `get_file_content()`
+  - string-list branch support in `get_branches()`
+  - string-list language support in `get_languages()`
+- Added `tests/contract/integration/test_fixture_scenarios.py`:
+  - 6 scenario matrix
+  - parametrized commit, pull request, and language persistence tests
+  - fixture manifest content checks
+- Ran full test suite with `bash scripts/run-tests-docker.sh` (exit code `0`)
+
+### Next Steps
+
+- Open PR for Plan 015 documentation close-out and merge to `main`
+
+---
+
 ## Session: 2026-03-06 (Late Evening) — feat/013 Complete, AI Tooling Housekeeping
 
 ### Summary
@@ -98,6 +124,7 @@ Full run for remaining 31 repos is the next step.
 The Ollama-generated enrichment scripts expected `sys.argv[2]` for config because the prompt
 said config is "provided as `--context` to Ollama" — the model misread this as an instruction
 to the generated script. Fixed by rewriting the Input section to say:
+
 > "Extract the config entry matching this repo's `name` field and embed the values as
 > hardcoded Python constants at the top of the generated script."
 
@@ -105,18 +132,19 @@ to the generated script. Fixed by rewriting the Input section to say:
 
 All 6 bugs are documented in detail in `.ai/investigations/014-enrichment-codegen-findings.md`.
 
-| # | Bug | Prompt fix |
-|---|-----|------------|
-| 1 | Missing `import tempfile` | Listed all required imports explicitly |
-| 2 | `NamedTemporaryFile` in binary mode | Added `mode='w'` + explanation |
-| 3 | Validates `languages` field (seeds use `language_data`) | Corrected field names |
-| 4 | Idempotency triggers on Layer 1 placeholder commit | Use `len(commits) >= COMMIT_MIN` |
-| 5 | Variables used in dict literal before assignment | Explicit pre-assignment instruction |
-| 6 | PR dates read from `seed_data["commits"]` | Use fixed 90-day window from `datetime.now()` |
+| #   | Bug                                                     | Prompt fix                                    |
+| --- | ------------------------------------------------------- | --------------------------------------------- |
+| 1   | Missing `import tempfile`                               | Listed all required imports explicitly        |
+| 2   | `NamedTemporaryFile` in binary mode                     | Added `mode='w'` + explanation                |
+| 3   | Validates `languages` field (seeds use `language_data`) | Corrected field names                         |
+| 4   | Idempotency triggers on Layer 1 placeholder commit      | Use `len(commits) >= COMMIT_MIN`              |
+| 5   | Variables used in dict literal before assignment        | Explicit pre-assignment instruction           |
+| 6   | PR dates read from `seed_data["commits"]`               | Use fixed 90-day window from `datetime.now()` |
 
 ### Config Structure Clarified
 
 `tests/fixtures/scenarios/config.json` has three sections:
+
 - `patterns`: commit/PR sizing (min/max/median) by pattern type
 - `repo_templates`: themes (commit messages, PR titles) + pattern reference per template
 - `repo_sets`: instances — maps templates → seed filenames (some via `name_template` + services)
