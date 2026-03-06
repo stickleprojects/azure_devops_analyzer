@@ -2,6 +2,35 @@
 
 ---
 
+## Session: 2026-03-06 (Late Evening) — feat/013 Complete, AI Tooling Housekeeping
+
+### Summary
+
+Feature 013 declared complete. Reviewed MCP tool usage and token efficiency across
+all AI instruction files and applied fixes. Branch is ready to merge.
+
+### What Was Done
+
+- Audited CLAUDE.md, principles.md, operations.md, and 08-ollama-delegation.md for
+  token waste, broken references, and missing documentation
+- Fixed stale `instructions.md` reference in CLAUDE.md → now points to `operations.md`
+- Removed 40-line duplicate pre-commit gates block from `principles.md` (was also in
+  `operations.md`) — replaced with a one-liner pointer
+- Added `.ai/agents/` and `.ai/patterns/` to key directories map in `operations.md`
+- Linked `agents/05-code-review.md` from the "Do NOT delegate" section in delegation policy
+- Added `mcp__mermaid__*` tools to the delegation table
+- Committed Plan 015 plan doc to this branch before closing it
+
+### Next Steps
+
+- Merge `feat/013-ollama-codegen-tooling` → `main`
+- Start `feat/015-fixture-integration-tests` to implement Plan 015:
+  1. Fix 4 schema mismatches in `tests/fixtures/fixture_extractor.py`
+  2. Create `tests/contract/integration/test_fixture_scenarios.py` (18 test cases)
+  3. Run `bash scripts/run-tests-docker.sh` to verify
+
+---
+
 ## Session: 2026-03-06 (Evening) — Plan 015 Written, Not Yet Implemented
 
 ### Summary
