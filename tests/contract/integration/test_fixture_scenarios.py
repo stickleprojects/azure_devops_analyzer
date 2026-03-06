@@ -32,6 +32,14 @@ SCENARIOS = [
     "empty-stub",             # Edge case: no commits, no manifests
 ]
 
+# Maps scenario name → a manifest filename that must resolve after generation
+MANIFEST_LOOKUP = {
+    "go-microservice": "go.mod",
+    "java-maven-jenkins": "pom.xml",
+    "fullstack-monorepo": "requirements.txt",
+    "dual-ci-analytics": "requirements.txt",
+}
+
 
 def _create_fixture_repo(session: Session, organization, scenario_name: str):
     """Create a project + repository row for a given fixture scenario."""
@@ -44,6 +52,43 @@ def _create_fixture_repo(session: Session, organization, scenario_name: str):
     repo = store_repository(session, project, repo_data)
     session.commit()
     return repo
+
+
+class TestFixtureExtractorFileContent:
+    """Unit tests for get_file_content — no DB or fixture files needed."""
+
+    def test_flat_manifest_returns_content(self):
+        extractor = FixtureExtractor({
+            "file_names": ["go.mod"],
+            "manifests": {"go.mod": "module example.com/myservice\n\ngo 1.18"},
+        })
+        assert extractor.get_file_content("repo", "go.mod") == "module example.com/myservice\n\ngo 1.18"
+
+    def test_unknown_file_returns_none(self):
+        extractor = FixtureExtractor({
+            "file_names": [],
+            "manifests": {"go.mod": "module foo"},
+        })
+        assert extractor.get_file_content("repo", "requirements.txt") is None
+
+    def test_empty_manifests_returns_none(self):
+        extractor = FixtureExtractor({"file_names": [], "manifests": {}})
+        assert extractor.get_file_content("repo", "go.mod") is None
+
+    def test_missing_manifests_key_returns_none(self):
+        extractor = FixtureExtractor({"file_names": []})
+        assert extractor.get_file_content("repo", "go.mod") is None
+
+    def test_multiple_manifests_each_resolvable(self):
+        extractor = FixtureExtractor({
+            "file_names": ["requirements.txt", "package.json"],
+            "manifests": {
+                "requirements.txt": "Flask==2.3.0",
+                "package.json": '{"name": "app"}',
+            },
+        })
+        assert extractor.get_file_content("repo", "requirements.txt") == "Flask==2.3.0"
+        assert extractor.get_file_content("repo", "package.json") == '{"name": "app"}'
 
 
 @pytest.mark.integration
@@ -96,3 +141,20 @@ class TestFixtureScenarioPipeline:
         assert len(stored) == len(languages), (
             f"{scenario_name}: expected {len(languages)} languages, got {len(stored)}"
         )
+
+    @pytest.mark.parametrize("scenario_name,expected_file", MANIFEST_LOOKUP.items())
+    def test_file_content_returned(self, scenario_name, expected_file):
+        extractor = FixtureExtractor(scenario_name)
+        result = extractor.get_file_content("repo", expected_file)
+        assert result is not None, (
+            f"{scenario_name}: get_file_content('{expected_file}') returned None — "
+            "manifests may be in wrong format (expected flat {{filename: content}} dict)"
+        )
+        assert isinstance(result, str) and len(result) > 0, (
+            f"{scenario_name}: content for '{expected_file}' is empty"
+        )
+
+    def test_empty_stub_has_no_manifest_content(self):
+        extractor = FixtureExtractor("empty-stub")
+        assert extractor.get_file_content("repo", "go.mod") is None
+        assert extractor.get_file_content("repo", "requirements.txt") is None

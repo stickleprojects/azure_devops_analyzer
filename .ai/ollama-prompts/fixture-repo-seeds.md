@@ -55,12 +55,7 @@ Each seed JSON must have this structure:
     "config.yaml"
   ],
   "manifests": {
-    "python": [
-      {
-        "type": "requirements.txt",
-        "content": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
-      }
-    ]
+    "requirements.txt": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
   },
   "branches": ["main", "develop", "feature/docker"]
 }
@@ -141,6 +136,7 @@ Based on `config.json`, generate seeds by expanding these templates and sets:
 ## Guidelines
 
 - **File lists**: 8–15 files per repo (more for monorepos). **Do not use a hardcoded `DEFAULT_FILES` dict keyed by template name** — derive `file_names` and `manifests` dynamically from the template's `languages` list.
+- **Manifests format**: `manifests` MUST be a flat `{"filename": "content"}` dict — keys are filenames (e.g. `"requirements.txt"`, `"go.mod"`), values are string content. **Never** use a language-keyed list format like `{"python": [{"type": "...", "content": "..."}]}`.
 - **Manifests**: Include realistic content snippets (no placeholders like `...`)
 - **Branches**: Include `main`, `develop`, 1–2 feature branches
 - **Language awareness**: Match file types to declared languages

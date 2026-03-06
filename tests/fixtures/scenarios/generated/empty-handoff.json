@@ -1,16 +1,12 @@
 {
   "name": "empty-handoff",
-  "description": "Empty repository for empty-handoff (edge case)",
+  "description": "Empty repository for handoff (edge case)",
   "languages": [],
-  "file_names": [
-    "README.md"
-  ],
+  "file_names": [],
   "manifests": {},
   "branches": [
     "main",
-    "develop",
-    "feature/empty",
-    "feature/handoff"
+    "develop"
   ],
   "commits": [],
   "pull_requests": []
