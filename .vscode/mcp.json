@@ -1,8 +1,8 @@
 {
   "servers": {
     "ollama": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-ollama"],
+      "command": "node",
+      "args": ["D:\\code\\ai\\OllamaClaude\\index.js"],
       "env": {
         "OLLAMA_HOST": "http://127.0.0.1:11434"
       }
