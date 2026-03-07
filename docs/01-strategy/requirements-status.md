@@ -5,9 +5,9 @@
 | Field            | Value                      |
 | ---------------- | -------------------------- |
 | Project Name     | Repository Analysis System |
-| Document Version | 2.3                        |
+| Document Version | 2.4                        |
 | Status           | Active                     |
-| Last Updated     | 2026-02-21                 |
+| Last Updated     | 2026-03-07                 |
 
 ## Status Legend
 
@@ -48,13 +48,14 @@
 
 ### Test Coverage (Both Platforms)
 
-| Test Suite                | GitHub          | Azure DevOps    | Location                                              |
-| ------------------------- | --------------- | --------------- | ----------------------------------------------------- |
-| Repository Extraction E2E | 14 tests        | 10 tests        | `tests/contract/integration/test_*_extraction_e2e.py` |
-| Language Detection        | ✅ 3 tests      | ✅ 2 tests      | Validates storage, time-series, and accuracy          |
-| Technology Detection      | ✅ 3 tests      | ✅ 3 tests      | Validates detection logic and structure               |
-| Database Schema           | ✅ Shared tests | ✅ Shared tests | `test_both_platforms_same_database_schema()`          |
-| Dependency Enrichment     | ✅ Shared tests | ✅ Shared tests | `test_dependency_enrichment_e2e.py`                   |
+| Test Suite                 | GitHub          | Azure DevOps    | Location                                                                       |
+| -------------------------- | --------------- | --------------- | ------------------------------------------------------------------------------ |
+| Repository Extraction E2E  | 14 tests        | 10 tests        | `tests/contract/integration/test_*_extraction_e2e.py`                          |
+| Language Detection         | ✅ 3 tests      | ✅ 2 tests      | Validates storage, time-series, and accuracy                                   |
+| Technology Detection       | ✅ 3 tests      | ✅ 3 tests      | Validates detection logic and structure                                        |
+| Database Schema            | ✅ Shared tests | ✅ Shared tests | `test_both_platforms_same_database_schema()`                                   |
+| Dependency Enrichment      | ✅ Shared tests | ✅ Shared tests | `test_dependency_enrichment_e2e.py`                                            |
+| Fixture-Backed Integration | ✅ 23 tests     | ✅ 23 tests     | `tests/contract/integration/test_fixture_scenarios.py` - Plan 015 (2026-03-07) |
 
 **Conclusion:** Azure DevOps and GitHub have **functional parity** for all core features (FR-1 through FR-4). Platform-specific features (README, metadata) are implemented only where the platform provides native support.
 
@@ -70,6 +71,7 @@
 **Note:** FR-13.2, FR-13.3, FR-13.5 (formerly FR-11.2, FR-11.3, FR-11.5) updated to Complete - Team management data layer fully implemented with 11 passing integration tests (2026-01-29).
 **Note:** Requirements renumbered 2026-02-21 - Added missing FR-5 (Dependency Dashboard) and FR-6 (Tech Radar), renumbered FR-5→FR-7 through FR-11→FR-13 to align with business-requirements.md, added FR-14 (Administrative Dashboard).
 **Note:** FR-14.1–FR-14.6 updated to Complete - Administrative Dashboard implemented (`dashboards/admin-dashboard.json`) with extraction controls, system status, repository staleness views, and contextual help text (2026-02-21).
+**Note:** Plan 015 completed (2026-03-07) - Fixture-backed integration tests implemented with 23 test cases covering 6 scenarios (`test_fixture_scenarios.py`). Tests verify extraction → storage pipeline using static JSON fixtures without live API credentials.
 
 ---
 
@@ -262,14 +264,14 @@
 
 ### FR-14: Administrative Dashboard
 
-| ID      | Requirement                                                                          | Priority | Status          | Notes                                                                                          |
-| ------- | ------------------------------------------------------------------------------------ | -------- | --------------- | ---------------------------------------------------------------------------------------------- |
-| FR-14.1 | System shall provide a dedicated administrative dashboard                            | High     | :white_check_mark: Complete | `dashboards/admin-dashboard.json` (uid: `admin-dashboard`) — linked from Home dashboard nav card - 2026-02-21 |
-| FR-14.2 | Admin dashboard shall include contextual help text for all administrative operations | High     | :white_check_mark: Complete | Markdown text panels explain each section: extraction controls, per-repo rescan API usage, staleness criteria - 2026-02-21 |
-| FR-14.3 | System shall provide force rescan functionality through the admin dashboard          | High     | :white_check_mark: Complete | "Force Rescan — GitHub" and "Force Rescan — Azure DevOps" stat panels link to `/api/rescan/{platform}`; per-repo rescan documented via `POST /api/rescan/repository/{id}` - 2026-02-21 |
+| ID      | Requirement                                                                          | Priority | Status                      | Notes                                                                                                                                                                                       |
+| ------- | ------------------------------------------------------------------------------------ | -------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-14.1 | System shall provide a dedicated administrative dashboard                            | High     | :white_check_mark: Complete | `dashboards/admin-dashboard.json` (uid: `admin-dashboard`) — linked from Home dashboard nav card - 2026-02-21                                                                               |
+| FR-14.2 | Admin dashboard shall include contextual help text for all administrative operations | High     | :white_check_mark: Complete | Markdown text panels explain each section: extraction controls, per-repo rescan API usage, staleness criteria - 2026-02-21                                                                  |
+| FR-14.3 | System shall provide force rescan functionality through the admin dashboard          | High     | :white_check_mark: Complete | "Force Rescan — GitHub" and "Force Rescan — Azure DevOps" stat panels link to `/api/rescan/{platform}`; per-repo rescan documented via `POST /api/rescan/repository/{id}` - 2026-02-21      |
 | FR-14.4 | Admin dashboard shall consolidate all administrative controls in one location        | Medium   | :white_check_mark: Complete | Single dashboard consolidates: extraction controls, system status (Active Runs, Progress %, API Health, Flower), extraction activity, recent runs, repository staleness tables - 2026-02-21 |
-| FR-14.5 | System shall provide status visibility for ongoing administrative operations         | Medium   | :white_check_mark: Complete | Active Runs stat, Latest Run Progress %, Extraction Rate timeseries, Recent Runs table, Recent Repository Activity table, links to API Health and Flower UI - 2026-02-21 |
-| FR-14.6 | Admin dashboard shall support per-platform administrative actions                    | Medium   | :white_check_mark: Complete | Separate "Force Rescan — GitHub" and "Force Rescan — Azure DevOps" action panels with platform-specific API endpoints - 2026-02-21 |
+| FR-14.5 | System shall provide status visibility for ongoing administrative operations         | Medium   | :white_check_mark: Complete | Active Runs stat, Latest Run Progress %, Extraction Rate timeseries, Recent Runs table, Recent Repository Activity table, links to API Health and Flower UI - 2026-02-21                    |
+| FR-14.6 | Admin dashboard shall support per-platform administrative actions                    | Medium   | :white_check_mark: Complete | Separate "Force Rescan — GitHub" and "Force Rescan — Azure DevOps" action panels with platform-specific API endpoints - 2026-02-21                                                          |
 
 **FR-14 Summary:** 6/6 Complete, 0/6 Partial, 0/6 Not Started
 
