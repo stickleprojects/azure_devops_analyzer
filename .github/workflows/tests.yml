@@ -1,3 +1,5 @@
+## NOTE: Keep this workflow in sync with scripts/run-tests-docker.sh.
+## The default local runner path should mirror this job's test order and env.
 name: Tests
 
 on:
@@ -122,9 +124,14 @@ jobs:
       - name: Run database migrations
         if: steps.test_scope.outputs.run_python == 'true'
         env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_azure_devops
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
-          bash docker/scripts/run_migrations.sh || true
+          bash docker/scripts/run_migrations.sh
 
       - name: Run unit tests
         if: steps.test_scope.outputs.run_python == 'true'
@@ -168,8 +175,15 @@ jobs:
         if: steps.test_scope.outputs.run_python == 'true'
         env:
           PYTHONPATH: ${{ github.workspace }}
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_azure_devops
         run: |
-          pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing -m "not live_api"
+          pytest tests/ --cov=src --cov-report=xml:test-results/coverage.xml --cov-report=term-missing -m "not live_api" -p no:cacheprovider
       - name: Report test status
         if: always()
         run: |

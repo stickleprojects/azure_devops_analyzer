@@ -158,9 +158,7 @@
         "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -220,9 +218,7 @@
         "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -282,9 +278,7 @@
         "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -344,9 +338,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -362,7 +354,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) AS active_runs FROM extraction_runs WHERE status = 'running';",
+          "rawSql": "SELECT active_runs FROM v_extraction_runs_active;",
           "refId": "A"
         }
       ],
@@ -414,9 +406,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -432,7 +422,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(processed_repositories * 100.0 / NULLIF(total_repositories, 0), 1) AS progress_pct FROM extraction_runs ORDER BY started_at DESC LIMIT 1;",
+          "rawSql": "SELECT progress_pct FROM v_extraction_run_latest_progress;",
           "refId": "A"
         }
       ],
@@ -488,9 +478,7 @@
         "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -550,9 +538,7 @@
         "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -621,9 +607,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -780,7 +764,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT run_id, platform, organization_name, project_name, status, processed_repositories, total_repositories, current_repository_id, updated_at FROM extraction_runs ORDER BY updated_at DESC LIMIT 20;",
+          "rawSql": "SELECT * FROM v_extraction_runs_recent;",
           "refId": "A"
         }
       ],
@@ -869,7 +853,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT r.repo_id, r.name, r.platform, r.last_analyzed_at, NOW() - r.last_analyzed_at AS age FROM repositories r WHERE r.last_analyzed_at < NOW() - INTERVAL '7 days' AND r.is_active = true ORDER BY r.last_analyzed_at ASC LIMIT 50;",
+          "rawSql": "SELECT * FROM v_stale_repositories;",
           "refId": "A"
         }
       ],
@@ -907,7 +891,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT r.repo_id, r.name, r.platform, r.created_at FROM repositories r WHERE r.last_analyzed_at IS NULL AND r.is_active = true ORDER BY r.created_at DESC LIMIT 50;",
+          "rawSql": "SELECT * FROM v_unanalyzed_repositories;",
           "refId": "A"
         }
       ],
@@ -958,7 +942,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT r.name AS repository, em.platform, em.status, em.extraction_started_at, em.extraction_completed_at, em.extraction_duration_seconds FROM extraction_metrics em JOIN repositories r ON em.repository_id = r.repo_id ORDER BY em.extraction_started_at DESC LIMIT 50;",
+          "rawSql": "SELECT * FROM v_extraction_metrics_recent;",
           "refId": "A"
         }
       ],
@@ -968,10 +952,7 @@
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": [
-    "admin",
-    "operations"
-  ],
+  "tags": ["admin", "operations"],
   "templating": {
     "list": []
   },

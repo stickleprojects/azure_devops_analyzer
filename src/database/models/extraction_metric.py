@@ -56,7 +56,7 @@ class ExtractionMetric(Base):
     platform: Mapped[str] = mapped_column(String(50), nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False)
     extraction_started_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
+        DateTime(timezone=True), nullable=False, primary_key=True
     )
     extraction_completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     extraction_duration_seconds: Mapped[Optional[int]] = mapped_column(Integer)

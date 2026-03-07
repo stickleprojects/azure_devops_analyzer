@@ -38,6 +38,18 @@ bash scripts/run-tests-docker.sh
 
 Docker is source of truth (catches environment issues local Python misses).
 
+### Gate 3.5: Ollama-Assisted Drift Check (Recommended)
+
+Before pushing changes that touch CI, migrations, or test orchestration, run an Ollama-assisted consistency pass using `.ai/agents/08-ollama-delegation.md`.
+
+Recommended focus areas:
+
+- CI/local parity: `.github/workflows/tests.yml` vs `scripts/run-tests-docker.sh`
+- DB initialization parity: `docker/scripts/run_migrations.sh` vs `database/schema.sql` and `database/migrations/*.sql`
+- Test fixture/setup parity: `tests/contract/database/conftest.py` vs schema/view assumptions
+
+Use Ollama for first-pass analysis and draft suggestions, then validate with local Docker tests (`bash scripts/run-tests-docker.sh`) before committing.
+
 ### Gate 4: Test Integrity Check (if modifying tests)
 
 Before changing any test, consult `agents/04a-test-guardian.md`:

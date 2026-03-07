@@ -100,9 +100,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -118,7 +116,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT author_id) as active_contributors\nFROM commits\nWHERE commit_date > NOW() - INTERVAL '30 days';",
+          "rawSql": "SELECT contributors as active_contributors FROM v_active_contributors_30d_total;",
           "refId": "A"
         }
       ],
@@ -161,9 +159,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -179,7 +175,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as commits\nFROM commits\nWHERE commit_date > NOW() - INTERVAL '30 days';",
+          "rawSql": "SELECT commits FROM v_commits_30d_total;",
           "refId": "A"
         }
       ],
@@ -222,9 +218,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -465,9 +459,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -492,10 +484,7 @@
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": [
-    "contributor",
-    "analytics"
-  ],
+  "tags": ["contributor", "analytics"],
   "templating": {
     "list": []
   },

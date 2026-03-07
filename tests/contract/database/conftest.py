@@ -87,16 +87,36 @@ def test_engine(test_database_url):
     # Create all tables
     Base.metadata.create_all(engine)
     
+    # Apply SQL views required for reporting tests
+    # Views are not created by SQLAlchemy, they must be applied from SQL files
+    project_root = Path(__file__).parent.parent.parent.parent
+    views_file = project_root / "database" / "views.sql"
+    
+    if views_file.exists():
+        with engine.begin() as conn:
+            with open(views_file, 'r') as f:
+                views_sql = f.read()
+                # Execute the views SQL (CREATE OR REPLACE VIEW statements)
+                try:
+                    conn.execute(text(views_sql))
+                    print(f"\n✓ Created database views from {views_file.name}")
+                except Exception as e:
+                    print(f"\n⚠ Warning: Could not create some views: {e}")
+    
     yield engine
     
-    # Cleanup: Drop all tables but keep database
-    # Suppress TimescaleDB internal schema errors during teardown
+    # Cleanup: drop/recreate public schema so dependent views don't block table drops.
     try:
-        Base.metadata.drop_all(engine)
+        with engine.begin() as conn:
+            conn.execute(text("DROP SCHEMA public CASCADE;"))
+            conn.execute(text("CREATE SCHEMA public;"))
     except Exception as e:
-        # Ignore TimescaleDB schema errors during cleanup
-        if "_timescaledb" not in str(e):
-            raise
+        # Fallback for environments where schema recreation fails.
+        try:
+            Base.metadata.drop_all(engine)
+        except Exception as drop_error:
+            if "_timescaledb" not in str(drop_error):
+                raise
     finally:
         engine.dispose()
 

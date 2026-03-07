@@ -2,8 +2,37 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Resolve schema/migrations paths for both container and host invocation contexts.
+if [ -f "schema.sql" ] && [ -d "migrations" ]; then
+    SCHEMA_FILE="schema.sql"
+    MIGRATIONS_DIR="migrations"
+elif [ -f "database/schema.sql" ] && [ -d "database/migrations" ]; then
+    SCHEMA_FILE="database/schema.sql"
+    MIGRATIONS_DIR="database/migrations"
+elif [ -f "$SCRIPT_DIR/../../database/schema.sql" ] && [ -d "$SCRIPT_DIR/../../database/migrations" ]; then
+    SCHEMA_FILE="$SCRIPT_DIR/../../database/schema.sql"
+    MIGRATIONS_DIR="$SCRIPT_DIR/../../database/migrations"
+else
+    echo "[ERROR] Could not locate schema.sql and migrations directory from current context"
+    exit 1
+fi
+
 # Configuration from environment variables
-POSTGRES_HOST="${POSTGRES_HOST:-timescaledb}"
+# Resolve host from explicit setting first, then DATABASE_URL/TEST_DATABASE_URL.
+if [ -n "${POSTGRES_HOST:-}" ]; then
+    RESOLVED_POSTGRES_HOST="$POSTGRES_HOST"
+else
+    DB_URL="${DATABASE_URL:-${TEST_DATABASE_URL:-}}"
+    if [ -n "$DB_URL" ]; then
+        RESOLVED_POSTGRES_HOST="$(echo "$DB_URL" | sed -E 's#^[a-zA-Z0-9+]+://([^@/]+@)?([^:/?#]+).*#\2#')"
+    else
+        RESOLVED_POSTGRES_HOST="timescaledb"
+    fi
+fi
+
+POSTGRES_HOST="$RESOLVED_POSTGRES_HOST"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
@@ -54,10 +83,10 @@ if [ "$SCHEMA_EXISTS" -gt 0 ]; then
     log_info "Database schema already exists, skipping initial schema creation"
 else
     log_info "Creating initial database schema..."
-    if PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f schema.sql >/dev/null 2>&1; then
+    if PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$SCHEMA_FILE" >/dev/null 2>&1; then
         log_success "Database schema initialized"
     else
-        log_warning "Schema creation had some warnings (this is often OK for IF NOT EXISTS clauses)"
+        log_error "Schema creation failed"
     fi
 fi
 
@@ -69,7 +98,7 @@ MIGRATION_APPLIED=0
 MIGRATION_SKIPPED=0
 
 # Process migration files in order
-for migration_file in migrations/*.sql; do
+for migration_file in "$MIGRATIONS_DIR"/*.sql; do
     if [ ! -f "$migration_file" ]; then
         continue
     fi
@@ -80,12 +109,12 @@ for migration_file in migrations/*.sql; do
     log_info "Processing migration: $migration_name..."
 
     # Execute migration and capture output
-    if PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$migration_file" >/dev/null 2>&1; then
+    if PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$migration_file" >/dev/null 2>&1; then
         log_success "Applied migration: $migration_name"
         MIGRATION_APPLIED=$((MIGRATION_APPLIED + 1))
     else
         # Check if the error is about already existing columns/tables (idempotent)
-        OUTPUT=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$migration_file" 2>&1)
+        OUTPUT=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$migration_file" 2>&1)
 
         if echo "$OUTPUT" | grep -q "already exists\|duplicate"; then
             log_info "Migration already applied: $migration_name"

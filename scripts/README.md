@@ -4,6 +4,63 @@ Utility scripts for the Azure DevOps Analyzer project.
 
 ## Available Scripts
 
+### Testing Scripts
+
+#### `run-tests-docker.sh` ⭐ (Primary test runner)
+
+Runs tests in Docker with a clean database. **Now matches CI exactly** - runs tests in the same 3-step sequence as GitHub Actions.
+
+**Usage:**
+
+```bash
+./scripts/run-tests-docker.sh                          # Run all tests (CI-equivalent sequence)
+./scripts/run-tests-docker.sh tests/unit/              # Run specific test path
+./scripts/run-tests-docker.sh --live-api               # Run live API tests
+./scripts/run-tests-docker.sh --keep-db                # Keep database for debugging
+```
+
+**What it does (matches CI exactly):**
+
+1. Starts PostgreSQL with TimescaleDB in Docker
+2. Applies schema and migrations
+3. **Runs unit tests** (no coverage)
+4. **Runs integration tests** (no coverage)
+5. **Generates coverage report** (runs all tests again)
+6. Cleans up automatically (unless `--keep-db` specified)
+
+**Why 3 steps instead of 1?**
+
+The CI workflow runs tests in separate steps, which can surface different failures than running everything together. By matching this sequence, you catch CI failures locally BEFORE pushing.
+
+**When to use:**
+
+- ✅ **Always** - This is your primary test runner
+- ✅ Before pushing to GitHub
+- ✅ To reproduce CI failures locally
+- ✅ For iterative development (it runs all tests)
+
+---
+
+#### `run_coverage.sh`
+
+Runs tests with coverage on the host machine (requires Python venv).
+
+**Usage:**
+
+```bash
+./scripts/run_coverage.sh
+```
+
+Generates:
+
+- Terminal report (shown immediately)
+- `htmlcov/index.html` - Interactive HTML report
+- `coverage.xml` - XML report for CI
+
+**Note:** This runs on your host machine, not in Docker. Docker-based scripts are recommended for consistency.
+
+---
+
 ### `ollama-generate.py`
 
 Core Ollama API caller used by all orchestration scripts. Runs inside Docker (`python:3.12-slim`) — no host Python dependencies required.
