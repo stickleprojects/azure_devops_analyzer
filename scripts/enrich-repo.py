@@ -14,6 +14,7 @@ script's parent directory (i.e. the project root).
 
 import sys
 import json
+import os
 import tempfile
 import shutil
 import random
@@ -168,16 +169,28 @@ def enrich_repo(seed_path: Path, cfg: dict) -> None:
     status_weights = [cfg["pr_status"][k] for k in status_keys]
     pm = cfg["pr_meta"]
 
+    # Derive branch names from the seed (may be strings or dicts)
+    raw_branches = seed_data.get("branches", [])
+    branch_names = [
+        b if isinstance(b, str) else b.get("name", "main")
+        for b in raw_branches
+    ] or ["main"]
+    default_branch = branch_names[0]
+    feature_branches = branch_names[1:] or ["feature/update"]
+
     prs = []
     for pr_number in range(1, num_prs + 1):
         created_at = generate_random_date(start_date, end_date)
         status = random.choices(status_keys, weights=status_weights, k=1)[0]
         author_name = generate_realistic_name()
+        source_branch = random.choice(feature_branches)
 
         pr_data: dict = {
             "pr_number": pr_number,
             "title": random.choice(cfg["pr_title_themes"]),
             "description": f"Added {random.choice(cfg['pr_title_themes'])}",
+            "source_branch": source_branch,
+            "target_branch": default_branch,
             "status": status,
             "created_at": created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "author_name": author_name,
@@ -213,6 +226,7 @@ def _write_atomic(path: Path, data: dict) -> None:
         json.dump(data, tmp, indent=2)
         tmp_path = Path(tmp.name)
     shutil.move(str(tmp_path), str(path))
+    os.chmod(path, 0o644)
 
 
 # ---------------------------------------------------------------------------
