@@ -1,4 +1,6 @@
 #!/bin/bash
+# NOTE: Keep this script in sync with .github/workflows/tests.yml.
+# Default test flow here should mirror CI step order and database env assumptions.
 # =============================================================================
 # Integration Test Runner - Docker Compose
 # =============================================================================

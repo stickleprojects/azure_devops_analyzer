@@ -1,3 +1,5 @@
+## NOTE: Keep this workflow in sync with scripts/run-tests-docker.sh.
+## The default local runner path should mirror this job's test order and env.
 name: Tests
 
 on:
