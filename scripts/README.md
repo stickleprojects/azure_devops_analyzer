@@ -46,6 +46,32 @@ docker run --rm -v "$PROJECT_ROOT:/app" -w /app python:3.12-slim \
 
 ---
 
+### `check_mcp_health.sh`
+
+Checks workspace MCP server configuration and warns when configured servers are not available.
+If the `ollama` MCP server is configured but unreachable, it can auto-start `ollama serve`.
+
+**Usage:**
+
+```bash
+bash scripts/check_mcp_health.sh
+```
+
+**What it checks:**
+
+- Reads MCP servers from `.vscode/mcp.json`
+- Verifies each server `command` exists in `PATH`
+- For the `ollama` server, verifies `OLLAMA_HOST` is reachable via `/api/tags`
+- Automatically launches `ollama serve` when missing
+
+**Related VS Code automation:**
+
+- `.vscode/tasks.json` includes `MCP health check (folder open)`
+- Runs automatically on workspace open (`runOn: folderOpen`)
+- Uses `bash scripts/check_mcp_health.sh`
+
+---
+
 ### `capture_snapshot.py`
 
 Captures a live repository snapshot and saves it as a fixture scenario JSON file. Used to create realistic test fixtures from real repositories.
