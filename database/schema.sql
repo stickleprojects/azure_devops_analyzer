@@ -109,7 +109,7 @@ CREATE INDEX idx_extraction_runs_status ON extraction_runs(status, updated_at DE
 CREATE INDEX idx_extraction_runs_platform ON extraction_runs(platform, status, updated_at DESC);
 
 CREATE TABLE extraction_metrics (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL,
     run_id UUID NOT NULL REFERENCES extraction_runs(run_id) ON DELETE CASCADE,
     repository_id VARCHAR(255) NOT NULL,  -- No FK: metrics must record progress before repo is stored
     platform VARCHAR(50) NOT NULL,
@@ -127,7 +127,8 @@ CREATE TABLE extraction_metrics (
     celery_task_id VARCHAR(255),
     worker_hostname VARCHAR(255),
     correlation_id UUID NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id, extraction_started_at)
 );
 
 SELECT create_hypertable('extraction_metrics', 'extraction_started_at',
