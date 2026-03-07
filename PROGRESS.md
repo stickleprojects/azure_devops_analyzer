@@ -2,12 +2,34 @@
 
 ---
 
-## Session: 2026-03-07 - PR #27 Finalized for Plan 015
+## Session: 2026-03-07 (Evening) - PR #28 Merged (Plan 016 Reporting Views)
+
+### Summary
+
+Fixed test coverage output standardization and database view column issues. 
+PR #28 merged successfully.
+
+### What Was Done
+
+- Fixed undefined `platform` column references in `database/views.sql` (v_stale_repositories, v_unanalyzed_repositories)
+- Standardized pytest coverage output to `test-results/coverage.xml` across CI and Docker
+- Disabled pytest cacheprovider for CI/local parity
+- Updated test script output messages to match actual artifacts
+- Committed changes: `df734ee` - "fix(tests): standardize coverage output and fix database views"
+- PR #28 merged to `main`
+
+### Next Steps
+
+- Continue Plan 016 implementation or move to next backlog item
+
+---
+
+## Session: 2026-03-07 (Morning) - PR #27 Finalized for Plan 015
 
 ### Summary
 
 Verified Ollama MCP tools are operational and finalized documentation for Plan 015.
-PR #27 is ready to merge.
+PR #27 merged.
 
 ### What Was Done
 
@@ -15,11 +37,7 @@ PR #27 is ready to merge.
 - Committed `.vscode/mcp.json` with Ollama MCP server setup
 - Reviewed and verified PR #27 content and completeness
 - All tests passing via `bash scripts/run-tests-docker.sh` (exit code 0)
-
-### Next Steps
-
-- Merge PR #27 to `main`
-- Start work on Plan 016 (SQL Reporting Views)
+- PR #27 merged to `main`
 
 ---
 
