@@ -8,6 +8,9 @@ For detailed operational specifics and reference material, see:
 - `agents/02a-architecture-guardian.md` - Deep dive on architecture boundaries
 - `agents/04a-test-guardian.md` - Deep dive on test integrity
 - `agents/07-session-continuity-agent.md` - Deep dive on session tracking
+- `.ai/agents/08-ollama-delegation.md` - Ollama MCP delegation policy for mechanical, code-focused tasks
+
+**Ollama Usage Expectation**: Prefer Ollama for mechanical drafting/analysis (code generation, cross-file consistency checks, test scaffolding), then perform final judgment and validation in Copilot before committing.
 
 **Session Start**: When user greets you, activate session continuity mode:
 

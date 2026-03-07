@@ -47,6 +47,32 @@ Delegate to Ollama MCP tools to reduce Claude token usage. Ollama runs locally v
 
 ---
 
+## Repo-Specific Defaults (Use These Often)
+
+When working in this repository, default to Ollama for these mechanical checks:
+
+1. CI vs local test flow drift check
+- Use `mcp__ollama__ollama_analyze_files` on:
+	- `.github/workflows/tests.yml`
+	- `scripts/run-tests-docker.sh`
+	- `docker-compose.test.yml`
+- Task prompt example: "Find ordering/env differences that could cause CI-only failures"
+
+2. Database schema/migration/view consistency check
+- Use `mcp__ollama__ollama_analyze_files` on:
+	- `database/schema.sql`
+	- `database/views.sql`
+	- `database/migrations/*.sql`
+	- `docker/scripts/run_migrations.sh`
+- Task prompt example: "Find references to missing columns/tables/views and non-idempotent migration patterns"
+
+3. Test scaffolding for regressions
+- Use `mcp__ollama__ollama_write_tests` or `mcp__ollama__ollama_generate_code_with_context` to draft regression tests for CI-only failures.
+
+Do not skip the human validation step: Ollama output is draft-quality and must be verified with Docker tests before commit.
+
+---
+
 ## Model
 
 Default model: `qwen2.5-coder:14b`. This can be overridden per call if a task needs a different capability.
