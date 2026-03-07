@@ -144,7 +144,7 @@ GROUP BY repo_id;
 -- View 10: Contributor-level commit counts (all time)
 CREATE OR REPLACE VIEW v_contributor_commits AS
 SELECT 
-    c.contributor_id AS author_id,
+    c.id AS author_id,
     co.repo_id,
     COUNT(*) AS commit_count
 FROM 
@@ -152,7 +152,7 @@ FROM
 JOIN 
     contributors c ON co.author_id = c.id
 GROUP BY 
-    c.contributor_id, co.repo_id;
+    c.id, co.repo_id;
 
 -- =============================================================================
 -- Contributor and Commit Views - Global Summaries
