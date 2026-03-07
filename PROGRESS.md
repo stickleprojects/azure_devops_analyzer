@@ -6,7 +6,7 @@
 
 ### Summary
 
-Fixed test coverage output standardization and database view column issues. 
+Fixed test coverage output standardization and database view column issues.
 PR #28 merged successfully.
 
 ### What Was Done
