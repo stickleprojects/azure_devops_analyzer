@@ -4,7 +4,10 @@
   "languages": [],
   "file_names": [],
   "manifests": {},
-  "branches": [],
+  "branches": [
+    "main",
+    "develop"
+  ],
   "commits": [],
   "pull_requests": []
 }

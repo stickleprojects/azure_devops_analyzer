@@ -117,6 +117,23 @@ branches = extractor.get_branches("test-repo")
 prs = extractor.get_pull_requests("test-repo")
 ```
 
+### Fixture-Backed Integration Tests
+
+Generated scenarios are now wired into integration tests via:
+
+- `tests/contract/integration/test_fixture_scenarios.py`
+
+This suite validates extraction -> storage behavior using `FixtureExtractor` and
+the real test database fixtures (`test_session`, `organization`) without live API
+credentials. It covers commits, pull requests, languages, and manifest file lookup
+across representative generated scenarios.
+
+Run only this suite:
+
+```bash
+pytest tests/contract/integration/test_fixture_scenarios.py -v
+```
+
 ## Test Organization
 
 Our tests follow a two-tier architecture:

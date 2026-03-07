@@ -37,21 +37,30 @@ class FixtureExtractor(RepositoryExtractor):
         return [FileTreeItem(path=p, is_directory=False, size=100) for p in self._scenario["file_names"]]
 
     def get_file_content(self, repo_id, file_path, branch=None) -> str | None:
-        for manifest in self._scenario.get("manifests", []):
+        manifests = self._scenario.get("manifests", {})
+        if isinstance(manifests, dict):
+            return manifests.get(file_path)
+        for manifest in manifests:
             if manifest["file_path"] == file_path:
                 return manifest["content"]
         return None
 
     def get_languages(self, repo_id) -> list[LanguageData]:
-        return [LanguageData(language=d["language"], byte_count=d["byte_count"], percentage=d.get("percentage")) for d in self._scenario["language_data"]]
+        langs = self._scenario.get("languages", self._scenario.get("language_data", []))
+        if langs and isinstance(langs[0], str):
+            return [LanguageData(language=l, byte_count=0, percentage=None) for l in langs]
+        return [LanguageData(language=d["language"], byte_count=d["byte_count"], percentage=d.get("percentage")) for d in langs]
 
     def get_branches(self, repo_id) -> list[BranchData]:
-        return [BranchData(name=b["name"], latest_commit_sha=b["latest_commit_sha"]) for b in self._scenario.get("branches", [])]
+        branches = self._scenario.get("branches", [])
+        if branches and isinstance(branches[0], str):
+            return [BranchData(name=b, latest_commit_sha=None) for b in branches]
+        return [BranchData(name=b["name"], latest_commit_sha=b.get("latest_commit_sha")) for b in branches]
 
     def get_commits(self, repo_id, **kwargs) -> list[CommitData]:
         return [
             CommitData(
-                sha=c["sha"],
+                sha=c.get("sha") or c["commit_hash"],
                 message=c["message"],
                 author_email=c["author_email"],
                 author_name=c.get("author_name"),
@@ -69,7 +78,7 @@ class FixtureExtractor(RepositoryExtractor):
         return [
             PullRequestData(
                 pr_number=pr["pr_number"],
-                platform_pr_id=pr["platform_pr_id"],
+                platform_pr_id=pr.get("platform_pr_id", pr.get("pr_number")),
                 title=pr["title"],
                 description=pr.get("description"),
                 source_branch=pr["source_branch"],

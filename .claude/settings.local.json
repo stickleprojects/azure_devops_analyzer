@@ -46,7 +46,9 @@
       "Bash(xargs grep -li \"claude\\\\|ollama\\\\|mcp\")",
       "Bash(xargs ls -la)",
       "Bash(sort -k5 -n -r)",
-      "Bash(xargs grep -l \"claude\")"
+      "Bash(xargs grep -l \"claude\")",
+      "mcp__ollama__ollama_analyze_files",
+      "mcp__ollama__ollama_generate_code_with_context"
     ]
   }
 }
