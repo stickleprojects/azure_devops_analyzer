@@ -211,7 +211,7 @@ WHERE is_active = true;
 
 -- View: Stale repositories (>7 days without analysis)
 CREATE OR REPLACE VIEW v_stale_repositories AS
-SELECT r.repo_id, r.name, r.platform, r.last_analyzed_at, NOW() - r.last_analyzed_at AS age
+SELECT r.repo_id, r.name, r.last_analyzed_at, NOW() - r.last_analyzed_at AS age
 FROM repositories r
 WHERE r.last_analyzed_at < NOW() - INTERVAL '7 days' AND r.is_active = true
 ORDER BY r.last_analyzed_at ASC
@@ -219,7 +219,7 @@ LIMIT 50;
 
 -- View: Never-analyzed repositories
 CREATE OR REPLACE VIEW v_unanalyzed_repositories AS
-SELECT r.repo_id, r.name, r.platform, r.created_at
+SELECT r.repo_id, r.name, r.created_at
 FROM repositories r
 WHERE r.last_analyzed_at IS NULL AND r.is_active = true
 ORDER BY r.created_at DESC

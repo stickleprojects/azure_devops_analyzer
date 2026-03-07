@@ -183,7 +183,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test_azure_devops
         run: |
-          pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing -m "not live_api"
+          pytest tests/ --cov=src --cov-report=xml:test-results/coverage.xml --cov-report=term-missing -m "not live_api" -p no:cacheprovider
       - name: Report test status
         if: always()
         run: |

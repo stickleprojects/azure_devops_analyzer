@@ -304,7 +304,8 @@ else
             log_info "Step 3/3: Generating coverage report (runs all tests)..."
             docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
                 sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-                       pytest tests/ --cov=src --cov-report=xml --cov-report=term-missing -m 'not live_api' \
+                       pytest tests/ --cov=src --cov-report=xml:/app/test-results/coverage.xml --cov-report=term-missing -m 'not live_api' \
+                       -p no:cacheprovider \
                        --junit-xml=/app/test-results/junit.xml" || TEST_EXIT_CODE=$?
             
             if [ $TEST_EXIT_CODE -ne 0 ]; then
@@ -326,7 +327,7 @@ if [ $TEST_EXIT_CODE -eq 0 ]; then
     echo
     log_info "Test results available at:"
     echo "  - JUnit XML: $RESULTS_DIR/junit.xml"
-    echo "  - Coverage:  $RESULTS_DIR/coverage/index.html"
+    echo "  - Coverage:  $RESULTS_DIR/coverage.xml"
     echo
 else
     log_error "Tests failed (exit code: $TEST_EXIT_CODE)"
