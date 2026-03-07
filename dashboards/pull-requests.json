@@ -100,9 +100,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -118,7 +116,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as open_prs FROM pull_requests WHERE status = 'open';",
+          "rawSql": "SELECT open_prs FROM v_open_prs_total;",
           "refId": "A"
         }
       ],
@@ -161,9 +159,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -179,7 +175,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as merged_prs \nFROM pull_requests \nWHERE status = 'merged' AND merged_at > NOW() - INTERVAL '30 days';",
+          "rawSql": "SELECT merged_prs FROM v_merged_prs_30d_total;",
           "refId": "A"
         }
       ],
@@ -222,9 +218,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -240,7 +234,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as closed_prs \nFROM pull_requests \nWHERE status = 'closed' AND closed_at > NOW() - INTERVAL '30 days';",
+          "rawSql": "SELECT closed_prs FROM v_closed_prs_30d_total;",
           "refId": "A"
         }
       ],
@@ -283,9 +277,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -301,7 +293,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(AVG(lines_added + lines_removed), 0)::int as avg_changes \nFROM pull_requests \nWHERE created_at > NOW() - INTERVAL '30 days';",
+          "rawSql": "SELECT avg_changes FROM v_pr_avg_changes_30d;",
           "refId": "A"
         }
       ],
@@ -344,9 +336,7 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": true
         },
@@ -365,7 +355,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT status, COUNT(*) as count\nFROM pull_requests\nGROUP BY status;",
+          "rawSql": "SELECT status, count FROM v_pr_status_distribution;",
           "refId": "A"
         }
       ],
@@ -408,9 +398,7 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": true
         },
@@ -429,7 +417,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  COALESCE(size_category, 'unknown') as size_category, \n  COUNT(*) as count\nFROM pull_requests\nWHERE created_at > NOW() - INTERVAL '30 days'\nGROUP BY size_category;",
+          "rawSql": "SELECT size_category, count FROM v_pr_size_distribution_30d;",
           "refId": "A"
         }
       ],
@@ -550,7 +538,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('day', created_at) as time,\n  COUNT(*) as created\nFROM pull_requests\nWHERE created_at > NOW() - INTERVAL '30 days'\nGROUP BY date_trunc('day', created_at)\nORDER BY time;",
+          "rawSql": "SELECT * FROM v_pr_creation_daily_trend;",
           "refId": "created"
         },
         {
@@ -562,7 +550,7 @@
           "format": "time_series",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('day', merged_at) as time,\n  COUNT(*) as merged\nFROM pull_requests\nWHERE merged_at > NOW() - INTERVAL '30 days'\nGROUP BY date_trunc('day', merged_at)\nORDER BY time;",
+          "rawSql": "SELECT * FROM v_pr_merge_daily_trend;",
           "refId": "merged"
         }
       ],
@@ -641,9 +629,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -658,7 +644,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  pr.pr_number,\n  pr.title,\n  COALESCE(c.name, c.email) as author,\n  pr.status,\n  pr.size_category,\n  pr.files_changed,\n  pr.lines_added,\n  pr.lines_removed,\n  pr.created_at,\n  pr.merged_at\nFROM pull_requests pr\nJOIN repositories r ON pr.repo_id = r.repo_id\nLEFT JOIN contributors c ON pr.author_id = c.id\nWHERE pr.created_at > NOW() - INTERVAL '30 days'\nORDER BY pr.created_at DESC\nLIMIT 50;",
+          "rawSql": "SELECT * FROM v_pr_recent_details;",
           "refId": "A"
         }
       ],
@@ -668,10 +654,7 @@
   ],
   "refresh": "30s",
   "schemaVersion": 39,
-  "tags": [
-    "pull-request",
-    "pr"
-  ],
+  "tags": ["pull-request", "pr"],
   "templating": {
     "list": []
   },
