@@ -124,7 +124,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
-          bash docker/scripts/run_migrations.sh || true
+          bash docker/scripts/run_migrations.sh
 
       - name: Run unit tests
         if: steps.test_scope.outputs.run_python == 'true'

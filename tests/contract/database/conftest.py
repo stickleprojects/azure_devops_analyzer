@@ -89,14 +89,18 @@ def test_engine(test_database_url):
     
     yield engine
     
-    # Cleanup: Drop all tables but keep database
-    # Suppress TimescaleDB internal schema errors during teardown
+    # Cleanup: drop/recreate public schema so dependent views don't block table drops.
     try:
-        Base.metadata.drop_all(engine)
+        with engine.begin() as conn:
+            conn.execute(text("DROP SCHEMA public CASCADE;"))
+            conn.execute(text("CREATE SCHEMA public;"))
     except Exception as e:
-        # Ignore TimescaleDB schema errors during cleanup
-        if "_timescaledb" not in str(e):
-            raise
+        # Fallback for environments where schema recreation fails.
+        try:
+            Base.metadata.drop_all(engine)
+        except Exception as drop_error:
+            if "_timescaledb" not in str(drop_error):
+                raise
     finally:
         engine.dispose()
 
