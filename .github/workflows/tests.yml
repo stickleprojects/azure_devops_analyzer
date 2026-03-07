@@ -122,6 +122,11 @@ jobs:
       - name: Run database migrations
         if: steps.test_scope.outputs.run_python == 'true'
         env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_azure_devops
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
           bash docker/scripts/run_migrations.sh

@@ -20,7 +20,19 @@ else
 fi
 
 # Configuration from environment variables
-POSTGRES_HOST="${POSTGRES_HOST:-timescaledb}"
+# Resolve host from explicit setting first, then DATABASE_URL/TEST_DATABASE_URL.
+if [ -n "${POSTGRES_HOST:-}" ]; then
+    RESOLVED_POSTGRES_HOST="$POSTGRES_HOST"
+else
+    DB_URL="${DATABASE_URL:-${TEST_DATABASE_URL:-}}"
+    if [ -n "$DB_URL" ]; then
+        RESOLVED_POSTGRES_HOST="$(echo "$DB_URL" | sed -E 's#^[a-zA-Z0-9+]+://([^@/]+@)?([^:/?#]+).*#\2#')"
+    else
+        RESOLVED_POSTGRES_HOST="timescaledb"
+    fi
+fi
+
+POSTGRES_HOST="$RESOLVED_POSTGRES_HOST"
 POSTGRES_PORT="${POSTGRES_PORT:-5432}"
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-postgres}"
