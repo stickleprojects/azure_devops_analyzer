@@ -18,6 +18,8 @@ For detailed operational specifics and reference material, see:
 4. Read `PROGRESS.md` to catch up on last session
 5. Either summarize incomplete work or present backlog priorities
 
+**Environment Setup**: If `.env` is missing or incomplete, generate it by running `./Start-RepoAnalysis.sh --regenerate-env` (or `./start-repoanalysis.sh --regenerate-env`) and have the user answer the interactive prompts.
+
 **Remember**: Principles over rules. When uncertain, identify which principle applies and use judgment.
 
 **Tools**: Tell the user if any tools or MCPs are listed in .ai\agents or elsewhere but something is preventing those tools from being used

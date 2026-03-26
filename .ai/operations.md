@@ -116,6 +116,7 @@ See `agents/07-session-continuity-agent.md` for detailed session tracking patter
 
 - **Use Docker Compose V2**: `docker compose` (not `docker-compose`)
 - **Environment file**: `.env` supports variable references like `$VARIABLE_NAME`
+- **Generate `.env` when missing/incomplete**: Run `./Start-RepoAnalysis.sh --regenerate-env` (or `./start-repoanalysis.sh --regenerate-env`) and have the user answer the interactive prompts
 - **Resolve variables**: Use `./scripts/resolve_env.sh` to create `.env.resolved` if needed
 - **Start services**: `docker compose --env-file .env.resolved up -d`
 
@@ -125,6 +126,7 @@ See `agents/07-session-continuity-agent.md` for detailed session tracking patter
 - **Type hints**: Use type hints in all code
 - **Database layer**: Keep DB operations in `src/database/storage.py` ONLY
 - **Extractors location**: `src/extractors/{platform}/`
+- **Execution**: Never run python code locally - always host inside docker, there is a script `scripts/run-tests-docker.sh` as an example
 
 ### Code Style
 

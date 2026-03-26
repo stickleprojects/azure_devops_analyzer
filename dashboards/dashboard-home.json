@@ -275,7 +275,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as prs FROM pull_requests WHERE created_at > NOW() - INTERVAL '30 days';",
+          "rawSql": "SELECT prs FROM v_prs_created_30d_total;",
           "refId": "A"
         }
       ],
@@ -334,7 +334,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as teams FROM teams;",
+          "rawSql": "SELECT teams FROM v_teams_total;",
           "refId": "A"
         }
       ],

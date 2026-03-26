@@ -1,6 +1,7 @@
 import pytest
 from sqlalchemy import text
 from datetime import datetime, timedelta
+from uuid import uuid4
 from src.database.storage import (
     store_organization,
     store_project,
@@ -415,6 +416,269 @@ def test_v_active_repositories_total(db_session):
     assert row.total >= 3
 
 
+@pytest.mark.integration
+def test_v_prs_created_30d_total(db_session):
+    """Test global PRs created in last 30 days"""
+    org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
+    org = store_organization(db_session, org_data)
+    project = store_project(db_session, org, "test-project", "Test Project")
+    repo_data = sample_repository_data(repo_id="repo1", name="test-repo")
+    repo = store_repository(db_session, project, repo_data)
+
+    recent_pr = sample_pull_request_data(
+        pr_number=1,
+        title="Recent PR",
+        status="open",
+        created_at=datetime.now() - timedelta(days=5),
+    )
+    old_pr = sample_pull_request_data(
+        pr_number=2,
+        title="Old PR",
+        status="open",
+        created_at=datetime.now() - timedelta(days=45),
+    )
+    store_pull_request(db_session, repo.repo_id, recent_pr)
+    store_pull_request(db_session, repo.repo_id, old_pr)
+    db_session.commit()
+
+    row = db_session.execute(text("SELECT prs FROM v_prs_created_30d_total")).fetchone()
+
+    assert row is not None
+    assert row.prs == 1
+
+
+@pytest.mark.integration
+def test_v_teams_total(db_session):
+    """Test global teams count"""
+    org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
+    org = store_organization(db_session, org_data)
+    db_session.execute(
+        text("INSERT INTO teams (organization_id, name) VALUES (:org_id, :name)"),
+        [{"org_id": org.organization_id, "name": "Team A"}, {"org_id": org.organization_id, "name": "Team B"}],
+    )
+    db_session.commit()
+
+    row = db_session.execute(text("SELECT teams FROM v_teams_total")).fetchone()
+
+    assert row is not None
+    assert row.teams == 2
+
+
+@pytest.mark.integration
+def test_v_commits_total_and_contributors_total(db_session):
+    """Test global all-time commit and contributor totals"""
+    org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
+    org = store_organization(db_session, org_data)
+    project = store_project(db_session, org, "test-project", "Test Project")
+    repo_data = sample_repository_data(repo_id="repo1", name="test-repo")
+    repo = store_repository(db_session, project, repo_data)
+
+    for i, author_email in enumerate(["author1@example.com", "author2@example.com"]):
+        commit_data = sample_commit_data(
+            sha=f"sha{i}",
+            author_email=author_email,
+            commit_date=datetime.now() - timedelta(days=2),
+            message=f"Commit {i}",
+        )
+        store_commit(db_session, repo.repo_id, "main", commit_data)
+    db_session.commit()
+
+    commits_row = db_session.execute(text("SELECT total FROM v_commits_total")).fetchone()
+    contributors_row = db_session.execute(text("SELECT total FROM v_contributors_total")).fetchone()
+
+    assert commits_row is not None
+    assert contributors_row is not None
+    assert commits_row.total == 2
+    assert contributors_row.total == 2
+
+
+@pytest.mark.integration
+def test_v_repository_overview_views(db_session):
+    """Test repository-overview view projections"""
+    org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
+    org = store_organization(db_session, org_data)
+    project = store_project(db_session, org, "test-project", "Test Project")
+    repo_data = sample_repository_data(repo_id="repo1", name="test-repo")
+    repo = store_repository(db_session, project, repo_data)
+
+    for i in range(3):
+        commit_data = sample_commit_data(
+            sha=f"sha{i}",
+            author_email="dev@example.com",
+            commit_date=datetime.now() - timedelta(days=3),
+            message=f"Commit {i}",
+        )
+        store_commit(db_session, repo.repo_id, "main", commit_data)
+
+    pr_data = sample_pull_request_data(pr_number=1, title="PR", status="open")
+    store_pull_request(db_session, repo.repo_id, pr_data)
+    db_session.commit()
+
+    top_repo = db_session.execute(
+        text("SELECT repository, commits FROM v_top_repositories_by_commits_30d LIMIT 1")
+    ).fetchone()
+    overview_row = db_session.execute(
+        text("SELECT repository, total_commits, total_prs FROM v_repository_overview_table WHERE repo_id = :rid"),
+        {"rid": repo.repo_id},
+    ).fetchone()
+
+    assert top_repo is not None
+    assert top_repo.repository == "test-repo"
+    assert top_repo.commits == 3
+    assert overview_row is not None
+    assert overview_row.total_commits == 3
+    assert overview_row.total_prs == 1
+
+
+@pytest.mark.integration
+def test_v_pr_reviews_30d_total(db_session):
+    """Test global PR reviews count in last 30 days"""
+    org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
+    org = store_organization(db_session, org_data)
+    project = store_project(db_session, org, "test-project", "Test Project")
+    repo_data = sample_repository_data(repo_id="repo1", name="test-repo")
+    repo = store_repository(db_session, project, repo_data)
+
+    pr_data = sample_pull_request_data(pr_number=1, title="PR 1", status="open")
+    pr = store_pull_request(db_session, repo.repo_id, pr_data)
+
+    reviewer_id = pr.author_id
+    db_session.execute(
+        text(
+            """
+            INSERT INTO pr_reviews (pr_id, reviewer_id, review_date, vote, is_required, comment_count)
+            VALUES (:pr_id, :reviewer_id, :review_date, :vote, :is_required, :comment_count)
+            """
+        ),
+        {
+            "pr_id": pr.id,
+            "reviewer_id": reviewer_id,
+            "review_date": datetime.now() - timedelta(days=1),
+            "vote": 10,
+            "is_required": False,
+            "comment_count": 0,
+        },
+    )
+    db_session.commit()
+
+    row = db_session.execute(text("SELECT reviews FROM v_pr_reviews_30d_total")).fetchone()
+
+    assert row is not None
+    assert row.reviews == 1
+
+
+@pytest.mark.integration
+def test_v_top_contributor_and_reviewer_views(db_session):
+    """Test contributor and reviewer ranking views"""
+    org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
+    org = store_organization(db_session, org_data)
+    project = store_project(db_session, org, "test-project", "Test Project")
+    repo_data = sample_repository_data(repo_id="repo1", name="test-repo")
+    repo = store_repository(db_session, project, repo_data)
+
+    commit_data = sample_commit_data(
+        sha="sha1",
+        author_email="dev@example.com",
+        commit_date=datetime.now() - timedelta(days=2),
+        message="Commit 1",
+    )
+    store_commit(db_session, repo.repo_id, "main", commit_data)
+
+    pr_data = sample_pull_request_data(pr_number=1, title="PR 1", status="open")
+    pr = store_pull_request(db_session, repo.repo_id, pr_data)
+    db_session.execute(
+        text(
+            """
+            INSERT INTO pr_reviews (pr_id, reviewer_id, review_date, vote, is_required, comment_count)
+            VALUES (:pr_id, :reviewer_id, :review_date, :vote, :is_required, :comment_count)
+            """
+        ),
+        {
+            "pr_id": pr.id,
+            "reviewer_id": pr.author_id,
+            "review_date": datetime.now() - timedelta(days=1),
+            "vote": 10,
+            "is_required": False,
+            "comment_count": 0,
+        },
+    )
+    db_session.commit()
+
+    top_contributor = db_session.execute(
+        text("SELECT contributor, commits FROM v_top_contributors_30d LIMIT 1")
+    ).fetchone()
+    top_reviewer = db_session.execute(
+        text("SELECT reviewer, reviews FROM v_top_reviewers_30d LIMIT 1")
+    ).fetchone()
+
+    assert top_contributor is not None
+    assert top_contributor.commits >= 1
+    assert top_reviewer is not None
+    assert top_reviewer.reviews >= 1
+
+
+@pytest.mark.integration
+def test_v_contributor_activity_30d(db_session):
+    """Test contributor activity rollup view"""
+    org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
+    org = store_organization(db_session, org_data)
+    project = store_project(db_session, org, "test-project", "Test Project")
+    repo_data = sample_repository_data(repo_id="repo1", name="test-repo")
+    repo = store_repository(db_session, project, repo_data)
+
+    commit_data = sample_commit_data(
+        sha="sha1",
+        author_email="dev@example.com",
+        commit_date=datetime.now() - timedelta(days=2),
+        message="Commit 1",
+    )
+    commit_data.lines_added = 25
+    commit_data.lines_removed = 10
+    store_commit(db_session, repo.repo_id, "main", commit_data)
+
+    pr_data = sample_pull_request_data(
+        pr_number=1,
+        title="PR 1",
+        status="open",
+        created_at=datetime.now() - timedelta(days=1),
+    )
+    pr = store_pull_request(db_session, repo.repo_id, pr_data)
+    db_session.execute(
+        text(
+            """
+            INSERT INTO pr_reviews (pr_id, reviewer_id, review_date, vote, is_required, comment_count)
+            VALUES (:pr_id, :reviewer_id, :review_date, :vote, :is_required, :comment_count)
+            """
+        ),
+        {
+            "pr_id": pr.id,
+            "reviewer_id": pr.author_id,
+            "review_date": datetime.now() - timedelta(days=1),
+            "vote": 10,
+            "is_required": False,
+            "comment_count": 0,
+        },
+    )
+    db_session.commit()
+
+    row = db_session.execute(
+        text(
+            """
+            SELECT
+                COALESCE(SUM(commits), 0) AS commits,
+                COALESCE(SUM(prs_authored), 0) AS prs_authored,
+                COALESCE(SUM(reviews_given), 0) AS reviews_given
+            FROM v_contributor_activity_30d
+            """
+        )
+    ).fetchone()
+
+    assert row is not None
+    assert row.commits >= 1
+    assert row.prs_authored >= 1
+    assert row.reviews_given >= 1
+
+
 # =============================================================================
 # Time Series Views (Trend Charts)
 # =============================================================================
@@ -515,3 +779,104 @@ def test_v_unanalyzed_repositories(db_session):
     rows = result.fetchall()
     
     assert isinstance(rows, list)
+
+
+@pytest.mark.integration
+def test_v_auth_errors_by_platform_and_total(db_session):
+    """Auth failures should be grouped by platform and counted in 24h total"""
+    now = datetime.now()
+    run_gh = uuid4()
+    run_ado = uuid4()
+    run_other = uuid4()
+
+    db_session.execute(
+        text(
+            """
+            INSERT INTO extraction_runs
+            (run_id, platform, organization_name, project_name, status, total_repositories, processed_repositories, started_at, updated_at, completed_at, error_message)
+            VALUES
+            (:run_gh, 'github', 'org', NULL, 'failed', 1, 0, :now, :now, :now, '401 Bad credentials'),
+            (:run_ado, 'azure_devops', 'org', NULL, 'failed', 1, 0, :now, :now, :now, 'The requested resource requires user authentication'),
+            (:run_other, 'github', 'org', NULL, 'failed', 1, 0, :now, :now, :now, 'network timeout')
+            """
+        ),
+        {"run_gh": str(run_gh), "run_ado": str(run_ado), "run_other": str(run_other), "now": now},
+    )
+    db_session.commit()
+
+    rows = db_session.execute(text("SELECT platform, error_count FROM v_auth_errors_by_platform ORDER BY platform")).fetchall()
+    total = db_session.execute(text("SELECT auth_errors FROM v_auth_errors_24h_total")).scalar_one()
+
+    assert len(rows) == 2
+    assert total == 2
+
+
+@pytest.mark.integration
+def test_v_extraction_metrics_with_errors_categories(db_session):
+    """Extraction metrics view should normalize auth and non-auth error categories"""
+    now = datetime.now()
+    run_id = uuid4()
+
+    db_session.execute(
+        text(
+            """
+            INSERT INTO extraction_runs
+            (run_id, platform, organization_name, project_name, status, total_repositories, processed_repositories, started_at, updated_at, completed_at, error_message)
+            VALUES
+            (:run_id, 'github', 'org', NULL, 'failed', 3, 1, :now, :now, :now, 'mixed failures')
+            """
+        ),
+        {"run_id": str(run_id), "now": now},
+    )
+
+    db_session.execute(
+        text(
+            """
+            INSERT INTO extraction_metrics
+            (run_id, repository_id, platform, status, extraction_started_at, extraction_completed_at, extraction_duration_seconds, error_message, correlation_id)
+            VALUES
+            (:run_id, 'repo/a', 'github', 'failed', :now, :now, 3, '401 unauthorized', :c1),
+            (:run_id, 'repo/b', 'github', 'failed', :now, :now, 3, 'bad credentials', :c2),
+            (:run_id, 'repo/c', 'github', 'failed', :now, :now, 3, 'unexpected parser failure', :c3)
+            """
+        ),
+        {"run_id": str(run_id), "now": now, "c1": str(uuid4()), "c2": str(uuid4()), "c3": str(uuid4())},
+    )
+    db_session.commit()
+
+    categories = db_session.execute(
+        text("SELECT error_message, error_category FROM v_extraction_metrics_with_errors WHERE run_id = :run_id"),
+        {"run_id": str(run_id)},
+    ).fetchall()
+
+    category_map = {row.error_message: row.error_category for row in categories}
+    assert category_map["401 unauthorized"] == "AUTH_401_UNAUTHORIZED"
+    assert category_map["bad credentials"] == "BAD_CREDENTIALS"
+    assert category_map["unexpected parser failure"] == "OTHER_ERROR"
+
+
+@pytest.mark.integration
+def test_v_extraction_runs_recent_includes_error_category(db_session):
+    """Recent runs view should expose normalized run-level error categories"""
+    now = datetime.now()
+    run_id = uuid4()
+    db_session.execute(
+        text(
+            """
+            INSERT INTO extraction_runs
+            (run_id, platform, organization_name, project_name, status, total_repositories, processed_repositories, started_at, updated_at, completed_at, error_message)
+            VALUES
+            (:run_id, 'github', 'org', NULL, 'failed', 1, 0, :now, :now, :now, '401 bad credentials')
+            """
+        ),
+        {"run_id": str(run_id), "now": now},
+    )
+    db_session.commit()
+
+    row = db_session.execute(
+        text("SELECT error_category FROM v_extraction_runs_recent WHERE run_id = :run_id"),
+        {"run_id": str(run_id)},
+    ).fetchone()
+
+    assert row is not None
+    assert row.error_category == "AUTH_401_UNAUTHORIZED"

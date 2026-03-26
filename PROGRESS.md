@@ -2,6 +2,58 @@
 
 ---
 
+## Session: 2026-03-26 - Plan 016 Reporting View Migration Extended
+
+### Summary
+
+Completed the remaining Plan 016 dashboard migration work by moving the last
+high-value dashboard SQL into shared reporting views, updating the dashboards to
+query those views, and validating the reporting view contract suite in Docker.
+
+### What Was Done
+
+- Expanded `database/views.sql` with additional shared reporting views for:
+   - repository code quality snapshots and trends
+   - repository dependency/security rollups and vulnerability details
+   - latest branch health metrics
+   - security overview, severity, repository, and dependency summaries
+   - team-scoped trend, performance, and recent activity views
+   - extraction throughput time buckets for admin observability
+- Simplified `database/migrations/011_add_reporting_views.sql` to source `database/views.sql`
+   via `\ir ../views.sql`
+- Updated dashboards to use the reporting layer instead of embedded business logic:
+   - `dashboards/repository-deep-dive.json`
+   - `dashboards/security-dashboard.json`
+   - `dashboards/team-overview.json`
+   - `dashboards/service-overview.json`
+   - `dashboards/admin-dashboard.json`
+   - prior related cleanups already in branch for `dashboard-home.json`, `repository-overview.json`, and `contributor-analytics.json`
+- Fixed schema drift in reporting views by using `last_seen_at` for dependency and
+   repository language snapshot logic instead of nonexistent `analyzed_at` columns
+- Added/extended contract coverage in `tests/contract/database/test_reporting_views.py`
+   for global dashboard summary views and admin auth/error reporting views
+- Updated migration image inputs in `Dockerfile.migrations` so reporting view changes
+   are available to migration runs
+
+### Validation
+
+- Ran Docker contract validation:
+   - `docker compose -f docker-compose.test.yml run --rm test-runner sh -c "pytest tests/contract/database/test_reporting_views.py"`
+- Result: `32 passed`
+
+### Current State
+
+- Plan 016 dashboard migration is effectively complete for the dashboards covered in
+   this branch
+- Remaining dashboard issues are no longer reporting-layer migration gaps; they are
+   data-quality/semantics defects tracked separately in `DASHBOARD_VIEW_AUDIT.md`
+
+### Next Steps
+
+- Smoke-test the updated Grafana dashboards against a populated environment
+- Address contributor analytics data-quality defects (identity normalization and
+   review timestamp semantics) as a separate workstream
+
 ## Session: 2026-03-07 (Evening) - PR #28 Merged (Plan 016 Reporting Views)
 
 ### Summary

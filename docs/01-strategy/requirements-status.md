@@ -5,9 +5,9 @@
 | Field            | Value                      |
 | ---------------- | -------------------------- |
 | Project Name     | Repository Analysis System |
-| Document Version | 2.4                        |
+| Document Version | 2.5                        |
 | Status           | Active                     |
-| Last Updated     | 2026-03-07                 |
+| Last Updated     | 2026-03-26                 |
 
 ## Status Legend
 
@@ -65,7 +65,7 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 45       | 9       | 18          | 72    |
+| Functional Requirements     | 45       | 10      | 17          | 72    |
 | Non-Functional Requirements | 9        | 6       | 4           | 19    |
 
 **Note:** FR-13.2, FR-13.3, FR-13.5 (formerly FR-11.2, FR-11.3, FR-11.5) updated to Complete - Team management data layer fully implemented with 11 passing integration tests (2026-01-29).
@@ -256,9 +256,9 @@
 | FR-13.5 | System shall aggregate contributor metrics at team level             | High     | :white_check_mark: Complete | `TeamMetric` model with 6 aggregate functions in `team_analytics.py` service module - Implemented 2026-01-29                                                |
 | FR-13.6 | System shall provide Individual Contributor Dashboard                | Medium   | :x: Not Started             | Personal dashboard showing commits, PRs, reviews across repos - Blocked pending dashboard integration framework                                             |
 | FR-13.7 | System shall display team member aggregates on Team Overview         | Medium   | :x: Not Started             | Per-member stats with drill-down to Individual Contributor view - Blocked pending dashboard integration framework                                           |
-| FR-13.8 | System shall support filtering dashboards by team                    | Medium   | :x: Not Started             | Team template variable on relevant dashboards - Blocked pending dashboard integration framework                                                             |
+| FR-13.8 | System shall support filtering dashboards by team                    | Medium   | :large_orange_diamond: Partial | Team variable exists in Team Overview, but filtering is incomplete across panels; tracked as DASH-TEAM-001 in DASHBOARD_VIEW_AUDIT.md.                     |
 
-**FR-13 Summary:** 5/8 Complete, 0/8 Partial, 3/8 Not Started (3 dashboard features blocked pending integration framework)
+**FR-13 Summary:** 5/8 Complete, 1/8 Partial, 2/8 Not Started (dashboard filtering has known defects tracked in audit list)
 
 ---
 
@@ -448,3 +448,4 @@
 | 2.0     | 2026-01-25 | System | **FR-1.5 and FR-8.2 Complete**: README and metadata extraction now implemented for both GitHub and Azure DevOps platforms. Platform parity achieved for core documentation features.                                                                       |
 | 2.1     | 2026-01-25 | System | **Observability Requirements Added**: FR-9.5 (extraction progress monitoring) and NFR-3 (worker observability) with 6 new requirements for metrics, health checks, structured logging, and Grafana dashboards                                              |
 | 2.2     | 2026-02-09 | System | **Progress Monitoring Complete**: FR-9.5 complete, NFR-3.1/3.4/3.5 complete after extraction progress tracking, TimescaleDB storage, and Grafana dashboard validation                                                                                      |
+| 2.5     | 2026-03-26 | System | **Dashboard Filtering Tracking Added**: FR-13.8 updated to Partial; Team Overview filter defect tracked as DASH-TEAM-001 in DASHBOARD_VIEW_AUDIT.md.                                                                                                     |

@@ -7,6 +7,7 @@ RUN apk add --no-cache bash gcc musl-dev libffi-dev openssl-dev python3-dev
 
 # Copy database schema and migrations
 COPY database/schema.sql ./schema.sql
+COPY database/views.sql ./views.sql
 COPY database/migrations/ ./migrations/
 
 # Copy the migration runner script
