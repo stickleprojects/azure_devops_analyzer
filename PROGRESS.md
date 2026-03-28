@@ -2,6 +2,30 @@
 
 ---
 
+## Session: 2026-03-28 - CI Fix for PR #30
+
+### Summary
+
+Diagnosed and fixed the failing CI check on PR #30 (Plan 016 Reporting Views).
+
+### What Was Done
+
+- Identified root cause: `test-results/` is gitignored and absent on fresh CI checkout;
+  `pytest-cov` cannot write `coverage.xml` without the parent directory existing
+- Local test script (`scripts/run-tests-docker.sh`) already had `mkdir -p "$RESULTS_DIR"`;
+  CI workflow was missing the equivalent
+- Added `mkdir -p test-results` before `pytest` in the "Generate coverage report" step
+  in `.github/workflows/tests.yml`
+- Pulled 5 remote commits (dashboard migration cleanup, live API tests disabled) and rebased
+- Pushed fix to trigger new CI run on PR #30
+
+### Next Steps
+
+- Confirm CI passes on PR #30
+- Merge PR #30 once green
+
+---
+
 ## Session: 2026-03-26 - Plan 016 Reporting View Migration Extended
 
 ### Summary
