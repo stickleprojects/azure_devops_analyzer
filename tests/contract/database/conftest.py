@@ -20,6 +20,30 @@ from pathlib import Path
 from src.database.models.base import Base
 
 
+def _iter_sql_statements(sql_text: str):
+    """Yield semicolon-terminated SQL statements from a SQL script.
+
+    The reporting views script is a sequence of CREATE VIEW statements, so a
+    lightweight splitter is sufficient and avoids driver issues with executing
+    very large multi-statement blobs in a single call.
+    """
+    chunks = []
+    for line in sql_text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("--"):
+            continue
+        chunks.append(line)
+        if stripped.endswith(";"):
+            statement = "\n".join(chunks).strip()
+            if statement:
+                yield statement
+            chunks = []
+
+    trailing = "\n".join(chunks).strip()
+    if trailing:
+        yield trailing
+
+
 @pytest.fixture(scope="session")
 def test_database_url():
     """Get test database URL from environment or use Docker PostgreSQL.
@@ -96,12 +120,10 @@ def test_engine(test_database_url):
         with engine.begin() as conn:
             with open(views_file, 'r') as f:
                 views_sql = f.read()
-                # Execute the views SQL (CREATE OR REPLACE VIEW statements)
-                try:
-                    conn.execute(text(views_sql))
-                    print(f"\n✓ Created database views from {views_file.name}")
-                except Exception as e:
-                    print(f"\n⚠ Warning: Could not create some views: {e}")
+                statements = list(_iter_sql_statements(views_sql))
+                for statement in statements:
+                    conn.execute(text(statement))
+                print(f"\n✓ Created database views from {views_file.name} ({len(statements)} statements)")
     
     yield engine
     

@@ -1,14 +1,14 @@
 #!/bin/bash
 # NOTE: Keep this script in sync with .github/workflows/tests.yml.
-# Default test flow here should mirror CI step order and database env assumptions.
+# Default test flow here mirrors CI step order and database env assumptions.
 # =============================================================================
 # Integration Test Runner - Docker Compose
 # =============================================================================
-# Runs all tests (excluding live API) in fully isolated Docker environment.
+# Runs tests in Docker in the same order as GitHub Actions CI.
 #
 # Usage:
-#   ./scripts/run-tests-docker.sh              # Run all tests (excluding live API)
-#   ./scripts/run-tests-docker.sh --live-api   # Run live API tests only
+#   ./scripts/run-tests-docker.sh              # Run CI-equivalent test sequence
+#   ./scripts/run-tests-docker.sh --live-api   # Run only live API tests
 #   ./scripts/run-tests-docker.sh <test_path>  # Run specific test file or pattern
 #   ./scripts/run-tests-docker.sh --keep-db    # Keep database for debugging
 #   ./scripts/run-tests-docker.sh --help       # Show help
@@ -68,8 +68,8 @@ show_help() {
     cat << EOF
 Integration Test Runner - Docker Compose (CI-Equivalent)
 
-Runs tests in Docker environment matching GitHub Actions CI workflow exactly.
-Tests run in 3 separate steps (unit, integration, coverage) to catch CI failures locally.
+Runs tests in Docker environment to closely match GitHub Actions CI workflow.
+Tests run in the same sequence used by CI (unit, integration, live-api gate, coverage).
 
 USAGE:
     $0 [OPTIONS] [TEST_PATH]
@@ -83,7 +83,7 @@ OPTIONS:
     --help          Show this help message
 
 EXAMPLES:
-    # Run all tests (CI-equivalent: unit → integration → coverage)
+    # Run all tests (CI-equivalent: unit → integration → live-api gate → coverage)
     $0
 
     # Run specific test file
@@ -96,11 +96,12 @@ EXAMPLES:
     $0 --keep-db
 
 TEST SEQUENCE (matches .github/workflows/tests.yml):
-    When no TEST_PATH specified, runs in 3 steps (like CI):
+    When no TEST_PATH specified, runs in 4 steps (like CI):
     
     1. Unit tests (tests/unit/) - no coverage
     2. Integration tests (tests/contract/integration/) - no coverage
-    3. Coverage report - runs ALL tests again with coverage analysis
+    3. Live API tests (credentials gated; skipped when creds absent)
+    4. Coverage report - runs ALL tests again with coverage analysis
     
     This matches GitHub Actions CI exactly, helping catch CI failures before pushing.
 
@@ -145,6 +146,14 @@ start_test_db_and_migrations() {
     log_info "Applying database schema/migrations..."
     docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-migrations
     log_success "Database schema/migrations applied"
+}
+
+run_pytest_in_runner() {
+    local pytest_cmd="$1"
+    local exit_code=0
+    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
+        sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && ${pytest_cmd}" || exit_code=$?
+    return $exit_code
 }
 
 # =============================================================================
@@ -233,35 +242,14 @@ if [ "$RUN_LIVE_API" = true ]; then
     
     # Run both GitHub and Azure DevOps tests with live_api marker
     TEST_EXIT_CODE=0
-    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
-        sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-               pytest tests/contract/integration/*.py \
-                      -vv \
-               -m 'live_api' \
-               --junit-xml=/app/test-results/junit-live-api.xml \
-               -o junit_family=xunit2 \
-               -o junit_logging=all \
-             -p no:cacheprovider \
-               -rs \
-               --tb=long \
-               --capture=no" || TEST_EXIT_CODE=$?
+    run_pytest_in_runner "pytest tests/contract/integration/ -v --tb=short --durations=10 -m 'live_api' --junit-xml=/app/test-results/junit-live-api.xml -o junit_family=xunit2 -o junit_logging=all -p no:cacheprovider" || TEST_EXIT_CODE=$?
 elif [ -n "$TEST_PATH" ]; then
     log_info "Running specific test: $TEST_PATH"
     echo
     
     # Run specific test path
     TEST_EXIT_CODE=0
-    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
-        sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-               pytest '$TEST_PATH' \
-                      -vv \
-               --junit-xml=/app/test-results/junit.xml \
-               -o junit_family=xunit2 \
-               -o junit_logging=all \
-             -p no:cacheprovider \
-               -rs \
-               --tb=long \
-               --capture=no" || TEST_EXIT_CODE=$?
+    run_pytest_in_runner "pytest '$TEST_PATH' -v --tb=short --junit-xml=/app/test-results/junit.xml -o junit_family=xunit2 -o junit_logging=all -p no:cacheprovider" || TEST_EXIT_CODE=$?
 else
     log_info "Running tests in CI-equivalent sequence..."
     log_info "This matches the exact steps from .github/workflows/tests.yml"
@@ -270,11 +258,9 @@ else
     # =========================================================================
     # Step 1: Unit Tests (no coverage)
     # =========================================================================
-    log_info "Step 1/3: Running unit tests..."
+    log_info "Step 1/4: Running unit tests..."
     TEST_EXIT_CODE=0
-    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
-        sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-               pytest tests/unit/ -v --tb=short" || TEST_EXIT_CODE=$?
+    run_pytest_in_runner "pytest tests/unit/ -v --tb=short" || TEST_EXIT_CODE=$?
     
     if [ $TEST_EXIT_CODE -ne 0 ]; then
         log_error "Unit tests failed (exit code: $TEST_EXIT_CODE)"
@@ -286,10 +272,8 @@ else
         # =====================================================================
         # Step 2: Integration Tests (no coverage)
         # =====================================================================
-        log_info "Step 2/3: Running integration tests..."
-        docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
-            sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-                   pytest tests/contract/integration/ -v --tb=short --durations=10 -m 'not live_api'" || TEST_EXIT_CODE=$?
+        log_info "Step 2/4: Running integration tests..."
+        run_pytest_in_runner "pytest tests/contract/integration/ -v --tb=short --durations=10 -m 'not live_api'" || TEST_EXIT_CODE=$?
         
         if [ $TEST_EXIT_CODE -ne 0 ]; then
             log_error "Integration tests failed (exit code: $TEST_EXIT_CODE)"
@@ -299,19 +283,32 @@ else
             echo
             
             # =================================================================
-            # Step 3: Coverage Report (runs ALL tests again)
+            # Step 3: Live API Tests (credential-gated, like CI)
             # =================================================================
-            log_info "Step 3/3: Generating coverage report (runs all tests)..."
-            docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
-                sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && \
-                       pytest tests/ --cov=src --cov-report=xml:/app/test-results/coverage.xml --cov-report=term-missing -m 'not live_api' \
-                       -p no:cacheprovider \
-                       --junit-xml=/app/test-results/junit.xml" || TEST_EXIT_CODE=$?
-            
-            if [ $TEST_EXIT_CODE -ne 0 ]; then
-                log_error "Coverage generation failed (exit code: $TEST_EXIT_CODE)"
+            if [ -n "${GITHUB_TOKEN:-}" ] && [ -n "${AZURE_DEVOPS_PAT:-}" ] && [ -n "${AZURE_DEVOPS_ORG_URL:-}" ]; then
+                log_info "Step 3/4: Running live API tests (credentials detected)..."
+                run_pytest_in_runner "pytest tests/contract/integration/ -v --tb=short --durations=10 -m 'live_api'" || TEST_EXIT_CODE=$?
+                if [ $TEST_EXIT_CODE -ne 0 ]; then
+                    log_error "Live API tests failed (exit code: $TEST_EXIT_CODE)"
+                else
+                    log_success "Live API tests passed"
+                fi
             else
-                log_success "Coverage report generated"
+                log_info "Step 3/4: Skipping live API tests (missing credentials)"
+            fi
+
+            if [ $TEST_EXIT_CODE -eq 0 ]; then
+                # =============================================================
+                # Step 4: Coverage Report (runs ALL tests again)
+                # =============================================================
+                log_info "Step 4/4: Generating coverage report (runs all tests)..."
+                run_pytest_in_runner "mkdir -p /app/test-results && pytest tests/ --cov=src --cov-report=xml:/app/test-results/coverage.xml --cov-report=term-missing -m 'not live_api' -p no:cacheprovider --junit-xml=/app/test-results/junit.xml" || TEST_EXIT_CODE=$?
+            
+                if [ $TEST_EXIT_CODE -ne 0 ]; then
+                    log_error "Coverage generation failed (exit code: $TEST_EXIT_CODE)"
+                else
+                    log_success "Coverage report generated"
+                fi
             fi
         fi
     fi
