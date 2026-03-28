@@ -44,6 +44,52 @@ def _iter_sql_statements(sql_text: str):
         yield trailing
 
 
+def _ensure_time_bucket_support(conn):
+    """Ensure time_bucket is available for reporting views.
+
+    Preferred path is enabling TimescaleDB extension. If extension activation is
+    unavailable in the current test environment, fall back to a compatible
+    SQL shim based on date_bin.
+    """
+    try:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS timescaledb;"))
+        print("\n✓ Ensured TimescaleDB extension")
+    except Exception as exc:
+        print(f"\n⚠ Could not enable TimescaleDB extension ({exc}); checking fallback")
+
+    has_time_bucket = conn.execute(
+        text(
+            """
+            SELECT EXISTS (
+                SELECT 1
+                FROM pg_proc p
+                WHERE p.proname = 'time_bucket'
+                  AND pg_function_is_visible(p.oid)
+            )
+            """
+        )
+    ).scalar()
+
+    if not has_time_bucket:
+        conn.execute(
+            text(
+                """
+                CREATE OR REPLACE FUNCTION public.time_bucket(
+                    bucket_width INTERVAL,
+                    ts TIMESTAMPTZ
+                )
+                RETURNS TIMESTAMPTZ
+                LANGUAGE SQL
+                IMMUTABLE
+                AS $$
+                    SELECT date_bin(bucket_width, ts, TIMESTAMPTZ '2000-01-01 00:00:00+00')
+                $$;
+                """
+            )
+        )
+        print("\n✓ Installed compatibility time_bucket shim using date_bin")
+
+
 @pytest.fixture(scope="session")
 def test_database_url():
     """Get test database URL from environment or use Docker PostgreSQL.
@@ -118,6 +164,7 @@ def test_engine(test_database_url):
     
     if views_file.exists():
         with engine.begin() as conn:
+            _ensure_time_bucket_support(conn)
             with open(views_file, 'r') as f:
                 views_sql = f.read()
                 statements = list(_iter_sql_statements(views_sql))

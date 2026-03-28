@@ -601,7 +601,7 @@ GROUP BY s.name, v.severity;
 -- View: Extraction throughput as repositories per hour in 5-minute buckets
 CREATE OR REPLACE VIEW v_extraction_repos_per_hour_5m AS
 SELECT
-    time_bucket('5 minutes', extraction_completed_at) AS time,
+    time_bucket(INTERVAL '5 minutes', extraction_completed_at) AS time,
     COUNT(*) * 12 AS repos_per_hour
 FROM extraction_metrics
 WHERE status = 'completed'
@@ -830,7 +830,7 @@ WHERE r.is_active = true;
 -- View: Security dashboard vulnerability trend
 CREATE OR REPLACE VIEW v_security_vulnerability_trend AS
 SELECT
-    time_bucket('1 day', d.last_seen_at) AS time,
+    time_bucket(INTERVAL '1 day', d.last_seen_at) AS time,
     COUNT(v.id) AS vulnerabilities
 FROM dependencies d
 JOIN vulnerabilities v ON v.dependency_id = d.id
