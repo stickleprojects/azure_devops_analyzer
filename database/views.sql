@@ -495,6 +495,17 @@ SELECT
 FROM pull_requests pr
 LEFT JOIN contributors c ON c.id = pr.author_id;
 
+-- View: Latest repository summary text per repository
+CREATE OR REPLACE VIEW v_repo_summary_latest AS
+SELECT DISTINCT ON (repo_id)
+    repo_id,
+    summary_text,
+    purpose,
+    key_technologies,
+    generated_at
+FROM repository_summaries
+ORDER BY repo_id, generated_at DESC;
+
 -- View: Latest service metrics snapshot per service
 CREATE OR REPLACE VIEW v_service_metrics_latest AS
 SELECT

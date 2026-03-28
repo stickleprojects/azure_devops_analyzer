@@ -531,6 +531,45 @@ def test_v_repository_overview_views(db_session):
 
 
 @pytest.mark.integration
+def test_v_repo_summary_latest(db_session):
+    """Latest repository summary view should return only the newest summary per repo"""
+    org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
+    org = store_organization(db_session, org_data)
+    project = store_project(db_session, org, "test-project", "Test Project")
+    repo_data = sample_repository_data(repo_id="repo1", name="test-repo")
+    repo = store_repository(db_session, project, repo_data)
+
+    db_session.execute(
+        text(
+            """
+            INSERT INTO repository_summaries (repo_id, summary_text, purpose, key_technologies, generated_at)
+            VALUES
+            (:repo_id, :old_summary, :purpose, :tech, :old_generated),
+            (:repo_id, :new_summary, :purpose, :tech, :new_generated)
+            """
+        ),
+        {
+            "repo_id": repo.repo_id,
+            "old_summary": "Older summary",
+            "new_summary": "Latest summary",
+            "purpose": "Testing",
+            "tech": ["Python", "PostgreSQL"],
+            "old_generated": datetime.now() - timedelta(days=2),
+            "new_generated": datetime.now() - timedelta(hours=1),
+        },
+    )
+    db_session.commit()
+
+    row = db_session.execute(
+        text("SELECT summary_text FROM v_repo_summary_latest WHERE repo_id = :rid"),
+        {"rid": repo.repo_id},
+    ).fetchone()
+
+    assert row is not None
+    assert row.summary_text == "Latest summary"
+
+
+@pytest.mark.integration
 def test_v_pr_reviews_30d_total(db_session):
     """Test global PR reviews count in last 30 days"""
     org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
