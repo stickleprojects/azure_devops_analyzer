@@ -20,6 +20,8 @@ For detailed operational specifics and reference material, see:
 
 **Environment Setup**: If `.env` is missing or incomplete, generate it by running `./Start-RepoAnalysis.sh --regenerate-env` (or `./start-repoanalysis.sh --regenerate-env`) and have the user answer the interactive prompts.
 
+**CI/Test Parity**: For any CI, test, fixture, schema, or migration change, follow `.ai/operations.md` Gate 3.6 (CI/Local Parity Check) and validate with Docker using CI-equivalent test scopes before committing.
+
 **Remember**: Principles over rules. When uncertain, identify which principle applies and use judgment.
 
 **Tools**: Tell the user if any tools or MCPs are listed in .ai\agents or elsewhere but something is preventing those tools from being used
