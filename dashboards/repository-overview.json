@@ -175,7 +175,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as total FROM commits;",
+          "rawSql": "SELECT total FROM v_commits_total;",
           "refId": "A"
         }
       ],
@@ -234,7 +234,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as total FROM pull_requests;",
+          "rawSql": "SELECT total FROM v_pull_requests_total;",
           "refId": "A"
         }
       ],
@@ -293,7 +293,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as total FROM contributors;",
+          "rawSql": "SELECT total FROM v_contributors_total;",
           "refId": "A"
         }
       ],
@@ -383,7 +383,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('day', commit_date) as time,\n  COUNT(*) as commits\nFROM commits\nWHERE commit_date > NOW() - INTERVAL '30 days'\nGROUP BY date_trunc('day', commit_date)\nORDER BY time;",
+          "rawSql": "SELECT time, commits FROM v_commits_daily_trend_30d;",
           "refId": "A"
         }
       ],
@@ -477,7 +477,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  COUNT(c.commit_sha) as commits,\n  r.url\nFROM repositories r\nLEFT JOIN commits c ON r.repo_id = c.repo_id \n  AND c.commit_date > NOW() - INTERVAL '30 days'\nWHERE r.is_active = true\nGROUP BY r.repo_id, r.name, r.url\nORDER BY commits DESC\nLIMIT 10;",
+          "rawSql": "SELECT repo_id, repository, commits, url FROM v_top_repositories_by_commits_30d;",
           "refId": "A"
         }
       ],
@@ -571,7 +571,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  o.name as organization,\n  r.default_branch,\n  r.url,\n  r.last_analyzed_at,\n  (SELECT COUNT(*) FROM commits c WHERE c.repo_id = r.repo_id) as total_commits,\n  (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id) as total_prs\nFROM repositories r\nJOIN projects p ON r.project_id = p.project_id\nJOIN organizations o ON p.organization_id = o.organization_id\nWHERE r.is_active = true\nORDER BY r.last_analyzed_at DESC NULLS LAST;",
+          "rawSql": "SELECT repo_id, repository, organization, default_branch, url, last_analyzed_at, total_commits, total_prs FROM v_repository_overview_table;",
           "refId": "A"
         }
       ],

@@ -75,6 +75,14 @@ for i in {1..30}; do
     sleep 1
 done
 
+# Ensure TimescaleDB extension exists before any migration/view references time_bucket.
+log_info "Ensuring TimescaleDB extension is enabled..."
+if PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS timescaledb;" >/dev/null 2>&1; then
+    log_success "TimescaleDB extension is enabled"
+else
+    log_error "Failed to enable TimescaleDB extension"
+fi
+
 # Check if schema already exists
 log_info "Checking if database schema exists..."
 SCHEMA_EXISTS=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'organizations';" 2>/dev/null || echo "0")

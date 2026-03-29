@@ -102,9 +102,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -120,7 +118,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(latest.total_repositories), 0) as total\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.total_repositories\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT COALESCE(SUM(total_repositories), 0) as total FROM v_service_metrics_latest WHERE service IN (${service:singlequote});",
           "refId": "A"
         }
       ],
@@ -163,9 +161,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -181,7 +177,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(latest.active_repositories), 0) as active\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.active_repositories\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT COALESCE(SUM(active_repositories), 0) as active FROM v_service_metrics_latest WHERE service IN (${service:singlequote});",
           "refId": "A"
         }
       ],
@@ -224,9 +220,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -242,7 +236,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(latest.unique_contributors), 0) as contributors\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.unique_contributors\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT COALESCE(SUM(unique_contributors), 0) as contributors FROM v_service_metrics_latest WHERE service IN (${service:singlequote});",
           "refId": "A"
         }
       ],
@@ -285,9 +279,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -303,7 +295,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(latest.total_commits), 0) as commits\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.total_commits\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT COALESCE(SUM(total_commits), 0) as commits FROM v_service_metrics_latest WHERE service IN (${service:singlequote});",
           "refId": "A"
         }
       ],
@@ -346,9 +338,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -364,7 +354,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(latest.total_prs_merged), 0) as merged\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.total_prs_merged\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT COALESCE(SUM(total_prs_merged), 0) as merged FROM v_service_metrics_latest WHERE service IN (${service:singlequote});",
           "refId": "A"
         }
       ],
@@ -415,9 +405,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -433,7 +421,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(latest.critical_vulnerabilities), 0) as critical\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.critical_vulnerabilities\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT COALESCE(SUM(critical_vulnerabilities), 0) as critical FROM v_service_metrics_latest WHERE service IN (${service:singlequote});",
           "refId": "A"
         }
       ],
@@ -471,15 +459,11 @@
         "overrides": [
           {
             "matcher": { "id": "byName", "options": "service" },
-            "properties": [
-              { "id": "displayName", "value": "Service" }
-            ]
+            "properties": [{ "id": "displayName", "value": "Service" }]
           },
           {
             "matcher": { "id": "byName", "options": "total_repositories" },
-            "properties": [
-              { "id": "displayName", "value": "Total Repos" }
-            ]
+            "properties": [{ "id": "displayName", "value": "Total Repos" }]
           },
           {
             "matcher": { "id": "byName", "options": "active_repositories" },
@@ -504,24 +488,21 @@
           },
           {
             "matcher": { "id": "byName", "options": "unique_contributors" },
-            "properties": [
-              { "id": "displayName", "value": "Contributors" }
-            ]
+            "properties": [{ "id": "displayName", "value": "Contributors" }]
           },
           {
             "matcher": { "id": "byName", "options": "total_commits" },
-            "properties": [
-              { "id": "displayName", "value": "Commits" }
-            ]
+            "properties": [{ "id": "displayName", "value": "Commits" }]
           },
           {
             "matcher": { "id": "byName", "options": "total_prs_merged" },
-            "properties": [
-              { "id": "displayName", "value": "PRs Merged" }
-            ]
+            "properties": [{ "id": "displayName", "value": "PRs Merged" }]
           },
           {
-            "matcher": { "id": "byName", "options": "critical_vulnerabilities" },
+            "matcher": {
+              "id": "byName",
+              "options": "critical_vulnerabilities"
+            },
             "properties": [
               { "id": "displayName", "value": "Critical Vulns" },
               {
@@ -620,7 +601,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  s.name as service,\n  latest.total_repositories,\n  latest.active_repositories,\n  latest.unique_contributors,\n  latest.total_commits,\n  latest.total_prs_merged,\n  latest.critical_vulnerabilities,\n  ROUND(latest.avg_test_coverage::numeric, 1) as test_coverage_pct,\n  ROUND(latest.avg_pr_review_time_hours::numeric, 1) as avg_pr_review_hrs\nFROM (\n  SELECT DISTINCT ON (sm.service_id)\n    sm.service_id,\n    sm.total_repositories,\n    sm.active_repositories,\n    sm.unique_contributors,\n    sm.total_commits,\n    sm.total_prs_merged,\n    sm.critical_vulnerabilities,\n    sm.avg_test_coverage,\n    sm.avg_pr_review_time_hours\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest\nJOIN services s ON latest.service_id = s.service_id\nORDER BY s.name;",
+          "rawSql": "SELECT service, total_repositories, active_repositories, unique_contributors, total_commits, total_prs_merged, critical_vulnerabilities, ROUND(avg_test_coverage::numeric, 1) as test_coverage_pct, ROUND(avg_pr_review_time_hours::numeric, 1) as avg_pr_review_hrs FROM v_service_metrics_latest WHERE service IN (${service:singlequote}) ORDER BY service;",
           "refId": "A"
         }
       ],
@@ -704,9 +685,7 @@
       "id": 7,
       "options": {
         "legend": {
-          "calcs": [
-            "sum"
-          ],
+          "calcs": ["sum"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -726,7 +705,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  sm.period_start as time,\n  s.name as service,\n  sm.total_commits as commits\nFROM service_metrics sm\nJOIN services s ON sm.service_id = s.service_id\nWHERE s.name IN (${service:singlequote})\n  AND $__timeFilter(sm.period_start)\nORDER BY time, service;",
+          "rawSql": "SELECT time, service, commits FROM v_service_metrics_trend WHERE service IN (${service:singlequote}) AND $__timeFilter(time) ORDER BY time, service;",
           "refId": "A"
         }
       ],
@@ -827,9 +806,7 @@
       "id": 8,
       "options": {
         "legend": {
-          "calcs": [
-            "sum"
-          ],
+          "calcs": ["sum"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -849,7 +826,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  sm.period_start as time,\n  s.name as service,\n  sm.total_prs_created as created\nFROM service_metrics sm\nJOIN services s ON sm.service_id = s.service_id\nWHERE s.name IN (${service:singlequote})\n  AND $__timeFilter(sm.period_start)\nORDER BY time, service;",
+          "rawSql": "SELECT time, service, prs_created as created FROM v_service_metrics_trend WHERE service IN (${service:singlequote}) AND $__timeFilter(time) ORDER BY time, service;",
           "refId": "created"
         },
         {
@@ -861,7 +838,7 @@
           "format": "time_series",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\n  sm.period_start as time,\n  s.name as service,\n  sm.total_prs_merged as merged\nFROM service_metrics sm\nJOIN services s ON sm.service_id = s.service_id\nWHERE s.name IN (${service:singlequote})\n  AND $__timeFilter(sm.period_start)\nORDER BY time, service;",
+          "rawSql": "SELECT time, service, prs_merged as merged FROM v_service_metrics_trend WHERE service IN (${service:singlequote}) AND $__timeFilter(time) ORDER BY time, service;",
           "refId": "merged"
         }
       ],
@@ -926,9 +903,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -944,7 +919,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(AVG(latest.avg_test_coverage)::numeric, 1) as coverage\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.avg_test_coverage\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n    AND sm.avg_test_coverage IS NOT NULL\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT ROUND(AVG(avg_test_coverage)::numeric, 1) as coverage FROM v_service_metrics_latest WHERE service IN (${service:singlequote}) AND avg_test_coverage IS NOT NULL;",
           "refId": "A"
         }
       ],
@@ -995,9 +970,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1013,7 +986,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(AVG(latest.avg_maintainability_index)::numeric, 1) as maintainability\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.avg_maintainability_index\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n    AND sm.avg_maintainability_index IS NOT NULL\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT ROUND(AVG(avg_maintainability_index)::numeric, 1) as maintainability FROM v_service_metrics_latest WHERE service IN (${service:singlequote}) AND avg_maintainability_index IS NOT NULL;",
           "refId": "A"
         }
       ],
@@ -1064,9 +1037,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1082,7 +1053,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(latest.total_quality_issues), 0) as issues\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.total_quality_issues\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT COALESCE(SUM(total_quality_issues), 0) as issues FROM v_service_metrics_latest WHERE service IN (${service:singlequote});",
           "refId": "A"
         }
       ],
@@ -1134,9 +1105,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1152,7 +1121,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(AVG(latest.avg_pr_review_time_hours)::numeric, 1) as review_hours\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.avg_pr_review_time_hours\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n    AND sm.avg_pr_review_time_hours IS NOT NULL\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT ROUND(AVG(avg_pr_review_time_hours)::numeric, 1) as review_hours FROM v_service_metrics_latest WHERE service IN (${service:singlequote}) AND avg_pr_review_time_hours IS NOT NULL;",
           "refId": "A"
         }
       ],
@@ -1242,7 +1211,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  sm.period_start as time,\n  s.name as service,\n  sm.avg_test_coverage as coverage\nFROM service_metrics sm\nJOIN services s ON sm.service_id = s.service_id\nWHERE s.name IN (${service:singlequote})\n  AND sm.avg_test_coverage IS NOT NULL\n  AND $__timeFilter(sm.period_start)\nORDER BY time, service;",
+          "rawSql": "SELECT time, service, coverage FROM v_service_metrics_trend WHERE service IN (${service:singlequote}) AND coverage IS NOT NULL AND $__timeFilter(time) ORDER BY time, service;",
           "refId": "coverage"
         },
         {
@@ -1254,7 +1223,7 @@
           "format": "time_series",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\n  sm.period_start as time,\n  s.name as service,\n  sm.avg_maintainability_index as maintainability\nFROM service_metrics sm\nJOIN services s ON sm.service_id = s.service_id\nWHERE s.name IN (${service:singlequote})\n  AND sm.avg_maintainability_index IS NOT NULL\n  AND $__timeFilter(sm.period_start)\nORDER BY time, service;",
+          "rawSql": "SELECT time, service, maintainability FROM v_service_metrics_trend WHERE service IN (${service:singlequote}) AND maintainability IS NOT NULL AND $__timeFilter(time) ORDER BY time, service;",
           "refId": "maintainability"
         }
       ],
@@ -1318,9 +1287,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1336,7 +1303,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(latest.critical_vulnerabilities), 0) as critical\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.critical_vulnerabilities\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT COALESCE(SUM(critical_vulnerabilities), 0) as critical FROM v_service_metrics_latest WHERE service IN (${service:singlequote});",
           "refId": "A"
         }
       ],
@@ -1387,9 +1354,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1405,7 +1370,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(latest.high_vulnerabilities), 0) as high\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.high_vulnerabilities\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT COALESCE(SUM(high_vulnerabilities), 0) as high FROM v_service_metrics_latest WHERE service IN (${service:singlequote});",
           "refId": "A"
         }
       ],
@@ -1456,9 +1421,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1474,7 +1437,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(latest.eol_dependencies), 0) as eol\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.eol_dependencies\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT COALESCE(SUM(eol_dependencies), 0) as eol FROM v_service_metrics_latest WHERE service IN (${service:singlequote});",
           "refId": "A"
         }
       ],
@@ -1517,9 +1480,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1535,7 +1496,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COALESCE(SUM(latest.total_dependencies), 0) as total\nFROM (\n  SELECT DISTINCT ON (sm.service_id) sm.total_dependencies\n  FROM service_metrics sm\n  JOIN services s ON sm.service_id = s.service_id\n  WHERE s.name IN (${service:singlequote})\n  ORDER BY sm.service_id, sm.period_start DESC\n) latest;",
+          "rawSql": "SELECT COALESCE(SUM(total_dependencies), 0) as total FROM v_service_metrics_latest WHERE service IN (${service:singlequote});",
           "refId": "A"
         }
       ],
@@ -1639,9 +1600,7 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": true
         },
@@ -1660,7 +1619,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  v.severity,\n  COUNT(*) as count\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nJOIN repository_services rs ON d.repo_id = rs.repo_id\nJOIN services s ON rs.service_id = s.service_id\nWHERE s.name IN (${service:singlequote})\n  AND d.analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies WHERE repo_id = d.repo_id\n  )\nGROUP BY v.severity\nORDER BY\n  CASE v.severity\n    WHEN 'CRITICAL' THEN 1\n    WHEN 'HIGH' THEN 2\n    WHEN 'MEDIUM' THEN 3\n    WHEN 'LOW' THEN 4\n    ELSE 5\n  END;",
+          "rawSql": "SELECT severity, SUM(count) as count FROM v_service_vulnerabilities_by_severity WHERE service IN (${service:singlequote}) GROUP BY severity ORDER BY CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2 WHEN 'MEDIUM' THEN 3 WHEN 'LOW' THEN 4 ELSE 5 END;",
           "refId": "A"
         }
       ],
@@ -1781,7 +1740,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT\n  sm.period_start as time,\n  s.name as service,\n  sm.total_vulnerabilities as vulnerabilities\nFROM service_metrics sm\nJOIN services s ON sm.service_id = s.service_id\nWHERE s.name IN (${service:singlequote})\n  AND $__timeFilter(sm.period_start)\nORDER BY time, service;",
+          "rawSql": "SELECT time, service, vulnerabilities FROM v_service_metrics_trend WHERE service IN (${service:singlequote}) AND $__timeFilter(time) ORDER BY time, service;",
           "refId": "total"
         },
         {
@@ -1793,7 +1752,7 @@
           "format": "time_series",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT\n  sm.period_start as time,\n  s.name as service,\n  sm.critical_vulnerabilities as critical\nFROM service_metrics sm\nJOIN services s ON sm.service_id = s.service_id\nWHERE s.name IN (${service:singlequote})\n  AND $__timeFilter(sm.period_start)\nORDER BY time, service;",
+          "rawSql": "SELECT time, service, critical FROM v_service_metrics_trend WHERE service IN (${service:singlequote}) AND $__timeFilter(time) ORDER BY time, service;",
           "refId": "critical"
         }
       ],
@@ -1990,9 +1949,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true,
@@ -2013,7 +1970,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\n  r.repo_id,\n  r.name as repository,\n  s.name as service,\n  (SELECT COUNT(*) FROM commits c WHERE c.repo_id = r.repo_id AND c.commit_date > NOW() - INTERVAL '30 days') as commits_30d,\n  (SELECT COUNT(DISTINCT author_id) FROM commits c WHERE c.repo_id = r.repo_id AND c.commit_date > NOW() - INTERVAL '30 days') as contributors_30d,\n  (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id AND p.status = 'open') as open_prs,\n  (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id AND p.merged_at > NOW() - INTERVAL '30 days') as merged_prs_30d,\n  COALESCE((SELECT COUNT(v.id) FROM vulnerabilities v JOIN dependencies d ON v.dependency_id = d.id WHERE d.repo_id = r.repo_id AND d.analyzed_at = (SELECT MAX(analyzed_at) FROM dependencies WHERE repo_id = r.repo_id)), 0) as vulnerabilities,\n  r.last_analyzed_at\nFROM repositories r\nJOIN repository_services rs ON r.repo_id = rs.repo_id\nJOIN services s ON rs.service_id = s.service_id\nWHERE r.is_active = true\n  AND s.name IN (${service:singlequote})\nORDER BY commits_30d DESC;",
+          "rawSql": "SELECT repo_id, repository, service, commits_30d, contributors_30d, open_prs, merged_prs_30d, vulnerabilities, last_analyzed_at FROM v_service_repository_breakdown WHERE service IN (${service:singlequote}) ORDER BY commits_30d DESC;",
           "refId": "A"
         }
       ],
@@ -2023,11 +1980,7 @@
   ],
   "refresh": "5m",
   "schemaVersion": 39,
-  "tags": [
-    "service",
-    "overview",
-    "summary"
-  ],
+  "tags": ["service", "overview", "summary"],
   "templating": {
     "list": [
       {
@@ -2040,14 +1993,14 @@
           "type": "postgres",
           "uid": "TimescaleDB"
         },
-        "definition": "SELECT DISTINCT name as service FROM services ORDER BY service",
+        "definition": "SELECT DISTINCT service FROM v_service_metrics_latest ORDER BY service",
         "hide": 0,
         "includeAll": true,
         "label": "Service",
         "multi": true,
         "name": "service",
         "options": [],
-        "query": "SELECT DISTINCT name as service FROM services ORDER BY service",
+        "query": "SELECT DISTINCT service FROM v_service_metrics_latest ORDER BY service",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,

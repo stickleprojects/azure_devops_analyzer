@@ -234,7 +234,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as reviews\nFROM pr_reviews\nWHERE review_date > NOW() - INTERVAL '30 days';",
+          "rawSql": "SELECT reviews FROM v_pr_reviews_30d_total;",
           "refId": "A"
         }
       ],
@@ -322,7 +322,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  COALESCE(c.name, c.email) as contributor,\n  COUNT(cm.commit_sha) as commits\nFROM contributors c\nJOIN commits cm ON c.id = cm.author_id\nWHERE cm.commit_date > NOW() - INTERVAL '30 days'\nGROUP BY c.id, c.name, c.email\nORDER BY commits DESC\nLIMIT 10;",
+          "rawSql": "SELECT contributor, commits FROM v_top_contributors_30d;",
           "refId": "A"
         }
       ],
@@ -410,7 +410,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  COALESCE(c.name, c.email) as reviewer,\n  COUNT(r.id) as reviews\nFROM contributors c\nJOIN pr_reviews r ON c.id = r.reviewer_id\nWHERE r.review_date > NOW() - INTERVAL '30 days'\nGROUP BY c.id, c.name, c.email\nORDER BY reviews DESC\nLIMIT 10;",
+          "rawSql": "SELECT reviewer, reviews FROM v_top_reviewers_30d;",
           "refId": "A"
         }
       ],
@@ -474,7 +474,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  COALESCE(c.name, c.email) as contributor,\n  c.email,\n  COUNT(DISTINCT cm.commit_sha) as commits,\n  COALESCE(SUM(cm.lines_added), 0) as lines_added,\n  COALESCE(SUM(cm.lines_removed), 0) as lines_removed,\n  COUNT(DISTINCT pr.id) as prs_authored,\n  COUNT(DISTINCT r.id) as reviews_given\nFROM contributors c\nLEFT JOIN commits cm ON c.id = cm.author_id AND cm.commit_date > NOW() - INTERVAL '30 days'\nLEFT JOIN pull_requests pr ON c.id = pr.author_id AND pr.created_at > NOW() - INTERVAL '30 days'\nLEFT JOIN pr_reviews r ON c.id = r.reviewer_id AND r.review_date > NOW() - INTERVAL '30 days'\nGROUP BY c.id, c.name, c.email\nHAVING COUNT(DISTINCT cm.commit_sha) > 0 OR COUNT(DISTINCT pr.id) > 0 OR COUNT(DISTINCT r.id) > 0\nORDER BY commits DESC;",
+          "rawSql": "SELECT contributor, email, commits, lines_added, lines_removed, prs_authored, reviews_given FROM v_contributor_activity_30d;",
           "refId": "A"
         }
       ],
