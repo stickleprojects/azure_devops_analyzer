@@ -7,8 +7,9 @@ API Limitations (vs GitHub):
   Getting line counts would require fetching full diffs per commit.
 - PullRequestData.lines_added/lines_removed: Not available from the iterations API.
   Only file count can be determined from iteration changes.
-- PRReviewData.review_date: Approximated with current time. Azure DevOps does not
-  expose vote timestamps on reviewers.
+- PRReviewData.review_date: Azure DevOps does not expose vote timestamps on reviewers.
+  As a defensible fallback the PR's merged/closed/created date is used so that stale
+  reviews from old PRs do not appear as current activity.
 """
 
 import logging
@@ -457,17 +458,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         for pr in prs:
             pr_status = self._map_pr_status(pr.status)
 
-            # Get reviews and comments in one pass (avoids duplicate get_threads call)
-            reviews, comments = self._get_pr_reviews_and_comments(
-                repo_id, pr.pull_request_id
-            )
-
-            # Get file metrics if enabled
-            files_changed, lines_added, lines_removed = self._get_pr_file_metrics(
-                repo_id, pr.pull_request_id
-            )
-
-            # Determine timestamps
+            # Determine timestamps first so they can be used as review_date fallback
             created_at = pr.creation_date or datetime.utcnow()
             closed_date = pr.closed_date
 
@@ -484,6 +475,21 @@ class AzureDevOpsExtractor(RepositoryExtractor):
                 closed_at = None
 
             updated_at = closed_date or created_at
+
+            # Use the most precise available PR date as a fallback for review_date.
+            # Azure DevOps does not expose per-reviewer vote timestamps, so we use
+            # merged_at > closed_at > created_at to avoid assigning "now" to old PRs.
+            review_date_fallback = merged_at or closed_at or created_at
+
+            # Get reviews and comments in one pass (avoids duplicate get_threads call)
+            reviews, comments = self._get_pr_reviews_and_comments(
+                repo_id, pr.pull_request_id, review_date_fallback
+            )
+
+            # Get file metrics if enabled
+            files_changed, lines_added, lines_removed = self._get_pr_file_metrics(
+                repo_id, pr.pull_request_id
+            )
 
             result.append(
                 PullRequestData(
@@ -556,7 +562,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
             return (0, 0, 0)
 
     def _get_pr_reviews_and_comments(
-        self, repo_id: str, pr_id: int
+        self, repo_id: str, pr_id: int, review_date_fallback: Optional[datetime] = None
     ) -> tuple[list[PRReviewData], list[PRCommentData]]:
         """
         Get reviews and comments for a PR in one pass.
@@ -614,7 +620,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
 
         # Build reviews with comment counts
         reviews = self._build_reviews_with_counts(
-            repo_id, pr_id, reviewer_comment_counts
+            repo_id, pr_id, reviewer_comment_counts, review_date_fallback
         )
 
         return reviews, comments
@@ -624,8 +630,16 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         repo_id: str,
         pr_id: int,
         comment_counts: dict[str, int],
+        review_date_fallback: Optional[datetime] = None,
     ) -> list[PRReviewData]:
-        """Build review data with per-reviewer comment counts."""
+        """Build review data with per-reviewer comment counts.
+
+        Azure DevOps does not expose per-reviewer vote timestamps.
+        ``review_date_fallback`` should be the most precise PR date available
+        (merged_at > closed_at > created_at) so that reviews for old PRs are
+        not assigned the current wall-clock time and therefore do not appear as
+        recent activity in 30-day reporting views.
+        """
         try:
             reviewers = self._api_call_with_retry(
                 self.git_client.get_pull_request_reviewers,
@@ -634,6 +648,11 @@ class AzureDevOpsExtractor(RepositoryExtractor):
             )
         except Exception:
             return []
+
+        # Use the provided PR date as the review date when a real timestamp is
+        # unavailable.  Fall back to utcnow() only as a last resort (e.g. for
+        # open PRs that have no closed/merged date yet).
+        effective_review_date = review_date_fallback or datetime.utcnow()
 
         reviews = []
         for r in reviewers:
@@ -644,7 +663,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
                     PRReviewData(
                         reviewer_email=reviewer_email,
                         reviewer_name=r.display_name,
-                        review_date=datetime.utcnow(),  # Azure doesn't expose vote date
+                        review_date=effective_review_date,
                         state=state,
                         is_required=r.is_required or False,
                         comment_count=comment_counts.get(reviewer_email, 0),

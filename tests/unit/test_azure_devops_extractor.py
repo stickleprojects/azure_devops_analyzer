@@ -513,3 +513,44 @@ class TestReviewsAndComments:
 
         assert reviews == []
         assert comments == []
+
+    def test_review_date_uses_fallback_when_provided(self, extractor):
+        """review_date is set to the provided fallback, not utcnow().
+
+        Regression guard for DASH-REVIEW-003: synthetic 'now' timestamps on
+        Azure DevOps reviews caused stale PRs to appear as recent activity.
+        """
+        extractor._git_client.get_threads.return_value = []
+
+        reviewer = Mock()
+        reviewer.vote = 10
+        reviewer.unique_name = "dev@example.com"
+        reviewer.display_name = "Dev"
+        reviewer.is_required = False
+        extractor._git_client.get_pull_request_reviewers.return_value = [reviewer]
+
+        fallback = datetime(2023, 6, 15, 12, 0, 0)
+        reviews, _ = extractor._get_pr_reviews_and_comments(
+            "repo-id", 1, review_date_fallback=fallback
+        )
+
+        assert len(reviews) == 1
+        assert reviews[0].review_date == fallback
+
+    def test_review_date_falls_back_to_utcnow_when_not_provided(self, extractor):
+        """review_date defaults to utcnow() when no fallback is given (e.g. open PRs)."""
+        extractor._git_client.get_threads.return_value = []
+
+        reviewer = Mock()
+        reviewer.vote = 10
+        reviewer.unique_name = "dev@example.com"
+        reviewer.display_name = "Dev"
+        reviewer.is_required = False
+        extractor._git_client.get_pull_request_reviewers.return_value = [reviewer]
+
+        before = datetime.utcnow()
+        reviews, _ = extractor._get_pr_reviews_and_comments("repo-id", 1)
+        after = datetime.utcnow()
+
+        assert len(reviews) == 1
+        assert before <= reviews[0].review_date <= after
