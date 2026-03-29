@@ -31,3 +31,6 @@ auth
 /.cache
 
 *.bak
+
+# Assessment artifacts (generated at runtime)
+artifacts/assessment/*.json

@@ -1,0 +1,100 @@
+## GitHub-hosted on-demand assessment workflow.
+##
+## Runs the generated-test-data assessment against the checked-out workspace
+## without relying on stale PR text or code-search tool caps.
+##
+## Triggers:  manual (workflow_dispatch) only – no secrets required.
+## Parity:    uses the repo's Docker test-runner (docker-compose.test.yml) so
+##            that results are identical to local and CI environments.
+##
+## Artifacts: artifacts/assessment/ – JSON files suitable for LLM analysis.
+
+name: Generated Test Data Assessment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  assess:
+    name: Assessment (Docker parity)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # -----------------------------------------------------------------------
+      # 2. Create minimal .env so resolve_env.sh / run-tests-docker.sh won't
+      #    error – no real credentials needed for offline tests.
+      # -----------------------------------------------------------------------
+      - name: Create .env for offline run
+        run: |
+          cat > .env << 'EOF'
+          GITHUB_TOKEN=offline
+          AZURE_DEVOPS_PAT=offline
+          AZURE_DEVOPS_ORG_URL=https://dev.azure.com/offline
+          AZURE_DEVOPS_ORG_NAME=offline
+          GITHUB_PRIVATE_REPO=offline/offline
+          POSTGRES_HOST=test-db
+          POSTGRES_PORT=5432
+          POSTGRES_USER=postgres
+          POSTGRES_PASSWORD=postgres
+          POSTGRES_DB=test_azure_devops
+          TEST_DATABASE_URL=postgresql://postgres:postgres@test-db:5432/test_azure_devops
+          DATABASE_URL=postgresql://postgres:postgres@test-db:5432/test_azure_devops
+          EOF
+
+      # -----------------------------------------------------------------------
+      # 3. Contract test: reporting views (Docker parity)
+      # -----------------------------------------------------------------------
+      - name: Run reporting-views contract tests (Docker)
+        # continue-on-error so audit artifacts are always produced even when
+        # tests fail – the failures are visible in the step status.
+        run: bash scripts/run-tests-docker.sh tests/contract/database/test_reporting_views.py
+        continue-on-error: true
+
+      # -----------------------------------------------------------------------
+      # 4. Contract test: fixture scenarios (Docker parity)
+      # -----------------------------------------------------------------------
+      - name: Run fixture-scenario integration tests (Docker)
+        # continue-on-error so audit artifacts are always produced even when
+        # tests fail – the failures are visible in the step status.
+        run: bash scripts/run-tests-docker.sh tests/contract/integration/test_fixture_scenarios.py
+        continue-on-error: true
+
+      # -----------------------------------------------------------------------
+      # 5. Audit scripts – run directly on the runner (no DB needed)
+      # -----------------------------------------------------------------------
+      - name: Set up Python for audit scripts
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run audit – reporting-view coverage
+        run: python scripts/audit_reporting_view_coverage.py
+
+      - name: Run audit – fixture-scenario coverage
+        run: python scripts/audit_fixture_scenarios.py
+
+      - name: Run audit – dashboard SQL routing
+        run: python scripts/audit_dashboards_routing.py
+
+      # -----------------------------------------------------------------------
+      # 6. Upload assessment artifacts
+      # -----------------------------------------------------------------------
+      - name: Upload assessment artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: assessment-${{ github.run_number }}
+          path: artifacts/assessment/
+          if-no-files-found: warn
+          retention-days: 30
