@@ -3,7 +3,7 @@
 ## Runs the generated-test-data assessment against the checked-out workspace
 ## without relying on stale PR text or code-search tool caps.
 ##
-## Triggers:  manual (workflow_dispatch) only – no secrets required.
+## Triggers:  manual (workflow_dispatch) only.
 ## Parity:    uses the repo's Docker test-runner (docker-compose.test.yml) so
 ##            that results are identical to local and CI environments.
 ##
@@ -32,17 +32,24 @@ jobs:
           fetch-depth: 0
 
       # -----------------------------------------------------------------------
-      # 2. Create minimal .env so resolve_env.sh / run-tests-docker.sh won't
-      #    error – no real credentials needed for offline tests.
+      # 2. Create .env from GitHub secrets (when present) with safe defaults
+      #    for non-secret/offline execution.
       # -----------------------------------------------------------------------
-      - name: Create .env for offline run
+      - name: Create .env from secrets and defaults
+        env:
+          CI_GITHUB_TOKEN: ${{ github.token }}
+          # Optional repo secrets. If absent, shell defaults below keep this workflow runnable.
+          CI_AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          CI_AZURE_DEVOPS_ORG_URL: ${{ secrets.AZURE_DEVOPS_ORG_URL }}
+          CI_AZURE_DEVOPS_ORG_NAME: ${{ secrets.AZURE_DEVOPS_ORG_NAME }}
+          CI_GITHUB_PRIVATE_REPO: ${{ secrets.GITHUB_PRIVATE_REPO }}
         run: |
-          cat > .env << 'EOF'
-          GITHUB_TOKEN=offline
-          AZURE_DEVOPS_PAT=offline
-          AZURE_DEVOPS_ORG_URL=https://dev.azure.com/offline
-          AZURE_DEVOPS_ORG_NAME=offline
-          GITHUB_PRIVATE_REPO=offline/offline
+          cat > .env << EOF
+          GITHUB_TOKEN=${CI_GITHUB_TOKEN:-offline}
+          AZURE_DEVOPS_PAT=${CI_AZURE_DEVOPS_PAT:-offline}
+          AZURE_DEVOPS_ORG_URL=${CI_AZURE_DEVOPS_ORG_URL:-https://dev.azure.com/offline}
+          AZURE_DEVOPS_ORG_NAME=${CI_AZURE_DEVOPS_ORG_NAME:-offline}
+          GITHUB_PRIVATE_REPO=${CI_GITHUB_PRIVATE_REPO:-offline/offline}
           POSTGRES_HOST=test-db
           POSTGRES_PORT=5432
           POSTGRES_USER=postgres

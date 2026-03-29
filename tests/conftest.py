@@ -36,8 +36,12 @@ def pytest_configure(config):
     
     env_file_used = None
     if env_resolved.exists():
-        load_env_file(env_resolved, override=True)
-        env_file_used = env_resolved
+        loaded = load_env_file(env_resolved, override=True)
+        if loaded:
+            env_file_used = env_resolved
+        elif env_regular.exists():
+            load_env_file(env_regular, override=True)
+            env_file_used = env_regular
     elif env_regular.exists():
         load_env_file(env_regular, override=True)
         env_file_used = env_regular

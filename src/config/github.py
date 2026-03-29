@@ -93,32 +93,38 @@ def load_env_file(env_file: str | Path, override: bool = False) -> dict[str, str
     env_path = Path(env_file)
     if not env_path.exists():
         return {}
+
+    if not os.access(env_path, os.R_OK):
+        return {}
     
     loaded_vars = {}
     raw_vars = {}
     
     # First pass: load all raw values
-    with open(env_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            line = line.strip()
-            
-            # Skip comments and empty lines
-            if not line or line.startswith('#'):
-                continue
-            
-            # Parse KEY=VALUE
-            if '=' in line:
-                key, _, value = line.partition('=')
-                key = key.strip()
-                value = value.strip()
-                
-                # Remove quotes if present
-                if value.startswith('"') and value.endswith('"'):
-                    value = value[1:-1]
-                elif value.startswith("'") and value.endswith("'"):
-                    value = value[1:-1]
-                
-                raw_vars[key] = value
+    try:
+        with open(env_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+
+                # Skip comments and empty lines
+                if not line or line.startswith('#'):
+                    continue
+
+                # Parse KEY=VALUE
+                if '=' in line:
+                    key, _, value = line.partition('=')
+                    key = key.strip()
+                    value = value.strip()
+
+                    # Remove quotes if present
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    elif value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]
+
+                    raw_vars[key] = value
+    except OSError:
+        return {}
     
     # Second pass: resolve indirect references
     max_iterations = 10  # Prevent infinite loops
