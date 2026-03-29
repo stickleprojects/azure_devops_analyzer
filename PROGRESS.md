@@ -2,12 +2,110 @@
 
 ---
 
-## Session: 2026-03-07 - PR #27 Finalized for Plan 015
+## Session: 2026-03-28 - CI Fix for PR #30
+
+### Summary
+
+Diagnosed and fixed the failing CI check on PR #30 (Plan 016 Reporting Views).
+
+### What Was Done
+
+- Identified root cause: `test-results/` is gitignored and absent on fresh CI checkout;
+  `pytest-cov` cannot write `coverage.xml` without the parent directory existing
+- Local test script (`scripts/run-tests-docker.sh`) already had `mkdir -p "$RESULTS_DIR"`;
+  CI workflow was missing the equivalent
+- Added `mkdir -p test-results` before `pytest` in the "Generate coverage report" step
+  in `.github/workflows/tests.yml`
+- Pulled 5 remote commits (dashboard migration cleanup, live API tests disabled) and rebased
+- Pushed fix to trigger new CI run on PR #30
+
+### Next Steps
+
+- Confirm CI passes on PR #30
+- Merge PR #30 once green
+
+---
+
+## Session: 2026-03-26 - Plan 016 Reporting View Migration Extended
+
+### Summary
+
+Completed the remaining Plan 016 dashboard migration work by moving the last
+high-value dashboard SQL into shared reporting views, updating the dashboards to
+query those views, and validating the reporting view contract suite in Docker.
+
+### What Was Done
+
+- Expanded `database/views.sql` with additional shared reporting views for:
+  - repository code quality snapshots and trends
+  - repository dependency/security rollups and vulnerability details
+  - latest branch health metrics
+  - security overview, severity, repository, and dependency summaries
+  - team-scoped trend, performance, and recent activity views
+  - extraction throughput time buckets for admin observability
+- Simplified `database/migrations/011_add_reporting_views.sql` to source `database/views.sql`
+  via `\ir ../views.sql`
+- Updated dashboards to use the reporting layer instead of embedded business logic:
+  - `dashboards/repository-deep-dive.json`
+  - `dashboards/security-dashboard.json`
+  - `dashboards/team-overview.json`
+  - `dashboards/service-overview.json`
+  - `dashboards/admin-dashboard.json`
+  - prior related cleanups already in branch for `dashboard-home.json`, `repository-overview.json`, and `contributor-analytics.json`
+- Fixed schema drift in reporting views by using `last_seen_at` for dependency and
+  repository language snapshot logic instead of nonexistent `analyzed_at` columns
+- Added/extended contract coverage in `tests/contract/database/test_reporting_views.py`
+  for global dashboard summary views and admin auth/error reporting views
+- Updated migration image inputs in `Dockerfile.migrations` so reporting view changes
+  are available to migration runs
+
+### Validation
+
+- Ran Docker contract validation:
+  - `docker compose -f docker-compose.test.yml run --rm test-runner sh -c "pytest tests/contract/database/test_reporting_views.py"`
+- Result: `32 passed`
+
+### Current State
+
+- Plan 016 dashboard migration is effectively complete for the dashboards covered in
+  this branch
+- Remaining dashboard issues are no longer reporting-layer migration gaps; they are
+  data-quality/semantics defects tracked in GitHub issues #32 (DASH-CONTRIB-002) and #33 (DASH-REVIEW-003)
+
+### Next Steps
+
+- Smoke-test the updated Grafana dashboards against a populated environment
+- Address contributor analytics data-quality defects (identity normalization and
+  review timestamp semantics) as a separate workstream
+
+## Session: 2026-03-07 (Evening) - PR #28 Merged (Plan 016 Reporting Views)
+
+### Summary
+
+Fixed test coverage output standardization and database view column issues.
+PR #28 merged successfully.
+
+### What Was Done
+
+- Fixed undefined `platform` column references in `database/views.sql` (v_stale_repositories, v_unanalyzed_repositories)
+- Standardized pytest coverage output to `test-results/coverage.xml` across CI and Docker
+- Disabled pytest cacheprovider for CI/local parity
+- Updated test script output messages to match actual artifacts
+- Committed changes: `df734ee` - "fix(tests): standardize coverage output and fix database views"
+- PR #28 merged to `main`
+
+### Next Steps
+
+- Continue Plan 016 implementation or move to next backlog item
+
+---
+
+## Session: 2026-03-07 (Morning) - PR #27 Finalized for Plan 015
 
 ### Summary
 
 Verified Ollama MCP tools are operational and finalized documentation for Plan 015.
-PR #27 is ready to merge.
+PR #27 merged.
 
 ### What Was Done
 
@@ -15,11 +113,7 @@ PR #27 is ready to merge.
 - Committed `.vscode/mcp.json` with Ollama MCP server setup
 - Reviewed and verified PR #27 content and completeness
 - All tests passing via `bash scripts/run-tests-docker.sh` (exit code 0)
-
-### Next Steps
-
-- Merge PR #27 to `main`
-- Start work on Plan 016 (SQL Reporting Views)
+- PR #27 merged to `main`
 
 ---
 

@@ -3,5 +3,8 @@
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
   "powershell.enableProfileLoading": true,
-  "git.ignoreLimitWarning": true
+  "git.ignoreLimitWarning": true,
+  "chat.tools.terminal.autoApprove": {
+    "gh": true
+  }
 }

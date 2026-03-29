@@ -306,7 +306,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as prs\nFROM pull_requests\nWHERE created_at > NOW() - INTERVAL '30 days';",
+          "rawSql": "SELECT prs FROM v_prs_created_30d_total;",
           "refId": "A"
         }
       ],
@@ -527,7 +527,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('day', c.commit_date) as time,\n  COALESCE(t.name, 'No Team') as team,\n  COUNT(*) as commits\nFROM commits c\nLEFT JOIN repositories r ON c.repo_id = r.repo_id\nLEFT JOIN teams t ON r.team_id = t.team_id\nWHERE c.commit_date > NOW() - INTERVAL '30 days'\n  AND COALESCE(t.name, 'No Team') IN (${team:singlequote})\nGROUP BY date_trunc('day', c.commit_date), t.name\nORDER BY time, team;",
+          "rawSql": "SELECT time, team, commits\nFROM v_team_commits_daily_trend_30d\nWHERE team IN (${team:singlequote})\nORDER BY time, team;",
           "refId": "A"
         }
       ],
@@ -648,7 +648,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('day', p.created_at) as time,\n  COALESCE(t.name, 'No Team') as team,\n  COUNT(*) as created\nFROM pull_requests p\nLEFT JOIN repositories r ON p.repo_id = r.repo_id\nLEFT JOIN teams t ON r.team_id = t.team_id\nWHERE p.created_at > NOW() - INTERVAL '30 days'\n  AND COALESCE(t.name, 'No Team') IN (${team:singlequote})\nGROUP BY date_trunc('day', p.created_at), t.name\nORDER BY time, team;",
+          "rawSql": "SELECT time, team, created\nFROM v_team_pr_creation_daily_trend_30d\nWHERE team IN (${team:singlequote})\nORDER BY time, team;",
           "refId": "created"
         },
         {
@@ -660,7 +660,7 @@
           "format": "time_series",
           "hide": false,
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('day', p.merged_at) as time,\n  COALESCE(t.name, 'No Team') as team,\n  COUNT(*) as merged\nFROM pull_requests p\nLEFT JOIN repositories r ON p.repo_id = r.repo_id\nLEFT JOIN teams t ON r.team_id = t.team_id\nWHERE p.merged_at > NOW() - INTERVAL '30 days'\n  AND COALESCE(t.name, 'No Team') IN (${team:singlequote})\nGROUP BY date_trunc('day', p.merged_at), t.name\nORDER BY time, team;",
+          "rawSql": "SELECT time, team, merged\nFROM v_team_pr_merge_daily_trend_30d\nWHERE team IN (${team:singlequote})\nORDER BY time, team;",
           "refId": "merged"
         }
       ],
@@ -750,7 +750,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('day', commit_date) as time,\n  COUNT(DISTINCT author_id) as contributors\nFROM commits\nWHERE commit_date > NOW() - INTERVAL '30 days'\nGROUP BY date_trunc('day', commit_date)\nORDER BY time;",
+          "rawSql": "SELECT time, team, contributors\nFROM v_team_active_contributors_daily_30d\nWHERE team IN (${team:singlequote})\nORDER BY time, team;",
           "refId": "A"
         }
       ],
@@ -871,7 +871,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT \n  date_trunc('day', commit_date) as time,\n  SUM(lines_added) as added,\n  SUM(lines_removed) as removed\nFROM commits\nWHERE commit_date > NOW() - INTERVAL '30 days'\nGROUP BY date_trunc('day', commit_date)\nORDER BY time;",
+          "rawSql": "SELECT time, team, added, removed\nFROM v_team_lines_changed_daily_trend_30d\nWHERE team IN (${team:singlequote})\nORDER BY time, team;",
           "refId": "A"
         }
       ],
@@ -1124,7 +1124,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  COALESCE(t.name, 'No Team') as team,\n  (SELECT COUNT(*) FROM commits c WHERE c.repo_id = r.repo_id AND c.commit_date > NOW() - INTERVAL '30 days') as commits_30d,\n  (SELECT COUNT(DISTINCT author_id) FROM commits c WHERE c.repo_id = r.repo_id AND c.commit_date > NOW() - INTERVAL '30 days') as contributors_30d,\n  (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id AND p.status = 'open') as open_prs,\n  (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id AND p.merged_at > NOW() - INTERVAL '30 days') as merged_prs_30d,\n  COALESCE((SELECT COUNT(v.id) FROM vulnerabilities v JOIN dependencies d ON v.dependency_id = d.id WHERE d.repo_id = r.repo_id AND d.analyzed_at = (SELECT MAX(analyzed_at) FROM dependencies WHERE repo_id = r.repo_id)), 0) as vulnerabilities,\n  (SELECT COUNT(*) FROM branches b LEFT JOIN (SELECT branch_id, staleness_days, ROW_NUMBER() OVER (PARTITION BY branch_id ORDER BY timestamp DESC) as rn FROM branch_metrics) bm ON b.branch_id = bm.branch_id AND bm.rn = 1 WHERE b.repo_id = r.repo_id AND b.is_active = true AND COALESCE(bm.staleness_days, 999) > 30) as stale_branches,\n  r.last_analyzed_at\nFROM repositories r\nLEFT JOIN teams t ON r.team_id = t.team_id\nWHERE r.is_active = true\n  AND COALESCE(t.name, 'No Team') IN (${team:singlequote})\nORDER BY commits_30d DESC;",
+          "rawSql": "SELECT repo_id, repository, team, commits_30d, contributors_30d, open_prs, merged_prs_30d, vulnerabilities, stale_branches, last_analyzed_at\nFROM v_team_repository_health_matrix\nWHERE team IN (${team:singlequote})\nORDER BY commits_30d DESC;",
           "refId": "A"
         }
       ],
@@ -1205,7 +1205,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  COALESCE(\n    AVG(EXTRACT(EPOCH FROM (merged_at - created_at)) / 86400),\n    0\n  )::numeric(10,1) as days\nFROM pull_requests\nWHERE merged_at IS NOT NULL\n  AND merged_at > NOW() - INTERVAL '30 days';",
+          "rawSql": "SELECT COALESCE(AVG(avg_merge_time_days), 0)::numeric(10,1) as days\nFROM v_team_pr_health_summary_30d\nWHERE team IN (${team:singlequote});",
           "refId": "A"
         }
       ],
@@ -1272,7 +1272,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  COALESCE(AVG(approval_count), 0)::numeric(10,1) as avg_approvals\nFROM pull_requests\nWHERE merged_at > NOW() - INTERVAL '30 days';",
+          "rawSql": "SELECT COALESCE(AVG(avg_approvals), 0)::numeric(10,1) as avg_approvals\nFROM v_team_pr_health_summary_30d\nWHERE team IN (${team:singlequote});",
           "refId": "A"
         }
       ],
@@ -1339,7 +1339,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(*) as prs_with_issues\nFROM pull_requests\nWHERE has_issues = true\n  AND created_at > NOW() - INTERVAL '30 days';",
+          "rawSql": "SELECT COALESCE(SUM(prs_with_issues), 0) as prs_with_issues\nFROM v_team_pr_health_summary_30d\nWHERE team IN (${team:singlequote});",
           "refId": "A"
         }
       ],
@@ -1406,7 +1406,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT COUNT(DISTINCT v.id) as total_vulnerabilities\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nJOIN repositories r ON d.repo_id = r.repo_id\nWHERE r.is_active = true\n  AND d.analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies WHERE repo_id = d.repo_id\n  );",
+          "rawSql": "SELECT COALESCE(SUM(total_vulnerabilities), 0) as total_vulnerabilities\nFROM v_team_vulnerabilities_total_latest\nWHERE team IN (${team:singlequote});",
           "refId": "A"
         }
       ],
@@ -1468,7 +1468,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  COALESCE(size_category, 'unknown') as size,\n  COUNT(*) as count\nFROM pull_requests\nWHERE created_at > NOW() - INTERVAL '30 days'\nGROUP BY size_category;",
+          "rawSql": "SELECT size, SUM(count) as count\nFROM v_team_pr_size_distribution_30d\nWHERE team IN (${team:singlequote})\nGROUP BY size;",
           "refId": "A"
         }
       ],
@@ -1591,7 +1591,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  v.severity,\n  COUNT(*) as count\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nJOIN repositories r ON d.repo_id = r.repo_id\nWHERE r.is_active = true\n  AND d.analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies WHERE repo_id = d.repo_id\n  )\nGROUP BY v.severity\nORDER BY \n  CASE v.severity \n    WHEN 'CRITICAL' THEN 1 \n    WHEN 'HIGH' THEN 2 \n    WHEN 'MEDIUM' THEN 3 \n    WHEN 'LOW' THEN 4 \n  END;",
+          "rawSql": "SELECT severity, SUM(count) as count\nFROM v_team_vulnerabilities_by_severity_latest\nWHERE team IN (${team:singlequote})\nGROUP BY severity\nORDER BY \n  CASE severity \n    WHEN 'CRITICAL' THEN 1 \n    WHEN 'HIGH' THEN 2 \n    WHEN 'MEDIUM' THEN 3 \n    WHEN 'LOW' THEN 4 \n  END;",
           "refId": "A"
         }
       ],
@@ -1654,7 +1654,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  language,\n  SUM(line_count) as lines\nFROM repository_languages rl\nJOIN repositories r ON rl.repo_id = r.repo_id\nWHERE r.is_active = true\n  AND rl.analyzed_at = (\n    SELECT MAX(analyzed_at) FROM repository_languages WHERE repo_id = rl.repo_id\n  )\nGROUP BY language\nORDER BY lines DESC\nLIMIT 10;",
+          "rawSql": "SELECT language, SUM(lines) as lines\nFROM v_team_language_distribution_latest\nWHERE team IN (${team:singlequote})\nGROUP BY language\nORDER BY lines DESC\nLIMIT 10;",
           "refId": "A"
         }
       ],
@@ -1755,7 +1755,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  COALESCE(c.name, c.email) as contributor,\n  COUNT(cm.commit_sha) as commits\nFROM contributors c\nJOIN commits cm ON c.id = cm.author_id\nWHERE cm.commit_date > NOW() - INTERVAL '30 days'\nGROUP BY c.id, c.name, c.email\nORDER BY commits DESC\nLIMIT 10;",
+          "rawSql": "SELECT contributor, SUM(commits) as commits\nFROM v_team_top_contributors_30d\nWHERE team IN (${team:singlequote})\nGROUP BY contributor\nORDER BY commits DESC\nLIMIT 10;",
           "refId": "A"
         }
       ],
@@ -1843,7 +1843,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  COALESCE(c.name, c.email) as reviewer,\n  COUNT(r.id) as reviews\nFROM contributors c\nJOIN pr_reviews r ON c.id = r.reviewer_id\nWHERE r.review_date > NOW() - INTERVAL '30 days'\nGROUP BY c.id, c.name, c.email\nORDER BY reviews DESC\nLIMIT 10;",
+          "rawSql": "SELECT reviewer, SUM(reviews) as reviews\nFROM v_team_top_reviewers_30d\nWHERE team IN (${team:singlequote})\nGROUP BY reviewer\nORDER BY reviews DESC\nLIMIT 10;",
           "refId": "A"
         }
       ],
@@ -1920,7 +1920,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  COALESCE(t.name, 'No Team') as team,\n  COUNT(DISTINCT r.repo_id) as repositories,\n  COUNT(DISTINCT c.id) as contributors,\n  COUNT(cm.commit_sha) as commits_30d,\n  COUNT(DISTINCT CASE WHEN p.status = 'open' THEN p.id END) as open_prs,\n  COUNT(DISTINCT CASE WHEN p.merged_at > NOW() - INTERVAL '30 days' THEN p.id END) as merged_prs_30d,\n  ROUND(AVG(EXTRACT(EPOCH FROM (p.merged_at - p.created_at)) / 86400), 1) as avg_merge_time_days\nFROM teams t\nLEFT JOIN repositories r ON t.team_id = r.team_id\nLEFT JOIN commits cm ON r.repo_id = cm.repo_id AND cm.commit_date > NOW() - INTERVAL '30 days'\nLEFT JOIN contributors c ON cm.author_id = c.id\nLEFT JOIN pull_requests p ON r.repo_id = p.repo_id\nWHERE COALESCE(t.name, 'No Team') IN (${team:singlequote})\nGROUP BY t.team_id, t.name\nORDER BY commits_30d DESC;",
+          "rawSql": "SELECT team, repositories, contributors, commits_30d, open_prs, merged_prs_30d, avg_merge_time_days\nFROM v_team_performance_summary\nWHERE team IN (${team:singlequote})\nORDER BY commits_30d DESC;",
           "refId": "A"
         }
       ],
@@ -2027,7 +2027,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  r.repo_id,\n  r.name as repository,\n  COALESCE(t.name, 'No Team') as team,\n  pr.pr_number as \"PR #\",\n  pr.title,\n  COALESCE(c.name, c.email) as author,\n  pr.status,\n  pr.size_category as size,\n  pr.files_changed as files,\n  pr.approval_count as approvals,\n  pr.created_at\nFROM pull_requests pr\nJOIN repositories r ON pr.repo_id = r.repo_id\nLEFT JOIN teams t ON r.team_id = t.team_id\nLEFT JOIN contributors c ON pr.author_id = c.id\nWHERE pr.created_at > NOW() - INTERVAL '7 days'\n  AND COALESCE(t.name, 'No Team') IN (${team:singlequote})\nORDER BY pr.created_at DESC\nLIMIT 25;",
+          "rawSql": "SELECT repo_id, repository, team, pr_number as \"PR #\", title, author, status, size, files, approvals, created_at\nFROM v_team_recent_prs_7d\nWHERE team IN (${team:singlequote})\nORDER BY created_at DESC\nLIMIT 25;",
           "refId": "A"
         }
       ],
@@ -2050,14 +2050,14 @@
           "type": "postgres",
           "uid": "TimescaleDB"
         },
-        "definition": "SELECT DISTINCT COALESCE(t.name, 'No Team') as team FROM teams t UNION SELECT 'No Team' ORDER BY team",
+        "definition": "SELECT DISTINCT team FROM v_repository_team_labels ORDER BY team",
         "hide": 0,
         "includeAll": true,
         "label": "Team",
         "multi": true,
         "name": "team",
         "options": [],
-        "query": "SELECT DISTINCT COALESCE(t.name, 'No Team') as team FROM teams t UNION SELECT 'No Team' ORDER BY team",
+        "query": "SELECT DISTINCT team FROM v_repository_team_labels ORDER BY team",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,

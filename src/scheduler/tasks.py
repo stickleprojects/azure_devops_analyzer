@@ -6,13 +6,35 @@ from src.scheduler.celery_app import celery_app
 from src.workflows.github_analysis import GitHubAnalysisWorkflow, ExtractionLimits
 from src.workflows.azure_devops_analysis import run_azure_devops_extraction
 from src.database import get_session
+from src.database.connection import session_scope
 from src.database.models.service import Service
 from src.database.service_analytics import (
     compute_service_metrics,
     compute_all_services_metrics,
 )
+from src.database.storage import start_extraction_run, fail_extraction_run
 
 logger = logging.getLogger(__name__)
+
+
+def _record_task_failure(platform: str, task_error: Exception) -> None:
+    """Persist a failed extraction run when a task aborts before workflow run tracking starts."""
+    try:
+        with session_scope() as session:
+            run_id = start_extraction_run(
+                session,
+                platform=platform,
+                organization_name="task-level",
+                total_repositories=0,
+            )
+            fail_extraction_run(session, run_id, str(task_error))
+    except Exception as persistence_error:
+        logger.warning(
+            "Failed to persist task-level extraction failure for platform %s: %s",
+            platform,
+            persistence_error,
+            exc_info=True,
+        )
 
 
 @celery_app.task(name="tasks.run_github_extraction", bind=True)
@@ -47,6 +69,7 @@ def run_github_extraction(self):
         
     except Exception as e:
         logger.error(f"GitHub extraction failed: {e}", exc_info=True)
+        _record_task_failure("github", e)
         return {"status": "error", "message": str(e)}
 
 
@@ -65,6 +88,7 @@ def run_azure_devops_extraction_task(self):
 
     except Exception as e:
         logger.error("Azure DevOps extraction failed: %s", e, exc_info=True)
+        _record_task_failure("azure_devops", e)
         return {"status": "error", "message": str(e)}
 
 

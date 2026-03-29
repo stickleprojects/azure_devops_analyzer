@@ -623,11 +623,11 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT ROUND(SUM(cache_hits) * 100.0 / NULLIF(SUM(cache_hits) + SUM(cache_misses), 0), 1) AS hit_rate FROM extraction_metrics WHERE status = 'completed' AND $__timeFilter(extraction_started_at);",
+          "rawSql": "SELECT auth_errors FROM v_auth_errors_24h_total;",
           "refId": "A"
         }
       ],
-      "title": "Cache Hit Rate",
+      "title": "Auth Failures (24h)",
       "type": "stat"
     },
     {
@@ -713,7 +713,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT time_bucket('5 minutes', extraction_completed_at) AS time, COUNT(*) * 12 AS repos_per_hour FROM extraction_metrics WHERE status = 'completed' AND $__timeFilter(extraction_completed_at) GROUP BY time ORDER BY time;",
+          "rawSql": "SELECT time, repos_per_hour FROM v_extraction_repos_per_hour_5m WHERE $__timeFilter(time) ORDER BY time;",
           "refId": "A"
         }
       ],
@@ -924,7 +924,7 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 24,
+        "w": 16,
         "x": 0,
         "y": 44
       },
@@ -942,11 +942,49 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT * FROM v_extraction_metrics_recent;",
+          "rawSql": "SELECT repository_name as repository, platform, status, error_category, error_message, extraction_started_at, extraction_completed_at, extraction_duration_seconds FROM v_extraction_metrics_with_errors;",
           "refId": "A"
         }
       ],
-      "title": "Recent Repository Activity",
+      "title": "Recent Repository Activity (with Errors)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 8,
+        "x": 16,
+        "y": 44
+      },
+      "id": 62,
+      "options": {
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT platform, error_count, affected_runs, last_error_time FROM v_auth_errors_by_platform;",
+          "refId": "A"
+        }
+      ],
+      "title": "Auth Errors by Platform (24h)",
       "type": "table"
     }
   ],

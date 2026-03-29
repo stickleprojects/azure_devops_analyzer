@@ -151,7 +151,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT COUNT(*) as total_vulnerabilities\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nWHERE d.analyzed_at = (\n  SELECT MAX(analyzed_at) FROM dependencies\n);",
+                    "rawSql": "SELECT total_vulnerabilities\nFROM v_security_overview_latest;",
                     "refId": "A"
                 }
             ],
@@ -220,7 +220,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT COUNT(*) as total_eol_deps\nFROM dependencies\nWHERE is_eol = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies\n  );",
+                    "rawSql": "SELECT total_eol_deps\nFROM v_security_overview_latest;",
                     "refId": "A"
                 }
             ],
@@ -289,7 +289,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT COUNT(DISTINCT repo_id) as repos_with_vulns\nFROM dependencies\nWHERE has_vulnerabilities = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = dependencies.repo_id\n  );",
+                    "rawSql": "SELECT repos_with_vulns\nFROM v_security_overview_latest;",
                     "refId": "A"
                 }
             ],
@@ -358,7 +358,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT COUNT(DISTINCT repo_id) as repos_with_eol\nFROM dependencies\nWHERE is_eol = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = dependencies.repo_id\n  );",
+                    "rawSql": "SELECT repos_with_eol\nFROM v_security_overview_latest;",
                     "refId": "A"
                 }
             ],
@@ -435,7 +435,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT \n  v.severity,\n  COUNT(*) as count\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nWHERE d.analyzed_at = (\n  SELECT MAX(analyzed_at) FROM dependencies\n)\nGROUP BY v.severity\nORDER BY \n  CASE v.severity \n    WHEN 'CRITICAL' THEN 1 \n    WHEN 'HIGH' THEN 2 \n    WHEN 'MEDIUM' THEN 3 \n    WHEN 'LOW' THEN 4 \n  END;",
+                    "rawSql": "SELECT severity, count\nFROM v_security_vulnerabilities_by_severity_latest\nORDER BY \n  CASE severity \n    WHEN 'CRITICAL' THEN 1 \n    WHEN 'HIGH' THEN 2 \n    WHEN 'MEDIUM' THEN 3 \n    WHEN 'LOW' THEN 4 \n  END;",
                     "refId": "A"
                 }
             ],
@@ -525,7 +525,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT \n  r.name as repository,\n  COUNT(*) as critical_vulns\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nJOIN repositories r ON d.repo_id = r.repo_id\nWHERE v.severity = 'CRITICAL'\n  AND d.analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = d.repo_id\n  )\nGROUP BY r.name\nORDER BY critical_vulns DESC\nLIMIT 10;",
+                    "rawSql": "SELECT repository, critical_vulns\nFROM v_security_top_repositories_critical_vulns;",
                     "refId": "A"
                 }
             ],
@@ -602,7 +602,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT \n  CASE \n    WHEN eol_date < CURRENT_DATE THEN 'Expired'\n    WHEN eol_date < CURRENT_DATE + INTERVAL '90 days' THEN 'Expiring Soon'\n    ELSE 'Future EOL'\n  END as category,\n  COUNT(*) as count\nFROM dependencies\nWHERE is_eol = true\n  AND analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies\n  )\nGROUP BY category\nORDER BY \n  CASE category \n    WHEN 'Expired' THEN 1 \n    WHEN 'Expiring Soon' THEN 2 \n    WHEN 'Future EOL' THEN 3 \n  END;",
+                    "rawSql": "SELECT category, count\nFROM v_security_eol_status_latest\nORDER BY \n  CASE category \n    WHEN 'Expired' THEN 1 \n    WHEN 'Expiring Soon' THEN 2 \n    WHEN 'Future EOL' THEN 3 \n  END;",
                     "refId": "A"
                 }
             ],
@@ -693,7 +693,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT \n  r.name as \"Repository\",\n  COALESCE(vuln_counts.critical, 0) as \"Critical Vulns\",\n  COALESCE(vuln_counts.high, 0) as \"High Vulns\",\n  COALESCE(vuln_counts.medium, 0) as \"Medium Vulns\",\n  COALESCE(vuln_counts.low, 0) as \"Low Vulns\",\n  COALESCE(eol_counts.eol_deps, 0) as \"EOL Deps\"\nFROM repositories r\nLEFT JOIN (\n  SELECT \n    d.repo_id,\n    SUM(CASE WHEN v.severity = 'CRITICAL' THEN 1 ELSE 0 END) as critical,\n    SUM(CASE WHEN v.severity = 'HIGH' THEN 1 ELSE 0 END) as high,\n    SUM(CASE WHEN v.severity = 'MEDIUM' THEN 1 ELSE 0 END) as medium,\n    SUM(CASE WHEN v.severity = 'LOW' THEN 1 ELSE 0 END) as low\n  FROM vulnerabilities v\n  JOIN dependencies d ON v.dependency_id = d.id\n  WHERE d.analyzed_at = (\n    SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = d.repo_id\n  )\n  GROUP BY d.repo_id\n) vuln_counts ON r.repo_id = vuln_counts.repo_id\nLEFT JOIN (\n  SELECT \n    repo_id,\n    COUNT(*) as eol_deps\n  FROM dependencies\n  WHERE is_eol = true\n    AND analyzed_at = (\n      SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = dependencies.repo_id\n    )\n  GROUP BY repo_id\n) eol_counts ON r.repo_id = eol_counts.repo_id\nWHERE r.is_active = true\nORDER BY (COALESCE(vuln_counts.critical, 0) + COALESCE(vuln_counts.high, 0)) DESC;",
+                    "rawSql": "SELECT \n  repo_id,\n  repository as \"Repository\",\n  critical_vulns as \"Critical Vulns\",\n  high_vulns as \"High Vulns\",\n  medium_vulns as \"Medium Vulns\",\n  low_vulns as \"Low Vulns\",\n  eol_deps as \"EOL Deps\"\nFROM v_security_repository_overview\nORDER BY (critical_vulns + high_vulns) DESC;",
                     "refId": "A"
                 }
             ],
@@ -803,7 +803,7 @@
                     "group": [],
                     "metricColumn": "none",
                     "rawQuery": true,
-                    "rawSql": "SELECT \n  time_bucket('1 day', d.analyzed_at) as time,\n  COUNT(*) as vulnerabilities\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nWHERE $__timeFilter(d.analyzed_at)\nGROUP BY time_bucket('1 day', d.analyzed_at)\nORDER BY time;",
+                    "rawSql": "SELECT time, vulnerabilities\nFROM v_security_vulnerability_trend\nWHERE $__timeFilter(time)\nORDER BY time;",
                     "refId": "A",
                     "select": [
                         [
@@ -816,7 +816,7 @@
                         ]
                     ],
                     "table": "vulnerabilities",
-                    "timeColumn": "analyzed_at",
+                    "timeColumn": "time",
                     "timeColumnType": "timestamp",
                     "where": [
                         {
@@ -908,7 +908,7 @@
                     "editorMode": "code",
                     "format": "table",
                     "rawQuery": true,
-                    "rawSql": "SELECT \n  d.package_name as \"Package\",\n  d.version as \"Version\",\n  d.ecosystem as \"Ecosystem\",\n  v.severity as \"Severity\",\n  COUNT(DISTINCT d.repo_id) as \"Affected Repositories\",\n  STRING_AGG(DISTINCT r.name, ', ') as \"Repositories\"\nFROM vulnerabilities v\nJOIN dependencies d ON v.dependency_id = d.id\nJOIN repositories r ON d.repo_id = r.repo_id\nWHERE d.analyzed_at = (\n  SELECT MAX(analyzed_at) FROM dependencies d2 WHERE d2.repo_id = d.repo_id\n)\nGROUP BY d.package_name, d.version, d.ecosystem, v.severity\nORDER BY \n  CASE v.severity \n    WHEN 'CRITICAL' THEN 1 \n    WHEN 'HIGH' THEN 2 \n    WHEN 'MEDIUM' THEN 3 \n    WHEN 'LOW' THEN 4 \n  END,\n  COUNT(DISTINCT d.repo_id) DESC\nLIMIT 20;",
+                    "rawSql": "SELECT \n  package_name as \"Package\",\n  version as \"Version\",\n  ecosystem as \"Ecosystem\",\n  severity as \"Severity\",\n  affected_repositories as \"Affected Repositories\",\n  repositories as \"Repositories\"\nFROM v_security_top_vulnerable_dependencies\nLIMIT 20;",
                     "refId": "A"
                 }
             ],

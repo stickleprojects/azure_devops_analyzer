@@ -50,6 +50,34 @@ Recommended focus areas:
 
 Use Ollama for first-pass analysis and draft suggestions, then validate with local Docker tests (`bash scripts/run-tests-docker.sh`) before committing.
 
+### Gate 3.6: CI/Local Parity Check (Required for test/DB/CI changes)
+
+If a change touches any of the following, you must validate using the same execution shape as GitHub Actions:
+
+- `.github/workflows/tests.yml`
+- `tests/**`
+- `database/schema.sql` or `database/migrations/**`
+- `tests/contract/database/conftest.py` (or other test DB setup code)
+
+Required parity actions:
+
+1. Run tests in Docker (never local python).
+2. Run the same pytest scopes used by CI (unit + contract/integration + coverage path) or the exact failing subset first, then the full suite.
+3. When tests insert rows via raw SQL fixtures, set values explicitly for non-null/PK fields. Do not rely on implicit defaults or autoincrement behavior unless the test verifies that behavior.
+4. Keep schema source alignment explicit: if test setup uses SQLAlchemy models (`Base.metadata.create_all`) and production uses SQL migrations, verify fixture assumptions against both.
+
+Recommended CI-shape command pattern for targeted validation:
+
+```bash
+docker compose -f docker-compose.test.yml run --rm test-runner sh -c "pytest <same-path-or-scope-as-ci> -v --tb=short"
+```
+
+Then run full validation before commit:
+
+```bash
+bash scripts/run-tests-docker.sh
+```
+
 ### Gate 4: Test Integrity Check (if modifying tests)
 
 Before changing any test, consult `agents/04a-test-guardian.md`:
@@ -116,6 +144,7 @@ See `agents/07-session-continuity-agent.md` for detailed session tracking patter
 
 - **Use Docker Compose V2**: `docker compose` (not `docker-compose`)
 - **Environment file**: `.env` supports variable references like `$VARIABLE_NAME`
+- **Generate `.env` when missing/incomplete**: Run `./Start-RepoAnalysis.sh --regenerate-env` (or `./start-repoanalysis.sh --regenerate-env`) and have the user answer the interactive prompts
 - **Resolve variables**: Use `./scripts/resolve_env.sh` to create `.env.resolved` if needed
 - **Start services**: `docker compose --env-file .env.resolved up -d`
 
@@ -125,6 +154,7 @@ See `agents/07-session-continuity-agent.md` for detailed session tracking patter
 - **Type hints**: Use type hints in all code
 - **Database layer**: Keep DB operations in `src/database/storage.py` ONLY
 - **Extractors location**: `src/extractors/{platform}/`
+- **Execution**: Never run python code locally - always host inside docker, there is a script `scripts/run-tests-docker.sh` as an example
 
 ### Code Style
 

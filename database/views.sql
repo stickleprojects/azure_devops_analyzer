@@ -173,6 +173,90 @@ SELECT COUNT(*) AS commits
 FROM commits
 WHERE commit_date > NOW() - INTERVAL '30 days';
 
+-- View: Global pull requests created in last 30 days
+CREATE OR REPLACE VIEW v_prs_created_30d_total AS
+SELECT COUNT(*) AS prs
+FROM pull_requests
+WHERE created_at > NOW() - INTERVAL '30 days';
+
+-- View: Global teams count
+CREATE OR REPLACE VIEW v_teams_total AS
+SELECT COUNT(*) AS teams
+FROM teams;
+
+-- View: Global commits count (all time)
+CREATE OR REPLACE VIEW v_commits_total AS
+SELECT COUNT(*) AS total
+FROM commits;
+
+-- View: Global PR reviews in last 30 days
+CREATE OR REPLACE VIEW v_pr_reviews_30d_total AS
+SELECT COUNT(*) AS reviews
+FROM pr_reviews
+WHERE review_date > NOW() - INTERVAL '30 days';
+
+-- View: Global pull requests count (all time)
+CREATE OR REPLACE VIEW v_pull_requests_total AS
+SELECT COUNT(*) AS total
+FROM pull_requests;
+
+-- View: Global contributors count (all time)
+CREATE OR REPLACE VIEW v_contributors_total AS
+SELECT COUNT(*) AS total
+FROM contributors;
+
+-- View: Daily commit trend (last 30 days)
+CREATE OR REPLACE VIEW v_commits_daily_trend_30d AS
+SELECT
+    date_trunc('day', commit_date) AS time,
+    COUNT(*) AS commits
+FROM commits
+WHERE commit_date > NOW() - INTERVAL '30 days'
+GROUP BY date_trunc('day', commit_date)
+ORDER BY time;
+
+-- View: Top contributors by commits in last 30 days
+CREATE OR REPLACE VIEW v_top_contributors_30d AS
+SELECT
+    COALESCE(c.name, c.email) AS contributor,
+    COUNT(cm.commit_sha) AS commits
+FROM contributors c
+JOIN commits cm ON c.id = cm.author_id
+WHERE cm.commit_date > NOW() - INTERVAL '30 days'
+GROUP BY c.id, c.name, c.email
+ORDER BY commits DESC
+LIMIT 10;
+
+-- View: Top reviewers by review count in last 30 days
+CREATE OR REPLACE VIEW v_top_reviewers_30d AS
+SELECT
+    COALESCE(c.name, c.email) AS reviewer,
+    COUNT(r.id) AS reviews
+FROM contributors c
+JOIN pr_reviews r ON c.id = r.reviewer_id
+WHERE r.review_date > NOW() - INTERVAL '30 days'
+GROUP BY c.id, c.name, c.email
+ORDER BY reviews DESC
+LIMIT 10;
+
+-- View: Contributor activity rollup for last 30 days
+CREATE OR REPLACE VIEW v_contributor_activity_30d AS
+SELECT
+    COALESCE(c.name, c.email) AS contributor,
+    c.email,
+    COUNT(DISTINCT cm.commit_sha) AS commits,
+    COALESCE(SUM(cm.lines_added), 0) AS lines_added,
+    COALESCE(SUM(cm.lines_removed), 0) AS lines_removed,
+    COUNT(DISTINCT pr.id) AS prs_authored,
+    COUNT(DISTINCT r.id) AS reviews_given
+FROM contributors c
+LEFT JOIN commits cm ON c.id = cm.author_id AND cm.commit_date > NOW() - INTERVAL '30 days'
+LEFT JOIN pull_requests pr ON c.id = pr.author_id AND pr.created_at > NOW() - INTERVAL '30 days'
+LEFT JOIN pr_reviews r ON c.id = r.reviewer_id AND r.review_date > NOW() - INTERVAL '30 days'
+GROUP BY c.id, c.name, c.email
+HAVING COUNT(DISTINCT cm.commit_sha) > 0 OR COUNT(DISTINCT pr.id) > 0 OR COUNT(DISTINCT r.id) > 0
+ORDER BY commits DESC, prs_authored DESC, reviews_given DESC;
+
 -- =============================================================================
 -- Repository Summary Views
 -- =============================================================================
@@ -208,6 +292,795 @@ CREATE OR REPLACE VIEW v_active_repositories_total AS
 SELECT COUNT(*) AS total
 FROM repositories
 WHERE is_active = true;
+
+-- View: Top 10 repositories by commits in last 30 days
+CREATE OR REPLACE VIEW v_top_repositories_by_commits_30d AS
+SELECT
+    r.repo_id,
+    r.name AS repository,
+    COUNT(c.commit_sha) AS commits,
+    r.url
+FROM repositories r
+LEFT JOIN commits c ON r.repo_id = c.repo_id
+    AND c.commit_date > NOW() - INTERVAL '30 days'
+WHERE r.is_active = true
+GROUP BY r.repo_id, r.name, r.url
+ORDER BY commits DESC
+LIMIT 10;
+
+-- View: Repository table for repository-overview dashboard
+CREATE OR REPLACE VIEW v_repository_overview_table AS
+SELECT
+    r.repo_id,
+    r.name AS repository,
+    o.name AS organization,
+    r.default_branch,
+    r.url,
+    r.last_analyzed_at,
+    (SELECT COUNT(*) FROM commits c WHERE c.repo_id = r.repo_id) AS total_commits,
+    (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id) AS total_prs
+FROM repositories r
+JOIN projects p ON r.project_id = p.project_id
+JOIN organizations o ON p.organization_id = o.organization_id
+WHERE r.is_active = true
+ORDER BY r.last_analyzed_at DESC NULLS LAST;
+
+-- View: Repository selector values
+CREATE OR REPLACE VIEW v_repository_names AS
+SELECT repo_id, name AS repository
+FROM repositories
+WHERE is_active = true
+ORDER BY name;
+
+-- View: Total contributors per repository (all time)
+CREATE OR REPLACE VIEW v_repo_total_contributors AS
+SELECT repo_id, COUNT(DISTINCT author_id) AS contributors
+FROM commits
+GROUP BY repo_id;
+
+-- View: Daily commit trend per repository (last 30 days)
+CREATE OR REPLACE VIEW v_repo_commits_daily_trend_30d AS
+SELECT
+    repo_id,
+    date_trunc('day', commit_date) AS time,
+    COUNT(*) AS commits
+FROM commits
+WHERE commit_date > NOW() - INTERVAL '30 days'
+GROUP BY repo_id, date_trunc('day', commit_date)
+ORDER BY time;
+
+-- View: Daily code churn per repository (last 30 days)
+CREATE OR REPLACE VIEW v_repo_lines_changed_daily_trend_30d AS
+SELECT
+    repo_id,
+    date_trunc('day', commit_date) AS time,
+    COALESCE(SUM(lines_added), 0) AS added,
+    COALESCE(SUM(lines_removed), 0) AS removed
+FROM commits
+WHERE commit_date > NOW() - INTERVAL '30 days'
+GROUP BY repo_id, date_trunc('day', commit_date)
+ORDER BY time;
+
+-- View: Top contributors per repository (last 30 days)
+CREATE OR REPLACE VIEW v_repo_top_contributors_30d AS
+SELECT
+    cm.repo_id,
+    COALESCE(c.name, c.email) AS contributor,
+    COUNT(cm.commit_sha) AS commits
+FROM commits cm
+JOIN contributors c ON c.id = cm.author_id
+WHERE cm.commit_date > NOW() - INTERVAL '30 days'
+GROUP BY cm.repo_id, c.id, c.name, c.email;
+
+-- View: Top reviewers per repository (last 30 days)
+CREATE OR REPLACE VIEW v_repo_top_reviewers_30d AS
+SELECT
+    pr.repo_id,
+    COALESCE(c.name, c.email) AS reviewer,
+    COUNT(r.id) AS reviews
+FROM pr_reviews r
+JOIN pull_requests pr ON pr.id = r.pr_id
+JOIN contributors c ON c.id = r.reviewer_id
+WHERE r.review_date > NOW() - INTERVAL '30 days'
+GROUP BY pr.repo_id, c.id, c.name, c.email;
+
+-- View: PR status distribution per repository
+CREATE OR REPLACE VIEW v_repo_pr_status_distribution AS
+SELECT repo_id, status, COUNT(*) AS count
+FROM pull_requests
+GROUP BY repo_id, status;
+
+-- View: PR size distribution per repository (last 30 days)
+CREATE OR REPLACE VIEW v_repo_pr_size_distribution_30d AS
+SELECT
+    repo_id,
+    COALESCE(size_category, 'unknown') AS size_category,
+    COUNT(*) AS count
+FROM pull_requests
+WHERE created_at > NOW() - INTERVAL '30 days'
+GROUP BY repo_id, size_category;
+
+-- View: Daily PR creation trend per repository (last 30 days)
+CREATE OR REPLACE VIEW v_repo_pr_creation_daily_trend_30d AS
+SELECT
+    repo_id,
+    date_trunc('day', created_at) AS time,
+    COUNT(*) AS created
+FROM pull_requests
+WHERE created_at > NOW() - INTERVAL '30 days'
+GROUP BY repo_id, date_trunc('day', created_at)
+ORDER BY time;
+
+-- View: Daily PR merge trend per repository (last 30 days)
+CREATE OR REPLACE VIEW v_repo_pr_merge_daily_trend_30d AS
+SELECT
+    repo_id,
+    date_trunc('day', merged_at) AS time,
+    COUNT(*) AS merged
+FROM pull_requests
+WHERE merged_at > NOW() - INTERVAL '30 days'
+GROUP BY repo_id, date_trunc('day', merged_at)
+ORDER BY time;
+
+-- View: PR health rollup per repository
+CREATE OR REPLACE VIEW v_repo_pr_health_summary AS
+SELECT
+    repo_id,
+    COALESCE(
+        AVG(
+            CASE
+                WHEN merged_at IS NOT NULL AND created_at > NOW() - INTERVAL '90 days'
+                THEN EXTRACT(EPOCH FROM (merged_at - created_at)) / 86400
+            END
+        ),
+        0
+    )::numeric(10,1) AS days_to_merge,
+    COUNT(*) FILTER (
+        WHERE has_issues = true AND created_at > NOW() - INTERVAL '30 days'
+    ) AS prs_with_issues,
+    COALESCE(
+        AVG(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN comment_count END),
+        0
+    )::numeric(10,1) AS avg_comments,
+    COALESCE(
+        AVG(CASE WHEN created_at > NOW() - INTERVAL '30 days' THEN approval_count END),
+        0
+    )::numeric(10,1) AS avg_approvals
+FROM pull_requests
+GROUP BY repo_id;
+
+-- View: Latest language distribution per repository
+CREATE OR REPLACE VIEW v_repo_language_distribution_latest AS
+SELECT rl.repo_id, rl.language, rl.percentage
+FROM repository_languages rl
+WHERE rl.last_seen_at = (
+    SELECT MAX(rl2.last_seen_at)
+    FROM repository_languages rl2
+    WHERE rl2.repo_id = rl.repo_id
+)
+ORDER BY rl.percentage DESC;
+
+-- View: Recent commit details per repository
+CREATE OR REPLACE VIEW v_repo_recent_commits AS
+SELECT
+    cm.repo_id,
+    LEFT(cm.commit_sha, 7) AS sha,
+    COALESCE(c.name, c.email) AS author,
+    LEFT(cm.message, 80) AS message,
+    cm.files_changed AS files,
+    cm.lines_added AS lines_added,
+    cm.lines_removed AS lines_removed,
+    cm.commit_date AS commit_date
+FROM commits cm
+LEFT JOIN contributors c ON c.id = cm.author_id;
+
+-- View: Recent pull request details per repository
+CREATE OR REPLACE VIEW v_repo_recent_prs AS
+SELECT
+    pr.repo_id,
+    pr.pr_number,
+    pr.title,
+    COALESCE(c.name, c.email) AS author,
+    pr.status,
+    pr.source_branch,
+    pr.target_branch,
+    pr.size_category,
+    pr.files_changed,
+    pr.lines_added,
+    pr.lines_removed,
+    pr.comment_count,
+    pr.approval_count,
+    pr.has_issues,
+    pr.created_at
+FROM pull_requests pr
+LEFT JOIN contributors c ON c.id = pr.author_id;
+
+-- View: Latest repository summary text per repository
+CREATE OR REPLACE VIEW v_repo_summary_latest AS
+SELECT DISTINCT ON (repo_id)
+    repo_id,
+    summary_text,
+    purpose,
+    key_technologies,
+    generated_at
+FROM repository_summaries
+ORDER BY repo_id, generated_at DESC;
+
+-- View: Latest service metrics snapshot per service
+CREATE OR REPLACE VIEW v_service_metrics_latest AS
+SELECT
+    s.service_id,
+    s.name AS service,
+    sm.period_start,
+    sm.total_repositories,
+    sm.active_repositories,
+    sm.unique_contributors,
+    sm.total_commits,
+    sm.total_prs_created,
+    sm.total_prs_merged,
+    sm.avg_pr_review_time_hours,
+    sm.avg_test_coverage,
+    sm.avg_maintainability_index,
+    sm.total_quality_issues,
+    sm.total_vulnerabilities,
+    sm.critical_vulnerabilities,
+    sm.high_vulnerabilities,
+    sm.eol_dependencies,
+    sm.total_dependencies
+FROM services s
+JOIN LATERAL (
+    SELECT sm.*
+    FROM service_metrics sm
+    WHERE sm.service_id = s.service_id
+    ORDER BY sm.period_start DESC
+    LIMIT 1
+) sm ON true;
+
+-- View: Service trend metrics by period
+CREATE OR REPLACE VIEW v_service_metrics_trend AS
+SELECT
+    s.name AS service,
+    sm.period_start AS time,
+    sm.total_commits AS commits,
+    sm.total_prs_created AS prs_created,
+    sm.total_prs_merged AS prs_merged,
+    sm.avg_test_coverage AS coverage,
+    sm.avg_maintainability_index AS maintainability,
+    sm.total_vulnerabilities AS vulnerabilities,
+    sm.critical_vulnerabilities AS critical
+FROM service_metrics sm
+JOIN services s ON s.service_id = sm.service_id;
+
+-- View: Repository breakdown per service
+CREATE OR REPLACE VIEW v_service_repository_breakdown AS
+SELECT
+    r.repo_id,
+    r.name AS repository,
+    s.name AS service,
+    (SELECT COUNT(*) FROM commits c WHERE c.repo_id = r.repo_id AND c.commit_date > NOW() - INTERVAL '30 days') AS commits_30d,
+    (SELECT COUNT(DISTINCT c.author_id) FROM commits c WHERE c.repo_id = r.repo_id AND c.commit_date > NOW() - INTERVAL '30 days') AS contributors_30d,
+    (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id AND p.status = 'open') AS open_prs,
+    (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id AND p.merged_at > NOW() - INTERVAL '30 days') AS merged_prs_30d,
+    COALESCE(
+        (
+            SELECT COUNT(v.id)
+            FROM vulnerabilities v
+            JOIN dependencies d ON d.id = v.dependency_id
+            WHERE d.repo_id = r.repo_id
+              AND d.last_seen_at = (
+                  SELECT MAX(d2.last_seen_at)
+                  FROM dependencies d2
+                  WHERE d2.repo_id = r.repo_id
+              )
+        ),
+        0
+    ) AS vulnerabilities,
+    r.last_analyzed_at
+FROM repositories r
+JOIN repository_services rs ON rs.repo_id = r.repo_id
+JOIN services s ON s.service_id = rs.service_id
+WHERE r.is_active = true;
+
+-- View: Vulnerability severity distribution per service (latest dependency scan per repo)
+CREATE OR REPLACE VIEW v_service_vulnerabilities_by_severity AS
+SELECT
+    s.name AS service,
+    v.severity,
+    COUNT(*) AS count
+FROM vulnerabilities v
+JOIN dependencies d ON d.id = v.dependency_id
+JOIN repository_services rs ON rs.repo_id = d.repo_id
+JOIN services s ON s.service_id = rs.service_id
+WHERE d.last_seen_at = (
+    SELECT MAX(d2.last_seen_at)
+    FROM dependencies d2
+    WHERE d2.repo_id = d.repo_id
+)
+GROUP BY s.name, v.severity;
+
+-- View: Extraction throughput as repositories per hour in 5-minute buckets
+CREATE OR REPLACE VIEW v_extraction_repos_per_hour_5m AS
+SELECT
+    time_bucket(INTERVAL '5 minutes', extraction_completed_at) AS time,
+    COUNT(*) * 12 AS repos_per_hour
+FROM extraction_metrics
+WHERE status = 'completed'
+  AND extraction_completed_at IS NOT NULL
+GROUP BY time
+ORDER BY time;
+
+-- View: Latest code quality snapshot per repository
+CREATE OR REPLACE VIEW v_repo_code_quality_latest AS
+SELECT DISTINCT ON (repo_id)
+    repo_id,
+    timestamp,
+    total_issues,
+    critical_issues,
+    high_issues,
+    medium_issues,
+    low_issues,
+    complexity_score,
+    maintainability_index,
+    test_coverage,
+    code_smells,
+    technical_debt_minutes
+FROM code_quality_metrics
+WHERE repo_id IS NOT NULL
+ORDER BY repo_id, timestamp DESC;
+
+-- View: Code quality trend per repository for last 90 days
+CREATE OR REPLACE VIEW v_repo_code_quality_trend_90d AS
+SELECT
+    repo_id,
+    timestamp AS time,
+    critical_issues AS critical,
+    high_issues AS high,
+    medium_issues AS medium,
+    low_issues AS low,
+    test_coverage AS coverage,
+    technical_debt_minutes AS debt
+FROM code_quality_metrics
+WHERE timestamp > NOW() - INTERVAL '90 days'
+ORDER BY time;
+
+-- View: Latest issue severity distribution per repository
+CREATE OR REPLACE VIEW v_repo_issue_severity_latest AS
+SELECT
+    q.repo_id,
+    severity_data.severity,
+    severity_data.count
+FROM v_repo_code_quality_latest q
+CROSS JOIN LATERAL (
+    VALUES
+        ('Critical', COALESCE(q.critical_issues, 0)),
+        ('High', COALESCE(q.high_issues, 0)),
+        ('Medium', COALESCE(q.medium_issues, 0)),
+        ('Low', COALESCE(q.low_issues, 0))
+) AS severity_data(severity, count);
+
+-- View: Latest dependency snapshot per repository
+CREATE OR REPLACE VIEW v_dependency_snapshot_latest AS
+SELECT d.*
+FROM dependencies d
+WHERE d.last_seen_at = (
+    SELECT MAX(d2.last_seen_at)
+    FROM dependencies d2
+    WHERE d2.repo_id = d.repo_id
+);
+
+-- View: Repository dependency/security rollup from latest dependency snapshot
+CREATE OR REPLACE VIEW v_repo_dependency_rollup_latest AS
+SELECT
+    d.repo_id,
+    COUNT(v.id) AS vulnerabilities,
+    COUNT(*) FILTER (
+        WHERE d.version != d.latest_version AND d.latest_version IS NOT NULL
+    ) AS outdated_dependencies,
+    COUNT(*) FILTER (WHERE d.is_eol = true) AS eol_dependencies,
+    COUNT(*) AS total_dependencies,
+    COUNT(*) FILTER (WHERE d.is_dev_dependency = true) AS dev_dependencies
+FROM v_dependency_snapshot_latest d
+LEFT JOIN vulnerabilities v ON v.dependency_id = d.id
+GROUP BY d.repo_id;
+
+-- View: Vulnerability severity distribution per repository from latest dependency snapshot
+CREATE OR REPLACE VIEW v_repo_vulnerabilities_by_severity_latest AS
+SELECT
+    d.repo_id,
+    v.severity,
+    COUNT(*) AS count
+FROM v_dependency_snapshot_latest d
+JOIN vulnerabilities v ON v.dependency_id = d.id
+GROUP BY d.repo_id, v.severity;
+
+-- View: Dependency ecosystem distribution per repository from latest dependency snapshot
+CREATE OR REPLACE VIEW v_repo_dependency_ecosystems_latest AS
+SELECT
+    repo_id,
+    ecosystem,
+    COUNT(*) AS count
+FROM v_dependency_snapshot_latest
+GROUP BY repo_id, ecosystem;
+
+-- View: Vulnerability details per repository from latest dependency snapshot
+CREATE OR REPLACE VIEW v_repo_vulnerability_details_latest AS
+SELECT
+    d.repo_id,
+    d.package_name,
+    d.version,
+    v.cve_id,
+    v.severity,
+    LEFT(v.summary, 100) AS summary,
+    v.fixed_in_version,
+    v.published_date
+FROM v_dependency_snapshot_latest d
+JOIN vulnerabilities v ON v.dependency_id = d.id;
+
+-- View: Latest branch metrics snapshot
+CREATE OR REPLACE VIEW v_branch_metrics_latest AS
+SELECT
+    b.repo_id,
+    b.branch_id,
+    b.branch_name,
+    b.latest_commit_sha,
+    b.is_active,
+    COALESCE(m.commit_count, 0) AS commit_count,
+    COALESCE(m.unique_contributors, 0) AS unique_contributors,
+    COALESCE(m.age_days, 0) AS age_days,
+    COALESCE(m.staleness_days, 0) AS staleness_days,
+    COALESCE(m.divergence_from_main, 0) AS divergence_from_main
+FROM branches b
+LEFT JOIN LATERAL (
+    SELECT
+        bm.commit_count,
+        bm.unique_contributors,
+        bm.age_days,
+        bm.staleness_days,
+        bm.divergence_from_main
+    FROM branch_metrics bm
+    WHERE bm.branch_id = b.branch_id
+    ORDER BY bm.timestamp DESC
+    LIMIT 1
+) m ON true;
+
+-- View: Repository branch health rollup
+CREATE OR REPLACE VIEW v_repo_branch_rollup AS
+SELECT
+    repo_id,
+    COUNT(*) FILTER (WHERE is_active = true) AS active_branches,
+    COUNT(*) FILTER (WHERE is_active = true AND COALESCE(staleness_days, 999) > 30) AS stale_branches
+FROM v_branch_metrics_latest
+GROUP BY repo_id;
+
+-- View: Security dashboard latest overview
+CREATE OR REPLACE VIEW v_security_overview_latest AS
+SELECT
+    COUNT(v.id) AS total_vulnerabilities,
+    COUNT(*) FILTER (WHERE d.is_eol = true) AS total_eol_deps,
+    COUNT(DISTINCT CASE WHEN d.has_vulnerabilities = true THEN d.repo_id END) AS repos_with_vulns,
+    COUNT(DISTINCT CASE WHEN d.is_eol = true THEN d.repo_id END) AS repos_with_eol
+FROM v_dependency_snapshot_latest d
+LEFT JOIN vulnerabilities v ON v.dependency_id = d.id;
+
+-- View: Security dashboard vulnerability severity distribution
+CREATE OR REPLACE VIEW v_security_vulnerabilities_by_severity_latest AS
+SELECT
+    v.severity,
+    COUNT(*) AS count
+FROM v_dependency_snapshot_latest d
+JOIN vulnerabilities v ON v.dependency_id = d.id
+GROUP BY v.severity;
+
+-- View: Security dashboard top repositories by critical vulnerabilities
+CREATE OR REPLACE VIEW v_security_top_repositories_critical_vulns AS
+SELECT
+    r.name AS repository,
+    COUNT(*) AS critical_vulns
+FROM v_dependency_snapshot_latest d
+JOIN vulnerabilities v ON v.dependency_id = d.id
+JOIN repositories r ON r.repo_id = d.repo_id
+WHERE v.severity = 'CRITICAL'
+GROUP BY r.name
+ORDER BY critical_vulns DESC
+LIMIT 10;
+
+-- View: Security dashboard EOL status distribution
+CREATE OR REPLACE VIEW v_security_eol_status_latest AS
+SELECT
+    CASE
+        WHEN eol_date < CURRENT_DATE THEN 'Expired'
+        WHEN eol_date < CURRENT_DATE + INTERVAL '90 days' THEN 'Expiring Soon'
+        ELSE 'Future EOL'
+    END AS category,
+    COUNT(*) AS count
+FROM v_dependency_snapshot_latest
+WHERE is_eol = true
+GROUP BY category;
+
+-- View: Security dashboard repository overview
+CREATE OR REPLACE VIEW v_security_repository_overview AS
+SELECT
+    r.repo_id,
+    r.name AS repository,
+    COALESCE(vs.critical, 0) AS critical_vulns,
+    COALESCE(vs.high, 0) AS high_vulns,
+    COALESCE(vs.medium, 0) AS medium_vulns,
+    COALESCE(vs.low, 0) AS low_vulns,
+    COALESCE(es.eol_deps, 0) AS eol_deps
+FROM repositories r
+LEFT JOIN (
+    SELECT
+        d.repo_id,
+        SUM(CASE WHEN v.severity = 'CRITICAL' THEN 1 ELSE 0 END) AS critical,
+        SUM(CASE WHEN v.severity = 'HIGH' THEN 1 ELSE 0 END) AS high,
+        SUM(CASE WHEN v.severity = 'MEDIUM' THEN 1 ELSE 0 END) AS medium,
+        SUM(CASE WHEN v.severity = 'LOW' THEN 1 ELSE 0 END) AS low
+    FROM v_dependency_snapshot_latest d
+    LEFT JOIN vulnerabilities v ON v.dependency_id = d.id
+    GROUP BY d.repo_id
+) vs ON vs.repo_id = r.repo_id
+LEFT JOIN (
+    SELECT repo_id, COUNT(*) AS eol_deps
+    FROM v_dependency_snapshot_latest
+    WHERE is_eol = true
+    GROUP BY repo_id
+) es ON es.repo_id = r.repo_id
+WHERE r.is_active = true;
+
+-- View: Security dashboard vulnerability trend
+CREATE OR REPLACE VIEW v_security_vulnerability_trend AS
+SELECT
+    time_bucket(INTERVAL '1 day', d.last_seen_at) AS time,
+    COUNT(v.id) AS vulnerabilities
+FROM dependencies d
+JOIN vulnerabilities v ON v.dependency_id = d.id
+GROUP BY time_bucket('1 day', d.last_seen_at)
+ORDER BY time;
+
+-- View: Security dashboard top vulnerable dependencies
+CREATE OR REPLACE VIEW v_security_top_vulnerable_dependencies AS
+SELECT
+    d.package_name,
+    d.version,
+    d.ecosystem,
+    v.severity,
+    COUNT(DISTINCT d.repo_id) AS affected_repositories,
+    STRING_AGG(DISTINCT r.name, ', ') AS repositories
+FROM v_dependency_snapshot_latest d
+JOIN vulnerabilities v ON v.dependency_id = d.id
+JOIN repositories r ON r.repo_id = d.repo_id
+GROUP BY d.package_name, d.version, d.ecosystem, v.severity
+ORDER BY
+    CASE v.severity
+        WHEN 'CRITICAL' THEN 1
+        WHEN 'HIGH' THEN 2
+        WHEN 'MEDIUM' THEN 3
+        WHEN 'LOW' THEN 4
+        ELSE 5
+    END,
+    COUNT(DISTINCT d.repo_id) DESC;
+
+-- View: Repository to team label mapping
+CREATE OR REPLACE VIEW v_repository_team_labels AS
+SELECT
+    r.repo_id,
+    r.name AS repository,
+    COALESCE(t.name, 'No Team') AS team,
+    r.default_branch,
+    r.last_analyzed_at,
+    r.is_active
+FROM repositories r
+LEFT JOIN teams t ON t.team_id = r.team_id;
+
+-- View: Team commit activity trend
+CREATE OR REPLACE VIEW v_team_commits_daily_trend_30d AS
+SELECT
+    date_trunc('day', c.commit_date) AS time,
+    rtl.team,
+    COUNT(*) AS commits
+FROM commits c
+JOIN v_repository_team_labels rtl ON rtl.repo_id = c.repo_id
+WHERE c.commit_date > NOW() - INTERVAL '30 days'
+GROUP BY date_trunc('day', c.commit_date), rtl.team
+ORDER BY time, rtl.team;
+
+-- View: Team PR creation activity trend
+CREATE OR REPLACE VIEW v_team_pr_creation_daily_trend_30d AS
+SELECT
+    date_trunc('day', p.created_at) AS time,
+    rtl.team,
+    COUNT(*) AS created
+FROM pull_requests p
+JOIN v_repository_team_labels rtl ON rtl.repo_id = p.repo_id
+WHERE p.created_at > NOW() - INTERVAL '30 days'
+GROUP BY date_trunc('day', p.created_at), rtl.team
+ORDER BY time, rtl.team;
+
+-- View: Team PR merge activity trend
+CREATE OR REPLACE VIEW v_team_pr_merge_daily_trend_30d AS
+SELECT
+    date_trunc('day', p.merged_at) AS time,
+    rtl.team,
+    COUNT(*) AS merged
+FROM pull_requests p
+JOIN v_repository_team_labels rtl ON rtl.repo_id = p.repo_id
+WHERE p.merged_at > NOW() - INTERVAL '30 days'
+GROUP BY date_trunc('day', p.merged_at), rtl.team
+ORDER BY time, rtl.team;
+
+-- View: Team active contributors trend
+CREATE OR REPLACE VIEW v_team_active_contributors_daily_30d AS
+SELECT
+    date_trunc('day', c.commit_date) AS time,
+    rtl.team,
+    COUNT(DISTINCT c.author_id) AS contributors
+FROM commits c
+JOIN v_repository_team_labels rtl ON rtl.repo_id = c.repo_id
+WHERE c.commit_date > NOW() - INTERVAL '30 days'
+GROUP BY date_trunc('day', c.commit_date), rtl.team
+ORDER BY time, rtl.team;
+
+-- View: Team lines changed trend
+CREATE OR REPLACE VIEW v_team_lines_changed_daily_trend_30d AS
+SELECT
+    date_trunc('day', c.commit_date) AS time,
+    rtl.team,
+    COALESCE(SUM(c.lines_added), 0) AS added,
+    COALESCE(SUM(c.lines_removed), 0) AS removed
+FROM commits c
+JOIN v_repository_team_labels rtl ON rtl.repo_id = c.repo_id
+WHERE c.commit_date > NOW() - INTERVAL '30 days'
+GROUP BY date_trunc('day', c.commit_date), rtl.team
+ORDER BY time, rtl.team;
+
+-- View: Team repository health matrix
+CREATE OR REPLACE VIEW v_team_repository_health_matrix AS
+SELECT
+    rtl.repo_id,
+    rtl.repository,
+    rtl.team,
+    COALESCE(c30.count, 0) AS commits_30d,
+    COALESCE(ac30.count, 0) AS contributors_30d,
+    COALESCE(op.count, 0) AS open_prs,
+    COALESCE(mp.count, 0) AS merged_prs_30d,
+    COALESCE(dr.vulnerabilities, 0) AS vulnerabilities,
+    COALESCE(br.stale_branches, 0) AS stale_branches,
+    rtl.last_analyzed_at
+FROM v_repository_team_labels rtl
+LEFT JOIN v_commits_30d c30 ON c30.repo_id = rtl.repo_id
+LEFT JOIN v_active_contributors_30d ac30 ON ac30.repo_id = rtl.repo_id
+LEFT JOIN v_open_prs op ON op.repo_id = rtl.repo_id
+LEFT JOIN v_merged_prs_30d mp ON mp.repo_id = rtl.repo_id
+LEFT JOIN v_repo_dependency_rollup_latest dr ON dr.repo_id = rtl.repo_id
+LEFT JOIN v_repo_branch_rollup br ON br.repo_id = rtl.repo_id
+WHERE rtl.is_active = true;
+
+-- View: Team PR health summary
+CREATE OR REPLACE VIEW v_team_pr_health_summary_30d AS
+SELECT
+    rtl.team,
+    COALESCE(
+        AVG(
+            CASE WHEN p.merged_at > NOW() - INTERVAL '30 days'
+                THEN EXTRACT(EPOCH FROM (p.merged_at - p.created_at)) / 86400
+            END
+        ),
+        0
+    )::numeric(10,1) AS avg_merge_time_days,
+    COALESCE(
+        AVG(CASE WHEN p.merged_at > NOW() - INTERVAL '30 days' THEN p.approval_count END),
+        0
+    )::numeric(10,1) AS avg_approvals,
+    COUNT(*) FILTER (WHERE p.has_issues = true AND p.created_at > NOW() - INTERVAL '30 days') AS prs_with_issues
+FROM pull_requests p
+JOIN v_repository_team_labels rtl ON rtl.repo_id = p.repo_id
+GROUP BY rtl.team;
+
+-- View: Team vulnerability totals
+CREATE OR REPLACE VIEW v_team_vulnerabilities_total_latest AS
+SELECT
+    rtl.team,
+    COUNT(DISTINCT v.id) AS total_vulnerabilities
+FROM v_dependency_snapshot_latest d
+JOIN v_repository_team_labels rtl ON rtl.repo_id = d.repo_id
+LEFT JOIN vulnerabilities v ON v.dependency_id = d.id
+GROUP BY rtl.team;
+
+-- View: Team PR size distribution
+CREATE OR REPLACE VIEW v_team_pr_size_distribution_30d AS
+SELECT
+    rtl.team,
+    COALESCE(p.size_category, 'unknown') AS size,
+    COUNT(*) AS count
+FROM pull_requests p
+JOIN v_repository_team_labels rtl ON rtl.repo_id = p.repo_id
+WHERE p.created_at > NOW() - INTERVAL '30 days'
+GROUP BY rtl.team, COALESCE(p.size_category, 'unknown');
+
+-- View: Team vulnerability severity distribution
+CREATE OR REPLACE VIEW v_team_vulnerabilities_by_severity_latest AS
+SELECT
+    rtl.team,
+    v.severity,
+    COUNT(*) AS count
+FROM v_dependency_snapshot_latest d
+JOIN v_repository_team_labels rtl ON rtl.repo_id = d.repo_id
+JOIN vulnerabilities v ON v.dependency_id = d.id
+GROUP BY rtl.team, v.severity;
+
+-- View: Team language distribution
+CREATE OR REPLACE VIEW v_team_language_distribution_latest AS
+SELECT
+    rtl.team,
+    rl.language,
+    SUM(COALESCE(rl.line_count, 0)) AS lines
+FROM repository_languages rl
+JOIN v_repository_team_labels rtl ON rtl.repo_id = rl.repo_id
+WHERE rl.last_seen_at = (
+    SELECT MAX(rl2.last_seen_at)
+    FROM repository_languages rl2
+    WHERE rl2.repo_id = rl.repo_id
+)
+GROUP BY rtl.team, rl.language;
+
+-- View: Team top contributors
+CREATE OR REPLACE VIEW v_team_top_contributors_30d AS
+SELECT
+    rtl.team,
+    COALESCE(c.name, c.email) AS contributor,
+    COUNT(cm.commit_sha) AS commits
+FROM commits cm
+JOIN v_repository_team_labels rtl ON rtl.repo_id = cm.repo_id
+JOIN contributors c ON c.id = cm.author_id
+WHERE cm.commit_date > NOW() - INTERVAL '30 days'
+GROUP BY rtl.team, c.id, c.name, c.email;
+
+-- View: Team top reviewers
+CREATE OR REPLACE VIEW v_team_top_reviewers_30d AS
+SELECT
+    rtl.team,
+    COALESCE(c.name, c.email) AS reviewer,
+    COUNT(r.id) AS reviews
+FROM pr_reviews r
+JOIN pull_requests p ON p.id = r.pr_id
+JOIN v_repository_team_labels rtl ON rtl.repo_id = p.repo_id
+JOIN contributors c ON c.id = r.reviewer_id
+WHERE r.review_date > NOW() - INTERVAL '30 days'
+GROUP BY rtl.team, c.id, c.name, c.email;
+
+-- View: Team performance summary
+CREATE OR REPLACE VIEW v_team_performance_summary AS
+SELECT
+    rtl.team,
+    COUNT(DISTINCT rtl.repo_id) AS repositories,
+    COUNT(DISTINCT cm.author_id) AS contributors,
+    COUNT(cm.commit_sha) AS commits_30d,
+    COUNT(DISTINCT CASE WHEN p.status = 'open' THEN p.id END) AS open_prs,
+    COUNT(DISTINCT CASE WHEN p.merged_at > NOW() - INTERVAL '30 days' THEN p.id END) AS merged_prs_30d,
+    ROUND(AVG(EXTRACT(EPOCH FROM (p.merged_at - p.created_at)) / 86400), 1) AS avg_merge_time_days
+FROM v_repository_team_labels rtl
+LEFT JOIN commits cm ON cm.repo_id = rtl.repo_id AND cm.commit_date > NOW() - INTERVAL '30 days'
+LEFT JOIN pull_requests p ON p.repo_id = rtl.repo_id
+GROUP BY rtl.team;
+
+-- View: Recent pull requests by team
+CREATE OR REPLACE VIEW v_team_recent_prs_7d AS
+SELECT
+    rtl.repo_id,
+    rtl.repository,
+    rtl.team,
+    pr.pr_number,
+    pr.title,
+    COALESCE(c.name, c.email) AS author,
+    pr.status,
+    pr.size_category AS size,
+    pr.files_changed AS files,
+    pr.approval_count AS approvals,
+    pr.created_at
+FROM pull_requests pr
+JOIN v_repository_team_labels rtl ON rtl.repo_id = pr.repo_id
+LEFT JOIN contributors c ON c.id = pr.author_id
+WHERE pr.created_at > NOW() - INTERVAL '7 days';
 
 -- View: Stale repositories (>7 days without analysis)
 CREATE OR REPLACE VIEW v_stale_repositories AS
@@ -275,7 +1148,26 @@ LIMIT 1;
 
 -- View: Recent extraction runs (20)
 CREATE OR REPLACE VIEW v_extraction_runs_recent AS
-SELECT run_id, platform, organization_name, project_name, status, processed_repositories, total_repositories, current_repository_id, updated_at
+SELECT
+    run_id,
+    platform,
+    organization_name,
+    project_name,
+    status,
+    processed_repositories,
+    total_repositories,
+    current_repository_id,
+    updated_at,
+    error_message,
+    CASE
+        WHEN error_message ILIKE '%401%' THEN 'AUTH_401_UNAUTHORIZED'
+        WHEN error_message ILIKE '%403%' THEN 'AUTH_403_FORBIDDEN'
+        WHEN error_message ILIKE '%bad credentials%' THEN 'BAD_CREDENTIALS'
+        WHEN error_message ILIKE '%invalid token%' THEN 'INVALID_TOKEN'
+        WHEN error_message ILIKE '%unauthorized%' THEN 'NOT_AUTHORIZED'
+        WHEN error_message IS NOT NULL THEN 'OTHER_ERROR'
+        ELSE 'SUCCESS'
+    END AS error_category
 FROM extraction_runs
 ORDER BY updated_at DESC
 LIMIT 20;
@@ -283,16 +1175,82 @@ LIMIT 20;
 -- View: Extraction metrics with repository details (recent 50)
 CREATE OR REPLACE VIEW v_extraction_metrics_recent AS
 SELECT 
-    r.name AS repository,
+    COALESCE(r.name, em.repository_id) AS repository,
     em.platform,
     em.status,
     em.extraction_started_at,
     em.extraction_completed_at,
-    em.extraction_duration_seconds
+    em.extraction_duration_seconds,
+    em.error_message,
+    CASE
+        WHEN em.error_message ILIKE '%401%' THEN 'AUTH_401_UNAUTHORIZED'
+        WHEN em.error_message ILIKE '%403%' THEN 'AUTH_403_FORBIDDEN'
+        WHEN em.error_message ILIKE '%bad credentials%' THEN 'BAD_CREDENTIALS'
+        WHEN em.error_message ILIKE '%invalid token%' THEN 'INVALID_TOKEN'
+        WHEN em.error_message ILIKE '%unauthorized%' THEN 'NOT_AUTHORIZED'
+        WHEN em.error_message ILIKE '%rate limit%' THEN 'RATE_LIMIT'
+        WHEN em.error_message IS NOT NULL THEN 'OTHER_ERROR'
+        ELSE 'SUCCESS'
+    END AS error_category
 FROM extraction_metrics em
-JOIN repositories r ON em.repository_id = r.repo_id
+LEFT JOIN repositories r ON em.repository_id = r.repo_id
 ORDER BY em.extraction_started_at DESC
 LIMIT 50;
+
+-- View: Platform-level auth failures in last 24 hours
+CREATE OR REPLACE VIEW v_auth_errors_by_platform AS
+SELECT
+    platform,
+    COUNT(*) AS error_count,
+    COUNT(DISTINCT run_id) AS affected_runs,
+    MAX(updated_at) AS last_error_time
+FROM extraction_runs
+WHERE status = 'failed'
+  AND updated_at > NOW() - INTERVAL '24 hours'
+  AND (
+      error_message ILIKE '%401%'
+      OR error_message ILIKE '%403%'
+      OR error_message ILIKE '%bad credentials%'
+      OR error_message ILIKE '%invalid token%'
+      OR error_message ILIKE '%unauthorized%'
+      OR error_message ILIKE '%not authorized%'
+            OR error_message ILIKE '%requires user authentication%'
+  )
+GROUP BY platform
+ORDER BY error_count DESC;
+
+-- View: Total auth failures in last 24 hours
+CREATE OR REPLACE VIEW v_auth_errors_24h_total AS
+SELECT COALESCE(SUM(error_count), 0) AS auth_errors
+FROM v_auth_errors_by_platform;
+
+-- View: Recent extraction metrics with normalized error categories
+CREATE OR REPLACE VIEW v_extraction_metrics_with_errors AS
+SELECT
+    em.id,
+    em.run_id,
+    em.repository_id,
+    COALESCE(r.name, em.repository_id) AS repository_name,
+    em.platform,
+    em.status,
+    em.extraction_started_at,
+    em.extraction_completed_at,
+    em.extraction_duration_seconds,
+    em.error_message,
+    CASE
+        WHEN em.error_message ILIKE '%401%' THEN 'AUTH_401_UNAUTHORIZED'
+        WHEN em.error_message ILIKE '%403%' THEN 'AUTH_403_FORBIDDEN'
+        WHEN em.error_message ILIKE '%bad credentials%' THEN 'BAD_CREDENTIALS'
+        WHEN em.error_message ILIKE '%invalid token%' THEN 'INVALID_TOKEN'
+        WHEN em.error_message ILIKE '%unauthorized%' THEN 'NOT_AUTHORIZED'
+        WHEN em.error_message ILIKE '%rate limit%' THEN 'RATE_LIMIT'
+        WHEN em.error_message IS NOT NULL THEN 'OTHER_ERROR'
+        ELSE 'SUCCESS'
+    END AS error_category
+FROM extraction_metrics em
+LEFT JOIN repositories r ON em.repository_id = r.repo_id
+ORDER BY em.extraction_started_at DESC
+LIMIT 500;
 
 -- =============================================================================
 -- Team Metrics Views
