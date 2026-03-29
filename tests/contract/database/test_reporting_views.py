@@ -875,11 +875,28 @@ def test_v_extraction_metrics_with_errors_categories(db_session):
         text(
             """
             INSERT INTO extraction_metrics
-            (id, run_id, repository_id, platform, status, extraction_started_at, extraction_completed_at, extraction_duration_seconds, error_message, correlation_id)
+            (
+                id,
+                run_id,
+                repository_id,
+                platform,
+                status,
+                extraction_started_at,
+                extraction_completed_at,
+                extraction_duration_seconds,
+                error_message,
+                commits_extracted,
+                pull_requests_extracted,
+                branches_extracted,
+                contributors_extracted,
+                cache_hits,
+                cache_misses,
+                correlation_id
+            )
             VALUES
-            (:id1, :run_id, 'repo/a', 'github', 'failed', :now, :now, 3, '401 unauthorized', :c1),
-            (:id2, :run_id, 'repo/b', 'github', 'failed', :now, :now, 3, 'bad credentials', :c2),
-            (:id3, :run_id, 'repo/c', 'github', 'failed', :now, :now, 3, 'unexpected parser failure', :c3)
+            (:id1, :run_id, 'repo/a', 'github', 'failed', :now, :now, 3, '401 unauthorized', 0, 0, 0, 0, 0, 0, :c1),
+            (:id2, :run_id, 'repo/b', 'github', 'failed', :now, :now, 3, 'bad credentials', 0, 0, 0, 0, 0, 0, :c2),
+            (:id3, :run_id, 'repo/c', 'github', 'failed', :now, :now, 3, 'unexpected parser failure', 0, 0, 0, 0, 0, 0, :c3)
             """
         ),
         {
