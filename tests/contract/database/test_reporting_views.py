@@ -660,7 +660,53 @@ def test_v_top_contributor_and_reviewer_views(db_session):
 
 
 @pytest.mark.integration
-def test_v_contributor_activity_30d(db_session):
+def test_stale_reviews_excluded_from_top_reviewers_30d(db_session):
+    """Regression test for DASH-REVIEW-003.
+
+    Reviews older than 30 days must NOT appear in v_top_reviewers_30d.
+    This guards against synthetic review timestamps (e.g. from Azure DevOps
+    ingestion) causing inactive contributors to appear as recent reviewers.
+    """
+    org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
+    org = store_organization(db_session, org_data)
+    project = store_project(db_session, org, "test-project", "Test Project")
+    repo_data = sample_repository_data(repo_id="repo1", name="test-repo")
+    repo = store_repository(db_session, project, repo_data)
+
+    pr_data = sample_pull_request_data(pr_number=1, title="Old PR", status="merged")
+    pr = store_pull_request(db_session, repo.repo_id, pr_data)
+
+    # Insert a review that is 60 days old (stale — outside the 30-day window)
+    db_session.execute(
+        text(
+            """
+            INSERT INTO pr_reviews (pr_id, reviewer_id, review_date, vote, is_required, comment_count)
+            VALUES (:pr_id, :reviewer_id, :review_date, :vote, :is_required, :comment_count)
+            """
+        ),
+        {
+            "pr_id": pr.id,
+            "reviewer_id": pr.author_id,
+            "review_date": datetime.now() - timedelta(days=60),
+            "vote": 10,
+            "is_required": False,
+            "comment_count": 0,
+        },
+    )
+    db_session.commit()
+
+    top_reviewer = db_session.execute(
+        text("SELECT reviewer, reviews FROM v_top_reviewers_30d LIMIT 1")
+    ).fetchone()
+
+    # The stale reviewer must NOT appear in the 30-day view
+    assert top_reviewer is None, (
+        f"Stale reviewer '{top_reviewer.reviewer}' incorrectly appears in "
+        "v_top_reviewers_30d — review timestamp may be synthetic/incorrect"
+    )
+
+
+
     """Test contributor activity rollup view"""
     org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
     org = store_organization(db_session, org_data)
