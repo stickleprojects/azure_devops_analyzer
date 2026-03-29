@@ -36,6 +36,7 @@ TEST_PATH=""
 ENV_FILE="${PROJECT_ROOT}/.env"
 RESOLVED_ENV_FILE="${PROJECT_ROOT}/.env.resolved"
 RESOLVE_SCRIPT="${PROJECT_ROOT}/scripts/resolve_env.sh"
+JUNIT_XML_PATH="/app/test-results/junit.xml"
 
 
 # Colors for output
@@ -156,6 +157,19 @@ run_pytest_in_runner() {
     return $exit_code
 }
 
+build_junit_xml_path() {
+    local suffix="$1"
+    # Keep filenames deterministic and filesystem-safe across CI runners.
+    local safe_suffix
+    safe_suffix="$(echo "$suffix" | sed -E 's/[^A-Za-z0-9._-]+/-/g' | sed -E 's/^-+|-+$//g')"
+
+    if [ -z "$safe_suffix" ]; then
+        safe_suffix="default"
+    fi
+
+    echo "/app/test-results/junit-${safe_suffix}.xml"
+}
+
 # =============================================================================
 # Parse Arguments
 # =============================================================================
@@ -239,17 +253,22 @@ if [ "$RUN_LIVE_API" = true ]; then
     log_info "Running GitHub AND Azure DevOps tests with LIVE API..."
     log_warning "This will hit real external APIs - may be slow and count against rate limits"
     echo
+
+    JUNIT_XML_PATH="$(build_junit_xml_path "live-api")"
     
     # Run both GitHub and Azure DevOps tests with live_api marker
     TEST_EXIT_CODE=0
-    run_pytest_in_runner "pytest tests/contract/integration/ -v --tb=short --durations=10 -m 'live_api' --junit-xml=/app/test-results/junit-live-api.xml -o junit_family=xunit2 -o junit_logging=all -p no:cacheprovider" || TEST_EXIT_CODE=$?
+    run_pytest_in_runner "pytest tests/contract/integration/ -v --tb=short --durations=10 -m 'live_api' --junit-xml='${JUNIT_XML_PATH}' -o junit_family=xunit2 -o junit_logging=all -p no:cacheprovider" || TEST_EXIT_CODE=$?
 elif [ -n "$TEST_PATH" ]; then
     log_info "Running specific test: $TEST_PATH"
     echo
+
+    junit_suffix="${TEST_PATH//\//-}"
+    JUNIT_XML_PATH="$(build_junit_xml_path "$junit_suffix")"
     
     # Run specific test path
     TEST_EXIT_CODE=0
-    run_pytest_in_runner "pytest '$TEST_PATH' -v --tb=short --junit-xml=/app/test-results/junit.xml -o junit_family=xunit2 -o junit_logging=all -p no:cacheprovider" || TEST_EXIT_CODE=$?
+    run_pytest_in_runner "pytest '$TEST_PATH' -v --tb=short --junit-xml='${JUNIT_XML_PATH}' -o junit_family=xunit2 -o junit_logging=all -p no:cacheprovider" || TEST_EXIT_CODE=$?
 else
     log_info "Running tests in CI-equivalent sequence..."
     log_info "This matches the exact steps from .github/workflows/tests.yml"
@@ -323,14 +342,14 @@ if [ $TEST_EXIT_CODE -eq 0 ]; then
     log_success "All tests passed! 🎉"
     echo
     log_info "Test results available at:"
-    echo "  - JUnit XML: $RESULTS_DIR/junit.xml"
+    echo "  - JUnit XML: $RESULTS_DIR/$(basename "$JUNIT_XML_PATH")"
     echo "  - Coverage:  $RESULTS_DIR/coverage.xml"
     echo
 else
     log_error "Tests failed (exit code: $TEST_EXIT_CODE)"
     echo
     log_info "Test results available at:"
-    echo "  - JUnit XML: $RESULTS_DIR/junit.xml"
+    echo "  - JUnit XML: $RESULTS_DIR/$(basename "$JUNIT_XML_PATH")"
     echo
     log_info "To debug:"
     echo "  1. Check test output above"
