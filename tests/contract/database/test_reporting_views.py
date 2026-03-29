@@ -453,8 +453,11 @@ def test_v_teams_total(db_session):
     org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
     org = store_organization(db_session, org_data)
     db_session.execute(
-        text("INSERT INTO teams (organization_id, name) VALUES (:org_id, :name)"),
-        [{"org_id": org.organization_id, "name": "Team A"}, {"org_id": org.organization_id, "name": "Team B"}],
+        text("INSERT INTO teams (organization_id, name, created_at) VALUES (:org_id, :name, :created_at)"),
+        [
+            {"org_id": org.organization_id, "name": "Team A", "created_at": datetime.now()},
+            {"org_id": org.organization_id, "name": "Team B", "created_at": datetime.now()},
+        ],
     )
     db_session.commit()
 
@@ -872,14 +875,23 @@ def test_v_extraction_metrics_with_errors_categories(db_session):
         text(
             """
             INSERT INTO extraction_metrics
-            (run_id, repository_id, platform, status, extraction_started_at, extraction_completed_at, extraction_duration_seconds, error_message, correlation_id)
+            (id, run_id, repository_id, platform, status, extraction_started_at, extraction_completed_at, extraction_duration_seconds, error_message, correlation_id)
             VALUES
-            (:run_id, 'repo/a', 'github', 'failed', :now, :now, 3, '401 unauthorized', :c1),
-            (:run_id, 'repo/b', 'github', 'failed', :now, :now, 3, 'bad credentials', :c2),
-            (:run_id, 'repo/c', 'github', 'failed', :now, :now, 3, 'unexpected parser failure', :c3)
+            (:id1, :run_id, 'repo/a', 'github', 'failed', :now, :now, 3, '401 unauthorized', :c1),
+            (:id2, :run_id, 'repo/b', 'github', 'failed', :now, :now, 3, 'bad credentials', :c2),
+            (:id3, :run_id, 'repo/c', 'github', 'failed', :now, :now, 3, 'unexpected parser failure', :c3)
             """
         ),
-        {"run_id": str(run_id), "now": now, "c1": str(uuid4()), "c2": str(uuid4()), "c3": str(uuid4())},
+        {
+            "id1": 900001,
+            "id2": 900002,
+            "id3": 900003,
+            "run_id": str(run_id),
+            "now": now,
+            "c1": str(uuid4()),
+            "c2": str(uuid4()),
+            "c3": str(uuid4()),
+        },
     )
     db_session.commit()
 
