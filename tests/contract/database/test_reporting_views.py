@@ -706,7 +706,8 @@ def test_stale_reviews_excluded_from_top_reviewers_30d(db_session):
     )
 
 
-
+@pytest.mark.integration
+def test_v_contributor_activity_30d(db_session):
     """Test contributor activity rollup view"""
     org_data = sample_organization_data(name="test-org", platform=Platform.GITHUB)
     org = store_organization(db_session, org_data)
