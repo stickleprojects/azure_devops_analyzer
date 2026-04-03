@@ -764,6 +764,10 @@ def _make_dated_scenario(now: datetime) -> dict:
 
     This lets tests assert that only Alice and Carol appear in the 30-day views
     and that Bob — who has genuine historical activity — is correctly excluded.
+
+    Returns:
+        dict with keys 'branches', 'languages', 'file_names', 'pull_requests',
+        and 'commits' suitable for passing directly to FixtureExtractor.
     """
 
     def _iso(dt: datetime) -> str:
@@ -828,7 +832,7 @@ def _make_dated_scenario(now: datetime) -> dict:
 
 
 @pytest.fixture()
-def dated_repo(db_session):
+def contributor_filtering_repo(db_session):
     """
     Load a single repository containing three contributors with controlled commit
     dates into the test database.  See _make_dated_scenario for the full layout.
@@ -878,7 +882,7 @@ class TestContributor30dFiltering:
     """
 
     def test_v_top_contributors_30d_excludes_stale_contributors(
-        self, dated_repo, db_session
+        self, contributor_filtering_repo, db_session
     ):
         """
         v_top_contributors_30d must not include contributors whose most recent
@@ -902,7 +906,7 @@ class TestContributor30dFiltering:
         )
 
     def test_v_active_contributors_30d_total_counts_only_recent(
-        self, dated_repo, db_session
+        self, contributor_filtering_repo, db_session
     ):
         """
         v_active_contributors_30d_total must count only contributors with at
@@ -919,7 +923,7 @@ class TestContributor30dFiltering:
         )
 
     def test_v_contributor_activity_30d_excludes_stale_contributors(
-        self, dated_repo, db_session
+        self, contributor_filtering_repo, db_session
     ):
         """
         v_contributor_activity_30d must not surface contributors who have zero
