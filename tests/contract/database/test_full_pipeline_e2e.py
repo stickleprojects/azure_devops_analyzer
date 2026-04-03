@@ -194,10 +194,9 @@ class TestExtractionPipelineE2E:
         self, scenario_name, db_session
     ):
         """v_contributors_total is at least 1 for non-empty scenarios, 0 for empty."""
+        repo = _load_scenario(db_session, scenario_name)
         extractor = FixtureExtractor(scenario_name)
-        expected_commits = len(extractor.get_commits("repo"))
-
-        _load_scenario(db_session, scenario_name)
+        expected_commits = len(extractor.get_commits(repo.repo_id))
 
         total = db_session.execute(
             text("SELECT total FROM v_contributors_total")
@@ -265,7 +264,10 @@ class TestExtractionPipelineE2E:
 # 2. Dependency Enrichment Pipeline E2E (fixture-based, no live APIs)
 # =============================================================================
 
-# Scenarios that have manifest files yielding parseable dependencies
+# Scenarios that have manifest files yielding parseable dependencies.
+# All three use pypi/requirements.txt but are kept as separate entries because each
+# exercises a distinct fixture file (different commit histories, PR distributions, and
+# manifest content) — ensuring the full storage pipeline is verified for each.
 DEPENDENCY_SCENARIOS = {
     "python-docker-billing": {"ecosystem": "pypi", "min_deps": 1},
     "dual-ci-analytics": {"ecosystem": "pypi", "min_deps": 1},
@@ -441,11 +443,15 @@ class TestDashboardViewContracts:
     def test_repository_overview_totals(self, full_dataset, db_session):
         """v_active_repositories_total, v_commits_total, v_pull_requests_total."""
         expected_repos = len(DASHBOARD_SCENARIOS)
+        # FixtureExtractor.get_commits/get_pull_requests ignores repo_id; use the
+        # scenario name as a self-documenting placeholder.
         expected_commits = sum(
-            len(FixtureExtractor(s).get_commits("r")) for s in DASHBOARD_SCENARIOS
+            len(FixtureExtractor(s).get_commits(f"fixture/{s}"))
+            for s in DASHBOARD_SCENARIOS
         )
         expected_prs = sum(
-            len(FixtureExtractor(s).get_pull_requests("r")) for s in DASHBOARD_SCENARIOS
+            len(FixtureExtractor(s).get_pull_requests(f"fixture/{s}"))
+            for s in DASHBOARD_SCENARIOS
         )
 
         active = db_session.execute(
