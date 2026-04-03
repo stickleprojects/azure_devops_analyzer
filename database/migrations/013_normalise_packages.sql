@@ -77,6 +77,28 @@ DO $$ BEGIN
     END IF;
 END $$;
 
+-- Drop all views that reference dependency_id or the old dependencies table
+-- before we rename columns/tables.  Migration 013 re-applies views.sql at the
+-- end once the schema is in its final state.
+DROP VIEW IF EXISTS v_service_repository_breakdown CASCADE;
+DROP VIEW IF EXISTS v_service_vulnerabilities_by_severity CASCADE;
+DROP VIEW IF EXISTS v_repo_dependency_rollup_latest CASCADE;
+DROP VIEW IF EXISTS v_team_repository_health_matrix CASCADE;
+DROP VIEW IF EXISTS v_repo_vulnerabilities_by_severity_latest CASCADE;
+DROP VIEW IF EXISTS v_repo_vulnerability_details_latest CASCADE;
+DROP VIEW IF EXISTS v_security_overview_latest CASCADE;
+DROP VIEW IF EXISTS v_security_vulnerabilities_by_severity_latest CASCADE;
+DROP VIEW IF EXISTS v_security_top_repositories_critical_vulns CASCADE;
+DROP VIEW IF EXISTS v_security_repository_overview CASCADE;
+DROP VIEW IF EXISTS v_security_vulnerability_trend CASCADE;
+DROP VIEW IF EXISTS v_security_top_vulnerable_dependencies CASCADE;
+DROP VIEW IF EXISTS v_team_vulnerabilities_total_latest CASCADE;
+DROP VIEW IF EXISTS v_team_vulnerabilities_by_severity_latest CASCADE;
+DROP VIEW IF EXISTS v_dependency_snapshot_latest CASCADE;
+DROP VIEW IF EXISTS v_repo_dependency_rollup_latest CASCADE;
+DROP VIEW IF EXISTS v_dependency_summary CASCADE;
+DROP VIEW IF EXISTS v_security_eol_status_latest CASCADE;
+
 -- Drop the old dependency_id FK and column
 DO $$ BEGIN
     IF EXISTS (
