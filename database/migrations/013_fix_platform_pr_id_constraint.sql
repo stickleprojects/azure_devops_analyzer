@@ -9,11 +9,14 @@
 -- Fix: drop the global constraint and replace it with a composite one that
 -- enforces uniqueness only *within* a single repository.
 
--- Step 1: Drop the old global unique index/constraint (name may vary by
--- how the database was created – handle both the column-level and any
--- explicitly-named variant).
+-- Step 1: Drop the old global unique index/constraint.  PostgreSQL names the
+-- column-level UNIQUE as <table>_<column>_key by default, but some environments
+-- may have used an explicit name.  Drop both variants defensively.
 ALTER TABLE pull_requests
     DROP CONSTRAINT IF EXISTS pull_requests_platform_pr_id_key;
+
+ALTER TABLE pull_requests
+    DROP CONSTRAINT IF EXISTS uq_pull_requests_platform_pr_id;
 
 -- Step 2: Add the composite unique constraint.
 ALTER TABLE pull_requests
