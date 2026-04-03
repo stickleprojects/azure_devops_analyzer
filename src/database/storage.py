@@ -281,17 +281,22 @@ def get_or_create_contributor(
     """
     Get existing contributor or create a new one.
 
+    Email is normalized (lowercased and stripped) before lookup and storage to
+    prevent duplicate contributor records for the same person caused by
+    case variations or surrounding whitespace in the source data.
+
     Args:
         session: Database session.
-        email: Contributor email address.
+        email: Contributor email address (normalized before use).
         name: Contributor display name.
 
     Returns:
         Contributor instance.
     """
-    contributor = session.query(Contributor).filter_by(email=email).first()
+    normalized_email = email.strip().lower()
+    contributor = session.query(Contributor).filter_by(email=normalized_email).first()
     if not contributor:
-        contributor = Contributor(email=email, name=name)
+        contributor = Contributor(email=normalized_email, name=name)
         session.add(contributor)
         session.flush()
     return contributor

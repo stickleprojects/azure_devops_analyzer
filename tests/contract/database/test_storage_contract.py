@@ -415,6 +415,92 @@ class TestContributorStorage:
         assert contrib2.name == "Developer"  # Original name preserved
         assert db_session.query(Contributor).count() == 1
 
+    def test_contract_contributor_email_is_normalized_to_lowercase(self, db_session):
+        """CONTRACT: Contributor email must be stored in lowercase to prevent fragmentation."""
+        contributor = get_or_create_contributor(
+            db_session,
+            email="Dev@Example.COM",
+            name="Developer"
+        )
+        db_session.commit()
+
+        assert contributor.email == "dev@example.com"
+
+    def test_contract_contributor_email_strips_whitespace(self, db_session):
+        """CONTRACT: Contributor email must have surrounding whitespace stripped."""
+        contributor = get_or_create_contributor(
+            db_session,
+            email="  dev@example.com  ",
+            name="Developer"
+        )
+        db_session.commit()
+
+        assert contributor.email == "dev@example.com"
+
+    def test_contract_mixed_case_email_deduplicates_to_same_contributor(self, db_session):
+        """CONTRACT: Same person with mixed-case email variants must map to one contributor record.
+
+        This is the core regression guard for DASH-CONTRIB-002: commit totals and PR
+        authored totals must not be fragmented across duplicate contributor rows.
+        """
+        contrib_lower = get_or_create_contributor(
+            db_session,
+            email="alice@example.com",
+            name="Alice"
+        )
+        db_session.commit()
+
+        contrib_upper = get_or_create_contributor(
+            db_session,
+            email="Alice@Example.COM",
+            name="Alice (upper)"
+        )
+        db_session.commit()
+
+        assert contrib_lower.id == contrib_upper.id
+        assert db_session.query(Contributor).count() == 1
+
+    def test_contract_contributor_rollup_consistency_across_email_variants(self, db_session):
+        """CONTRACT: Commit count rollup must be consistent when email variants are used.
+
+        Regression guard for DASH-CONTRIB-002: top contributor commit totals must
+        reflect all commits regardless of the email capitalisation used at commit time.
+        """
+        from src.database.storage import store_organization, store_project, store_repository, store_commit
+        from tests.fixtures.sample_data import (
+            sample_organization_data,
+            sample_repository_data,
+            sample_commit_data,
+        )
+
+        org = store_organization(db_session, sample_organization_data())
+        project = store_project(db_session, org, "test-project")
+        repo = store_repository(db_session, project, sample_repository_data())
+        db_session.commit()
+
+        # Simulate the same developer committing with two email case variants
+        store_commit(db_session, repo.repo_id, "main",
+                     sample_commit_data(sha="sha-001", author_email="bob@example.com"))
+        store_commit(db_session, repo.repo_id, "main",
+                     sample_commit_data(sha="sha-002", author_email="Bob@Example.COM"))
+        db_session.commit()
+
+        # Both commits must be owned by the same contributor
+        contributors = db_session.query(Contributor).all()
+        assert len(contributors) == 1, (
+            "Expected a single contributor record for all email case variants; "
+            f"got {len(contributors)}"
+        )
+        contributor = contributors[0]
+        assert contributor.email == "bob@example.com"
+
+        # All commits must reference this single contributor
+        from src.database.models import Commit
+        commits = db_session.query(Commit).filter_by(author_id=contributor.id).all()
+        assert len(commits) == 2, (
+            f"Expected 2 commits for the canonical contributor; got {len(commits)}"
+        )
+
 
 class TestTeamStorage:
     """CONTRACT: Team storage and retrieval."""
