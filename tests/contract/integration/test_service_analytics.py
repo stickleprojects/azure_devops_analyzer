@@ -12,7 +12,8 @@ from decimal import Decimal
 from src.database.models import (
     Contributor,
     ContributorMetric,
-    Dependency,
+    Package,
+    RepositoryDependency,
     PullRequest,
     Repository,
     RepositoryService,
@@ -443,17 +444,24 @@ class TestAggregateSecurityMetrics:
         now = datetime.now(UTC)
         start, end = period
 
-        dep_a = Dependency(
+        pkg_a = Package(package_name="pkg-critical", ecosystem="PyPI")
+        pkg_b = Package(package_name="pkg-high", ecosystem="npm")
+        test_session.add_all([pkg_a, pkg_b])
+        test_session.flush()
+
+        dep_a = RepositoryDependency(
             repo_id=repo_a.repo_id,
             package_name="pkg-critical",
             ecosystem="PyPI",
+            has_known_vulnerabilities=True,
             first_seen_at=now,
             last_seen_at=now,
         )
-        dep_b = Dependency(
+        dep_b = RepositoryDependency(
             repo_id=repo_b.repo_id,
             package_name="pkg-high",
             ecosystem="npm",
+            has_known_vulnerabilities=True,
             first_seen_at=now,
             last_seen_at=now,
         )
@@ -461,13 +469,13 @@ class TestAggregateSecurityMetrics:
         test_session.commit()
 
         test_session.add(
-            Vulnerability(dependency_id=dep_a.id, severity="CRITICAL", summary="critical vuln")
+            Vulnerability(package_id=pkg_a.id, severity="CRITICAL", summary="critical vuln")
         )
         test_session.add(
-            Vulnerability(dependency_id=dep_b.id, severity="HIGH", summary="high vuln 1")
+            Vulnerability(package_id=pkg_b.id, severity="HIGH", summary="high vuln 1")
         )
         test_session.add(
-            Vulnerability(dependency_id=dep_b.id, severity="HIGH", summary="high vuln 2")
+            Vulnerability(package_id=pkg_b.id, severity="HIGH", summary="high vuln 2")
         )
         test_session.commit()
 
@@ -492,32 +500,35 @@ class TestAggregateSecurityMetrics:
         now = datetime.now(UTC)
         start, end = period
 
+        # EOL status lives in Package rows; RepositoryDependency just tracks usage
+        test_session.add(Package(package_name="eol-pkg", ecosystem="PyPI", is_eol=True))
+        test_session.add(Package(package_name="current-pkg", ecosystem="PyPI", is_eol=False))
+        test_session.add(Package(package_name="another-eol-pkg", ecosystem="npm", is_eol=True))
+        test_session.flush()
+
         test_session.add(
-            Dependency(
+            RepositoryDependency(
                 repo_id=repo_a.repo_id,
                 package_name="eol-pkg",
                 ecosystem="PyPI",
-                is_eol=True,
                 first_seen_at=now,
                 last_seen_at=now,
             )
         )
         test_session.add(
-            Dependency(
+            RepositoryDependency(
                 repo_id=repo_a.repo_id,
                 package_name="current-pkg",
                 ecosystem="PyPI",
-                is_eol=False,
                 first_seen_at=now,
                 last_seen_at=now,
             )
         )
         test_session.add(
-            Dependency(
+            RepositoryDependency(
                 repo_id=repo_b.repo_id,
                 package_name="another-eol-pkg",
                 ecosystem="npm",
-                is_eol=True,
                 first_seen_at=now,
                 last_seen_at=now,
             )

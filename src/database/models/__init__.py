@@ -8,7 +8,8 @@ from src.database.models.base import Base, TimestampMixin
 from src.database.models.branch_metric import BranchMetric
 from src.database.models.commit import Commit
 from src.database.models.contributor import Contributor, ContributorMetric
-from src.database.models.dependency import Dependency, Vulnerability
+from src.database.models.dependency import RepositoryDependency, Vulnerability
+from src.database.models.package import Package
 from src.database.models.extraction_metric import ExtractionMetric, ExtractionRun
 from src.database.models.repository_language import RepositoryLanguage
 from src.database.models.organization import Organization, Project
@@ -38,7 +39,8 @@ __all__ = [
     # Language
     "RepositoryLanguage",
     # Dependency
-    "Dependency",
+    "Package",
+    "RepositoryDependency",
     "Vulnerability",
     # Extraction Progress
     "ExtractionRun",

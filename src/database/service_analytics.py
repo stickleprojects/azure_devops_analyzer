@@ -14,7 +14,8 @@ from sqlalchemy import case, func, select, and_
 from sqlalchemy.orm import Session
 
 from src.database.models.contributor import ContributorMetric
-from src.database.models.dependency import Dependency, Vulnerability
+from src.database.models.dependency import RepositoryDependency, Vulnerability
+from src.database.models.package import Package
 from src.database.models.pull_request import PullRequest
 from src.database.models.quality import CodeQualityMetric
 from src.database.models.service import RepositoryService, Service
@@ -290,10 +291,10 @@ def _aggregate_security_metrics(
     Dependencies represent current state rather than time-series data,
     so no period filter is applied here.
     """
-    # Vulnerability counts by severity (via join to Vulnerability)
+    # Vulnerability counts by severity (via packages → vulnerabilities)
     vuln_result = session.execute(
         select(
-            func.count(func.distinct(Dependency.id)).label("total_vulnerable_deps"),
+            func.count(func.distinct(RepositoryDependency.id)).label("total_vulnerable_deps"),
             func.sum(
                 case((Vulnerability.severity == "CRITICAL", 1), else_=0)
             ).label("critical_vulns"),
@@ -301,19 +302,31 @@ def _aggregate_security_metrics(
                 case((Vulnerability.severity == "HIGH", 1), else_=0)
             ).label("high_vulns"),
         )
-        .select_from(Dependency)
-        .join(Vulnerability, Vulnerability.dependency_id == Dependency.id)
-        .where(Dependency.repo_id.in_(repo_ids))
+        .select_from(RepositoryDependency)
+        .join(
+            Package,
+            (Package.package_name == RepositoryDependency.package_name)
+            & (Package.ecosystem == RepositoryDependency.ecosystem),
+        )
+        .join(Vulnerability, Vulnerability.package_id == Package.id)
+        .where(RepositoryDependency.repo_id.in_(repo_ids))
     ).one()
 
-    # Total dependency counts including EOL
+    # Total dependency counts including EOL (EOL comes from packages table)
     dep_result = session.execute(
         select(
-            func.count(Dependency.id).label("total_deps"),
+            func.count(RepositoryDependency.id).label("total_deps"),
             func.sum(
-                case((Dependency.is_eol.is_(True), 1), else_=0)
+                case((Package.is_eol.is_(True), 1), else_=0)
             ).label("eol_deps"),
-        ).where(Dependency.repo_id.in_(repo_ids))
+        )
+        .select_from(RepositoryDependency)
+        .outerjoin(
+            Package,
+            (Package.package_name == RepositoryDependency.package_name)
+            & (Package.ecosystem == RepositoryDependency.ecosystem),
+        )
+        .where(RepositoryDependency.repo_id.in_(repo_ids))
     ).one()
 
     return {

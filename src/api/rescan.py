@@ -18,6 +18,8 @@ from flask import Flask, jsonify, request
 from src.scheduler.celery_app import celery_app
 from src.database import get_session
 from src.database.models.repository import Repository
+from src.database.models.package import Package
+from src.database.models.dependency import RepositoryDependency, Vulnerability
 
 logger = logging.getLogger(__name__)
 
@@ -331,6 +333,202 @@ def health_check():
         "status": status,
         "service": "extraction-api",
     }), code
+
+
+@app.route("/api/packages/search", methods=["GET"])
+def search_packages():
+    """
+    Search for packages by name and/or ecosystem.
+
+    Query params:
+      ?name=       partial match on package_name
+      ?ecosystem=  exact match
+      ?version=    when provided, filters repository_dependencies to this exact version
+                   and returns repos list instead of aggregate counts
+
+    Returns:
+      Without ?version: aggregate counts per package
+      With    ?version: repos/services using that exact version
+    """
+    name = request.args.get("name", "").strip()
+    ecosystem = request.args.get("ecosystem", "").strip()
+    version = request.args.get("version", "").strip()
+
+    try:
+        with get_session() as session:
+            query = session.query(Package)
+            if name:
+                query = query.filter(Package.package_name.ilike(f"%{name}%"))
+            if ecosystem:
+                query = query.filter(Package.ecosystem == ecosystem)
+
+            packages = query.all()
+
+            if version:
+                results = []
+                for pkg in packages:
+                    repo_deps = (
+                        session.query(RepositoryDependency)
+                        .filter_by(
+                            package_name=pkg.package_name,
+                            ecosystem=pkg.ecosystem,
+                            version=version,
+                        )
+                        .all()
+                    )
+                    if repo_deps:
+                        results.append({
+                            "package_name": pkg.package_name,
+                            "ecosystem": pkg.ecosystem,
+                            "version": version,
+                            "repos": [rd.repo_id for rd in repo_deps],
+                        })
+                return jsonify(results)
+            else:
+                results = []
+                for pkg in packages:
+                    repo_count = (
+                        session.query(RepositoryDependency)
+                        .filter_by(package_name=pkg.package_name, ecosystem=pkg.ecosystem)
+                        .distinct(RepositoryDependency.repo_id)
+                        .count()
+                    )
+                    results.append({
+                        "package_name": pkg.package_name,
+                        "ecosystem": pkg.ecosystem,
+                        "latest_version": pkg.latest_version,
+                        "is_eol": pkg.is_eol,
+                        "eol_date": pkg.eol_date.isoformat() if pkg.eol_date else None,
+                        "repo_count": repo_count,
+                    })
+                return jsonify(results)
+    except Exception as e:
+        logger.error("Package search error: %s", e)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/packages/by-repo", methods=["GET"])
+def packages_by_repo():
+    """
+    All packages used by a specific repository.
+
+    Query params:
+      ?repo_id=   required
+
+    Returns per-repo dependency rows joined with package metadata.
+    """
+    repo_id = request.args.get("repo_id", "").strip()
+    if not repo_id:
+        return jsonify({"status": "error", "message": "repo_id is required"}), 400
+
+    try:
+        with get_session() as session:
+            deps = (
+                session.query(RepositoryDependency)
+                .filter_by(repo_id=repo_id)
+                .all()
+            )
+            results = []
+            for dep in deps:
+                pkg = (
+                    session.query(Package)
+                    .filter_by(package_name=dep.package_name, ecosystem=dep.ecosystem)
+                    .first()
+                )
+                results.append({
+                    "package_name": dep.package_name,
+                    "ecosystem": dep.ecosystem,
+                    "version": dep.version,
+                    "is_dev_dependency": dep.is_dev_dependency,
+                    "has_known_vulnerabilities": dep.has_known_vulnerabilities,
+                    "latest_version": pkg.latest_version if pkg else None,
+                    "is_eol": pkg.is_eol if pkg else None,
+                    "eol_date": pkg.eol_date.isoformat() if pkg and pkg.eol_date else None,
+                })
+            return jsonify(results)
+    except Exception as e:
+        logger.error("Packages by-repo error: %s", e)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/packages/vulnerable", methods=["GET"])
+def vulnerable_packages():
+    """
+    Repos where has_known_vulnerabilities=true, grouped by package.
+
+    Returns package name, repo count, and CVE summary.
+    """
+    try:
+        with get_session() as session:
+            rows = (
+                session.query(RepositoryDependency)
+                .filter_by(has_known_vulnerabilities=True)
+                .all()
+            )
+            by_package: dict = {}
+            for dep in rows:
+                key = (dep.package_name, dep.ecosystem)
+                if key not in by_package:
+                    pkg = (
+                        session.query(Package)
+                        .filter_by(package_name=dep.package_name, ecosystem=dep.ecosystem)
+                        .first()
+                    )
+                    cves = (
+                        [v.cve_id for v in pkg.vulnerabilities if v.cve_id]
+                        if pkg else []
+                    )
+                    by_package[key] = {
+                        "package_name": dep.package_name,
+                        "ecosystem": dep.ecosystem,
+                        "repo_count": 0,
+                        "cves": cves,
+                    }
+                by_package[key]["repo_count"] += 1
+
+            return jsonify(list(by_package.values()))
+    except Exception as e:
+        logger.error("Vulnerable packages error: %s", e)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/packages/eol", methods=["GET"])
+def eol_packages():
+    """
+    Packages that are EOL or expiring within 90 days, with repo counts.
+    """
+    from datetime import date, timedelta
+    cutoff = date.today() + timedelta(days=90)
+
+    try:
+        with get_session() as session:
+            pkgs = (
+                session.query(Package)
+                .filter(
+                    (Package.is_eol == True) |  # noqa: E712
+                    ((Package.eol_date != None) & (Package.eol_date <= cutoff))  # noqa: E711
+                )
+                .all()
+            )
+            results = []
+            for pkg in pkgs:
+                repo_count = (
+                    session.query(RepositoryDependency)
+                    .filter_by(package_name=pkg.package_name, ecosystem=pkg.ecosystem)
+                    .distinct(RepositoryDependency.repo_id)
+                    .count()
+                )
+                results.append({
+                    "package_name": pkg.package_name,
+                    "ecosystem": pkg.ecosystem,
+                    "is_eol": pkg.is_eol,
+                    "eol_date": pkg.eol_date.isoformat() if pkg.eol_date else None,
+                    "repo_count": repo_count,
+                })
+            return jsonify(results)
+    except Exception as e:
+        logger.error("EOL packages error: %s", e)
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.errorhandler(404)
