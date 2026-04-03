@@ -13,7 +13,7 @@ Runs in CI under `-m 'not live_api'` (the standard test-runner command).
 """
 
 import pytest
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import text
 
 from tests.fixtures.fixture_extractor import FixtureExtractor
@@ -747,3 +747,203 @@ class TestDashboardViewContracts:
                 f"{scenario_name}: {repo.repo_id} not in v_unanalyzed_repositories "
                 f"(last_analyzed_at should be NULL for a freshly loaded repo)"
             )
+
+
+# =============================================================================
+# 4. 30-day Contributor Filtering Regression
+# =============================================================================
+
+
+def _make_dated_scenario(now: datetime) -> dict:
+    """
+    Build an inline scenario dict with three contributors and controlled dates:
+
+      alice@example.com  – one commit 730 days ago  + one commit 10 days ago  (recent)
+      bob@example.com    – one commit 720 days ago only                        (historical)
+      carol@example.com  – one commit 5 days ago only                          (recent)
+
+    This lets tests assert that only Alice and Carol appear in the 30-day views
+    and that Bob — who has genuine historical activity — is correctly excluded.
+    """
+
+    def _iso(dt: datetime) -> str:
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    return {
+        "branches": ["main"],
+        "languages": [],
+        "file_names": [],
+        "pull_requests": [],
+        "commits": [
+            {
+                "commit_hash": "aa0001",
+                "author_name": "Alice",
+                "author_email": "alice@example.com",
+                "committer_name": "Alice",
+                "committer_email": "alice@example.com",
+                "message": "Alice old commit",
+                "commit_date": _iso(now - timedelta(days=730)),
+                "files_changed": 1,
+                "lines_added": 10,
+                "lines_removed": 2,
+            },
+            {
+                "commit_hash": "aa0002",
+                "author_name": "Alice",
+                "author_email": "alice@example.com",
+                "committer_name": "Alice",
+                "committer_email": "alice@example.com",
+                "message": "Alice recent commit",
+                "commit_date": _iso(now - timedelta(days=10)),
+                "files_changed": 2,
+                "lines_added": 20,
+                "lines_removed": 5,
+            },
+            {
+                "commit_hash": "bb0001",
+                "author_name": "Bob",
+                "author_email": "bob@example.com",
+                "committer_name": "Bob",
+                "committer_email": "bob@example.com",
+                "message": "Bob old commit",
+                "commit_date": _iso(now - timedelta(days=720)),
+                "files_changed": 3,
+                "lines_added": 30,
+                "lines_removed": 10,
+            },
+            {
+                "commit_hash": "cc0001",
+                "author_name": "Carol",
+                "author_email": "carol@example.com",
+                "committer_name": "Carol",
+                "committer_email": "carol@example.com",
+                "message": "Carol recent commit",
+                "commit_date": _iso(now - timedelta(days=5)),
+                "files_changed": 1,
+                "lines_added": 5,
+                "lines_removed": 1,
+            },
+        ],
+    }
+
+
+@pytest.fixture()
+def dated_repo(db_session):
+    """
+    Load a single repository containing three contributors with controlled commit
+    dates into the test database.  See _make_dated_scenario for the full layout.
+    """
+    now = datetime.now(timezone.utc)
+    scenario = _make_dated_scenario(now)
+
+    extractor = FixtureExtractor(scenario)
+
+    org = store_organization(
+        db_session,
+        sample_organization_data(name="30d-filter-org", platform=Platform.GITHUB),
+    )
+    project = store_project(db_session, org, name="30d-filter-project")
+    repo = store_repository(
+        db_session,
+        project,
+        sample_repository_data(
+            repo_id="fixture/30d-filter-test",
+            name="30d-filter-test",
+            url="https://example.com/30d-filter-test",
+        ),
+    )
+    db_session.flush()
+
+    for branch in extractor.get_branches(repo.repo_id):
+        store_branch(db_session, repo.repo_id, branch)
+    db_session.flush()
+
+    for commit in extractor.get_commits(repo.repo_id):
+        store_commit(db_session, repo.repo_id, "main", commit)
+    db_session.flush()
+
+    db_session.commit()
+    return repo
+
+
+@pytest.mark.integration
+class TestContributor30dFiltering:
+    """
+    Regression suite for the bug where repositories with years of history showed
+    historical-only contributors as having commits in the last 30 days.
+
+    Each test loads a repo with three contributors (Alice: old + recent commits,
+    Bob: old commits only, Carol: recent commits only) and verifies that the
+    30-day reporting views surface only Alice and Carol.
+    """
+
+    def test_v_top_contributors_30d_excludes_stale_contributors(
+        self, dated_repo, db_session
+    ):
+        """
+        v_top_contributors_30d must not include contributors whose most recent
+        commit predates the 30-day window, even when they have many historical
+        commits.
+        """
+        rows = db_session.execute(
+            text("SELECT contributor, commits FROM v_top_contributors_30d")
+        ).fetchall()
+        names = {r.contributor for r in rows}
+
+        assert "Alice" in names, (
+            f"Alice (commit 10 days ago) is missing from v_top_contributors_30d: {names}"
+        )
+        assert "Carol" in names, (
+            f"Carol (commit 5 days ago) is missing from v_top_contributors_30d: {names}"
+        )
+        assert "Bob" not in names, (
+            f"Bob (last commit 720 days ago) incorrectly appears in "
+            f"v_top_contributors_30d: {names}"
+        )
+
+    def test_v_active_contributors_30d_total_counts_only_recent(
+        self, dated_repo, db_session
+    ):
+        """
+        v_active_contributors_30d_total must count only contributors with at
+        least one commit in the last 30 days.  With our three-contributor repo
+        that is exactly 2 (Alice + Carol).
+        """
+        total = db_session.execute(
+            text("SELECT contributors FROM v_active_contributors_30d_total")
+        ).scalar()
+
+        assert total == 2, (
+            f"Expected 2 active contributors (Alice + Carol), got {total}. "
+            f"Bob has no commits in the 30-day window and must not be counted."
+        )
+
+    def test_v_contributor_activity_30d_excludes_stale_contributors(
+        self, dated_repo, db_session
+    ):
+        """
+        v_contributor_activity_30d must not surface contributors who have zero
+        commits, PRs, and reviews within the 30-day window.
+
+        Regression: a LEFT JOIN without a HAVING clause would cause
+        historical-only contributors to appear in the view with commits=0,
+        making them indistinguishable from genuinely active contributors.
+        """
+        rows = db_session.execute(
+            text(
+                "SELECT contributor, commits FROM v_contributor_activity_30d"
+            )
+        ).fetchall()
+        names = {r.contributor for r in rows}
+
+        assert "Alice" in names, (
+            f"Alice (recent commit) is missing from v_contributor_activity_30d: {names}"
+        )
+        assert "Carol" in names, (
+            f"Carol (recent commit) is missing from v_contributor_activity_30d: {names}"
+        )
+        assert "Bob" not in names, (
+            f"Bob (historical-only) incorrectly appears in "
+            f"v_contributor_activity_30d: {names}. "
+            f"The view must exclude contributors with no recent activity."
+        )
