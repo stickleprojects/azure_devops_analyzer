@@ -23,7 +23,9 @@ from src.database.models import (
     PRComment,
     ReadmeFile,
     Team,
-    Dependency,
+    RepositoryDependency,
+    Package,
+    Vulnerability,
     RepositoryLanguage,
     ExtractionRun,
     ExtractionMetric,
@@ -960,9 +962,9 @@ def store_dependencies(
     repo_id: str,
     dependencies: list[DependencyData],
     branch_name: Optional[str] = None,
-) -> list[Dependency]:
+) -> list[RepositoryDependency]:
     """
-    Upsert dependencies for a repository.
+    Upsert unenriched dependencies for a repository (fallback path).
 
     Uses (repo_id, package_name, ecosystem) as the natural key.
     On first insert sets first_seen_at; on every run updates last_seen_at.
@@ -974,7 +976,7 @@ def store_dependencies(
         branch_name: Branch name (optional).
 
     Returns:
-        List of stored Dependency instances.
+        List of stored RepositoryDependency instances.
     """
     now = datetime.now(UTC)
     branch_id = _resolve_branch_id(session, repo_id, branch_name)
@@ -982,7 +984,7 @@ def store_dependencies(
     stored_deps = []
     for dep_data in dependencies:
         existing = (
-            session.query(Dependency)
+            session.query(RepositoryDependency)
             .filter_by(
                 repo_id=repo_id,
                 package_name=dep_data.package_name,
@@ -997,7 +999,7 @@ def store_dependencies(
             existing.last_seen_at = now
             stored_deps.append(existing)
         else:
-            dep = Dependency(
+            dep = RepositoryDependency(
                 repo_id=repo_id,
                 branch_id=branch_id,
                 package_name=dep_data.package_name,
@@ -1013,17 +1015,90 @@ def store_dependencies(
     return stored_deps
 
 
-def store_enriched_dependencies(
+def store_package_metadata(
+    session: Session,
+    package_name: str,
+    ecosystem: str,
+    latest_version: Optional[str],
+    is_eol: bool,
+    eol_date,
+    vulnerabilities: list[dict],
+) -> Package:
+    """
+    Upsert version-agnostic package metadata and replace its vulnerability records.
+
+    Upserts on (package_name, ecosystem). Replaces all vulnerability rows for this
+    package on each call (OSV returns the full current list).
+
+    Args:
+        session: Database session.
+        package_name: Package name.
+        ecosystem: Package ecosystem (npm, pypi, nuget, …).
+        latest_version: Latest known version from OSV.
+        is_eol: Whether the package is end-of-life.
+        eol_date: End-of-life date.
+        vulnerabilities: List of vulnerability dicts from OSVClient.extract_vulnerabilities().
+
+    Returns:
+        Upserted Package instance.
+    """
+    now = datetime.now(UTC)
+
+    pkg = (
+        session.query(Package)
+        .filter_by(package_name=package_name, ecosystem=ecosystem)
+        .first()
+    )
+
+    if pkg:
+        pkg.latest_version = latest_version
+        pkg.is_eol = is_eol
+        pkg.eol_date = eol_date
+        pkg.enriched_at = now
+        # Replace vulnerability records
+        for v in list(pkg.vulnerabilities):
+            session.delete(v)
+    else:
+        pkg = Package(
+            package_name=package_name,
+            ecosystem=ecosystem,
+            latest_version=latest_version,
+            is_eol=is_eol,
+            eol_date=eol_date,
+            enriched_at=now,
+        )
+        session.add(pkg)
+        session.flush()  # get pkg.id before adding vulnerabilities
+
+    for vuln_dict in vulnerabilities:
+        fixed_versions = vuln_dict.get("fixed_in_versions") or []
+        vuln = Vulnerability(
+            package_id=pkg.id,
+            cve_id=vuln_dict.get("cve_id"),
+            vulnerability_id=vuln_dict.get("osv_id"),
+            severity=vuln_dict.get("severity") or "unknown",
+            summary=vuln_dict.get("summary"),
+            description=vuln_dict.get("details"),
+            fixed_in_version=fixed_versions[0] if fixed_versions else None,
+            references=vuln_dict.get("references"),
+        )
+        session.add(vuln)
+
+    return pkg
+
+
+def store_repo_dependencies(
     session: Session,
     repo_id: str,
     enriched_dependencies: list,
     branch_name: Optional[str] = None,
-) -> list[Dependency]:
+) -> list[RepositoryDependency]:
     """
-    Upsert enriched dependencies for a repository.
+    Upsert per-repo dependency usage including version-specific vulnerability flag.
 
     Uses (repo_id, package_name, ecosystem) as the natural key.
-    Includes enrichment fields from OSV.dev and endoflife.date.
+    has_known_vulnerabilities is taken from EnrichedDependency (computed by the
+    enricher by comparing the repo's pinned version against fixed_in_version).
 
     Args:
         session: Database session.
@@ -1032,7 +1107,7 @@ def store_enriched_dependencies(
         branch_name: Branch name (optional).
 
     Returns:
-        List of stored Dependency instances.
+        List of stored RepositoryDependency instances.
     """
     now = datetime.now(UTC)
     branch_id = _resolve_branch_id(session, repo_id, branch_name)
@@ -1040,7 +1115,7 @@ def store_enriched_dependencies(
     stored_deps = []
     for enriched_dep in enriched_dependencies:
         existing = (
-            session.query(Dependency)
+            session.query(RepositoryDependency)
             .filter_by(
                 repo_id=repo_id,
                 package_name=enriched_dep.package_name,
@@ -1050,26 +1125,20 @@ def store_enriched_dependencies(
         )
         if existing:
             existing.version = enriched_dep.version
-            existing.latest_version = enriched_dep.latest_version
             existing.is_dev_dependency = enriched_dep.is_dev_dependency
-            existing.has_vulnerabilities = enriched_dep.has_vulnerabilities
-            existing.is_eol = enriched_dep.is_eol
-            existing.eol_date = enriched_dep.eol_date
+            existing.has_known_vulnerabilities = enriched_dep.has_known_vulnerabilities
             existing.branch_id = branch_id
             existing.last_seen_at = now
             stored_deps.append(existing)
         else:
-            dep = Dependency(
+            dep = RepositoryDependency(
                 repo_id=repo_id,
                 branch_id=branch_id,
                 package_name=enriched_dep.package_name,
                 version=enriched_dep.version,
                 ecosystem=enriched_dep.ecosystem,
-                latest_version=enriched_dep.latest_version,
                 is_dev_dependency=enriched_dep.is_dev_dependency,
-                has_vulnerabilities=enriched_dep.has_vulnerabilities,
-                is_eol=enriched_dep.is_eol,
-                eol_date=enriched_dep.eol_date,
+                has_known_vulnerabilities=enriched_dep.has_known_vulnerabilities,
                 first_seen_at=now,
                 last_seen_at=now,
             )
@@ -1077,6 +1146,29 @@ def store_enriched_dependencies(
             stored_deps.append(dep)
 
     return stored_deps
+
+
+# Keep old name as alias for any callers not yet updated
+def store_enriched_dependencies(
+    session: Session,
+    repo_id: str,
+    enriched_dependencies: list,
+    branch_name: Optional[str] = None,
+) -> list[RepositoryDependency]:
+    """Deprecated alias for store_repo_dependencies + store_package_metadata."""
+    for enriched_dep in enriched_dependencies:
+        if enriched_dep.package_metadata is not None:
+            pm = enriched_dep.package_metadata
+            store_package_metadata(
+                session,
+                package_name=pm.package_name,
+                ecosystem=pm.ecosystem,
+                latest_version=pm.latest_version,
+                is_eol=pm.is_eol,
+                eol_date=pm.eol_date,
+                vulnerabilities=pm.vulnerabilities,
+            )
+    return store_repo_dependencies(session, repo_id, enriched_dependencies, branch_name)
 
 
 def get_extraction_summary(session: Session) -> dict:
@@ -1097,5 +1189,6 @@ def get_extraction_summary(session: Session) -> dict:
         "pull_requests": session.query(PullRequest).count(),
         "contributors": session.query(Contributor).count(),
         "readme_files": session.query(ReadmeFile).count(),
-        "dependencies": session.query(Dependency).count(),
+        "packages": session.query(Package).count(),
+        "repository_dependencies": session.query(RepositoryDependency).count(),
     }

@@ -563,13 +563,14 @@ SELECT
     (SELECT COUNT(*) FROM pull_requests p WHERE p.repo_id = r.repo_id AND p.merged_at > NOW() - INTERVAL '30 days') AS merged_prs_30d,
     COALESCE(
         (
-            SELECT COUNT(v.id)
-            FROM vulnerabilities v
-            JOIN dependencies d ON d.id = v.dependency_id
+            SELECT COUNT(DISTINCT v.id)
+            FROM repository_dependencies d
+            JOIN packages p ON p.package_name = d.package_name AND p.ecosystem = d.ecosystem
+            JOIN vulnerabilities v ON v.package_id = p.id
             WHERE d.repo_id = r.repo_id
               AND d.last_seen_at = (
                   SELECT MAX(d2.last_seen_at)
-                  FROM dependencies d2
+                  FROM repository_dependencies d2
                   WHERE d2.repo_id = r.repo_id
               )
         ),
@@ -586,14 +587,15 @@ CREATE OR REPLACE VIEW v_service_vulnerabilities_by_severity AS
 SELECT
     s.name AS service,
     v.severity,
-    COUNT(*) AS count
-FROM vulnerabilities v
-JOIN dependencies d ON d.id = v.dependency_id
+    COUNT(DISTINCT v.id) AS count
+FROM repository_dependencies d
+JOIN packages p ON p.package_name = d.package_name AND p.ecosystem = d.ecosystem
+JOIN vulnerabilities v ON v.package_id = p.id
 JOIN repository_services rs ON rs.repo_id = d.repo_id
 JOIN services s ON s.service_id = rs.service_id
 WHERE d.last_seen_at = (
     SELECT MAX(d2.last_seen_at)
-    FROM dependencies d2
+    FROM repository_dependencies d2
     WHERE d2.repo_id = d.repo_id
 )
 GROUP BY s.name, v.severity;
@@ -660,11 +662,26 @@ CROSS JOIN LATERAL (
 
 -- View: Latest dependency snapshot per repository
 CREATE OR REPLACE VIEW v_dependency_snapshot_latest AS
-SELECT d.*
-FROM dependencies d
+SELECT
+    d.id,
+    d.repo_id,
+    d.branch_id,
+    d.package_name,
+    d.version,
+    d.ecosystem,
+    d.is_dev_dependency,
+    d.has_known_vulnerabilities,
+    d.first_seen_at,
+    d.last_seen_at,
+    p.latest_version,
+    p.is_eol,
+    p.eol_date,
+    p.id AS package_id
+FROM repository_dependencies d
+LEFT JOIN packages p ON p.package_name = d.package_name AND p.ecosystem = d.ecosystem
 WHERE d.last_seen_at = (
     SELECT MAX(d2.last_seen_at)
-    FROM dependencies d2
+    FROM repository_dependencies d2
     WHERE d2.repo_id = d.repo_id
 );
 
@@ -672,7 +689,7 @@ WHERE d.last_seen_at = (
 CREATE OR REPLACE VIEW v_repo_dependency_rollup_latest AS
 SELECT
     d.repo_id,
-    COUNT(v.id) AS vulnerabilities,
+    COUNT(DISTINCT v.id) AS vulnerabilities,
     COUNT(*) FILTER (
         WHERE d.version != d.latest_version AND d.latest_version IS NOT NULL
     ) AS outdated_dependencies,
@@ -680,7 +697,7 @@ SELECT
     COUNT(*) AS total_dependencies,
     COUNT(*) FILTER (WHERE d.is_dev_dependency = true) AS dev_dependencies
 FROM v_dependency_snapshot_latest d
-LEFT JOIN vulnerabilities v ON v.dependency_id = d.id
+LEFT JOIN vulnerabilities v ON v.package_id = d.package_id
 GROUP BY d.repo_id;
 
 -- View: Vulnerability severity distribution per repository from latest dependency snapshot
@@ -690,7 +707,7 @@ SELECT
     v.severity,
     COUNT(*) AS count
 FROM v_dependency_snapshot_latest d
-JOIN vulnerabilities v ON v.dependency_id = d.id
+JOIN vulnerabilities v ON v.package_id = d.package_id
 GROUP BY d.repo_id, v.severity;
 
 -- View: Dependency ecosystem distribution per repository from latest dependency snapshot
@@ -714,7 +731,7 @@ SELECT
     v.fixed_in_version,
     v.published_date
 FROM v_dependency_snapshot_latest d
-JOIN vulnerabilities v ON v.dependency_id = d.id;
+JOIN vulnerabilities v ON v.package_id = d.package_id;
 
 -- View: Latest branch metrics snapshot
 CREATE OR REPLACE VIEW v_branch_metrics_latest AS
@@ -755,12 +772,12 @@ GROUP BY repo_id;
 -- View: Security dashboard latest overview
 CREATE OR REPLACE VIEW v_security_overview_latest AS
 SELECT
-    COUNT(v.id) AS total_vulnerabilities,
+    COUNT(DISTINCT v.id) AS total_vulnerabilities,
     COUNT(*) FILTER (WHERE d.is_eol = true) AS total_eol_deps,
-    COUNT(DISTINCT CASE WHEN d.has_vulnerabilities = true THEN d.repo_id END) AS repos_with_vulns,
+    COUNT(DISTINCT CASE WHEN d.has_known_vulnerabilities = true THEN d.repo_id END) AS repos_with_vulns,
     COUNT(DISTINCT CASE WHEN d.is_eol = true THEN d.repo_id END) AS repos_with_eol
 FROM v_dependency_snapshot_latest d
-LEFT JOIN vulnerabilities v ON v.dependency_id = d.id;
+LEFT JOIN vulnerabilities v ON v.package_id = d.package_id;
 
 -- View: Security dashboard vulnerability severity distribution
 CREATE OR REPLACE VIEW v_security_vulnerabilities_by_severity_latest AS
@@ -768,7 +785,7 @@ SELECT
     v.severity,
     COUNT(*) AS count
 FROM v_dependency_snapshot_latest d
-JOIN vulnerabilities v ON v.dependency_id = d.id
+JOIN vulnerabilities v ON v.package_id = d.package_id
 GROUP BY v.severity;
 
 -- View: Security dashboard top repositories by critical vulnerabilities
@@ -777,7 +794,7 @@ SELECT
     r.name AS repository,
     COUNT(*) AS critical_vulns
 FROM v_dependency_snapshot_latest d
-JOIN vulnerabilities v ON v.dependency_id = d.id
+JOIN vulnerabilities v ON v.package_id = d.package_id
 JOIN repositories r ON r.repo_id = d.repo_id
 WHERE v.severity = 'CRITICAL'
 GROUP BY r.name
@@ -795,7 +812,7 @@ SELECT
     COUNT(*) AS count
 FROM v_dependency_snapshot_latest
 WHERE is_eol = true
-GROUP BY category;
+GROUP BY 1;
 
 -- View: Security dashboard repository overview
 CREATE OR REPLACE VIEW v_security_repository_overview AS
@@ -816,7 +833,7 @@ LEFT JOIN (
         SUM(CASE WHEN v.severity = 'MEDIUM' THEN 1 ELSE 0 END) AS medium,
         SUM(CASE WHEN v.severity = 'LOW' THEN 1 ELSE 0 END) AS low
     FROM v_dependency_snapshot_latest d
-    LEFT JOIN vulnerabilities v ON v.dependency_id = d.id
+    LEFT JOIN vulnerabilities v ON v.package_id = d.package_id
     GROUP BY d.repo_id
 ) vs ON vs.repo_id = r.repo_id
 LEFT JOIN (
@@ -831,9 +848,10 @@ WHERE r.is_active = true;
 CREATE OR REPLACE VIEW v_security_vulnerability_trend AS
 SELECT
     time_bucket(INTERVAL '1 day', d.last_seen_at) AS time,
-    COUNT(v.id) AS vulnerabilities
-FROM dependencies d
-JOIN vulnerabilities v ON v.dependency_id = d.id
+    COUNT(DISTINCT v.id) AS vulnerabilities
+FROM repository_dependencies d
+JOIN packages p ON p.package_name = d.package_name AND p.ecosystem = d.ecosystem
+JOIN vulnerabilities v ON v.package_id = p.id
 GROUP BY time_bucket('1 day', d.last_seen_at)
 ORDER BY time;
 
@@ -847,7 +865,7 @@ SELECT
     COUNT(DISTINCT d.repo_id) AS affected_repositories,
     STRING_AGG(DISTINCT r.name, ', ') AS repositories
 FROM v_dependency_snapshot_latest d
-JOIN vulnerabilities v ON v.dependency_id = d.id
+JOIN vulnerabilities v ON v.package_id = d.package_id
 JOIN repositories r ON r.repo_id = d.repo_id
 GROUP BY d.package_name, d.version, d.ecosystem, v.severity
 ORDER BY
@@ -983,7 +1001,7 @@ SELECT
     COUNT(DISTINCT v.id) AS total_vulnerabilities
 FROM v_dependency_snapshot_latest d
 JOIN v_repository_team_labels rtl ON rtl.repo_id = d.repo_id
-LEFT JOIN vulnerabilities v ON v.dependency_id = d.id
+LEFT JOIN vulnerabilities v ON v.package_id = d.package_id
 GROUP BY rtl.team;
 
 -- View: Team PR size distribution
@@ -1005,7 +1023,7 @@ SELECT
     COUNT(*) AS count
 FROM v_dependency_snapshot_latest d
 JOIN v_repository_team_labels rtl ON rtl.repo_id = d.repo_id
-JOIN vulnerabilities v ON v.dependency_id = d.id
+JOIN vulnerabilities v ON v.package_id = d.package_id
 GROUP BY rtl.team, v.severity;
 
 -- View: Team language distribution
@@ -1100,17 +1118,17 @@ LIMIT 50;
 
 -- View 12: Dependencies with vulnerability/EOL flags per repository
 CREATE OR REPLACE VIEW v_dependency_summary AS
-SELECT 
-    repo_id,
-    package_name,
-    ecosystem,
-    version,
-    latest_version,
-    has_vulnerabilities,
-    is_eol,
-    eol_date
-FROM 
-    dependencies;
+SELECT
+    d.repo_id,
+    d.package_name,
+    d.ecosystem,
+    d.version,
+    p.latest_version,
+    d.has_known_vulnerabilities,
+    p.is_eol,
+    p.eol_date
+FROM repository_dependencies d
+LEFT JOIN packages p ON p.package_name = d.package_name AND p.ecosystem = d.ecosystem;
 
 -- =============================================================================
 -- System and Operational Views

@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch, MagicMock
 
 from src.analyzers.osv_client import OSVClient
 from src.analyzers.eol_client import EndOfLifeClient
-from src.analyzers.dependency_enricher import DependencyEnricher, EnrichedDependency
+from src.analyzers.dependency_enricher import DependencyEnricher, EnrichedDependency, PackageMetadata
 from src.extractors.base import DependencyData
 
 
@@ -237,8 +237,10 @@ class TestDependencyEnricher:
             
             assert enriched.package_name == "requests"
             assert enriched.version == "2.28.0"
-            assert enriched.has_vulnerabilities is True
-            assert len(enriched.vulnerabilities) > 0
+            # Version 2.28.0 < fixed 2.29.0 → exposed
+            assert enriched.has_known_vulnerabilities is True
+            assert enriched.package_metadata is not None
+            assert len(enriched.package_metadata.vulnerabilities) > 0
 
     def test_enrich_multiple_dependencies(self):
         """CONTRACT: Enrich processes multiple dependencies concurrently."""
