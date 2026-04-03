@@ -453,7 +453,7 @@ CREATE TABLE pull_requests (
     id SERIAL PRIMARY KEY,
     repo_id VARCHAR(255),
     pr_number INTEGER NOT NULL,
-    platform_pr_id VARCHAR(255) UNIQUE,  -- Azure PR ID or GitHub PR node_id
+    platform_pr_id VARCHAR(255),  -- Azure PR ID or GitHub PR node_id
     title TEXT NOT NULL,
     description TEXT,
     source_branch VARCHAR(255),
@@ -473,6 +473,7 @@ CREATE TABLE pull_requests (
     has_issues BOOLEAN DEFAULT FALSE,
     issue_flags TEXT[],  -- Array of issue descriptions
     UNIQUE(repo_id, pr_number),
+    UNIQUE(repo_id, platform_pr_id),
     CONSTRAINT fk_pr_repository FOREIGN KEY (repo_id) REFERENCES repositories(repo_id) ON DELETE CASCADE,
     CONSTRAINT fk_pr_author FOREIGN KEY (author_id) REFERENCES contributors(id)
 );

@@ -22,6 +22,7 @@ class PullRequest(Base):
     __tablename__ = "pull_requests"
     __table_args__ = (
         UniqueConstraint("repo_id", "pr_number", name="uq_pr_repo_number"),
+        UniqueConstraint("repo_id", "platform_pr_id", name="uq_pr_repo_platform_pr_id"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -29,7 +30,7 @@ class PullRequest(Base):
         String(255), ForeignKey("repositories.repo_id", ondelete="CASCADE")
     )
     pr_number: Mapped[int] = mapped_column(Integer, nullable=False)
-    platform_pr_id: Mapped[Optional[str]] = mapped_column(String(255), unique=True)
+    platform_pr_id: Mapped[Optional[str]] = mapped_column(String(255))
     title: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
     source_branch: Mapped[Optional[str]] = mapped_column(String(255))
