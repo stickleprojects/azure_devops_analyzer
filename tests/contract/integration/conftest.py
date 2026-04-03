@@ -184,27 +184,33 @@ def cleanup_database(test_session):
     
     try:
         # Delete from hypertables first (TRUNCATE doesn't work well with TimescaleDB hypertables)
+        # NOTE: "dependencies" was renamed to "repository_dependencies" in migration 013.
         hypertables = [
             "repository_languages",
-            "dependencies",
+            "repository_dependencies",
             "code_quality_metrics",
             "branch_metrics",
             "contributor_metrics",
             "service_metrics",
         ]
-        
+
         for table in hypertables:
             try:
+                # Use a SAVEPOINT so a missing table doesn't abort the whole transaction.
+                test_session.execute(text("SAVEPOINT sp_hyper_cleanup"))
                 test_session.execute(text(f"DELETE FROM {table}"))
+                test_session.execute(text("RELEASE SAVEPOINT sp_hyper_cleanup"))
             except Exception as e:
+                test_session.execute(text("ROLLBACK TO SAVEPOINT sp_hyper_cleanup"))
                 logger.debug(f"Delete from {table}: {e}")
-        
+
         # Truncate regular tables to clean state
         # Order matters: truncate dependent tables first, then their parents
         # Use RESTART IDENTITY to reset auto-increment sequences
         truncate_tables = [
             "team_metrics",
             "team_contributors",
+            "packages",
             "vulnerabilities",
             "pr_comments",
             "pr_reviews",
@@ -219,12 +225,16 @@ def cleanup_database(test_session):
             "projects",
             "organizations",
         ]
-        
+
         for table in truncate_tables:
             try:
+                # Use a SAVEPOINT so a missing table doesn't abort the whole transaction.
+                test_session.execute(text("SAVEPOINT sp_trunc_cleanup"))
                 # Try with RESTART IDENTITY, fall back to regular TRUNCATE
                 test_session.execute(text(f"TRUNCATE TABLE {table} RESTART IDENTITY CASCADE"))
+                test_session.execute(text("RELEASE SAVEPOINT sp_trunc_cleanup"))
             except Exception as e:
+                test_session.execute(text("ROLLBACK TO SAVEPOINT sp_trunc_cleanup"))
                 try:
                     test_session.execute(text(f"TRUNCATE TABLE {table}"))
                 except Exception as e2:

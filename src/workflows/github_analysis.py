@@ -23,6 +23,8 @@ from src.database.storage import (
     store_readme,
     store_dependencies,
     store_enriched_dependencies,
+    store_package_metadata,
+    store_repo_dependencies,
     update_repository_analyzed_timestamp,
     get_extraction_summary,
     start_extraction_run,
@@ -437,13 +439,26 @@ class GitHubAnalysisWorkflow:
                 )
 
                 with session_scope() as session:
-                    # Use enriched dependencies if available, otherwise fall back to unenriched
                     if result.enriched_dependencies:
                         logger.info(
                             "      Enriching %d dependencies (latest versions, EOL, vulnerabilities)",
                             len(result.enriched_dependencies),
                         )
-                        store_enriched_dependencies(
+                        # Write version-agnostic package metadata + vulnerabilities once per package
+                        for e in result.enriched_dependencies:
+                            if e.package_metadata is not None:
+                                pm = e.package_metadata
+                                store_package_metadata(
+                                    session,
+                                    package_name=pm.package_name,
+                                    ecosystem=pm.ecosystem,
+                                    latest_version=pm.latest_version,
+                                    is_eol=pm.is_eol,
+                                    eol_date=pm.eol_date,
+                                    vulnerabilities=pm.vulnerabilities,
+                                )
+                        # Write per-repo usage with version-specific vulnerability flag
+                        store_repo_dependencies(
                             session,
                             repo_data.repo_id,
                             result.enriched_dependencies,

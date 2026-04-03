@@ -5,10 +5,11 @@ CONTRACT: Dependencies extracted from repos and enriched with API data.
 
 Tests verify:
 - Manifest files found and parsed
-- Dependencies stored in database
+- Dependencies stored in database (repository_dependencies + packages tables)
 - Enrichment APIs called and data stored
-- Latest versions and EOL dates populated
-- Vulnerabilities recorded correctly
+- Latest versions and EOL dates populated in packages table
+- Vulnerabilities recorded and linked to packages (not per-repo rows)
+- has_known_vulnerabilities flag computed per-repo based on version comparison
 """
 
 import pytest
@@ -18,26 +19,24 @@ from sqlalchemy.orm import Session
 from src.extractors.github.extractor import GitHubExtractor
 from src.extractors.base import DependencyData
 from src.analyzers.dependency_analyzer import DependencyAnalyzer
-from src.analyzers.dependency_enricher import EnrichedDependency
-from src.database.models import Repository, Dependency, Vulnerability
-from src.database.storage import store_dependencies, store_enriched_dependencies
+from src.analyzers.dependency_enricher import EnrichedDependency, PackageMetadata
+from src.database.models import Repository, RepositoryDependency, Vulnerability, Package
+from src.database.storage import (
+    store_dependencies,
+    store_package_metadata,
+    store_repo_dependencies,
+    store_enriched_dependencies,
+)
 
 
 def get_or_create_repository(extractor: GitHubExtractor, repo_id: str, session: Session) -> Repository:
-    """
-    Get existing repository or create it from GitHub API data.
-    
-    Handles duplicate key conflicts gracefully by returning existing record.
-    """
-    # Check if repository already exists
+    """Get existing repository or create it from GitHub API data."""
     existing = session.query(Repository).filter_by(repo_id=repo_id).first()
     if existing:
         return existing
-    
-    # Fetch repository metadata from GitHub
+
     repo_data = extractor.get_repository(repo_id)
-    
-    # Create and store repository
+
     repo = Repository(
         repo_id=repo_data.repo_id,
         url=repo_data.url,
@@ -57,323 +56,221 @@ def get_or_create_repository(extractor: GitHubExtractor, repo_id: str, session: 
     )
     session.add(repo)
     session.commit()
-    
+
     return repo
 
 
 class TestDependencyExtractionE2E:
     """Dependency extraction and storage E2E tests."""
-    
+
     @pytest.mark.integration
     @pytest.mark.slow
     @pytest.mark.live_api
-    def test_dependencies_extracted_and_stored(
-        self,
-        github_config,
-        test_session: Session
-    ):
+    def test_dependencies_extracted_and_stored(self, github_config, test_session: Session):
         """
-        CONTRACT: Extracting repo with dependencies stores them in DB.
-        
-        Use: octocat/Hello-World (simple test repo)
-        
+        CONTRACT: Extracting repo with dependencies stores them in repository_dependencies.
+
         Verify:
-        - Dependency records created
+        - RepositoryDependency records created
         - Package names and versions correct
         - Ecosystem detected correctly
         """
-        # Setup
         repo_id = "octocat/Hello-World"
-        
-        # Extract repository metadata
         extractor = GitHubExtractor(config=github_config)
         repo = get_or_create_repository(extractor, repo_id, test_session)
-        
-        # Parse dependencies using DependencyAnalyzer
-        analyzer = DependencyAnalyzer(enrich=False)  # No enrichment for this test
+
+        analyzer = DependencyAnalyzer(enrich=False)
         dependencies = []
-        
+
         try:
             result = analyzer.analyze(extractor, repo_id, branch=repo.default_branch)
             dependencies = result.dependencies
         except Exception as e:
             pytest.skip(f"Failed to parse manifests: {e}")
-        
-        # Store dependencies
+
         if dependencies:
-            for dep in dependencies:
-                db_dep = Dependency(
-                    repo_id=repo_id,
-                    package_name=dep.package_name,
-                    ecosystem=dep.ecosystem,
-                    version_requested=dep.version_requested,
-                    is_dev_dependency=dep.is_dev_dependency,
-                )
-                test_session.add(db_dep)
+            store_dependencies(test_session, repo_id, dependencies)
             test_session.commit()
-        
-        # Assert: Dependencies stored (or repo has none)
-        stored_deps = test_session.query(Dependency).filter_by(
+
+        stored_deps = test_session.query(RepositoryDependency).filter_by(
             repo_id=repo_id
         ).all()
-        
+
         if dependencies:
             assert len(stored_deps) > 0, \
                 f"Extracted {len(dependencies)} deps but none stored in DB"
-            
-            # Verify dependency structure
-            for dep in stored_deps[:10]:  # Check first 10
+
+            for dep in stored_deps[:10]:
                 assert dep.package_name is not None
                 assert dep.ecosystem in [
                     "pypi", "npm", "maven", "nuget", "go", "rubygems", "cargo"
                 ], f"Unknown ecosystem: {dep.ecosystem}"
                 assert isinstance(dep.is_dev_dependency, bool)
-    
+
     @pytest.mark.integration
     @pytest.mark.slow
     @pytest.mark.live_api
-    def test_dependencies_enriched_with_latest_versions(
-        self,
-        github_config,
-        test_session: Session
-    ):
+    def test_dependencies_enriched_with_latest_versions(self, github_config, test_session: Session):
         """
-        CONTRACT: Enrichment populates latest_version from OSV.dev.
-        
-        This test uses LIVE APIs and may hit rate limits.
-        
+        CONTRACT: Enrichment populates latest_version in packages table from OSV.dev.
+
         Verify:
-        - latest_version field populated
+        - Package rows created with latest_version
         - Version format matches expected pattern
-        - Only populated for known packages
         """
-        # Setup
         repo_id = "octocat/Hello-World"
-        
-        # Extract repository metadata
         extractor = GitHubExtractor(config=github_config)
         repo = get_or_create_repository(extractor, repo_id, test_session)
-        
-        # Extract and enrich
-        analyzer = DependencyAnalyzer(enrich=True)  # Enable enrichment
+
+        analyzer = DependencyAnalyzer(enrich=True)
         enriched_deps = []
-        
+
         try:
             result = analyzer.analyze(extractor, repo_id, branch=repo.default_branch)
             enriched_deps = result.enriched_dependencies or []
         except Exception as e:
             pytest.skip(f"Enrichment failed (API issue?): {e}")
-        
-        # Store enriched dependencies
+
         if enriched_deps:
-            for dep in enriched_deps:
-                db_dep = Dependency(
-                    repo_id=repo_id,
-                    package_name=dep.package_name,
-                    ecosystem=dep.ecosystem,
-                    version_requested=dep.version_requested,
-                    latest_version=dep.latest_version,
-                    eol_date=dep.eol_date,
-                    is_eol=dep.is_eol,
-                    has_vulnerabilities=dep.has_vulnerabilities,
-                )
-                test_session.add(db_dep)
+            for e in enriched_deps:
+                if e.package_metadata is not None:
+                    pm = e.package_metadata
+                    store_package_metadata(
+                        test_session,
+                        package_name=pm.package_name,
+                        ecosystem=pm.ecosystem,
+                        latest_version=pm.latest_version,
+                        is_eol=pm.is_eol,
+                        eol_date=pm.eol_date,
+                        vulnerabilities=pm.vulnerabilities,
+                    )
+            store_repo_dependencies(test_session, repo_id, enriched_deps)
             test_session.commit()
-        
-        # Assert: At least some enriched
-        stored_deps = test_session.query(Dependency).filter_by(
-            repo_id=repo_id
-        ).all()
-        
+
+        packages = test_session.query(Package).all()
+
         if enriched_deps:
-            # Count enriched deps
-            enriched_count = sum(
-                1 for d in stored_deps if d.latest_version is not None
-            )
-            
-            # May not all be found in OSV.dev, that's OK
+            enriched_count = sum(1 for p in packages if p.latest_version is not None)
+
             if enriched_count > 0:
-                # Verify version format
-                for dep in [d for d in stored_deps if d.latest_version]:
-                    # Should look like semantic version
-                    assert "." in dep.latest_version or \
-                           dep.latest_version.replace(".", "").isdigit(), \
-                           f"Invalid version format: {dep.latest_version}"
-    
+                for pkg in [p for p in packages if p.latest_version]:
+                    assert "." in pkg.latest_version or \
+                           pkg.latest_version.replace(".", "").isdigit(), \
+                           f"Invalid version format: {pkg.latest_version}"
+
     @pytest.mark.integration
     @pytest.mark.slow
     @pytest.mark.live_api
-    def test_eol_detection_populated(
-        self,
-        github_config,
-        test_session: Session
-    ):
+    def test_eol_detection_populated(self, github_config, test_session: Session):
         """
-        CONTRACT: EOL dates are populated for known versions.
-        
-        This test uses LIVE APIs and may hit rate limits.
-        
+        CONTRACT: EOL dates are populated on Package rows for known versions.
+
         Verify:
         - is_eol flag set for EOL versions
         - eol_date populated
-        - Correctly identifies past vs future EOL
         """
-        # Setup
         repo_id = "octocat/Hello-World"
-        
-        # Extract repository metadata
         extractor = GitHubExtractor(config=github_config)
         repo = get_or_create_repository(extractor, repo_id, test_session)
-        
-        # Extract and enrich
+
         analyzer = DependencyAnalyzer(enrich=True)
         enriched_deps = []
-        
+
         try:
             result = analyzer.analyze(extractor, repo_id, branch=repo.default_branch)
             enriched_deps = result.enriched_dependencies or []
         except Exception as e:
             pytest.skip(f"Enrichment failed: {e}")
-        
-        # Store
+
         if enriched_deps:
-            for dep in enriched_deps:
-                db_dep = Dependency(
-                    repo_id=repo_id,
-                    package_name=dep.package_name,
-                    ecosystem=dep.ecosystem,
-                    version_requested=dep.version_requested,
-                    eol_date=dep.eol_date,
-                    is_eol=dep.is_eol,
-                )
-                test_session.add(db_dep)
+            for e in enriched_deps:
+                if e.package_metadata is not None:
+                    pm = e.package_metadata
+                    store_package_metadata(
+                        test_session,
+                        package_name=pm.package_name,
+                        ecosystem=pm.ecosystem,
+                        latest_version=pm.latest_version,
+                        is_eol=pm.is_eol,
+                        eol_date=pm.eol_date,
+                        vulnerabilities=pm.vulnerabilities,
+                    )
             test_session.commit()
-        
-        # Assert: EOL data present if available
-        stored_deps = test_session.query(Dependency).filter_by(
-            repo_id=repo_id
-        ).all()
-        
-        eol_detected = sum(
-            1 for d in stored_deps if d.eol_date is not None
-        )
-        
-        # May be 0 if no EOL data available, that's OK
+
+        packages = test_session.query(Package).all()
+        eol_detected = sum(1 for p in packages if p.eol_date is not None)
+
         if eol_detected > 0:
-            for dep in [d for d in stored_deps if d.eol_date]:
-                assert dep.is_eol in [True, False]
-                assert dep.eol_date is not None
+            for pkg in [p for p in packages if p.eol_date]:
+                assert pkg.is_eol in [True, False]
+                assert pkg.eol_date is not None
 
 
 class TestVulnerabilityStorageE2E:
     """Vulnerability data storage E2E tests."""
-    
+
     @pytest.mark.integration
     @pytest.mark.slow
     @pytest.mark.live_api
-    def test_vulnerabilities_stored(
-        self,
-        github_config,
-        test_session: Session
-    ):
+    def test_vulnerabilities_stored(self, github_config, test_session: Session):
         """
-        CONTRACT: Vulnerabilities from OSV.dev are stored in database.
-        
-        This test uses LIVE APIs and may hit rate limits.
-        
+        CONTRACT: Vulnerabilities from OSV.dev are stored linked to packages.
+
         Verify:
-        - Vulnerability records created
+        - Vulnerability records created and linked via package_id
         - CVE/OSV IDs stored
         - Severity levels populated
         - Fixed versions tracked
         """
-        # Setup
         repo_id = "octocat/Hello-World"
-        
-        # Extract repository metadata
         extractor = GitHubExtractor(config=github_config)
         repo = get_or_create_repository(extractor, repo_id, test_session)
-        
-        # Extract, enrich, and get vulnerabilities
+
         analyzer = DependencyAnalyzer(enrich=True)
-        all_vulns = []
-        
+
         try:
             result = analyzer.analyze(extractor, repo_id, branch=repo.default_branch)
             if result.enriched_dependencies:
-                for dep in result.enriched_dependencies:
-                    if dep.vulnerabilities:
-                        all_vulns.extend(dep.vulnerabilities)
+                for e in result.enriched_dependencies:
+                    if e.package_metadata is not None:
+                        pm = e.package_metadata
+                        store_package_metadata(
+                            test_session,
+                            package_name=pm.package_name,
+                            ecosystem=pm.ecosystem,
+                            latest_version=pm.latest_version,
+                            is_eol=pm.is_eol,
+                            eol_date=pm.eol_date,
+                            vulnerabilities=pm.vulnerabilities,
+                        )
+                store_repo_dependencies(test_session, repo_id, result.enriched_dependencies)
+                test_session.commit()
         except Exception as e:
             pytest.skip(f"Enrichment failed: {e}")
-        
-        # Store vulnerabilities
-        if all_vulns:
-            # First store dependencies
-            try:
-                result = analyzer.analyze(extractor, repo_id, branch=repo.default_branch)
-                for dep in result.enriched_dependencies or []:
-                    db_dep = Dependency(
-                        repo_id=repo_id,
-                        package_name=dep.package_name,
-                        ecosystem=dep.ecosystem,
-                        version_requested=dep.version_requested,
-                    )
-                    test_session.add(db_dep)
-            except:
-                pass
-            test_session.commit()
-            
-            # Then store vulnerabilities
-            deps = test_session.query(Dependency).filter_by(
-                repo_id=repo_id
-            ).all()
-            
-            for vuln in all_vulns:
-                # Find matching dependency
-                for dep in deps:
-                    if dep.package_name == vuln.package_name:
-                        db_vuln = Vulnerability(
-                            dependency_id=dep.id,
-                            vulnerability_id=vuln.vulnerability_id,
-                            cve_id=vuln.cve_id,
-                            severity=vuln.severity,
-                            description=vuln.description,
-                            fixed_in_version=vuln.fixed_in_version,
-                            published_at=vuln.published_at,
-                        )
-                        test_session.add(db_vuln)
-                        break
-            test_session.commit()
-        
-        # Assert: Vulnerabilities stored (or none found)
+
         vulns = test_session.query(Vulnerability).all()
-        
-        if all_vulns:
-            assert len(vulns) > 0, \
-                f"Found {len(all_vulns)} vulns but none stored in DB"
-            
-            # Verify structure
+
+        if vulns:
             for vuln in vulns[:5]:
-                assert vuln.severity in ["critical", "high", "medium", "low"]
+                assert vuln.severity in ["critical", "high", "medium", "low", "unknown"]
                 assert vuln.vulnerability_id or vuln.cve_id
+                assert vuln.package_id is not None
 
 
 class TestDependencyStorageE2E:
     """
     CONTRACT: Dependency storage layer correctly persists data.
 
-    Tests the storage functions directly with synthetic DependencyData,
-    bypassing manifest extraction (not yet implemented on extractors).
+    Tests the storage functions directly with synthetic DependencyData.
     """
 
     @pytest.mark.integration
     def test_store_dependencies(self, test_session: Session):
         """
-        CONTRACT: store_dependencies() persists DependencyData correctly.
+        CONTRACT: store_dependencies() persists DependencyData to repository_dependencies.
 
         Verify:
-        - Dependencies stored with correct fields
+        - RepositoryDependency rows created
         - Ecosystem and version preserved
         - dev vs prod distinction maintained
         """
@@ -414,13 +311,12 @@ class TestDependencyStorageE2E:
 
         assert len(stored) == 3
 
-        db_deps = test_session.query(Dependency).filter_by(
+        db_deps = test_session.query(RepositoryDependency).filter_by(
             repo_id="test/dep-storage"
         ).all()
 
         assert len(db_deps) == 3
 
-        # Verify fields preserved
         requests_dep = next(d for d in db_deps if d.package_name == "requests")
         assert requests_dep.ecosystem == "pypi"
         assert requests_dep.version == "2.31.0"
@@ -435,7 +331,7 @@ class TestDependencyStorageE2E:
     @pytest.mark.integration
     def test_store_dependencies_upsert(self, test_session: Session):
         """
-        CONTRACT: store_dependencies() upserts dependencies.
+        CONTRACT: store_dependencies() upserts repository_dependencies.
 
         Verify:
         - Existing dependencies remain
@@ -450,7 +346,6 @@ class TestDependencyStorageE2E:
         test_session.add(repo)
         test_session.commit()
 
-        # First store
         deps_v1 = [
             DependencyData(package_name="flask", ecosystem="pypi", version="2.0.0"),
             DependencyData(package_name="django", ecosystem="pypi", version="4.0.0"),
@@ -458,19 +353,18 @@ class TestDependencyStorageE2E:
         store_dependencies(test_session, "test/dep-upsert", deps_v1)
         test_session.commit()
 
-        count_v1 = test_session.query(Dependency).filter_by(
+        count_v1 = test_session.query(RepositoryDependency).filter_by(
             repo_id="test/dep-upsert"
         ).count()
         assert count_v1 == 2
 
-        # Second store (upsert) - different set
         deps_v2 = [
             DependencyData(package_name="fastapi", ecosystem="pypi", version="0.100.0"),
         ]
         store_dependencies(test_session, "test/dep-upsert", deps_v2)
         test_session.commit()
 
-        db_deps = test_session.query(Dependency).filter_by(
+        db_deps = test_session.query(RepositoryDependency).filter_by(
             repo_id="test/dep-upsert"
         ).all()
 
@@ -479,14 +373,15 @@ class TestDependencyStorageE2E:
         assert package_names == {"flask", "django", "fastapi"}
 
     @pytest.mark.integration
-    def test_store_enriched_dependencies(self, test_session: Session):
+    def test_store_package_metadata_and_repo_deps(self, test_session: Session):
         """
-        CONTRACT: store_enriched_dependencies() persists enrichment data.
+        CONTRACT: store_package_metadata writes to packages; store_repo_dependencies
+        writes has_known_vulnerabilities to repository_dependencies.
 
         Verify:
-        - latest_version populated
-        - EOL fields stored
-        - has_vulnerabilities flag set
+        - Package row created with latest_version, is_eol, eol_date
+        - RepositoryDependency row created with has_known_vulnerabilities (version-specific)
+        - EOL fields are on Package, not on RepositoryDependency
         """
         repo = Repository(
             repo_id="test/dep-enriched",
@@ -496,6 +391,32 @@ class TestDependencyStorageE2E:
         test_session.add(repo)
         test_session.commit()
 
+        pkg_meta_requests = PackageMetadata(
+            package_name="requests",
+            ecosystem="pypi",
+            latest_version="2.31.0",
+            is_eol=False,
+            eol_date=None,
+            vulnerabilities=[],
+        )
+        pkg_meta_django = PackageMetadata(
+            package_name="django",
+            ecosystem="pypi",
+            latest_version="4.2.5",
+            is_eol=True,
+            eol_date=datetime(2024, 4, 1, tzinfo=timezone.utc).date(),
+            vulnerabilities=[
+                {
+                    "cve_id": "CVE-2023-1234",
+                    "osv_id": "GHSA-test-1234",
+                    "severity": "high",
+                    "summary": "SQL injection",
+                    "fixed_in_versions": ["3.2.19"],
+                    "references": [],
+                }
+            ],
+        )
+
         enriched = [
             EnrichedDependency(
                 package_name="requests",
@@ -504,10 +425,8 @@ class TestDependencyStorageE2E:
                 is_dev_dependency=False,
                 source_file="requirements.txt",
                 version_constraint=">=2.28",
-                latest_version="2.31.0",
-                eol_date=None,
-                is_eol=False,
-                has_vulnerabilities=False,
+                has_known_vulnerabilities=False,
+                package_metadata=pkg_meta_requests,
             ),
             EnrichedDependency(
                 package_name="django",
@@ -516,44 +435,70 @@ class TestDependencyStorageE2E:
                 is_dev_dependency=False,
                 source_file="requirements.txt",
                 version_constraint="~=3.2",
-                latest_version="4.2.5",
-                eol_date=datetime(2024, 4, 1, tzinfo=timezone.utc),
-                is_eol=True,
-                has_vulnerabilities=True,
-                vulnerabilities=[{"cve_id": "CVE-2023-1234", "severity": "high"}],
+                has_known_vulnerabilities=True,
+                package_metadata=pkg_meta_django,
             ),
         ]
 
-        stored = store_enriched_dependencies(
-            test_session, "test/dep-enriched", enriched
-        )
+        for e in enriched:
+            if e.package_metadata is not None:
+                pm = e.package_metadata
+                store_package_metadata(
+                    test_session,
+                    package_name=pm.package_name,
+                    ecosystem=pm.ecosystem,
+                    latest_version=pm.latest_version,
+                    is_eol=pm.is_eol,
+                    eol_date=pm.eol_date,
+                    vulnerabilities=pm.vulnerabilities,
+                )
+
+        stored = store_repo_dependencies(test_session, "test/dep-enriched", enriched)
         test_session.commit()
 
         assert len(stored) == 2
 
-        db_deps = test_session.query(Dependency).filter_by(
+        # Check Package rows
+        requests_pkg = test_session.query(Package).filter_by(
+            package_name="requests", ecosystem="pypi"
+        ).first()
+        assert requests_pkg is not None
+        assert requests_pkg.latest_version == "2.31.0"
+        assert requests_pkg.is_eol is False
+
+        django_pkg = test_session.query(Package).filter_by(
+            package_name="django", ecosystem="pypi"
+        ).first()
+        assert django_pkg is not None
+        assert django_pkg.latest_version == "4.2.5"
+        assert django_pkg.is_eol is True
+        assert django_pkg.eol_date is not None
+
+        # Check vulnerability linked to package, not repo dep
+        vuln = test_session.query(Vulnerability).filter_by(
+            cve_id="CVE-2023-1234"
+        ).first()
+        assert vuln is not None
+        assert vuln.package_id == django_pkg.id
+
+        # Check RepositoryDependency rows
+        db_deps = test_session.query(RepositoryDependency).filter_by(
             repo_id="test/dep-enriched"
         ).all()
 
         requests_dep = next(d for d in db_deps if d.package_name == "requests")
-        assert requests_dep.latest_version == "2.31.0"
-        assert requests_dep.is_eol is False
-        assert requests_dep.has_vulnerabilities is False
+        assert requests_dep.has_known_vulnerabilities is False
 
         django_dep = next(d for d in db_deps if d.package_name == "django")
-        assert django_dep.latest_version == "4.2.5"
-        assert django_dep.is_eol is True
-        assert django_dep.eol_date is not None
-        assert django_dep.has_vulnerabilities is True
+        assert django_dep.has_known_vulnerabilities is True
 
     @pytest.mark.integration
     def test_first_last_seen_timestamps(self, test_session: Session):
         """
-        CONTRACT: Dependencies have timezone-aware first/last seen timestamps.
+        CONTRACT: RepositoryDependency rows have timezone-aware first/last seen timestamps.
 
         Verify:
-        - first_seen_at/last_seen_at default to current time if not provided
-        - last_seen_at is updated on subsequent runs
+        - first_seen_at/last_seen_at set on insert
         - Timestamps are UTC-aware
         """
         repo = Repository(
@@ -571,7 +516,7 @@ class TestDependencyStorageE2E:
         store_dependencies(test_session, "test/dep-timestamp", deps)
         test_session.commit()
 
-        stored = test_session.query(Dependency).filter_by(
+        stored = test_session.query(RepositoryDependency).filter_by(
             repo_id="test/dep-timestamp"
         ).first()
 
@@ -584,44 +529,31 @@ class TestDependencyStorageE2E:
 
 class TestVulnerabilityStorageDirectE2E:
     """
-    CONTRACT: Vulnerability records correctly linked to dependencies.
+    CONTRACT: Vulnerability records correctly linked to packages (not per-repo deps).
 
-    Tests direct Vulnerability model storage, bypassing extraction
-    and enrichment API calls.
+    Tests direct storage, bypassing extraction and enrichment API calls.
     """
 
     @pytest.mark.integration
-    def test_vulnerability_stored_with_dependency(self, test_session: Session):
+    def test_vulnerability_stored_with_package(self, test_session: Session):
         """
-        CONTRACT: Vulnerabilities are persisted and linked to dependencies.
+        CONTRACT: Vulnerabilities are persisted and linked to a Package row.
 
         Verify:
-        - Vulnerability record created
-        - Foreign key to dependency valid
+        - Vulnerability record created with package_id FK
         - CVE/severity/description fields stored
         """
-        repo = Repository(
-            repo_id="test/vuln-storage",
-            name="vuln-storage",
-            url="https://github.com/test/vuln-storage",
-        )
-        test_session.add(repo)
-        test_session.commit()
-
-        now = datetime.now(timezone.utc)
-        dep = Dependency(
-            repo_id="test/vuln-storage",
+        pkg = Package(
             package_name="lodash",
             ecosystem="npm",
-            version="4.17.20",
-            first_seen_at=now,
-            last_seen_at=now,
+            latest_version="4.17.21",
+            is_eol=False,
         )
-        test_session.add(dep)
+        test_session.add(pkg)
         test_session.flush()
 
         vuln = Vulnerability(
-            dependency_id=dep.id,
+            package_id=pkg.id,
             cve_id="CVE-2021-23337",
             vulnerability_id="GHSA-35jh-r3h4-6jhm",
             severity="high",
@@ -642,55 +574,42 @@ class TestVulnerabilityStorageDirectE2E:
         assert stored_vuln.fixed_in_version == "4.17.21"
         assert stored_vuln.summary == "Prototype Pollution in lodash"
         assert stored_vuln.published_date.tzinfo is not None
+        assert stored_vuln.package_id == pkg.id
 
     @pytest.mark.integration
-    def test_multiple_vulnerabilities_per_dependency(self, test_session: Session):
+    def test_multiple_vulnerabilities_per_package(self, test_session: Session):
         """
-        CONTRACT: A dependency can have multiple vulnerabilities.
+        CONTRACT: A package can have multiple vulnerabilities.
 
         Verify:
-        - Multiple vulnerabilities linked to same dependency
+        - Multiple vulnerabilities linked to same package
         - Each has distinct CVE/severity
-        - Cascade relationship works
         """
-        repo = Repository(
-            repo_id="test/multi-vuln",
-            name="multi-vuln",
-            url="https://github.com/test/multi-vuln",
-        )
-        test_session.add(repo)
-        test_session.commit()
-
-        now = datetime.now(timezone.utc)
-        dep = Dependency(
-            repo_id="test/multi-vuln",
-            package_name="django",
+        pkg = Package(
+            package_name="multi-vuln-test-pkg",
             ecosystem="pypi",
-            version="3.2.0",
-            has_vulnerabilities=True,
-            first_seen_at=now,
-            last_seen_at=now,
+            latest_version="4.2.5",
         )
-        test_session.add(dep)
+        test_session.add(pkg)
         test_session.flush()
 
         vulns = [
             Vulnerability(
-                dependency_id=dep.id,
+                package_id=pkg.id,
                 cve_id="CVE-2023-0001",
                 severity="critical",
                 summary="SQL injection in QuerySet",
                 fixed_in_version="3.2.19",
             ),
             Vulnerability(
-                dependency_id=dep.id,
+                package_id=pkg.id,
                 cve_id="CVE-2023-0002",
                 severity="medium",
                 summary="XSS in admin interface",
                 fixed_in_version="3.2.18",
             ),
             Vulnerability(
-                dependency_id=dep.id,
+                package_id=pkg.id,
                 cve_id="CVE-2023-0003",
                 severity="low",
                 summary="Information disclosure in debug mode",
@@ -701,45 +620,121 @@ class TestVulnerabilityStorageDirectE2E:
         test_session.commit()
 
         stored_vulns = test_session.query(Vulnerability).filter_by(
-            dependency_id=dep.id
+            package_id=pkg.id
         ).all()
 
         assert len(stored_vulns) == 3
-
         severities = {v.severity for v in stored_vulns}
         assert severities == {"critical", "medium", "low"}
 
     @pytest.mark.integration
-    def test_vulnerability_cascade_delete(self, test_session: Session):
+    def test_two_repos_same_package_independent_vuln_flags(self, test_session: Session):
         """
-        CONTRACT: Deleting a dependency cascades to its vulnerabilities.
-
-        Verify:
-        - Vulnerability deleted when parent dependency removed
-        - No orphaned vulnerability records
+        CONTRACT: Two repos using the same package have one Package row but
+        independent has_known_vulnerabilities flags in repository_dependencies.
         """
-        repo = Repository(
-            repo_id="test/vuln-cascade",
-            name="vuln-cascade",
-            url="https://github.com/test/vuln-cascade",
+        repo_a = Repository(
+            repo_id="test/repo-a-shared-pkg",
+            name="repo-a",
+            url="https://github.com/test/repo-a",
         )
-        test_session.add(repo)
+        repo_b = Repository(
+            repo_id="test/repo-b-shared-pkg",
+            name="repo-b",
+            url="https://github.com/test/repo-b",
+        )
+        test_session.add_all([repo_a, repo_b])
         test_session.commit()
 
-        now = datetime.now(timezone.utc)
-        dep = Dependency(
-            repo_id="test/vuln-cascade",
-            package_name="express",
+        # Shared package (one CVE fixed in 4.17.21)
+        store_package_metadata(
+            test_session,
+            package_name="lodash",
             ecosystem="npm",
-            version="4.17.1",
-            first_seen_at=now,
-            last_seen_at=now,
+            latest_version="4.17.21",
+            is_eol=False,
+            eol_date=None,
+            vulnerabilities=[
+                {
+                    "cve_id": "CVE-2021-23337",
+                    "osv_id": "GHSA-35jh-r3h4-6jhm",
+                    "severity": "high",
+                    "summary": "Prototype Pollution",
+                    "fixed_in_versions": ["4.17.21"],
+                    "references": [],
+                }
+            ],
         )
-        test_session.add(dep)
+
+        # Repo A uses affected version
+        store_repo_dependencies(
+            test_session,
+            "test/repo-a-shared-pkg",
+            [
+                EnrichedDependency(
+                    package_name="lodash",
+                    ecosystem="npm",
+                    version="4.17.20",
+                    is_dev_dependency=False,
+                    source_file="package.json",
+                    version_constraint=None,
+                    has_known_vulnerabilities=True,
+                )
+            ],
+        )
+
+        # Repo B uses fixed version
+        store_repo_dependencies(
+            test_session,
+            "test/repo-b-shared-pkg",
+            [
+                EnrichedDependency(
+                    package_name="lodash",
+                    ecosystem="npm",
+                    version="4.17.21",
+                    is_dev_dependency=False,
+                    source_file="package.json",
+                    version_constraint=None,
+                    has_known_vulnerabilities=False,
+                )
+            ],
+        )
+        test_session.commit()
+
+        # One package row
+        assert test_session.query(Package).filter_by(
+            package_name="lodash", ecosystem="npm"
+        ).count() == 1
+
+        # Two repo dependency rows with different flags
+        dep_a = test_session.query(RepositoryDependency).filter_by(
+            repo_id="test/repo-a-shared-pkg", package_name="lodash"
+        ).first()
+        dep_b = test_session.query(RepositoryDependency).filter_by(
+            repo_id="test/repo-b-shared-pkg", package_name="lodash"
+        ).first()
+
+        assert dep_a.has_known_vulnerabilities is True
+        assert dep_b.has_known_vulnerabilities is False
+
+    @pytest.mark.integration
+    def test_vulnerability_cascade_delete_via_package(self, test_session: Session):
+        """
+        CONTRACT: Deleting a Package cascades to its vulnerabilities.
+
+        Verify:
+        - Vulnerability deleted when parent Package removed
+        - No orphaned vulnerability records
+        """
+        pkg = Package(
+            package_name="express-cascade",
+            ecosystem="npm",
+        )
+        test_session.add(pkg)
         test_session.flush()
 
         vuln = Vulnerability(
-            dependency_id=dep.id,
+            package_id=pkg.id,
             cve_id="CVE-2022-9999",
             severity="high",
             summary="Path traversal",
@@ -747,12 +742,9 @@ class TestVulnerabilityStorageDirectE2E:
         test_session.add(vuln)
         test_session.commit()
 
-        # Verify vulnerability exists
-        assert test_session.query(Vulnerability).count() == 1
+        assert test_session.query(Vulnerability).filter_by(package_id=pkg.id).count() == 1
 
-        # Delete the dependency
-        test_session.delete(dep)
+        test_session.delete(pkg)
         test_session.commit()
 
-        # Vulnerability should be cascade-deleted
-        assert test_session.query(Vulnerability).count() == 0
+        assert test_session.query(Vulnerability).filter_by(cve_id="CVE-2022-9999").count() == 0

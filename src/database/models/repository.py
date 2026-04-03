@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from src.database.models.branch_metric import BranchMetric
     from src.database.models.commit import Commit
     from src.database.models.contributor import ContributorMetric
-    from src.database.models.dependency import Dependency
+    from src.database.models.dependency import RepositoryDependency
     from src.database.models.repository_language import RepositoryLanguage
     from src.database.models.organization import Project
     from src.database.models.pull_request import PullRequest
@@ -66,7 +66,7 @@ class Repository(Base):
     languages: Mapped[list["RepositoryLanguage"]] = relationship(
         back_populates="repository", cascade="all, delete-orphan"
     )
-    dependencies: Mapped[list["Dependency"]] = relationship(
+    repo_dependencies: Mapped[list["RepositoryDependency"]] = relationship(
         back_populates="repository", cascade="all, delete-orphan"
     )
     quality_metrics: Mapped[list["CodeQualityMetric"]] = relationship(
@@ -123,7 +123,7 @@ class Branch(Base):
     languages: Mapped[list["RepositoryLanguage"]] = relationship(
         back_populates="branch", cascade="all, delete-orphan"
     )
-    dependencies: Mapped[list["Dependency"]] = relationship(
+    repo_dependencies: Mapped[list["RepositoryDependency"]] = relationship(
         back_populates="branch", cascade="all, delete-orphan"
     )
     quality_metrics: Mapped[list["CodeQualityMetric"]] = relationship(
