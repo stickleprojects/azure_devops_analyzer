@@ -166,3 +166,10 @@ DO $$ BEGIN
         ALTER INDEX idx_dep_security RENAME TO idx_repodep_security_old;
     END IF;
 END $$;
+
+-- ── Phase 6: Re-apply reporting views ────────────────────────────────────────
+-- Views created by migration 011 referenced the old `dependencies` table and
+-- have_vulnerabilities column.  Now that the schema has changed, recreate all
+-- reporting views against the new `repository_dependencies` + `packages` tables.
+
+\ir ../views.sql
