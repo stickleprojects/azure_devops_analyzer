@@ -50,11 +50,18 @@ def _ensure_time_bucket_support(conn):
     Preferred path is enabling TimescaleDB extension. If extension activation is
     unavailable in the current test environment, fall back to a compatible
     SQL shim based on date_bin.
+
+    A SAVEPOINT wraps the CREATE EXTENSION attempt so that if TimescaleDB is
+    not installed (e.g. plain postgres:16 in local dev), the outer transaction
+    is not left in an aborted state and subsequent SQL statements still work.
     """
     try:
+        conn.execute(text("SAVEPOINT sp_timescale_ext"))
         conn.execute(text("CREATE EXTENSION IF NOT EXISTS timescaledb;"))
+        conn.execute(text("RELEASE SAVEPOINT sp_timescale_ext"))
         print("\n✓ Ensured TimescaleDB extension")
     except Exception as exc:
+        conn.execute(text("ROLLBACK TO SAVEPOINT sp_timescale_ext"))
         print(f"\n⚠ Could not enable TimescaleDB extension ({exc}); checking fallback")
 
     has_time_bucket = conn.execute(

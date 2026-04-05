@@ -1,4 +1,4 @@
--- Migration 013: Normalise package metadata into a dedicated packages table
+-- Migration 014: Normalise package metadata into a dedicated packages table
 --
 -- Splits the dependencies table into:
 --   packages              — version-agnostic global facts (EOL, latest version)
@@ -78,7 +78,7 @@ DO $$ BEGIN
 END $$;
 
 -- Drop all views that reference dependency_id or the old dependencies table
--- before we rename columns/tables.  Migration 013 re-applies views.sql at the
+-- before we rename columns/tables.  Migration 014 re-applies views.sql at the
 -- end once the schema is in its final state.
 DROP VIEW IF EXISTS v_service_repository_breakdown CASCADE;
 DROP VIEW IF EXISTS v_service_vulnerabilities_by_severity CASCADE;
