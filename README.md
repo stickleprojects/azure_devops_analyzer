@@ -21,8 +21,7 @@ This system analyzes repositories from multiple platforms (Azure DevOps and GitH
 
 Use the helper to bootstrap the Docker stack, create `.env`, initialize the schema, and start extraction:
 
-- PowerShell (Windows/macOS/Linux): `pwsh ./Start-RepoAnalysis.ps1 -RegenerateEnv`
-- Bash (macOS/Linux/Git Bash): `./Start-RepoAnalysis.sh --regenerate-env`
+- Bash (macOS/Linux/Git Bash on Windows): `./Start-RepoAnalysis.sh --regenerate-env`
 
 What happens:
 
@@ -34,8 +33,9 @@ What happens:
 To start analysis manually without the helper:
 
 1. Copy and edit `.env` from `.env.example`
-2. Start services: `docker compose up -d`
-3. Submit a run: `docker compose run --rm scheduler python /app/scripts/submit_extraction_task.py`
+2. Resolve environment variable references: `bash ./scripts/resolve_env.sh > .env.resolved`
+3. Start services: `docker compose --env-file .env.resolved up -d`
+4. Submit a run: `docker compose --env-file .env.resolved run --rm scheduler python /app/scripts/submit_extraction_task.py`
 
 How to know it is running:
 
@@ -44,7 +44,7 @@ How to know it is running:
 - Flower UI at `http://localhost:5555`
 - Grafana dashboards at `http://localhost:3000` (admin/admin)
 
-See [Start-RepoAnalysis.ps1](Start-RepoAnalysis.ps1#L1-L50) for parameters and examples.
+See [Start-RepoAnalysis.sh](Start-RepoAnalysis.sh#L1-L50) for parameters and examples.
 
 ## Documentation Structure
 
@@ -95,10 +95,11 @@ Start with [docs/README.md](docs/README.md) for role-based navigation, then revi
 
 ## Requirements
 
+- Docker with Compose V2
+- Bash 4.0+ for `Start-RepoAnalysis.sh`
 - Azure DevOps organization access
 - Personal Access Token (PAT) with appropriate permissions
 - PostgreSQL 15+ with TimescaleDB
-- Python 3.11+
 - Grafana 10+
 - RabbitMQ 3.12+
 
@@ -141,11 +142,13 @@ See [scripts/README.md](scripts/README.md) for full reference and step-by-step d
 azure-devops-analyzer/
 ├── docs/                    # This documentation
 ├── src/
-│   ├── extractors/         # Azure DevOps data extraction
-│   ├── analyzers/          # Code analysis modules
-│   ├── storage/            # Database models and operations
-│   ├── scheduler/          # Job scheduling and tasks
-│   └── utils/              # Shared utilities
+│   ├── analyzers/          # Platform-agnostic analysis modules
+│   ├── api/                # API-facing entry points and integration surfaces
+│   ├── config/             # Runtime configuration
+│   ├── database/           # Database models and storage layer
+│   ├── extractors/         # GitHub and Azure DevOps data extraction
+│   ├── scheduler/          # Job scheduling and task submission
+│   └── workflows/          # Orchestration across extractors and analyzers
 ├── dashboards/             # Grafana dashboard definitions
 ├── database/               # Database schema and migrations
 ├── tests/                  # Unit and integration tests

@@ -2,6 +2,79 @@
 
 ---
 
+## Session: 2026-04-05 - PR Documentation Check Added
+
+### Summary
+
+Added documentation validation as a dedicated GitHub Actions PR check and
+updated the related CI/branch-protection documentation.
+
+### What Was Done
+
+- Added a `Documentation Validation` job to `.github/workflows/tests.yml`
+- Configured the job to validate both `README.md` and the `docs/` tree using
+  `scripts/validate-documentation.sh`
+- Updated `docs/03-operations/github-actions-tests.md` to document the new
+  check name and CI behavior
+- Updated `docs/03-operations/branch-protection-setup.md` to mention the
+  `Documentation Validation` and `CI Tests` check names for PR protection
+
+### Validation
+
+- Ran `bash scripts/validate-documentation.sh docs/03-operations/github-actions-tests.md`
+- Ran `bash scripts/validate-documentation.sh docs/03-operations/branch-protection-setup.md`
+- Ran `bash scripts/run-tests-docker.sh` (`408 passed, 3 skipped, 22 deselected`)
+
+### Current State
+
+- Pull requests now surface documentation validation as a standalone CI check
+- Docker CI parity remains green after the workflow change
+- `branch-protection-setup.md` still has documentation-style warnings due to high
+  code-block density, but no violations
+
+### Next Steps
+
+- If branch protection is configured with explicit check selection in GitHub,
+  ensure both `Documentation Validation` and `CI Tests` are selected
+
+## Session: 2026-04-05 - Documentation Drift Cleanup
+
+### Summary
+
+Cleaned up stale documentation references, aligned session guidance with the
+repository's Docker-first workflow, and refreshed dashboard/status pages to
+match the current workspace contents.
+
+### What Was Done
+
+- Updated `README.md` quickstart instructions to reference the existing
+  `Start-RepoAnalysis.sh` helper and resolved-env Docker workflow
+- Refreshed `docs/README.md` navigation to include the current operations and
+  implementation documents, and removed links to missing files
+- Updated `docs/01-strategy/requirements-status.md` to reflect the current
+  9-dashboard set and mark the dedicated Security Dashboard requirement complete
+- Reworked `docs/03-operations/session-continuity.md` to point at live source-of-truth
+  docs and use Docker/MCP verification commands instead of stale local Python steps
+- Fixed broken "next steps" links in architecture and visualization docs
+- Expanded `docs/04-implementation/README.md` so it reflects the actual planning
+  documents present in the directory
+
+### Validation
+
+- Ran `bash scripts/validate-documentation.sh README.md` (0 violations, 0 warnings)
+- Ran `bash scripts/validate-documentation.sh docs` (0 violations, 20 warnings)
+
+### Current State
+
+- Core documentation entry points now reference files that exist in the workspace
+- Session guidance matches the repo's Docker-first execution model
+- Dashboard status documentation matches the current Grafana dashboard inventory
+- Documentation validator passes with no violations; remaining warnings are concentrated in older, code-heavy planning and operations docs
+
+### Next Steps
+
+- Triage the remaining documentation warnings in legacy, code-heavy planning and operations docs
+
 ## Session: 2026-04-05 - Documentation Maintenance and Validator Fix
 
 ### Summary

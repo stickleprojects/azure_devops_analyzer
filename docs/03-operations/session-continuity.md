@@ -109,7 +109,7 @@ When starting a new AI session, provide the AI with this information:
 
 ### 1. Current Project Status
 
-- [ ] **Phase**: Which implementation phase are we in? (see [07-implementation-plan.md](07-implementation-plan.md))
+- [ ] **Focus area**: Which active workstream are we in? (see [../04-implementation/README.md](../04-implementation/README.md) and [../01-strategy/requirements-status.md](../01-strategy/requirements-status.md))
 - [ ] **Last completed task**: What was the last thing completed?
 - [ ] **In-progress work**: What was being worked on when the session ended?
 - [ ] **Blockers**: Any issues or decisions pending?
@@ -134,50 +134,21 @@ When starting a new AI session, provide the AI with this information:
 
 ### Current State
 
-| Field                 | Value                                       |
-| --------------------- | ------------------------------------------- |
-| **Current Phase**     | Phase 1: Foundation                         |
-| **Current Week**      | Week 1                                      |
-| **Last Session Date** | _[Update after each session]_               |
-| **Session Focus**     | _[Brief description of what was worked on]_ |
+| Field                 | Value                                    |
+| --------------------- | ---------------------------------------- |
+| **Current Focus**     | _[Update after each session]_            |
+| **Current Branch**    | _[Update after each session]_            |
+| **Last Session Date** | _[Update after each session]_            |
+| **Source of Truth**   | `PROGRESS.md` + `requirements-status.md` |
 
 ### Implementation Progress
 
-#### Phase 1: Foundation (Weeks 1-2)
+Track current work in the living project records instead of maintaining a second,
+stale phase plan in this file:
 
-**Week 1: Environment Setup**
-
-- [ ] Set up development environment
-- [ ] Configure Azure DevOps access
-- [ ] Initialize version control (DONE - repo initialized)
-
-**Week 2: Database Setup**
-
-- [ ] Install PostgreSQL 15 and TimescaleDB
-- [ ] Design and create database schema
-- [ ] Create database migrations
-- [ ] Implement basic data access layer
-- [ ] Write unit tests for database operations
-
-#### Phase 2: Core Analysis (Weeks 3-5)
-
-_Not started_
-
-#### Phase 3: Metrics Collection (Weeks 6-7)
-
-_Not started_
-
-#### Phase 4: Orchestration (Week 8)
-
-_Not started_
-
-#### Phase 5: Visualization (Weeks 9-10)
-
-_Not started_
-
-#### Phase 6: Production Hardening (Weeks 11-12)
-
-_Not started_
+- `PROGRESS.md` for session-by-session summaries and next steps
+- `docs/01-strategy/requirements-status.md` for requirement-level status
+- `docs/04-implementation/README.md` for active planning and future work
 
 ---
 
@@ -228,7 +199,8 @@ Use this template at the end of each session:
 ```bash
 # Any setup or verification commands for next session
 git status
-pip install -r requirements.txt
+bash scripts/check_mcp_health.sh
+bash scripts/run-tests-docker.sh
 ```
 ````
 
@@ -257,17 +229,14 @@ ls -la src/
 ### Verify Environment
 
 ```bash
-# Check Python version
-python --version
+# Verify workspace automation and local MCP tooling
+bash scripts/check_mcp_health.sh
 
-# Verify dependencies
-pip list
+# Run the Docker-based test suite
+bash scripts/run-tests-docker.sh
 
-# Run tests
-pytest
-
-# Check database connection
-python -c "from src.database import engine; print('DB OK')"
+# Inspect running services when debugging the stack
+docker compose ps
 ```
 
 ---
@@ -276,13 +245,13 @@ python -c "from src.database import engine; print('DB OK')"
 
 When resuming, these files provide essential context:
 
-| File                                                   | Purpose                            |
-| ------------------------------------------------------ | ---------------------------------- |
-| [00-quick-reference.md](00-quick-reference.md)         | System overview and quick commands |
-| [07-implementation-plan.md](07-implementation-plan.md) | Full task breakdown by phase       |
-| [10-requirements.md](10-requirements.md)               | Dependencies and environment setup |
-| [docker-compose.yml](../docker-compose.yml)            | Service configuration              |
-| [requirements.txt](../requirements.txt)                | Python dependencies                |
+| File                                                                           | Purpose                            |
+| ------------------------------------------------------------------------------ | ---------------------------------- |
+| [../../PROGRESS.md](../../PROGRESS.md)                                         | Session summaries and next actions |
+| [../01-strategy/requirements-status.md](../01-strategy/requirements-status.md) | Requirement status and backlog     |
+| [../04-implementation/README.md](../04-implementation/README.md)               | Active planning documents          |
+| [docker-setup.md](docker-setup.md)                                             | Environment and service setup      |
+| [../../scripts/README.md](../../scripts/README.md)                             | Script entry points and commands   |
 
 ---
 
@@ -327,7 +296,7 @@ Track session history here for reference:
 ### At Session Start
 
 1. Share the current project status (use checklist above)
-2. Reference this document: "See docs/11-session-continuity.md"
+2. Reference this document: "See docs/03-operations/session-continuity.md"
 3. State the specific goal for the session
 4. Mention any blockers or decisions needed
 

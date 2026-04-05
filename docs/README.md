@@ -8,7 +8,7 @@ Welcome to the **Repository Analysis System** documentation. This folder contain
 
 _Session-by-session log of development activities, key findings, and technical insights_
 
-### �📋 [01-strategy/](01-strategy/) — Business & Planning
+### [01-strategy/](01-strategy/) — Business & Planning
 
 _For understanding what we're building and why_
 
@@ -41,6 +41,9 @@ _For getting the system running and maintaining it_
 
 - [visualization.md](03-operations/visualization.md) — Grafana dashboards, metrics, visualization design
 - [deployment-plan.md](03-operations/deployment-plan.md) — Implementation timeline, phases, checklist
+- [docker-setup.md](03-operations/docker-setup.md) — Docker environment setup and service lifecycle
+- [github-actions-tests.md](03-operations/github-actions-tests.md) — CI test execution and parity notes
+- [monitoring-extraction-progress.md](03-operations/monitoring-extraction-progress.md) — Extraction monitoring and troubleshooting
 - [session-continuity.md](03-operations/session-continuity.md) — Session management, context tracking, reproducibility
 - [feature-development-workflow.md](03-operations/feature-development-workflow.md) — Development process and PR workflow
 - [branch-protection-setup.md](03-operations/branch-protection-setup.md) — Branch protection configuration
@@ -61,7 +64,8 @@ _For planning what comes next and evaluating options_
 - [parallelization-plan.md](04-implementation/parallelization-plan.md) — Multi-worker strategy, rate limiting, scaling
 - [infrastructure-options.md](04-implementation/infrastructure-options.md) — Kubernetes vs Docker Compose evaluation, pros/cons
 - [integration-testing-priority-assessment.md](04-implementation/integration-testing-priority-assessment.md) — Testing strategy and priorities
-- [worker-instrumentation.md](04-implementation/worker-instrumentation.md) — Worker metrics and observability
+- [caching-strategy.md](04-implementation/caching-strategy.md) — Current caching design and tradeoffs
+- [extractor-caching-plan.md](04-implementation/extractor-caching-plan.md) — Extractor cache implementation plan
 - [contributor-team-allocation-strategy.md](04-implementation/contributor-team-allocation-strategy.md) — Team assignment architecture
 
 **Start here if you're**: Planning next phase, evaluating infrastructure options, scaling decisions
@@ -74,7 +78,7 @@ _For leveraging AI-powered code generation and development patterns_
 
 - [ollama-fixture-and-code-generation.md](../.ai/patterns/ollama-fixture-and-code-generation.md) — Local LLM-based code generation pattern
   - Generate test fixtures, utilities, and boilerplate code
-  - Example: `python scripts/ollama-generate.py --prompt .ai/ollama-prompts/fixture-repo-seeds.md ...`
+  - Example workflows are documented in `scripts/README.md`
   - Uses Ollama with Docker for reproducible, local AI assistance
 
 **Prompts** (`.ai/ollama-prompts/`):
@@ -140,7 +144,7 @@ _For leveraging AI-powered code generation and development patterns_
 
 ## Related Files
 
-- **[00-quick-reference.md](00-quick-reference.md)** — Quick command reference (at root level)
+- **[scripts/README.md](../scripts/README.md)** — Script entry points and Docker-first command reference
 - **[requirements.txt](../requirements.txt)** — Python dependencies
 - **[docker-compose.yml](../docker-compose.yml)** — Local development stack
 - **[src/](../src/)** — Application code
@@ -162,7 +166,7 @@ This validator enforces documentation standards from
 ## Getting Help
 
 - **Lost?** Start with your role above and read in order
-- **Need quick info?** Check [00-quick-reference.md](00-quick-reference.md)
+- **Need quick info?** Check [scripts/README.md](../scripts/README.md)
 - **Looking for specific feature?** Use [requirements-status.md](01-strategy/requirements-status.md)
 - **Want to understand a component?** Navigate to [02-architecture/](02-architecture/)
 

@@ -95,5 +95,5 @@ Flower provides a web-based UI for monitoring Celery clusters.
 
 ## Next Steps
 
-- See [06-visualization.md](06-visualization.md) for Grafana dashboard setup
-- Review [07-implementation-plan.md](07-implementation-plan.md) for deployment timeline
+- See [../03-operations/visualization.md](../03-operations/visualization.md) for Grafana dashboard setup
+- Review [../04-implementation/README.md](../04-implementation/README.md) for current planning and rollout work

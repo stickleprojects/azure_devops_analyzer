@@ -50,14 +50,16 @@ azure-devops-analyzer/
 ├── Dockerfile
 └── requirements.txt
 ```
-│   └── utils/
-│       ├── __init__.py
-│       ├── job_tracker.py       # Job status tracking
-│       └── notifications.py     # Alert notifications
+
+│ └── utils/
+│ ├── **init**.py
+│ ├── job_tracker.py # Job status tracking
+│ └── notifications.py # Alert notifications
 ├── workers/
-│   └── worker_start.sh          # Worker startup script
+│ └── worker_start.sh # Worker startup script
 └── config/
-    └── scheduler.yaml           # Scheduler configuration
+└── scheduler.yaml # Scheduler configuration
+
 ```
 
 ## Core Components
@@ -151,5 +153,6 @@ Robust error handling ensures that failures in one repository or analysis step d
 
 ## Next Steps
 
-- See [06-visualization.md](06-visualization.md) for Grafana dashboard setup
-- Review [07-implementation-plan.md](07-implementation-plan.md) for deployment timeline
+- See [../03-operations/visualization.md](../03-operations/visualization.md) for Grafana dashboard setup
+- Review [../04-implementation/README.md](../04-implementation/README.md) for current planning and rollout work
+```

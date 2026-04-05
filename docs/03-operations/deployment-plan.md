@@ -7,7 +7,7 @@ This phased implementation plan breaks down the Azure DevOps Repository Analysis
 ## Timeline Summary
 
 **Phase 1**: Foundation (Weeks 1-2) ✅ **COMPLETED**
-**Phase 2**: Core Analysis (Weeks 3-5) 🔄 **IN PROGRESS** 
+**Phase 2**: Core Analysis (Weeks 3-5) 🔄 **IN PROGRESS**
 **Phase 3**: Metrics Collection (Weeks 6-7) 🔄 **IN PROGRESS**
 **Phase 4**: Orchestration (Week 8) ❌ **NOT STARTED**
 **Phase 5**: Visualization (Weeks 9-10) ✅ **COMPLETED**
@@ -521,8 +521,8 @@ azure-devops-analyzer/
 
 ### Technology Stack Reference
 
-See [08-technology-stack.md](08-technology-stack.md) for complete technology details.
+See [../02-architecture/technology-stack.md](../02-architecture/technology-stack.md) for complete technology details.
 
 ### Architecture Reference
 
-See [01-architecture.md](01-architecture.md) for system architecture details.
+See [../02-architecture/system-architecture.md](../02-architecture/system-architecture.md) for system architecture details.
