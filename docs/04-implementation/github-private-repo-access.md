@@ -2,252 +2,97 @@
 
 ## Overview
 
-GitHub's API for accessing repositories has significant complexity around private repo visibility. This document explains the constraints and how the extractor handles them.
+Private repository visibility in GitHub depends on endpoint type, identity context, and token scope. This document defines expected behavior and extractor decision rules.
 
-## API Endpoints & Private Repo Behavior
+## Endpoint Behavior Matrix
 
-### 1. **Authenticated User Endpoint** ✅ Full Private Access
-
-```python
-client.get_user()  # No argument = authenticated user
-user.get_repos(visibility="all")
-```
-
-**Returns:**
-
-- All public repos owned by the authenticated user
-- All private repos owned by the authenticated user
-- Private repos where the user is a collaborator (invited to access)
-
-**Use case:** Extracting your own repos including private ones
-
----
-
-### 2. **Named User Endpoint** ❌ NO Private Access
-
-```python
-client.get_user("username")  # Specific user by name
-user.get_repos(type="all")
-```
-
-**Returns:**
-
-- Only PUBLIC repos owned by that user
-- **Cannot access their private repos** (even if you know them)
-
-**Limitation:** This is a GitHub API hard constraint. You cannot access another user's private repositories through the API.
-
-**Use case:** Getting public profiles/repos
-
----
-
-### 3. **Organization Endpoint** ⚠️ Conditional Private Access
-
-```python
-client.get_organization("org_name")
-org.get_repos(type="all")
-```
-
-**Returns:**
-
-- All public organization repos
-- All private organization repos **IF you are an organization member** with sufficient permissions
-
-**Constraint:** If you're not a member, you can't access private org repos
-
-**Use case:** Extracting organization repos you have access to
-
----
+| Endpoint style              | Private visibility                  | Key constraint                              |
+| --------------------------- | ----------------------------------- | ------------------------------------------- |
+| Authenticated user endpoint | Full for repos the token can access | Requires token with private-repo scope      |
+| Named user endpoint         | Public repos only                   | Cannot enumerate another user private repos |
+| Organization endpoint       | Conditional                         | Requires org membership and permissions     |
 
 ## Token Scope Impact
 
-Your GitHub token's scope affects even where you WOULD have access:
+| Token scope       | Private repository visibility | Typical result                            |
+| ----------------- | ----------------------------- | ----------------------------------------- |
+| public-only scope | No                            | Only public repositories returned         |
+| repo full scope   | Yes                           | Public plus private repositories returned |
+| partial scopes    | Mixed                         | Visibility depends on granted permissions |
 
-```
-Token Scope          | Can Access Private? | Notes
-=====================|====================|==================================
-public_repo (old)    | NO                 | Only public repos
-repo (full control)  | YES                | Public + private repos
-repo:status          | LIMITED            | Check current permissions
-```
+## Extractor Decision Model
 
-**Example:**
+The extractor uses include_private together with target identity to choose a retrieval mode.
 
-```python
-# Even with authenticated endpoint, if token only allows public_repo:
-user.get_repos(visibility="all")
-# Still returns ONLY public repos! Private repos not included.
-```
+### include_private true
 
-## Implementation in Extractor
+- Authenticated self-target: request all visible repositories.
+- Organization target: request all repositories and rely on org membership permissions.
+- Other user target: API still limits to public repositories.
 
-### The `include_private` Parameter
+### include_private false
 
-**When True (default):**
+- Authenticated self-target: request public-only repositories.
+- Organization target: request public-only repositories.
+- Other user target: still public-only behavior.
 
-- **Authenticated user**: Uses `visibility="all"` → gets private repos ✓
-- **Organization**: Uses `type="all"` → gets private IF member ✓
-- **Other user**: Uses `type="all"` (only public, API limitation) ❌
+## Access-Mode Logging
 
-**When False:**
+Runtime logs should always record which mode was used, for example:
 
-- **Authenticated user**: Uses `visibility="public"` → only public ✓
-- **Organization**: Uses `type="public"` → only public ✓
-- **Other user**: Uses `type="all"` (only public anyway) ✓
+- organization access mode
+- authenticated user access mode
+- named user public-only mode
 
-### Access Mode Logging
+This makes private visibility issues diagnosable without tracing internal call paths.
 
-The extractor logs which access mode was used:
+## Operational Scenarios
 
-```python
-# You'll see one of these in logs:
-"organization (public + private if member)"
-"authenticated_user (public + private)"
-"user 'username' (public only - GitHub API limitation)"
-```
+### Scenario: Own Account
 
-This helps you verify you're getting the data you expect.
+Expected result: private repositories are visible only when token scope allows private access.
 
----
+### Scenario: Organization
 
-## Real-World Scenarios
+Expected result: private organization repositories are visible only when the token identity is a member with sufficient permissions.
 
-### Scenario 1: Extracting Your Own Private Repos
+### Scenario: Another User
 
-```python
-config = GitHubExtractorConfig(
-    token="ghp_yourtoken",
-    user="yourname"
-)
-extractor = GitHubExtractor(config)
-repos = extractor.get_repositories("yourname", include_private=True)
-# ✓ Returns: all your repos including private ones
-```
+Expected result: only public repositories are visible, regardless of include_private.
 
-**Requirements:**
+## Caching Considerations
 
-- Token must have `repo` scope (full control)
-- `organization` parameter must match authenticated username
+Cache keys include include_private state, so public-only and include-private calls are isolated entries.
 
----
+Operational implication:
 
-### Scenario 2: Extracting Organization Private Repos
+- A public-only cache entry does not block a later include-private fetch.
+- Include-private fetch still depends on API permissions and may return public-only data if access is insufficient.
 
-```python
-config = GitHubExtractorConfig(
-    token="ghp_token_with_org_scope",
-    organization="my-company"
-)
-extractor = GitHubExtractor(config)
-repos = extractor.get_repositories("my-company", include_private=True)
-# ✓ Returns: org's repos if you're a member
-```
+## Debugging Checklist
 
-**Requirements:**
+1. Confirm token scope includes private access where required.
+2. Confirm target identity is self, org member, or other user as expected.
+3. Confirm runtime logs show the expected access mode.
+4. Confirm cache key differs between include_private true and false calls.
 
-- Token must have org membership/access
-- You must be part of the organization
-- Token scope must allow org repo access
+## Architecture Guardian
 
----
+This document is implementation-focused guidance and preserves architecture boundaries:
 
-### Scenario 3: Extracting Public Repos from Another User
+- Extractor decides retrieval mode only.
+- Storage layer remains the sole writer to persistence.
+- Workflow layer orchestrates but does not embed API policy logic.
 
-```python
-repos = extractor.get_repositories("octocat", include_private=True)
-# ✓ Returns: only octocat's public repos
-# ✗ Note: include_private=True has NO EFFECT here (API limitation)
-```
+## Summary Table
 
-**Constraint:** GitHub API doesn't allow this. This is by design for privacy.
-
----
-
-### Scenario 4: What Happens With Wrong Token Scope
-
-```python
-config = GitHubExtractorConfig(
-    token="ghp_token_with_only_public_repo_scope",
-    user="yourname"
-)
-extractor = GitHubExtractor(config)
-repos = extractor.get_repositories("yourname", include_private=True)
-# ✗ Returns: ONLY public repos
-# Why: Token doesn't have permission to see private repos
-# Debug: Check logs - will show "authenticated_user" was used
-```
-
-**Solution:** Regenerate token with `repo` (full control) scope
-
----
-
-## Caching Implications
-
-The `include_private` parameter is part of the cache key:
-
-```
-Cache Key: get_repositories|stickleprojects|None|True
-Cache Key: get_repositories|stickleprojects|None|False
-```
-
-These are separate cache entries. However, **GitHub API limitations affect what's actually cached:**
-
-```
-Scenario: Call order matters for org repos
-1. get_repositories("my-org", include_private=False)
-   → Cached: my-org public repos only
-
-2. get_repositories("my-org", include_private=True)
-   → Different cache key!
-   → Fresh API call
-   → May return: public + private if you're a member
-```
-
----
-
-## Debugging Private Repo Issues
-
-### Enable Debug Logging
-
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
-
-# Now run extraction
-extractor = GitHubExtractor()
-repos = extractor.get_repositories("myaccount")
-```
-
-**Look for:** "GitHub extractor: Fetching repositories using access mode:"
-
-### Verify Token Scope
-
-```bash
-curl -H "Authorization: token YOUR_TOKEN" https://api.github.com/user
-# Check the "scopes" field in response
-```
-
-### Verify Organization Membership
-
-```python
-# If extracting org repos, verify you're a member:
-auth_user = client.get_user()
-# Then check if you appear in org members
-```
-
----
-
-## Summary: What Works
-
-| Scenario         | include_private=True                    | include_private=False |
-| ---------------- | --------------------------------------- | --------------------- |
-| Your own repos   | ✅ Gets all including private           | ✅ Gets public only   |
-| Your org repos   | ✅ Gets all if member                   | ✅ Gets public only   |
-| Other user       | ❌ API limitation (public only)         | ✅ Gets public        |
-| New private repo | ✅ If fetched again, uses new cache key | ✅ Won't appear       |
+| Target type        | include_private true                     | include_private false |
+| ------------------ | ---------------------------------------- | --------------------- |
+| Authenticated self | Public plus private if scope allows      | Public only           |
+| Organization       | Public plus private if membership allows | Public only           |
+| Other user         | Public only                              | Public only           |
 
 ## See Also
 
-- [GitHub API Docs: Repositories](https://docs.github.com/en/rest/repos)
-- [GitHub Token Scopes](https://docs.github.com/en/developers/apps/building-oauth-apps/scopes-for-oauth-apps)
-- [src/extractors/github/extractor.py](../../../src/extractors/github/extractor.py) - Implementation
+- [src/extractors/github/extractor.py](../../../src/extractors/github/extractor.py)
+- [docs/03-operations/feature-development-workflow.md](../03-operations/feature-development-workflow.md)

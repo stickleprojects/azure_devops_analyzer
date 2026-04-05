@@ -145,18 +145,15 @@ celery -A src.scheduler.celery_app worker --queue=repo_processing --autoscale=10
 
 ## 6. Error Handling & Retry Logic
 
-```python
-@celery_app.task(
-    bind=True,
-    max_retries=3,
-    retry_backoff=True,
-    retry_backoff_max=600,  # 10 minutes
-    retry_jitter=True,
-    autoretry_for=(RateLimitError, ConnectionError)
-)
-def process_single_repository(self, repo_id, org_name, platform):
-    # Implementation
-    pass
+```text
+Repository task retry policy:
+- max_retries: 3
+- retry_backoff: enabled
+- retry_backoff_max_seconds: 600
+- retry_jitter: enabled
+- auto_retry_on:
+  - RateLimitError
+  - ConnectionError
 ```
 
 ---

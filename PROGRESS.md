@@ -2,6 +2,47 @@
 
 ---
 
+## Session: 2026-04-05 - Documentation Maintenance and Validator Fix
+
+### Summary
+
+Refreshed documentation navigation and fixed a blocker in the documentation
+validation script so doc checks run reliably.
+
+### What Was Done
+
+- Fixed `scripts/validate-documentation.sh` arithmetic failure when a file had no
+  fenced code blocks (`grep -c` fallback produced a multiline value)
+- Added a zero-line guard for code percentage calculation to prevent division by
+  zero on empty markdown files
+- Fixed directory scan accounting so violation/warning counters persist correctly
+  across all files
+- Updated `docs/README.md`:
+  - corrected Development Progress link to `../PROGRESS.md`
+  - added a Documentation Maintenance section with validator commands
+  - updated "Last Updated" timestamp
+
+### Validation
+
+- Ran `bash scripts/validate-documentation.sh docs`
+- Ran `bash scripts/validate-documentation.sh README.md`
+- Ran `bash scripts/validate-documentation.sh PROGRESS.md`
+
+### Current State
+
+- Documentation validator now executes without shell arithmetic errors
+- Documentation navigation now links correctly to the root progress log
+- Additional docs cleanup opportunities are identified and can be handled in
+  focused follow-up passes
+
+### Next Steps
+
+- Triage and clean high-code-content docs flagged by validator warnings
+- Convert validator false positives in architecture/implementation docs into
+  targeted rule refinements or file-level exceptions
+
+---
+
 ## Session: 2026-03-28 - CI Fix for PR #30
 
 ### Summary
@@ -2604,16 +2645,12 @@ repos = user.get_repos(visibility="all")
 **The Fix:**
 Updated `get_repositories()` to detect when the requested username matches the authenticated user:
 
-```python
-auth_user = self.client.get_user()
-if auth_user.login.lower() == organization.lower():
-    # Same user - use authenticated endpoint for private repos
-    user = auth_user
-    gh_repos = user.get_repos(visibility="all")
+```text
+auth_user <- self.client.get_user()
+if auth_user.login matches requested organization:
+   use authenticated endpoint and request visibility="all"
 else:
-    # Different user - only public repos accessible
-    user = self.client.get_user(organization)
-    gh_repos = user.get_repos(type="all")
+   use named-user endpoint and request type="all"
 ```
 
 **Impact:**

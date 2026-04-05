@@ -271,22 +271,22 @@ All platform-specific fields (GitHub security features) are nullable, allowing A
 
 ### GitHub Configuration (`src/config/github.py`)
 
-```python
-class GitHubConfig:
-    token: str
-    base_url: str = "https://api.github.com"
-    organizations: list[str]
-    timeout: int = 30
+```yaml
+GitHubConfig schema:
+  token: string
+  base_url: https://api.github.com
+  organizations: array<string>
+  timeout_seconds: 30
 ```
 
 ### Azure DevOps Configuration (`src/config/azure_devops.py`)
 
-```python
-class AzureDevOpsConfig:
-    org_url: str
-    personal_access_token: str
-    api_version: str = "7.1-preview.1"
-    timeout: int = 30
+```yaml
+AzureDevOpsConfig schema:
+  org_url: string
+  personal_access_token: string
+  api_version: 7.1-preview.1
+  timeout_seconds: 30
 ```
 
 Both support environment variable configuration.

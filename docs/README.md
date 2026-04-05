@@ -4,7 +4,7 @@ Welcome to the **Repository Analysis System** documentation. This folder contain
 
 ## Quick Navigation
 
-### � [PROGRESS.md](PROGRESS.md) — Development Progress Log
+### [PROGRESS.md](../PROGRESS.md) — Development Progress Log
 
 _Session-by-session log of development activities, key findings, and technical insights_
 
@@ -147,6 +147,18 @@ _For leveraging AI-powered code generation and development patterns_
 
 ---
 
+## Documentation Maintenance
+
+Use the repository validator before committing documentation changes:
+
+- Validate the docs tree: `bash scripts/validate-documentation.sh docs`
+- Validate a single file: `bash scripts/validate-documentation.sh docs/path/to/file.md`
+
+This validator enforces documentation standards from
+`agents/00-documentation-standards.md` and helps catch code-heavy docs early.
+
+---
+
 ## Getting Help
 
 - **Lost?** Start with your role above and read in order
@@ -156,5 +168,5 @@ _For leveraging AI-powered code generation and development patterns_
 
 ---
 
-**Last Updated**: 2026-03-07
+**Last Updated**: 2026-04-05
 **Organized for**: Easy navigation and discovery

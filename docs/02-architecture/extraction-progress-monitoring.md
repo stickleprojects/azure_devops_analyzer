@@ -271,144 +271,41 @@ ORDER BY time;
 
 **File**: `src/observability/extraction_metrics.py` (new)
 
-```python
-"""Extraction metrics tracking for observability."""
+```text
+ExtractionMetricsTracker responsibilities (design sketch):
+- create a correlation ID per repository extraction
+- persist a "started" metric row when extraction begins
+- persist a "completed" metric row with duration and entity counts
+- persist a "failed" metric row with duration and truncated error detail
 
-import uuid
-from datetime import datetime, timezone
-from typing import Optional
-from sqlalchemy.orm import Session
-
-from src.database.models import ExtractionMetric
-
-
-class ExtractionMetricsTracker:
-    """Tracks extraction progress for monitoring."""
-
-    def __init__(self, db_session: Session):
-        self.session = db_session
-        self.correlation_id = uuid.uuid4()
-
-    def start_extraction(
-        self,
-        repository_id: str,
-        platform: str,
-        celery_task_id: Optional[str] = None,
-        worker_hostname: Optional[str] = None
-    ) -> int:
-        """Record extraction start and return metric ID."""
-        metric = ExtractionMetric(
-            repository_id=repository_id,
-            platform=platform,
-            extraction_started_at=datetime.now(timezone.utc),
-            status='started',
-            correlation_id=self.correlation_id,
-            celery_task_id=celery_task_id,
-            worker_hostname=worker_hostname
-        )
-        self.session.add(metric)
-        self.session.commit()
-        return metric.id
-
-    def complete_extraction(
-        self,
-        metric_id: int,
-        commits: int = 0,
-        pull_requests: int = 0,
-        branches: int = 0,
-        contributors: int = 0
-    ):
-        """Record successful extraction completion."""
-        metric = self.session.query(ExtractionMetric).get(metric_id)
-        if metric:
-            metric.extraction_completed_at = datetime.now(timezone.utc)
-            metric.extraction_duration_seconds = int(
-                (metric.extraction_completed_at - metric.extraction_started_at).total_seconds()
-            )
-            metric.status = 'completed'
-            metric.commits_extracted = commits
-            metric.pull_requests_extracted = pull_requests
-            metric.branches_extracted = branches
-            metric.contributors_extracted = contributors
-            self.session.commit()
-
-    def fail_extraction(self, metric_id: int, error_message: str):
-        """Record extraction failure."""
-        metric = self.session.query(ExtractionMetric).get(metric_id)
-        if metric:
-            metric.extraction_completed_at = datetime.now(timezone.utc)
-            metric.extraction_duration_seconds = int(
-                (metric.extraction_completed_at - metric.extraction_started_at).total_seconds()
-            )
-            metric.status = 'failed'
-            metric.error_message = error_message[:1000]  # Truncate long errors
-            self.session.commit()
+Primary operations:
+- start_extraction(repository_id, platform, celery_task_id, worker_hostname) -> metric_id
+- complete_extraction(metric_id, commit_count, pr_count, branch_count, contributor_count)
+- fail_extraction(metric_id, error_message)
 ```
 
 #### 2. Integrate into Workflows
 
 **File**: `src/workflows/github_analysis.py` (modify)
 
-```python
-from src.observability.extraction_metrics import ExtractionMetricsTracker
-
-class GitHubAnalysisWorkflow:
-    def run(self, org_name: str, max_repos: int = None):
-        # ... existing code ...
-
-        for repo_data in repositories:
-            tracker = ExtractionMetricsTracker(self.storage.session)
-            metric_id = tracker.start_extraction(
-                repository_id=repo_data.repo_id,
-                platform='github',
-                celery_task_id=self.task_id,  # From Celery context
-                worker_hostname=socket.gethostname()
-            )
-
-            try:
-                # ... existing extraction logic ...
-
-                tracker.complete_extraction(
-                    metric_id,
-                    commits=len(stored_commits),
-                    pull_requests=len(stored_prs),
-                    branches=len(branches),
-                    contributors=len(contributors)
-                )
-
-            except Exception as e:
-                tracker.fail_extraction(metric_id, str(e))
-                raise
+```text
+Workflow integration sketch:
+1. Construct tracker from active storage session.
+2. Before repository processing, call start_extraction(...) and capture metric_id.
+3. On success path, call complete_extraction(...) with repository result counts.
+4. On error path, call fail_extraction(metric_id, error_message), then re-raise.
 ```
 
 #### 3. Structured Logging
 
 **File**: `src/workflows/base.py` (enhance)
 
-```python
-import logging
-import structlog
-
-# Configure structured logging
-structlog.configure(
-    processors=[
-        structlog.processors.add_log_level,
-        structlog.processors.TimeStamper(fmt="iso"),
-        structlog.processors.JSONRenderer()
-    ]
-)
-
-logger = structlog.get_logger()
-
-class BaseWorkflow:
-    def log_extraction_event(self, event_type: str, **kwargs):
-        """Log extraction events with correlation ID."""
-        logger.info(
-            event_type,
-            correlation_id=str(self.tracker.correlation_id),
-            platform=self.platform,
-            **kwargs
-        )
+```text
+Structured logging design:
+- Use JSON logs with timestamp and log level processors.
+- Include correlation_id on every extraction event.
+- Include platform and repository identity on every event.
+- Emit start, success, failure, and duration events for each repository extraction.
 ```
 
 ---

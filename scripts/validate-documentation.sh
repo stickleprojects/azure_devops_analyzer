@@ -37,11 +37,15 @@ check_file() {
   TOTAL_LINES=$(wc -l < "$FILE")
   
   # Count code blocks
-  CODE_BLOCKS=$(grep -c '^```' "$FILE" || echo "0")
+  CODE_BLOCKS=$(grep -c '^```' "$FILE" 2>/dev/null || true)
   
   # Estimate code lines (rough: ~7 lines per block average)
   CODE_LINES=$((CODE_BLOCKS * 7))
-  CODE_PERCENTAGE=$((CODE_LINES * 100 / TOTAL_LINES))
+  if [ "$TOTAL_LINES" -gt 0 ]; then
+    CODE_PERCENTAGE=$((CODE_LINES * 100 / TOTAL_LINES))
+  else
+    CODE_PERCENTAGE=0
+  fi
   
   echo "  📊 Total lines: $TOTAL_LINES"
   echo "  📦 Code blocks: $CODE_BLOCKS"
@@ -142,9 +146,9 @@ check_file() {
 if [ -d "$TARGET" ]; then
   # Directory provided - check all .md files
   echo "Scanning directory: $TARGET"
-  find "$TARGET" -name "*.md" -type f | while read -r FILE; do
+  while read -r FILE; do
     check_file "$FILE"
-  done
+  done < <(find "$TARGET" -name "*.md" -type f)
 elif [ -f "$TARGET" ]; then
   # Single file provided
   check_file "$TARGET"
