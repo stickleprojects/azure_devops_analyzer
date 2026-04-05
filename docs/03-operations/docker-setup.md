@@ -2,205 +2,138 @@
 
 ## Overview
 
-The Docker configuration supports both **GitHub** and **Azure DevOps** repository extraction with the new FR-2 language detection and technology stack detection features.
+This guide explains how to run the platform analysis stack in Docker for both GitHub and Azure DevOps workflows.
 
-## System Dependencies
+## What Docker Provides
 
-The main Dockerfile now includes all necessary build tools for the Azure DevOps SDK:
+- Reproducible runtime for scheduler, workers, and supporting services
+- Isolated test execution aligned with CI behavior
+- A shared local environment for dashboards and task monitoring
 
-- `gcc`, `g++`, `make` - C/C++ compilers and build tools (required for Azure SDK)
-- `libpq-dev` - PostgreSQL client library
-- `libffi-dev` - Foreign Function Interface (Azure SDK requirement)
-- `libssl-dev` - OpenSSL development files (TLS/SSL support)
-- `python3-dev` - Python development headers
-- `git` - Version control (for potential dependencies)
+## Required Build Dependencies
 
-## Building Docker Images
+The application image includes native build and runtime dependencies required by core Python packages and SDK clients.
 
-### Build Main Application Image
+- gcc, g++, make
+- libpq-dev
+- libffi-dev
+- libssl-dev
+- python3-dev
+- git
 
-```bash
-docker build -t analyzer:latest .
-```
+## Build and Start
 
-### Build with Docker Compose
+Use one of these command paths:
 
-```bash
-# Development setup with all services
-docker compose up --build
+- Build image directly: docker build -t analyzer:latest .
+- Start full dev stack: docker compose up --build
+- Start isolated test stack: docker compose -f docker-compose.test.yml up --build
+- Run Dockerized tests: ./scripts/run-tests-docker.sh
 
-# Test environment (isolated)
-docker compose -f docker-compose.test.yml up --build
+## Environment Configuration
 
-# Run tests
-./scripts/run-tests-docker.sh
-```
+Define values in .env before starting services.
 
-## Environment Variables Required
+### Azure DevOps
 
-### Azure DevOps Configuration (for both real and test runs)
+- AZURE_DEVOPS_ORG_URL
+- AZURE_DEVOPS_PAT
+- AZURE_DEVOPS_ORG_NAME
 
-```env
-AZURE_DEVOPS_ORG_URL=https://dev.azure.com/your-org
-AZURE_DEVOPS_PAT=your-personal-access-token
-AZURE_DEVOPS_ORG_NAME=your-org-name
-```
+### GitHub
 
-### GitHub Configuration (for both real and test runs)
+- GITHUB_TOKEN
+- GITHUB_ORG
+- GITHUB_USER
 
-```env
-GITHUB_TOKEN=github_pat_xxxx...
-GITHUB_ORG=your-github-org
-GITHUB_USER=your-github-username
-```
+### Database
 
-### Database Configuration
+- POSTGRES_USER
+- POSTGRES_PASSWORD
+- POSTGRES_DB
+- POSTGRES_HOST
+- POSTGRES_PORT
 
-```env
-POSTGRES_USER=analyzer_user
-POSTGRES_PASSWORD=secure_password
-POSTGRES_DB=analyzer
-POSTGRES_HOST=timescaledb
-POSTGRES_PORT=5432
-```
+### Broker
 
-### Message Broker Configuration
+- RABBITMQ_DEFAULT_USER
+- RABBITMQ_DEFAULT_PASS
+- RABBITMQ_HOST
+- RABBITMQ_PORT
+- CELERY_BROKER_URL
 
-```env
-RABBITMQ_DEFAULT_USER=guest
-RABBITMQ_DEFAULT_PASS=guest
-RABBITMQ_HOST=rabbitmq
-RABBITMQ_PORT=5672
-CELERY_BROKER_URL=amqp://guest:guest@rabbitmq:5672//
-```
+### Extractor Cache
 
-### Extractor Cache Configuration
+- EXTRACTOR_FILE_CACHE_ENABLED
+- EXTRACTOR_FILE_CACHE_PATH
 
-```env
-# Enable file-based cache (true/false)
-EXTRACTOR_FILE_CACHE_ENABLED=false
-# Cache directory path (relative to project root or absolute)
-EXTRACTOR_FILE_CACHE_PATH=.cache
-```
+## Service Roles
 
-## Services in docker-compose.yml
+| Service       | Role                                   |
+| ------------- | -------------------------------------- |
+| timescaledb   | PostgreSQL plus TimescaleDB storage    |
+| db-migrations | Schema and migration execution         |
+| rabbitmq      | Celery broker                          |
+| scheduler     | Job orchestration                      |
+| celery-worker | Extraction and analysis task execution |
+| celery-beat   | Periodic scheduling                    |
+| flower        | Celery monitoring UI                   |
+| grafana       | Dashboard visualization                |
 
-| Service           | Purpose                             | Supports                              |
-| ----------------- | ----------------------------------- | ------------------------------------- |
-| **timescaledb**   | Database (PostgreSQL + TimescaleDB) | Language time-series, all data        |
-| **db-migrations** | Schema initialization               | Runs at startup                       |
-| **rabbitmq**      | Message broker for Celery           | Task distribution                     |
-| **scheduler**     | APScheduler main process            | Both GitHub & Azure DevOps extraction |
-| **celery-worker** | Task execution                      | GitHub & Azure DevOps jobs            |
-| **celery-beat**   | Periodic task scheduler             | Job scheduling                        |
-| **flower**        | Celery monitoring                   | Real-time task monitoring             |
-| **grafana**       | Visualization dashboards            | Metrics and analytics                 |
+## Common Runtime Modes
 
-## Running Extraction Workflows
+- GitHub-only run: set GitHub variables, then run docker compose up scheduler celery-worker.
+- Azure DevOps-only run: set Azure variables, then run docker compose up scheduler celery-worker.
+- Dual-platform run: set both sets of variables, then run docker compose up scheduler celery-worker.
 
-### GitHub Only
+## Docker Test Path
 
-```bash
-export GITHUB_TOKEN=your_token
-export GITHUB_ORG=your-org
-docker compose up scheduler celery-worker
-```
+Primary test entrypoint is ./scripts/run-tests-docker.sh.
 
-### Azure DevOps Only
+The test stack behavior:
 
-```bash
-export AZURE_DEVOPS_ORG_URL=https://dev.azure.com/your-org
-export AZURE_DEVOPS_PAT=your-token
-export AZURE_DEVOPS_ORG_NAME=your-org-name
-docker compose up scheduler celery-worker
-```
-
-### Both Platforms
-
-```bash
-# Set all env vars above
-docker compose up scheduler celery-worker
-```
-
-## Running Integration Tests with Docker
-
-### Standard Tests (excludes live API calls)
-
-```bash
-./scripts/run-tests-docker.sh
-```
-
-This uses `docker-compose.test.yml` which:
-
-- Creates isolated test database
-- Runs migrations automatically
-- Executes tests in container
-- Cleans up resources after completion
-
-### Test with Azure DevOps Support
-
-```bash
-export AZURE_DEVOPS_ORG_URL=https://dev.azure.com/test-org
-export AZURE_DEVOPS_PAT=test-token
-export AZURE_DEVOPS_ORG_NAME=test-org-name
-./scripts/run-tests-docker.sh
-```
+- Creates isolated test database services
+- Applies migrations before tests
+- Runs tests in containers
+- Cleans up resources when finished
 
 ## Troubleshooting
 
-### Build Fails - Missing Build Tools
+### Build or Native Dependency Errors
 
-```
-error: Microsoft Visual C++ 14.0 is required
-```
+If image build fails with compiler/toolchain errors, rebuild from a clean state and verify Dockerfile dependency steps are not skipped.
 
-**Solution:** Docker build includes all necessary build tools. If using local Python, see SETUP_INSTRUCTIONS.md
+### Azure SDK Import Errors
 
-### Azure SDK Import Error
+If runtime fails to import Azure modules, verify dependency install steps executed during image build and compare image tag with expected requirements.
 
-```
-ModuleNotFoundError: No module named 'azure'
-```
+### Database Connectivity Errors
 
-**Solution:** Build image includes azure-devops>=7.1.0b4. Ensure `pip install -r requirements.txt` runs during build.
+If the app cannot connect to PostgreSQL:
 
-### Database Connection Failed
+1. Verify the database container is running.
+2. Confirm POSTGRES_HOST points to timescaledb in containerized runs.
+3. Wait for database readiness before scheduler/worker startup.
 
-```
-psycopg2.OperationalError: could not connect to server
-```
+### Docker and Local Behavior Divergence
 
-**Solution:**
-
-1. Check `timescaledb` service is running: `docker ps | grep timescaledb`
-2. Verify `POSTGRES_HOST` is set to `timescaledb` (not localhost in containers)
-3. Wait for health check: `docker logs analyzer-timescaledb | grep "ready to accept"`
-
-### Tests Fail in Docker but Pass Locally
-
-**Possible causes:**
-
-- Environment variables not propagated (check docker-compose.test.yml)
-- Database schema not applied (check test-migrations service)
-- Network isolation issues (verify services on same network)
+If tests pass locally but fail in Docker, check environment variable propagation, migration timing, and service network consistency.
 
 ## Performance Notes
 
-- **Database**: TimescaleDB optimized for time-series (language statistics)
-- **Concurrency**: Celery worker default 4 processes (configurable via `CELERY_WORKER_CONCURRENCY`)
-- **Caching**: Docker layer caching optimized (requirements.txt cached separately)
-- **Volumes**: Read-only mounts for immutability, reduces accidental changes
+- TimescaleDB is optimized for time-series reporting workloads.
+- Worker concurrency is configurable via CELERY_WORKER_CONCURRENCY.
+- Layer caching improves rebuild speed when dependency lock files are unchanged.
 
-## Next Steps
+## Suggested Run Order
 
-1. **Set environment variables** in `.env` file
-2. **Run full stack**: `docker compose up`
-3. **Monitor jobs**: Visit http://localhost:5555 (Flower)
-4. **View dashboards**: Visit http://localhost:3000 (Grafana)
-5. **Check logs**: `docker compose logs -f scheduler`
+1. Populate .env with required platform and service values.
+2. Start stack with docker compose up.
+3. Monitor workers in Flower at http://localhost:5555.
+4. Review dashboards in Grafana at http://localhost:3000.
+5. Inspect scheduler logs with docker compose logs -f scheduler.
 
 ## See Also
 
-- [README.md](README.md) - Project overview
-- [SETUP_INSTRUCTIONS.md](SETUP_INSTRUCTIONS.md) - Local machine setup
-- [docs/03-operations/deployment-plan.md](docs/03-operations/deployment-plan.md) - Deployment guide
+- [README.md](README.md)
+- [docs/03-operations/deployment-plan.md](docs/03-operations/deployment-plan.md)
