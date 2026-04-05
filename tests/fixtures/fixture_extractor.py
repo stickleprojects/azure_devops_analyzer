@@ -97,6 +97,17 @@ class FixtureExtractor(RepositoryExtractor):
             for pr in self._scenario.get("pull_requests", [])
         ]
 
+    def get_vulnerability_data(self) -> list[dict]:
+        """Return synthetic vulnerability/enrichment data stored in the fixture.
+
+        Each entry is a dict with keys:
+            package_name, ecosystem, pinned_version, latest_version,
+            is_eol, eol_date (ISO string or None), vulnerabilities (list[dict])
+
+        Returns an empty list if the fixture has no vulnerability_data.
+        """
+        return self._scenario.get("vulnerability_data", [])
+
     def get_organizations(self):
         return []
 
