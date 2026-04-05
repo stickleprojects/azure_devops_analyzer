@@ -34,3 +34,5 @@ auth
 
 # Assessment artifacts (generated at runtime)
 artifacts/assessment/*.json
+.claude/settings.local.json
+

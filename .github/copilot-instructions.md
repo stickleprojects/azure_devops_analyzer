@@ -24,4 +24,14 @@ For detailed operational specifics and reference material, see:
 
 **CI/Test Parity**: For any CI, test, fixture, schema, or migration change, follow `.ai/operations.md` Gate 3.6 (CI/Local Parity Check) and validate with Docker using CI-equivalent test scopes before committing.
 
+**Skills**: Project skills (reusable DSL/tool knowledge packs) have two locations:
+- `.ai/skills/` — source of truth (edit skills here)
+- `.claude/skills/` — deployed copy (loaded automatically by Claude Code on checkout)
+
+At session start, check for drift between the two:
+```
+diff -rq .ai/skills/ .claude/skills/
+```
+If there are differences, alert the user — the deployed copy is out of sync with the source.
+
 **Remember**: Principles over rules. When uncertain, identify which principle applies and use judgment.

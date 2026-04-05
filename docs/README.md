@@ -12,8 +12,7 @@ _Session-by-session log of development activities, key findings, and technical i
 
 _For understanding what we're building and why_
 
-- [business-requirements.md](01-strategy/business-requirements.md) — Functional and non-functional requirements, constraints, dependencies
-- [requirements-status.md](01-strategy/requirements-status.md) — Current implementation progress against requirements
+- [requirements.md](01-strategy/requirements.md) — Requirements, acceptance criteria, and implementation status in one document
 - [project-rules.md](01-strategy/project-rules.md) — Guidelines for documentation, coding, and architecture
 
 **Start here if you're**: Product owner, new to the project, need to understand objectives
@@ -24,6 +23,7 @@ _For understanding what we're building and why_
 
 _For understanding how the system works_
 
+- [architecture/](architecture/) — LikeC4 architecture-as-code diagrams (System Context + Containers, C4 Level 1 & 2)
 - [system-architecture.md](02-architecture/system-architecture.md) — High-level architecture, components, workflows
 - [technology-stack.md](02-architecture/technology-stack.md) — Tools, libraries, frameworks, versions
 - [data-flow.md](02-architecture/data-flow.md) — Data extraction from repositories (Azure DevOps, GitHub)
@@ -98,7 +98,7 @@ _For leveraging AI-powered code generation and development patterns_
 
 | Type             | Purpose                        | Example                                            |
 | ---------------- | ------------------------------ | -------------------------------------------------- |
-| **Requirements** | What the system must do        | business-requirements.md                           |
+| **Requirements** | What the system must do        | requirements.md                                    |
 | **Architecture** | How the system is designed     | system-architecture.md                             |
 | **Design**       | Technical details              | data-storage.md, analysis-pipeline.md              |
 | **Operations**   | How to run and maintain it     | deployment-plan.md, visualization.md               |
@@ -121,9 +121,8 @@ _For leveraging AI-powered code generation and development patterns_
 
 ### For Product / Leadership
 
-1. [business-requirements.md](01-strategy/business-requirements.md) — Understand objectives
-2. [requirements-status.md](01-strategy/requirements-status.md) — See progress
-3. [visualization.md](03-operations/visualization.md) — View what's available to users
+1. [requirements.md](01-strategy/requirements.md) — Understand objectives and see current progress
+2. [visualization.md](03-operations/visualization.md) — View what's available to users
 
 ### For Engineers / Architects
 
@@ -167,7 +166,7 @@ This validator enforces documentation standards from
 
 - **Lost?** Start with your role above and read in order
 - **Need quick info?** Check [scripts/README.md](../scripts/README.md)
-- **Looking for specific feature?** Use [requirements-status.md](01-strategy/requirements-status.md)
+- **Looking for specific feature?** Use [requirements.md](01-strategy/requirements.md)
 - **Want to understand a component?** Navigate to [02-architecture/](02-architecture/)
 
 ---
