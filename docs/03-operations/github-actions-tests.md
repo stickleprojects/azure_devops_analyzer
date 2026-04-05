@@ -8,7 +8,7 @@ Automated test execution on every push and pull request using GitHub Actions. Te
 
 ### Triggers
 
-- **Push**: All branches including main, develop, and feature branches (feat/\*\*)
+- **Push**: `main` and `develop`
 - **Pull Request**: main and develop branches
 - **Manual**: Can be triggered via GitHub Actions UI
 
@@ -21,25 +21,32 @@ Automated test execution on every push and pull request using GitHub Actions. Te
 
 ## Test Execution
 
-### Step 1: Setup
+### Step 1: Documentation Validation
+
+- Runs `bash scripts/validate-documentation.sh README.md`
+- Runs `bash scripts/validate-documentation.sh docs`
+- Executes as a dedicated PR status check: **Documentation Validation**
+- Fails the workflow only on documentation violations; warnings are reported but do not fail the job
+
+### Step 2: Setup
 
 - Checks out code
 - Sets up Python 3.12 with pip caching
 - Installs all dependencies from requirements.txt
 
-### Step 2: Configuration
+### Step 3: Configuration
 
 - Creates `.env.test` with database connection details
 - PostgreSQL automatically available via service container
 - No need for Docker Compose locally in CI
 
-### Step 3: Database Migrations
+### Step 4: Database Migrations
 
 - Runs migrations to set up schema
 - Creates tables, indexes, and hypertables
 - Safe to run multiple times (idempotent)
 
-### Step 4: Tests
+### Step 5: Tests
 
 **Unit Tests** (`tests/unit/`):
 
@@ -54,7 +61,7 @@ Automated test execution on every push and pull request using GitHub Actions. Te
 - May include external API calls (with mocks where possible)
 - ~15-25 seconds typically
 
-### Step 5: Coverage & Reports
+### Step 6: Coverage & Reports
 
 - Generates coverage report (lines/branches covered)
 - Reports to Codecov if token available
@@ -66,12 +73,14 @@ Automated test execution on every push and pull request using GitHub Actions. Te
 
 ✅ **PR can merge only if**:
 
+- Documentation validation completes without violations
 - All unit tests pass
 - All integration tests pass
 - Build completes without errors
 
 ❌ **PR cannot merge if**:
 
+- Documentation validation finds violations
 - Any test fails
 - Workflow times out (> 30 min)
 - Environment setup fails
@@ -80,7 +89,9 @@ Automated test execution on every push and pull request using GitHub Actions. Te
 
 1. Go to your PR on GitHub
 2. Scroll to "Checks" section
-3. Click "Tests" workflow
+3. Click the relevant check:
+   - `Documentation Validation` for docs validation output
+   - `CI Tests` for unit/integration/coverage output
 4. See detailed output, logs, and failures
 
 ## GitHub Actions Capabilities vs Requirements
@@ -172,6 +183,11 @@ PostgreSQL service has automatic health checks:
 6. **Scheduled Runs**: Nightly full test suite
 7. **Artifact Storage**: Store test reports/logs
 
+## Current Check Names
+
+- `Documentation Validation` — validates `README.md` and the `docs/` tree
+- `CI Tests` — runs the Python and shell test paths based on changed files
+
 ## Related Documentation
 
 - [Testing Strategy](../../agents/04-testing.md)
@@ -181,5 +197,5 @@ PostgreSQL service has automatic health checks:
 
 ---
 
-**Last Updated**: 2026-01-29
-**Status**: ✅ Active - Tests required for all PRs
+**Last Updated**: 2026-04-05
+**Status**: ✅ Active - documentation validation and tests run on PRs

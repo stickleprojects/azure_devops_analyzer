@@ -9,21 +9,25 @@ This guide explains how to protect the main branch to ensure all merges go throu
 When branch protection is enabled on `main`:
 
 ✅ **All PRs require**:
+
 - At least 1 approval before merge
 - Stale reviews are dismissed when new commits are pushed
 - Status checks must pass
 
 ✅ **Prevented actions**:
+
 - Force pushes to main (even admins)
 - Direct deletion of main branch
 - Merging without approvals
 
 ✅ **Enforced for**:
+
 - All users (including repository administrators)
 
 ## Quick Setup (Using GitHub CLI)
 
 ### Prerequisites
+
 1. **GitHub CLI installed**: https://cli.github.com
 2. **Authenticated with GitHub**:
    ```bash
@@ -39,6 +43,7 @@ bash scripts/setup-branch-protection.sh
 ```
 
 **Output** (example):
+
 ```
 ✅ Branch protection rules applied:
    • Require pull request reviews (1 approval minimum)
@@ -62,6 +67,7 @@ If you prefer to set this up manually:
    - ✅ **Dismiss stale pull request approvals when new commits are pushed**
    - ✅ **Require approval of reviews before merging** (1 required)
    - ✅ **Require status checks to pass before merging**
+   - If GitHub asks you to choose checks explicitly, select `Documentation Validation` and `CI Tests`
    - ✅ **Include administrators** (enforce for all users)
 5. Disable these:
    - ☐ Allow force pushes
@@ -84,7 +90,7 @@ gh api repos/stickleprojects/azure_devops_analyzer/branches/main/protection
 
 - **PR Requirements**: See [feature-development-workflow.md](../docs/03-operations/feature-development-workflow.md)
 - **Code Review Standards**: See [05-code-review.md](../agents/05-code-review.md)
-- **Pre-Commit Validation**: See [.ai/instructions.md](../.ai/instructions.md#pre-commit-validation-gates)
+- **Pre-Commit Validation**: See [.ai/operations.md](../.ai/operations.md#pre-commit-validation-gates)
 - **Session Continuity**: See [session-continuity.md](../docs/03-operations/session-continuity.md)
 
 ## Updating Protection Rules
@@ -117,9 +123,9 @@ A: Reviewers need to re-review after new commits are pushed. This ensures review
 A: No - branch protection applies equally to all users.
 
 **Q: Do I need status checks configured?**  
-A: The script doesn't require them, but they can be added. Any CI/CD workflows will automatically be required.
+A: Yes. For this repository, PRs should require both `Documentation Validation` and `CI Tests` when specific checks are selected in GitHub branch protection.
 
 ---
 
-**Last Updated**: 2026-01-29  
+**Last Updated**: 2026-04-05  
 **Status**: ✅ Branch protection active

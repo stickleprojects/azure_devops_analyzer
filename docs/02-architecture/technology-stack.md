@@ -488,5 +488,5 @@ This document provides a comprehensive overview of all technologies, tools, and 
 
 ## Next Steps
 
-- Review [01-architecture.md](01-architecture.md) for architecture overview
-- See [07-implementation-plan.md](07-implementation-plan.md) for deployment schedule
+- Review [system-architecture.md](system-architecture.md) for the architecture overview
+- See [../04-implementation/README.md](../04-implementation/README.md) for current implementation planning

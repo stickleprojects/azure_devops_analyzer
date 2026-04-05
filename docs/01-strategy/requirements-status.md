@@ -65,7 +65,7 @@
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 45       | 10      | 17          | 72    |
+| Functional Requirements     | 46       | 9       | 17          | 72    |
 | Non-Functional Requirements | 9        | 6       | 4           | 19    |
 
 **Note:** FR-13.2, FR-13.3, FR-13.5 (formerly FR-11.2, FR-11.3, FR-11.5) updated to Complete - Team management data layer fully implemented with 11 passing integration tests (2026-01-29).
@@ -220,14 +220,14 @@
 
 ### FR-11: Visualization and Reporting
 
-| ID      | Requirement                                             | Priority | Status                         | Notes                                                                                                                                                        |
-| ------- | ------------------------------------------------------- | -------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR-11.1 | System shall provide Grafana dashboards for all metrics | High     | :white_check_mark: Complete    | 7 dashboards implemented: Team Overview, Repository Overview, Repository Deep-Dive, Pull Requests, Contributor Analytics, Security Dashboard, Dashboard Home |
-| FR-11.2 | System shall support time-range filtering               | High     | :white_check_mark: Complete    | All dashboards use Grafana time picker; navigation preserves time range                                                                                      |
-| FR-11.3 | System shall support drill-down navigation              | Medium   | :white_check_mark: Complete    | Repository names in tables link to Deep-Dive dashboard; cross-dashboard navigation links on all dashboards                                                   |
-| FR-11.4 | System shall provide security-focused dashboard views   | High     | :large_orange_diamond: Partial | Security metrics included in Team Overview and Repository Deep-Dive (vulnerabilities, EOL deps); dedicated Security dashboard not yet created                |
+| ID      | Requirement                                             | Priority | Status                      | Notes                                                                                                                                                                                           |
+| ------- | ------------------------------------------------------- | -------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-11.1 | System shall provide Grafana dashboards for all metrics | High     | :white_check_mark: Complete | 9 dashboards implemented: Admin Dashboard, Team Overview, Repository Overview, Repository Deep-Dive, Service Overview, Pull Requests, Contributor Analytics, Security Dashboard, Dashboard Home |
+| FR-11.2 | System shall support time-range filtering               | High     | :white_check_mark: Complete | All dashboards use Grafana time picker; navigation preserves time range                                                                                                                         |
+| FR-11.3 | System shall support drill-down navigation              | Medium   | :white_check_mark: Complete | Repository names in tables link to Deep-Dive dashboard; cross-dashboard navigation links on all dashboards                                                                                      |
+| FR-11.4 | System shall provide security-focused dashboard views   | High     | :white_check_mark: Complete | Dedicated Security Dashboard implemented in `dashboards/security-dashboard.json`; security metrics are also surfaced in Team Overview and Repository Deep-Dive                                  |
 
-**FR-11 Summary:** 3/4 Complete, 1/4 Partial, 0/4 Not Started
+**FR-11 Summary:** 4/4 Complete, 0/4 Partial, 0/4 Not Started
 
 ---
 

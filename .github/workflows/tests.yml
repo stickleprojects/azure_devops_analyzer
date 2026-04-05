@@ -14,6 +14,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  docs:
+    name: Documentation Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate root documentation
+        run: |
+          bash scripts/validate-documentation.sh README.md
+
+      - name: Validate docs tree
+        run: |
+          bash scripts/validate-documentation.sh docs
+
   test:
     name: CI Tests
     runs-on: ubuntu-latest

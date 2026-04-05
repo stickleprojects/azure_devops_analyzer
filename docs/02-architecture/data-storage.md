@@ -442,5 +442,5 @@ PostgreSQL is configured with WAL archiving (`wal_level = replica`, `archive_mod
 
 ## Next Steps
 
-- See [05-orchestration.md](05-orchestration.md) for data insertion workflows
-- Review [06-visualization.md](06-visualization.md) for querying this data in Grafana
+- See [job-orchestration.md](job-orchestration.md) for data insertion workflows
+- Review [../03-operations/visualization.md](../03-operations/visualization.md) for querying this data in Grafana

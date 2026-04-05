@@ -18,6 +18,7 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 **Purpose**: High-level team metrics aggregated across all repositories
 
 **Sections**:
+
 - **Team Summary**: 6 stat panels (repositories, active contributors, commits, PRs created/merged, open PRs)
 - **Team Activity Trends**: Commit activity, PR throughput, daily active contributors, lines changed
 - **Repository Health Matrix**: Color-coded table showing all repos with commits, contributors, open PRs, vulnerabilities, stale branches - click to drill down
@@ -31,6 +32,7 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 **Purpose**: List and compare all repositories
 
 **Panels**:
+
 - **Total Repositories**: Count of active repositories
 - **Total Commits/PRs/Contributors**: Aggregate stats
 - **Commit Activity**: Time series of commits per day (30 days)
@@ -45,6 +47,7 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 **Template Variable**: Repository selector dropdown
 
 **Sections**:
+
 - **Header & Summary**: Repository name, total commits, PRs, contributors
 - **Quick Health Indicators**: Active contributors, test coverage, vulnerabilities, open PRs, stale branches, tech debt
 - **Development Activity**: Commit activity, lines changed, top contributors, top reviewers
@@ -61,6 +64,7 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 **Purpose**: Track PR quality and review efficiency across all repos
 
 **Panels**:
+
 - **Open/Merged/Closed PRs**: Stat panels with 30-day counts
 - **Avg PR Size**: Lines changed per PR
 - **PR Status Distribution**: Pie chart (open/merged/closed)
@@ -74,6 +78,7 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 **Purpose**: Organization-wide security overview with vulnerability and end-of-life dependency tracking
 
 **Sections**:
+
 - **Organization Security Summary**: Total vulnerabilities, EOL dependencies, repositories affected
 - **Vulnerability Analysis**: Severity distribution pie chart, top repositories by critical vulnerabilities
 - **End-of-Life Dependencies**: EOL status categorization (expired, expiring soon, future), repository security overview table with drilldown links
@@ -83,6 +88,7 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 ## Dashboard Navigation
 
 All dashboards are cross-linked:
+
 - **Header Links**: Each dashboard has navigation links to all other dashboards
 - **Data Links**: Repository names in tables are clickable and navigate to the Deep-Dive dashboard with that repository pre-selected
 - **Time Preservation**: Navigation links preserve the current time range (`keepTime: true`)
@@ -99,7 +105,7 @@ All dashboards are cross-linked:
 - **EOL Dependencies**: List of packages that have reached End-of-Life
 - **Vulnerability Trends**: Time series showing vulnerability counts over time
 
-*Note: Security features are currently implemented within the Repository Deep-Dive dashboard under the 'Security & Dependencies' section.*
+_Note: Security features are currently implemented within the Repository Deep-Dive dashboard under the 'Security & Dependencies' section._
 
 ### Code Quality Dashboard (Not Yet Implemented)
 
@@ -167,5 +173,5 @@ Grafana is configured to use connection pooling to manage database load efficien
 
 ## Next Steps
 
-- See [07-implementation-plan.md](07-implementation-plan.md) for deployment roadmap
-- Review [08-technology-stack.md](08-technology-stack.md) for complete technology overview
+- See [../04-implementation/README.md](../04-implementation/README.md) for current planning documents
+- Review [../02-architecture/technology-stack.md](../02-architecture/technology-stack.md) for the complete technology overview
