@@ -5,11 +5,11 @@
     "Python"
   ],
   "file_names": [
+    "README.md",
     "app.py",
     "config.yaml",
     "requirements.txt",
-    "tests/test_app.py",
-    "README.md"
+    "tests/test_app.py"
   ],
   "manifests": {
     "requirements.txt": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
@@ -60,6 +60,247 @@
           "references": []
         }
       ]
+    }
+  ],
+  "commits": [
+    {
+      "commit_hash": "9d26a8d39562fa54d06bee34101a2e9d1ea7104a",
+      "author_name": "Eve Jones",
+      "author_email": "eve.jones@test.org",
+      "committer_name": "Charlie Johnson",
+      "committer_email": "charlie.johnson@sample.net",
+      "message": "GitHub Actions workflow",
+      "commit_date": "2026-01-16T00:00:00Z",
+      "files_changed": 5,
+      "lines_added": 34,
+      "lines_removed": 39
+    },
+    {
+      "commit_hash": "954ae982ae6b2cac20583111b68a0dd087564321",
+      "author_name": "Eve Jones",
+      "author_email": "eve.jones@example.com",
+      "committer_name": "Eve Johnson",
+      "committer_email": "eve.johnson@sample.net",
+      "message": "pipeline trigger fix",
+      "commit_date": "2026-01-26T00:00:00Z",
+      "files_changed": 4,
+      "lines_added": 65,
+      "lines_removed": 18
+    },
+    {
+      "commit_hash": "5e46d9f08632052ae8f7883894a4cc5b4e0109b6",
+      "author_name": "Charlie Williams",
+      "author_email": "charlie.williams@sample.net",
+      "committer_name": "Alice Jones",
+      "committer_email": "alice.jones@sample.net",
+      "message": "Jenkinsfile stage",
+      "commit_date": "2026-02-04T00:00:00Z",
+      "files_changed": 3,
+      "lines_added": 47,
+      "lines_removed": 39
+    },
+    {
+      "commit_hash": "a07af000f3d042dd0a67012f39adbd5db59425f4",
+      "author_name": "Bob Williams",
+      "author_email": "bob.williams@sample.net",
+      "committer_name": "David Johnson",
+      "committer_email": "david.johnson@test.org",
+      "message": "GitHub Actions workflow",
+      "commit_date": "2026-02-09T00:00:00Z",
+      "files_changed": 6,
+      "lines_added": 80,
+      "lines_removed": 17
+    },
+    {
+      "commit_hash": "1d29011d409be66324adc4c42cc6a7f24de33012",
+      "author_name": "Alice Williams",
+      "author_email": "alice.williams@example.com",
+      "committer_name": "Alice Williams",
+      "committer_email": "alice.williams@test.org",
+      "message": "build optimization",
+      "commit_date": "2026-02-26T00:00:00Z",
+      "files_changed": 5,
+      "lines_added": 40,
+      "lines_removed": 4
+    },
+    {
+      "commit_hash": "158a53c34fb2d61780f7943e0449872b29b650de",
+      "author_name": "Eve Williams",
+      "author_email": "eve.williams@test.org",
+      "committer_name": "Alice Jones",
+      "committer_email": "alice.jones@sample.net",
+      "message": "CI/CD improvement",
+      "commit_date": "2026-02-27T00:00:00Z",
+      "files_changed": 4,
+      "lines_added": 54,
+      "lines_removed": 39
+    },
+    {
+      "commit_hash": "2f8a26bab0566a57df45c14894ccef6a649239eb",
+      "author_name": "Eve Jones",
+      "author_email": "eve.jones@test.org",
+      "committer_name": "Eve Jones",
+      "committer_email": "eve.jones@test.org",
+      "message": "build optimization",
+      "commit_date": "2026-02-28T00:00:00Z",
+      "files_changed": 6,
+      "lines_added": 64,
+      "lines_removed": 18
+    },
+    {
+      "commit_hash": "71437a2a4a2ffcc6db9ee21e4833aca604152b2d",
+      "author_name": "Alice Jones",
+      "author_email": "alice.jones@example.com",
+      "committer_name": "Alice Smith",
+      "committer_email": "alice.smith@sample.net",
+      "message": "CI/CD improvement",
+      "commit_date": "2026-03-05T00:00:00Z",
+      "files_changed": 4,
+      "lines_added": 66,
+      "lines_removed": 32
+    },
+    {
+      "commit_hash": "00788fb5812d6f4bb2341574f24c481b62188450",
+      "author_name": "Charlie Jones",
+      "author_email": "charlie.jones@test.org",
+      "committer_name": "Charlie Jones",
+      "committer_email": "charlie.jones@example.com",
+      "message": "GitHub Actions workflow",
+      "commit_date": "2026-03-11T00:00:00Z",
+      "files_changed": 6,
+      "lines_added": 38,
+      "lines_removed": 24
+    },
+    {
+      "commit_hash": "7beaaa49938640e9e820dc37321907bf9671e695",
+      "author_name": "Bob Brown",
+      "author_email": "bob.brown@test.org",
+      "committer_name": "Alice Johnson",
+      "committer_email": "alice.johnson@example.com",
+      "message": "pipeline trigger fix",
+      "commit_date": "2026-03-14T00:00:00Z",
+      "files_changed": 2,
+      "lines_added": 16,
+      "lines_removed": 6
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Improve build speed",
+      "description": "Added Fix CI trigger",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-03-14T00:00:00Z",
+      "author_name": "Alice Smith",
+      "author_email": "alice.smith@example.com",
+      "review_comments": 3,
+      "commits_count": 2,
+      "files_changed": 5,
+      "lines_added": 27,
+      "lines_removed": 52,
+      "merged_at": "2026-03-22T00:00:00Z"
+    },
+    {
+      "pr_number": 2,
+      "title": "Improve build speed",
+      "description": "Added Standardize CI configuration",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "open",
+      "created_at": "2026-01-11T00:00:00Z",
+      "author_name": "Alice Jones",
+      "author_email": "alice.jones@example.com",
+      "review_comments": 5,
+      "commits_count": 2,
+      "files_changed": 2,
+      "lines_added": 103,
+      "lines_removed": 22
+    },
+    {
+      "pr_number": 3,
+      "title": "Fix CI trigger",
+      "description": "Added Add GitHub Actions workflow",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "open",
+      "created_at": "2026-02-03T00:00:00Z",
+      "author_name": "Charlie Jones",
+      "author_email": "charlie.jones@sample.net",
+      "review_comments": 5,
+      "commits_count": 1,
+      "files_changed": 3,
+      "lines_added": 100,
+      "lines_removed": 49
+    },
+    {
+      "pr_number": 4,
+      "title": "Add Jenkins stage",
+      "description": "Added Standardize CI configuration",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-03-03T00:00:00Z",
+      "author_name": "Eve Smith",
+      "author_email": "eve.smith@sample.net",
+      "review_comments": 2,
+      "commits_count": 1,
+      "files_changed": 6,
+      "lines_added": 48,
+      "lines_removed": 48,
+      "merged_at": "2026-03-12T00:00:00Z"
+    },
+    {
+      "pr_number": 5,
+      "title": "Add GitHub Actions workflow",
+      "description": "Added Add Jenkins stage",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-10T00:00:00Z",
+      "author_name": "David Johnson",
+      "author_email": "david.johnson@example.com",
+      "review_comments": 4,
+      "commits_count": 5,
+      "files_changed": 7,
+      "lines_added": 76,
+      "lines_removed": 41,
+      "merged_at": "2026-02-14T00:00:00Z"
+    },
+    {
+      "pr_number": 6,
+      "title": "Fix CI trigger",
+      "description": "Added Add GitHub Actions workflow",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-03-12T00:00:00Z",
+      "author_name": "Charlie Brown",
+      "author_email": "charlie.brown@sample.net",
+      "review_comments": 5,
+      "commits_count": 3,
+      "files_changed": 8,
+      "lines_added": 111,
+      "lines_removed": 36,
+      "merged_at": "2026-03-31T00:00:00Z"
+    },
+    {
+      "pr_number": 7,
+      "title": "Improve build speed",
+      "description": "Added Add Jenkins stage",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-02-01T00:00:00Z",
+      "author_name": "Charlie Jones",
+      "author_email": "charlie.jones@sample.net",
+      "review_comments": 0,
+      "commits_count": 4,
+      "files_changed": 8,
+      "lines_added": 117,
+      "lines_removed": 6,
+      "merged_at": "2026-02-10T00:00:00Z"
     }
   ]
 }

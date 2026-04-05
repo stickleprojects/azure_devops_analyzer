@@ -5,11 +5,11 @@
     "Python"
   ],
   "file_names": [
+    "README.md",
     "app.py",
     "config.yaml",
     "requirements.txt",
-    "tests/test_app.py",
-    "README.md"
+    "tests/test_app.py"
   ],
   "manifests": {
     "requirements.txt": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
@@ -70,6 +70,202 @@
       "is_eol": true,
       "eol_date": "2022-05-01",
       "vulnerabilities": []
+    }
+  ],
+  "commits": [
+    {
+      "commit_hash": "2956578e0c41cd3879884002b8acf04e15883080",
+      "author_name": "Charlie Jones",
+      "author_email": "charlie.jones@test.org",
+      "committer_name": "Charlie Jones",
+      "committer_email": "charlie.jones@test.org",
+      "message": "CI/CD pipeline",
+      "commit_date": "2026-01-08T00:00:00Z",
+      "files_changed": 2,
+      "lines_added": 67,
+      "lines_removed": 46
+    },
+    {
+      "commit_hash": "33aee23a1ab1cd68acf1296dbb3836d772e2c5da",
+      "author_name": "Bob Jones",
+      "author_email": "bob.jones@example.com",
+      "committer_name": "Bob Jones",
+      "committer_email": "bob.jones@test.org",
+      "message": "CI/CD pipeline",
+      "commit_date": "2026-01-29T00:00:00Z",
+      "files_changed": 4,
+      "lines_added": 71,
+      "lines_removed": 28
+    },
+    {
+      "commit_hash": "7618ba1d2240cadb35098f71189e7d37b81b6a27",
+      "author_name": "Charlie Brown",
+      "author_email": "charlie.brown@example.com",
+      "committer_name": "Alice Smith",
+      "committer_email": "alice.smith@example.com",
+      "message": "requirements update",
+      "commit_date": "2026-02-11T00:00:00Z",
+      "files_changed": 4,
+      "lines_added": 56,
+      "lines_removed": 41
+    },
+    {
+      "commit_hash": "a08ef9f765de8b963f555d03f215981bc17f43f4",
+      "author_name": "Eve Johnson",
+      "author_email": "eve.johnson@test.org",
+      "committer_name": "Alice Smith",
+      "committer_email": "alice.smith@example.com",
+      "message": "pytest configuration",
+      "commit_date": "2026-02-17T00:00:00Z",
+      "files_changed": 3,
+      "lines_added": 60,
+      "lines_removed": 6
+    },
+    {
+      "commit_hash": "414278eafad81bd7e211041f1d47307497ac322e",
+      "author_name": "David Johnson",
+      "author_email": "david.johnson@sample.net",
+      "committer_name": "David Johnson",
+      "committer_email": "david.johnson@example.com",
+      "message": "requirements update",
+      "commit_date": "2026-02-19T00:00:00Z",
+      "files_changed": 7,
+      "lines_added": 41,
+      "lines_removed": 28
+    },
+    {
+      "commit_hash": "0eeb68eb039b624d585ff29d618dccefde983b66",
+      "author_name": "Eve Williams",
+      "author_email": "eve.williams@test.org",
+      "committer_name": "David Johnson",
+      "committer_email": "david.johnson@example.com",
+      "message": "Flask endpoint",
+      "commit_date": "2026-03-10T00:00:00Z",
+      "files_changed": 2,
+      "lines_added": 100,
+      "lines_removed": 9
+    },
+    {
+      "commit_hash": "5334918278dbaf1cc68958e2aea08808e13f3a16",
+      "author_name": "Alice Johnson",
+      "author_email": "alice.johnson@sample.net",
+      "committer_name": "Alice Johnson",
+      "committer_email": "alice.johnson@example.com",
+      "message": "pytest configuration",
+      "commit_date": "2026-03-12T00:00:00Z",
+      "files_changed": 2,
+      "lines_added": 37,
+      "lines_removed": 1
+    },
+    {
+      "commit_hash": "1ed21918cd80e6c63516dfebd0828aa594671715",
+      "author_name": "David Johnson",
+      "author_email": "david.johnson@example.com",
+      "committer_name": "David Johnson",
+      "committer_email": "david.johnson@sample.net",
+      "message": "requirements update",
+      "commit_date": "2026-03-12T00:00:00Z",
+      "files_changed": 5,
+      "lines_added": 24,
+      "lines_removed": 1
+    },
+    {
+      "commit_hash": "32ef9f4a765f4ceb5d28b561356d6839aa139247",
+      "author_name": "Bob Johnson",
+      "author_email": "bob.johnson@test.org",
+      "committer_name": "David Johnson",
+      "committer_email": "david.johnson@test.org",
+      "message": "Flask endpoint",
+      "commit_date": "2026-03-17T00:00:00Z",
+      "files_changed": 2,
+      "lines_added": 62,
+      "lines_removed": 35
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Update CI/CD pipeline",
+      "description": "Added Improve Flask API",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-02-05T00:00:00Z",
+      "author_name": "David Brown",
+      "author_email": "david.brown@test.org",
+      "review_comments": 4,
+      "commits_count": 3,
+      "files_changed": 3,
+      "lines_added": 133,
+      "lines_removed": 47,
+      "merged_at": "2026-02-10T00:00:00Z"
+    },
+    {
+      "pr_number": 2,
+      "title": "Add Docker support",
+      "description": "Added Improve Flask API",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-03-28T00:00:00Z",
+      "author_name": "David Brown",
+      "author_email": "david.brown@sample.net",
+      "review_comments": 5,
+      "commits_count": 1,
+      "files_changed": 9,
+      "lines_added": 55,
+      "lines_removed": 26,
+      "merged_at": "2026-03-28T00:00:00Z"
+    },
+    {
+      "pr_number": 3,
+      "title": "Add unit tests",
+      "description": "Added Add Docker support",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "closed",
+      "created_at": "2026-02-04T00:00:00Z",
+      "author_name": "David Williams",
+      "author_email": "david.williams@sample.net",
+      "review_comments": 2,
+      "commits_count": 3,
+      "files_changed": 7,
+      "lines_added": 194,
+      "lines_removed": 45,
+      "closed_at": "2026-03-06T00:00:00Z"
+    },
+    {
+      "pr_number": 4,
+      "title": "Update CI/CD pipeline",
+      "description": "Added Add Docker support",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-03-08T00:00:00Z",
+      "author_name": "Eve Brown",
+      "author_email": "eve.brown@test.org",
+      "review_comments": 5,
+      "commits_count": 5,
+      "files_changed": 4,
+      "lines_added": 175,
+      "lines_removed": 64,
+      "merged_at": "2026-03-14T00:00:00Z"
+    },
+    {
+      "pr_number": 5,
+      "title": "Update CI/CD pipeline",
+      "description": "Added Update CI/CD pipeline",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "open",
+      "created_at": "2026-03-01T00:00:00Z",
+      "author_name": "Charlie Johnson",
+      "author_email": "charlie.johnson@sample.net",
+      "review_comments": 3,
+      "commits_count": 3,
+      "files_changed": 3,
+      "lines_added": 155,
+      "lines_removed": 34
     }
   ]
 }

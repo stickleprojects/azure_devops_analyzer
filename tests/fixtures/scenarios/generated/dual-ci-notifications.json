@@ -5,11 +5,11 @@
     "Python"
   ],
   "file_names": [
+    "README.md",
     "app.py",
     "config.yaml",
     "requirements.txt",
-    "tests/test_app.py",
-    "README.md"
+    "tests/test_app.py"
   ],
   "manifests": {
     "requirements.txt": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
@@ -60,6 +60,165 @@
           "references": []
         }
       ]
+    }
+  ],
+  "commits": [
+    {
+      "commit_hash": "23112e0b1a6eec8d85ba139fc42ebe16e0c92cd9",
+      "author_name": "Eve Williams",
+      "author_email": "eve.williams@test.org",
+      "committer_name": "David Jones",
+      "committer_email": "david.jones@example.com",
+      "message": "GitHub Actions workflow",
+      "commit_date": "2026-01-26T00:00:00Z",
+      "files_changed": 4,
+      "lines_added": 80,
+      "lines_removed": 13
+    },
+    {
+      "commit_hash": "972840a4c06f65600026c3a19c34d73dd0d44fa1",
+      "author_name": "David Brown",
+      "author_email": "david.brown@test.org",
+      "committer_name": "David Brown",
+      "committer_email": "david.brown@example.com",
+      "message": "CI/CD improvement",
+      "commit_date": "2026-02-03T00:00:00Z",
+      "files_changed": 5,
+      "lines_added": 34,
+      "lines_removed": 38
+    },
+    {
+      "commit_hash": "901d7cfe3cfcb5188fa952be3222c153e18dfc94",
+      "author_name": "Charlie Williams",
+      "author_email": "charlie.williams@sample.net",
+      "committer_name": "Charlie Smith",
+      "committer_email": "charlie.smith@sample.net",
+      "message": "CI/CD improvement",
+      "commit_date": "2026-02-14T00:00:00Z",
+      "files_changed": 6,
+      "lines_added": 14,
+      "lines_removed": 29
+    },
+    {
+      "commit_hash": "bbff1b2eae189f735bb3b629942c3e66de0fc1ec",
+      "author_name": "David Johnson",
+      "author_email": "david.johnson@example.com",
+      "committer_name": "Alice Williams",
+      "committer_email": "alice.williams@test.org",
+      "message": "GitHub Actions workflow",
+      "commit_date": "2026-03-04T00:00:00Z",
+      "files_changed": 5,
+      "lines_added": 16,
+      "lines_removed": 22
+    },
+    {
+      "commit_hash": "b091ff261d62139f27d626ee0543ab9ef823c590",
+      "author_name": "Charlie Smith",
+      "author_email": "charlie.smith@example.com",
+      "committer_name": "Bob Jones",
+      "committer_email": "bob.jones@example.com",
+      "message": "Jenkinsfile stage",
+      "commit_date": "2026-03-06T00:00:00Z",
+      "files_changed": 2,
+      "lines_added": 74,
+      "lines_removed": 2
+    },
+    {
+      "commit_hash": "9b2588a7daa75da04d161a4dfc81e72fdefb1122",
+      "author_name": "David Williams",
+      "author_email": "david.williams@example.com",
+      "committer_name": "Eve Smith",
+      "committer_email": "eve.smith@example.com",
+      "message": "pipeline trigger fix",
+      "commit_date": "2026-03-31T00:00:00Z",
+      "files_changed": 6,
+      "lines_added": 71,
+      "lines_removed": 13
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Add Jenkins stage",
+      "description": "Added Add Jenkins stage",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "open",
+      "created_at": "2026-03-14T00:00:00Z",
+      "author_name": "Bob Brown",
+      "author_email": "bob.brown@sample.net",
+      "review_comments": 5,
+      "commits_count": 4,
+      "files_changed": 4,
+      "lines_added": 82,
+      "lines_removed": 56
+    },
+    {
+      "pr_number": 2,
+      "title": "Add GitHub Actions workflow",
+      "description": "Added Add Jenkins stage",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "open",
+      "created_at": "2026-01-31T00:00:00Z",
+      "author_name": "Bob Jones",
+      "author_email": "bob.jones@sample.net",
+      "review_comments": 1,
+      "commits_count": 1,
+      "files_changed": 2,
+      "lines_added": 85,
+      "lines_removed": 36
+    },
+    {
+      "pr_number": 3,
+      "title": "Improve build speed",
+      "description": "Added Standardize CI configuration",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-02-06T00:00:00Z",
+      "author_name": "Eve Johnson",
+      "author_email": "eve.johnson@example.com",
+      "review_comments": 1,
+      "commits_count": 1,
+      "files_changed": 5,
+      "lines_added": 104,
+      "lines_removed": 5,
+      "merged_at": "2026-03-22T00:00:00Z"
+    },
+    {
+      "pr_number": 4,
+      "title": "Add GitHub Actions workflow",
+      "description": "Added Standardize CI configuration",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-03-31T00:00:00Z",
+      "author_name": "Charlie Johnson",
+      "author_email": "charlie.johnson@test.org",
+      "review_comments": 3,
+      "commits_count": 4,
+      "files_changed": 8,
+      "lines_added": 81,
+      "lines_removed": 34,
+      "merged_at": "2026-04-01T00:00:00Z"
+    },
+    {
+      "pr_number": 5,
+      "title": "Standardize CI configuration",
+      "description": "Added Standardize CI configuration",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-03-22T00:00:00Z",
+      "author_name": "Bob Brown",
+      "author_email": "bob.brown@test.org",
+      "review_comments": 1,
+      "commits_count": 3,
+      "files_changed": 2,
+      "lines_added": 81,
+      "lines_removed": 55,
+      "merged_at": "2026-03-26T00:00:00Z"
     }
   ]
 }

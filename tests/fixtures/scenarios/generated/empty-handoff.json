@@ -8,5 +8,7 @@
     "main",
     "develop"
   ],
-  "vulnerability_data": []
+  "vulnerability_data": [],
+  "commits": [],
+  "pull_requests": []
 }

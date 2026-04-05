@@ -5,11 +5,11 @@
     "Go"
   ],
   "file_names": [
-    "main.go",
-    "go.sum",
     "Makefile",
+    "README.md",
     "go.mod",
-    "README.md"
+    "go.sum",
+    "main.go"
   ],
   "manifests": {
     "go.mod": "module go-microservice\n\ngo 1.18",
@@ -41,6 +41,178 @@
           "references": []
         }
       ]
+    }
+  ],
+  "commits": [
+    {
+      "commit_hash": "77cbf54490123a5b163c62127fcf0149be3d7372",
+      "author_name": "Bob Johnson",
+      "author_email": "bob.johnson@sample.net",
+      "committer_name": "David Brown",
+      "committer_email": "david.brown@test.org",
+      "message": "Improve error handling",
+      "commit_date": "2026-01-19T00:00:00Z",
+      "files_changed": 7,
+      "lines_added": 67,
+      "lines_removed": 40
+    },
+    {
+      "commit_hash": "4a2d7edc3055f55c1438be8dfe359002b170b9c1",
+      "author_name": "Charlie Johnson",
+      "author_email": "charlie.johnson@example.com",
+      "committer_name": "Alice Brown",
+      "committer_email": "alice.brown@example.com",
+      "message": "Update go.mod",
+      "commit_date": "2026-01-28T00:00:00Z",
+      "files_changed": 5,
+      "lines_added": 78,
+      "lines_removed": 2
+    },
+    {
+      "commit_hash": "3918adc0cf3d17f161d28b048a16724f6887c9c6",
+      "author_name": "Bob Jones",
+      "author_email": "bob.jones@example.com",
+      "committer_name": "Bob Jones",
+      "committer_email": "bob.jones@sample.net",
+      "message": "Implement middleware",
+      "commit_date": "2026-02-14T00:00:00Z",
+      "files_changed": 5,
+      "lines_added": 34,
+      "lines_removed": 41
+    },
+    {
+      "commit_hash": "22963a67f83c8d5ef6303ff96db30dd6d29a9e2c",
+      "author_name": "Eve Smith",
+      "author_email": "eve.smith@example.com",
+      "committer_name": "Eve Smith",
+      "committer_email": "eve.smith@example.com",
+      "message": "Implement middleware",
+      "commit_date": "2026-02-15T00:00:00Z",
+      "files_changed": 2,
+      "lines_added": 26,
+      "lines_removed": 45
+    },
+    {
+      "commit_hash": "90327fbce315a2cc057c5b3d6848555c2302e0f6",
+      "author_name": "David Jones",
+      "author_email": "david.jones@sample.net",
+      "committer_name": "David Jones",
+      "committer_email": "david.jones@test.org",
+      "message": "Update go.mod",
+      "commit_date": "2026-03-08T00:00:00Z",
+      "files_changed": 8,
+      "lines_added": 19,
+      "lines_removed": 10
+    },
+    {
+      "commit_hash": "be6dfc8d9e115b2992396a8d07680cb7f265ce8e",
+      "author_name": "Alice Johnson",
+      "author_email": "alice.johnson@sample.net",
+      "committer_name": "Alice Smith",
+      "committer_email": "alice.smith@sample.net",
+      "message": "Add Gin router",
+      "commit_date": "2026-03-20T00:00:00Z",
+      "files_changed": 4,
+      "lines_added": 76,
+      "lines_removed": 37
+    },
+    {
+      "commit_hash": "2ffd5639dbfa445b180084fa32cd79ad21d9cbcf",
+      "author_name": "Eve Williams",
+      "author_email": "eve.williams@sample.net",
+      "committer_name": "Eve Williams",
+      "committer_email": "eve.williams@test.org",
+      "message": "Optimize concurrency",
+      "commit_date": "2026-03-26T00:00:00Z",
+      "files_changed": 4,
+      "lines_added": 35,
+      "lines_removed": 48
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Add Gin router",
+      "description": "Added Optimize concurrency",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-02-10T00:00:00Z",
+      "author_name": "Bob Johnson",
+      "author_email": "bob.johnson@test.org",
+      "review_comments": 5,
+      "commits_count": 1,
+      "files_changed": 7,
+      "lines_added": 61,
+      "lines_removed": 27,
+      "merged_at": "2026-03-22T00:00:00Z"
+    },
+    {
+      "pr_number": 2,
+      "title": "Add Gin router",
+      "description": "Added Implement middleware",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-02-12T00:00:00Z",
+      "author_name": "Eve Williams",
+      "author_email": "eve.williams@sample.net",
+      "review_comments": 3,
+      "commits_count": 5,
+      "files_changed": 6,
+      "lines_added": 50,
+      "lines_removed": 5,
+      "merged_at": "2026-02-25T00:00:00Z"
+    },
+    {
+      "pr_number": 3,
+      "title": "Implement middleware",
+      "description": "Added Improve error handling",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-02-10T00:00:00Z",
+      "author_name": "Eve Jones",
+      "author_email": "eve.jones@sample.net",
+      "review_comments": 2,
+      "commits_count": 4,
+      "files_changed": 7,
+      "lines_added": 35,
+      "lines_removed": 60,
+      "merged_at": "2026-02-17T00:00:00Z"
+    },
+    {
+      "pr_number": 4,
+      "title": "Improve error handling",
+      "description": "Added Implement middleware",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-03-15T00:00:00Z",
+      "author_name": "Eve Jones",
+      "author_email": "eve.jones@test.org",
+      "review_comments": 3,
+      "commits_count": 4,
+      "files_changed": 10,
+      "lines_added": 31,
+      "lines_removed": 45,
+      "merged_at": "2026-04-01T00:00:00Z"
+    },
+    {
+      "pr_number": 5,
+      "title": "Optimize concurrency",
+      "description": "Added Improve error handling",
+      "source_branch": "develop",
+      "target_branch": "main",
+      "status": "open",
+      "created_at": "2026-02-12T00:00:00Z",
+      "author_name": "Alice Jones",
+      "author_email": "alice.jones@test.org",
+      "review_comments": 3,
+      "commits_count": 1,
+      "files_changed": 6,
+      "lines_added": 69,
+      "lines_removed": 21
     }
   ]
 }

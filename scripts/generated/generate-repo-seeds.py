@@ -1,7 +1,17 @@
 #!/usr/bin/env python3
-"""Generate fixture repository seed JSON files from config.json."""
+"""Generate fixture repository seed JSON files from config.json.
 
+This is a single-stage generator: it produces complete fixtures including
+commits and pull requests in one pass, making re-generation safe and
+idempotent.  Commit/PR data is produced deterministically by seeding the
+PRNG with a hash of the repository name, so the output is stable across
+runs without depending on a separate enrichment step.
+"""
+
+import hashlib
 import json
+import random
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 # Synthetic vulnerability data per template — deterministic, no external API calls.
@@ -307,6 +317,120 @@ DEFAULT_BRANCHES = {
     "Go": ["main", "develop", "feature/gin-router"]
 }
 
+# ---------------------------------------------------------------------------
+# Enrichment helpers (deterministic, no external dependencies)
+# ---------------------------------------------------------------------------
+
+_FIRST_NAMES = ["Alice", "Bob", "Charlie", "David", "Eve"]
+_LAST_NAMES = ["Smith", "Johnson", "Williams", "Brown", "Jones"]
+_DOMAINS = ["example.com", "test.org", "sample.net"]
+
+
+def _realistic_name() -> str:
+    return f"{random.choice(_FIRST_NAMES)} {random.choice(_LAST_NAMES)}"
+
+
+def _realistic_email(name: str) -> str:
+    first, last = name.split()
+    return f"{first.lower()}.{last.lower()}@{random.choice(_DOMAINS)}"
+
+
+def _commit_hash() -> str:
+    return "".join(random.choices("0123456789abcdef", k=40))
+
+
+def _random_date(start: datetime, end: datetime) -> datetime:
+    delta_days = int((end - start).total_seconds() / 86400)
+    return start + timedelta(days=random.randint(0, max(delta_days, 0)))
+
+
+def _load_pattern(config: dict, template_name: str) -> dict:
+    """Return the merged pattern config for a template."""
+    tmpl = config["repo_templates"][template_name]
+    pat = config["patterns"][tmpl["pattern"]]
+    return {
+        "commit_message_themes": tmpl["commit_message_themes"],
+        "pr_title_themes": tmpl["pr_title_themes"],
+        "commit_min": pat["commits"]["min"],
+        "commit_max": pat["commits"]["max"],
+        "pr_min": pat["pull_requests"]["min"],
+        "pr_max": pat["pull_requests"]["max"],
+        "commit_meta": pat["commit_metadata"],
+        "pr_meta": pat["pr_metadata"],
+        "pr_status": pat["pr_status"],
+    }
+
+
+def _generate_commits(cfg: dict, end_date: datetime) -> list[dict]:
+    start_date = end_date - timedelta(days=90)
+    num = random.randint(cfg["commit_min"], cfg["commit_max"])
+    dates = sorted(_random_date(start_date, end_date) for _ in range(num))
+    cm = cfg["commit_meta"]
+    commits = []
+    for dt in dates:
+        author = _realistic_name()
+        committer = random.choice([author, _realistic_name()])
+        commits.append({
+            "commit_hash": _commit_hash(),
+            "author_name": author,
+            "author_email": _realistic_email(author),
+            "committer_name": committer,
+            "committer_email": _realistic_email(committer),
+            "message": random.choice(cfg["commit_message_themes"]),
+            "commit_date": dt.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "files_changed": random.randint(cm["files_changed"]["min"], cm["files_changed"]["max"]),
+            "lines_added": random.randint(cm["lines_added"]["min"], cm["lines_added"]["max"]),
+            "lines_removed": random.randint(cm["lines_removed"]["min"], cm["lines_removed"]["max"]),
+        })
+    return commits
+
+
+def _generate_pull_requests(cfg: dict, branch_names: list[str], end_date: datetime) -> list[dict]:
+    start_date = end_date - timedelta(days=90)
+    num = random.randint(cfg["pr_min"], cfg["pr_max"])
+    status_keys = list(cfg["pr_status"].keys())
+    status_weights = [cfg["pr_status"][k] for k in status_keys]
+    pm = cfg["pr_meta"]
+    default_branch = branch_names[0] if branch_names else "main"
+    feature_branches = branch_names[1:] if len(branch_names) > 1 else ["feature/update"]
+    prs = []
+    for pr_number in range(1, num + 1):
+        created_at = _random_date(start_date, end_date)
+        status = random.choices(status_keys, weights=status_weights, k=1)[0]
+        author = _realistic_name()
+        pr: dict = {
+            "pr_number": pr_number,
+            "title": random.choice(cfg["pr_title_themes"]),
+            "description": f"Added {random.choice(cfg['pr_title_themes'])}",
+            "source_branch": random.choice(feature_branches),
+            "target_branch": default_branch,
+            "status": status,
+            "created_at": created_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "author_name": author,
+            "author_email": _realistic_email(author),
+            "review_comments": random.randint(0, 5),
+            "commits_count": random.randint(1, 5),
+            "files_changed": random.randint(pm["files_changed"]["min"], pm["files_changed"]["max"]),
+            "lines_added": random.randint(pm["lines_added"]["min"], pm["lines_added"]["max"]),
+            "lines_removed": random.randint(pm["lines_removed"]["min"], pm["lines_removed"]["max"]),
+        }
+        if status == "merged":
+            pr["merged_at"] = _random_date(created_at, end_date).strftime("%Y-%m-%dT%H:%M:%SZ")
+        elif status == "closed":
+            pr["closed_at"] = _random_date(created_at, end_date).strftime("%Y-%m-%dT%H:%M:%SZ")
+        prs.append(pr)
+    return prs
+
+
+def _repo_rng_seed(name: str) -> int:
+    """Return a stable 32-bit integer seed derived from the repo name."""
+    return int(hashlib.md5(name.encode()).hexdigest()[:8], 16)
+
+
+# ---------------------------------------------------------------------------
+# Seed generation (complete fixtures in a single pass)
+# ---------------------------------------------------------------------------
+
 def generate_repo_seed(config, repo_set):
     template_name = repo_set["template"]
     template = config["repo_templates"][template_name]
@@ -318,6 +442,14 @@ def generate_repo_seed(config, repo_set):
         services = repo_set["services"]
         names = [name_template.format(service=s) for s in services]
 
+    # Fixed reference date so the generator is fully deterministic across runs.
+    # Update this date when you want to advance the fixture timeline.
+    end_date = datetime(2026, 4, 1, tzinfo=timezone.utc)
+
+    # Load the pattern config for commits/PRs.
+    pat = _load_pattern(config, template_name)
+    is_empty = pat["commit_max"] == 0
+
     seeds = []
     for name in names:
         description_template = repo_set.get("description_template", template.get("description"))
@@ -327,7 +459,6 @@ def generate_repo_seed(config, repo_set):
 
         file_names = []
         manifests = {}
-
         for lang in languages:
             if lang in DEFAULT_FILE_NAMES:
                 file_names.extend(DEFAULT_FILE_NAMES[lang])
@@ -336,49 +467,44 @@ def generate_repo_seed(config, repo_set):
 
         branches = DEFAULT_BRANCHES.get(template_name, ["main", "develop"])
 
-        # Include synthetic vulnerability data for this template (if defined).
-        # This is used by tests to call store_package_metadata + store_repo_dependencies
-        # directly without any live API calls.
+        # Vulnerability data is fully deterministic — no RNG needed.
         vulnerability_data = VULNERABILITY_DATA_BY_TEMPLATE.get(template_name, [])
+
+        # Seed the PRNG from the repo name so commit/PR data is stable across
+        # re-runs while still varying between repos.
+        random.seed(_repo_rng_seed(name))
+
+        if is_empty:
+            commits: list[dict] = []
+            pull_requests: list[dict] = []
+        else:
+            commits = _generate_commits(pat, end_date)
+            pull_requests = _generate_pull_requests(pat, branches, end_date)
 
         seed = {
             "name": name,
             "description": description,
             "languages": languages,
-            "file_names": list(set(file_names)),
+            "file_names": sorted(set(file_names)),
             "manifests": manifests,
             "branches": branches,
             "vulnerability_data": vulnerability_data,
+            "commits": commits,
+            "pull_requests": pull_requests,
         }
 
         seeds.append(seed)
 
     return seeds
 
+
 def main():
     config_path = Path("tests/fixtures/scenarios/config.json")
     output_dir = Path("tests/fixtures/scenarios/generated/")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    try:
-        with open(config_path) as f:
-            config = json.load(f)
-    except FileNotFoundError:
-        print("Error: config.json not found. Using fallback 10-repo list.", file=sys.stderr)
-        config = {
-            "repo_sets": [
-                {"template": "python-docker", "names": ["python-docker"]},
-                {"template": "go-microservice", "names": ["go-microservice"]},
-                {"template": "react-spa", "names": ["react-spa"]},
-                {"template": "fullstack-monorepo", "names": ["fullstack-monorepo"]},
-                {"template": "java-maven-jenkins", "names": ["java-maven-jenkins"]},
-                {"template": "legacy-migration", "names": ["legacy-migration"]},
-                {"template": "dual-ci", "names": ["dual-ci"]},
-                {"template": "python-dual-deps", "names": ["python-dual-deps"]},
-                {"template": "edge-case-empty", "names": ["empty-repo"]},
-                {"template": "deep-nested-manifests", "names": ["deep-nested-manifests"]}
-            ]
-        }
+    with open(config_path) as f:
+        config = json.load(f)
 
     seeds = []
     for repo_set in config["repo_sets"]:
@@ -386,11 +512,12 @@ def main():
 
     for seed in seeds:
         output_file = output_dir / f"{seed['name']}.json"
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(seed, f, indent=2)
         print(f"[OK] Created {seed['name']}.json")
 
     print(f"[OK] Generated {len(seeds)} seed files")
+
 
 if __name__ == "__main__":
     main()
