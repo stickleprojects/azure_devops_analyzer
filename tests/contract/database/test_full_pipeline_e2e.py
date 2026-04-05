@@ -29,7 +29,7 @@ from src.database.storage import (
     store_dependencies,
 )
 from src.analyzers.dependency_analyzer import DependencyAnalyzer
-from src.database.models import Commit, PullRequest, RepositoryLanguage, Dependency
+from src.database.models import Commit, PullRequest, RepositoryLanguage, RepositoryDependency
 from src.extractors.base import Platform
 
 
@@ -309,7 +309,7 @@ class TestDependencyEnrichmentPipelineE2E:
         db_session.commit()
 
         stored = (
-            db_session.query(Dependency).filter_by(repo_id=repo.repo_id).count()
+            db_session.query(RepositoryDependency).filter_by(repo_id=repo.repo_id).count()
         )
         assert stored == result.total_dependencies, (
             f"{scenario_name}: stored {stored} deps, expected {result.total_dependencies}"
