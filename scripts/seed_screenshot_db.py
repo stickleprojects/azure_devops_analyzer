@@ -74,7 +74,10 @@ try:
         store_dependencies,
         store_package_metadata,
         store_repo_dependencies,
+        get_or_create_team,
     )
+    from src.database.team_analytics import add_contributor_to_team
+    from src.database.models import Contributor
     from src.analyzers.dependency_analyzer import DependencyAnalyzer
     from src.analyzers.dependency_enricher import EnrichedDependency
     from src.extractors.base import Platform
@@ -98,6 +101,39 @@ except ImportError as exc:
 SCENARIOS_DIR = REPO_ROOT / "tests" / "fixtures" / "scenarios" / "generated"
 
 SKIP_SCENARIOS = {"empty-stub", "empty-archive", "empty-handoff"}
+
+# Team assignment for each scenario.  Scenarios not listed here default to
+# "Backend Team".  These names must match the teams created in the database
+# (get_or_create_team creates them on first use).
+SCENARIO_TEAMS: dict[str, str] = {
+    # Frontend
+    "react-spa": "Frontend Team",
+    "fullstack-monorepo": "Frontend Team",
+    # Platform / infrastructure / migration
+    "dual-ci-analytics": "Platform Team",
+    "dual-ci-auth": "Platform Team",
+    "dual-ci-billing": "Platform Team",
+    "dual-ci-catalog": "Platform Team",
+    "dual-ci-gateway": "Platform Team",
+    "dual-ci-inventory": "Platform Team",
+    "dual-ci-notifications": "Platform Team",
+    "dual-ci-orders": "Platform Team",
+    "dual-ci-payments": "Platform Team",
+    "dual-ci-search": "Platform Team",
+    "legacy-migration-billing": "Platform Team",
+    "legacy-migration-inventory": "Platform Team",
+    "legacy-migration-payroll": "Platform Team",
+    # Backend (explicit listing for clarity; also the default)
+    "python-docker-billing": "Backend Team",
+    "python-docker-inventory": "Backend Team",
+    "python-docker-invoices": "Backend Team",
+    "python-docker-payroll": "Backend Team",
+    "python-docker-reports": "Backend Team",
+    "python-dual-deps": "Backend Team",
+    "go-microservice": "Backend Team",
+    "java-maven-jenkins": "Backend Team",
+    "deep-nested-manifests": "Backend Team",
+}
 
 
 def _discover_scenarios() -> list[str]:
@@ -128,10 +164,12 @@ def _load_scenario(session: Session, scenario_name: str) -> object:
 
     project = store_project(session, org, name=f"project-{scenario_name}")
 
+    team_name = SCENARIO_TEAMS.get(scenario_name, "Backend Team")
     repo_data = sample_repository_data(
         repo_id=f"fixture/{scenario_name}",
         name=scenario_name,
         url=f"https://github.com/fixture/{scenario_name}",
+        team_name=team_name,
     )
     repo = store_repository(session, project, repo_data)
     session.flush()
@@ -165,6 +203,30 @@ def _load_scenario(session: Session, scenario_name: str) -> object:
     if dep_result.total_dependencies > 0:
         store_dependencies(session, repo.repo_id, dep_result.dependencies)
         session.flush()
+
+    # ── Layer 2: link contributors to their team ──────────────────────────
+    # Collect all unique author emails from this scenario's commits and PRs,
+    # then look up the Contributor rows (created above by store_commit /
+    # store_pull_request) and register them in team_contributors so that the
+    # v_team_* views return real membership data.
+    team = get_or_create_team(session, org, team_name)
+    session.flush()
+
+    author_emails = {
+        c.author_email.strip().lower()
+        for c in extractor.get_commits(repo.repo_id)
+        if c.author_email
+    } | {
+        p.author_email.strip().lower()
+        for p in extractor.get_pull_requests(repo.repo_id)
+        if p.author_email
+    }
+
+    for email in author_emails:
+        contributor = session.query(Contributor).filter_by(email=email).first()
+        if contributor:
+            add_contributor_to_team(session, team.team_id, contributor.id)
+    session.flush()
 
     session.commit()
     return repo
@@ -222,6 +284,7 @@ def _print_view_counts(session: Session) -> None:
         ("v_pull_requests_total",        "SELECT total FROM v_pull_requests_total"),
         ("v_active_repositories_total",  "SELECT total FROM v_active_repositories_total"),
         ("v_contributors_total",         "SELECT total FROM v_contributors_total"),
+        ("v_teams_total",                "SELECT total FROM v_teams_total"),
         ("v_security_overview_latest",
          "SELECT total_vulnerabilities FROM v_security_overview_latest"),
     ]
