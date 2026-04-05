@@ -117,6 +117,13 @@ jobs:
             exit $EXIT_CODE
           '
 
+          echo "Waiting for host access to screenshot database on 127.0.0.1:5432..."
+          timeout 60 bash -c '
+            until bash -c "</dev/tcp/127.0.0.1/5432" 2>/dev/null; do
+              sleep 2
+            done
+          '
+
       - name: Install screenshot dependencies
         if: inputs.run_screenshots
         run: pip install -r requirements.txt --quiet
