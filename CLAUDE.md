@@ -24,4 +24,10 @@ For detailed operational specifics and reference material, see:
 
 **Remember**: Principles over rules. When uncertain, identify which principle applies and use judgment.
 
+**Skills**: Project skills live in `.ai/skills/`. On a fresh clone, wire them into Claude Code with:
+```
+ln -s ../../.ai/skills/likec4-dsl .claude/skills/likec4-dsl
+```
+Tell the user if a skill listed in `.ai/skills/` is not loading (e.g. missing junction).
+
 **Tools**: Tell the user if any tools or MCPs are listed in .ai\agents or elsewhere but something is preventing those tools from being used
