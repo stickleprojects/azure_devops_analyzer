@@ -1,28 +1,72 @@
 ## Update-Docs Bot
 ##
-## Runs a documentation audit on demand and, when issues are found, opens a
-## pull-request against the default branch that contains the audit report plus
-## any automatically-fixable changes.
+## Single manual workflow that keeps all project documentation up to date.
+## Three independent jobs run in parallel; each can be skipped via its boolean
+## input.
 ##
-## Triggers:
-##   - workflow_dispatch: manual run from the Actions tab
+## Jobs:
+##   audit        – static documentation audit; opens a PR when issues are found
+##   screenshots  – captures Grafana dashboard PNGs using a Docker stack seeded
+##                  from e2e fixture data; opens a PR with updated images
+##   mermaid      – renders every .mmd source file to SVG; opens a PR with the
+##                  updated diagrams
 ##
-## Required secrets (optional – bot still runs without them, just can't push):
-##   GITHUB_TOKEN  – automatically provided by GitHub Actions (default token)
+## Triggers: workflow_dispatch only (fully manual)
+##
+## Required secrets:
+##   GITHUB_TOKEN – automatically provided by GitHub Actions (default token)
 ##
 ## Permissions:
-##   contents: write   – to push the report branch
-##   pull-requests: write – to open the PR
+##   contents: write      – to push bot branches
+##   pull-requests: write – to open PRs
 
 name: Update-Docs Bot
 
 on:
   workflow_dispatch:
     inputs:
+      # ── audit job ──────────────────────────────────────────────────────────
+      run_audit:
+        description: 'Run documentation audit'
+        required: false
+        default: 'true'
+        type: boolean
       dry_run:
-        description: 'Dry run – generate report but do not open a PR'
+        description: 'Audit: dry run – generate report but do not open a PR'
         required: false
         default: 'false'
+        type: boolean
+      # ── screenshots job ────────────────────────────────────────────────────
+      run_screenshots:
+        description: 'Capture dashboard screenshots'
+        required: false
+        default: 'true'
+        type: boolean
+      capture_all:
+        description: 'Screenshots: capture ALL dashboards (ignore git diff)'
+        required: false
+        default: 'false'
+        type: boolean
+      base_ref:
+        description: 'Screenshots: git ref to diff against for change detection (default: HEAD~1)'
+        required: false
+        default: 'HEAD~1'
+        type: string
+      width:
+        description: 'Screenshots: width in pixels'
+        required: false
+        default: '1280'
+        type: string
+      height:
+        description: 'Screenshots: height in pixels'
+        required: false
+        default: '800'
+        type: string
+      # ── mermaid job ────────────────────────────────────────────────────────
+      run_mermaid:
+        description: 'Render Mermaid diagrams to SVG'
+        required: false
+        default: 'true'
         type: boolean
 
 permissions:
@@ -30,8 +74,13 @@ permissions:
   pull-requests: write
 
 jobs:
+
+  # ============================================================================
+  # JOB 1 – Documentation Audit
+  # ============================================================================
   audit:
     name: Documentation Audit
+    if: inputs.run_audit != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -63,7 +112,6 @@ jobs:
           echo "Report preview:"
           head -40 artifacts/doc-audit/report.md
 
-          # Determine whether there are any non-info findings
           ERRORS=$(grep -c "^- ❌" artifacts/doc-audit/report.md || true)
           WARNINGS=$(grep -c "^- ⚠️" artifacts/doc-audit/report.md || true)
           echo "errors=$ERRORS"   >> $GITHUB_OUTPUT
@@ -95,7 +143,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       # -----------------------------------------------------------------------
-      # 6. Create (or reset) the docs-bot branch and push the report
+      # 6. Push report to a bot branch
       # -----------------------------------------------------------------------
       - name: Push report to bot branch
         if: steps.audit.outputs.has_findings == 'true' && inputs.dry_run != 'true'
@@ -103,14 +151,9 @@ jobs:
         run: |
           BRANCH="bot/update-docs-$(date +%Y-%m-%d)"
           echo "branch=$BRANCH" >> $GITHUB_OUTPUT
-
-          # Reset or create the branch
           git checkout -B "$BRANCH"
-
-          # Stage the audit report
           git add artifacts/doc-audit/report.md
           git commit -m "docs(bot): documentation audit report $(date +%Y-%m-%d)"
-
           git push --force origin "$BRANCH"
 
       # -----------------------------------------------------------------------
@@ -125,8 +168,6 @@ jobs:
           TODAY="$(date +%Y-%m-%d)"
           ERRORS="${{ steps.audit.outputs.errors }}"
           WARNINGS="${{ steps.audit.outputs.warnings }}"
-
-          # Build PR body from the first 60 lines of the report
           REPORT_PREVIEW="$(head -60 artifacts/doc-audit/report.md)"
 
           PR_BODY="## Documentation Audit – ${TODAY}
@@ -151,10 +192,8 @@ ${REPORT_PREVIEW}
 
 _Changes suggested by this bot should be reviewed and approved before merging._"
 
-          # Check whether an open PR already exists for today
           EXISTING=$(gh pr list --head "$BRANCH" --state open --json number \
                      --jq '.[0].number' 2>/dev/null || true)
-
           if [ -n "$EXISTING" ]; then
             echo "PR #${EXISTING} already open for branch ${BRANCH} – skipping creation"
           else
@@ -172,7 +211,7 @@ _Changes suggested by this bot should be reviewed and approved before merging._"
           fi
 
       # -----------------------------------------------------------------------
-      # 8. Summary step (always runs)
+      # 8. Summary
       # -----------------------------------------------------------------------
       - name: Print summary
         if: always()
@@ -185,4 +224,328 @@ _Changes suggested by this bot should be reviewed and approved before merging._"
             fi
           else
             echo "✅ Audit complete – no errors or warnings. Documentation looks good!"
+          fi
+
+  # ============================================================================
+  # JOB 2 – Dashboard Screenshots
+  # ============================================================================
+  screenshots:
+    name: Capture Dashboard Screenshots
+    if: inputs.run_screenshots != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout with full history so git-diff works correctly
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # -----------------------------------------------------------------------
+      # 2. Set up Python
+      # -----------------------------------------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # -----------------------------------------------------------------------
+      # 3. Start the screenshot stack (Grafana + renderer + TimescaleDB +
+      #    db-migrations)
+      # -----------------------------------------------------------------------
+      - name: Start screenshot stack
+        run: |
+          docker compose -f docker-compose.screenshots.yml up -d
+          echo "⏳ Stack started – waiting for db-migrations to complete …"
+          timeout 120 bash -c '
+            until [ "$(docker inspect --format="{{.State.Status}}" screenshot-db-migrations 2>/dev/null)" = "exited" ]; do
+              sleep 3
+            done
+            EXIT_CODE=$(docker inspect --format="{{.State.ExitCode}}" screenshot-db-migrations)
+            echo "db-migrations exited with code $EXIT_CODE"
+            exit $EXIT_CODE
+          '
+
+      # -----------------------------------------------------------------------
+      # 4. Install Python dependencies and seed the database
+      # -----------------------------------------------------------------------
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt --quiet
+
+      - name: Seed database with fixture data
+        run: |
+          export DATABASE_URL="postgresql://postgres:postgres@localhost:5432/devops_screenshots"
+          export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+          python scripts/seed_screenshot_db.py
+
+      # -----------------------------------------------------------------------
+      # 5. Run the capture script
+      # -----------------------------------------------------------------------
+      - name: Capture dashboard screenshots
+        id: capture
+        run: |
+          EXTRA_FLAGS=""
+          if [ "${{ inputs.capture_all }}" == "true" ]; then
+            EXTRA_FLAGS="--all"
+          fi
+
+          python scripts/capture_dashboard_screenshots.py \
+            --grafana-url http://localhost:3000 \
+            --wait-timeout 120 \
+            --base-ref "${{ inputs.base_ref }}" \
+            --width "${{ inputs.width }}" \
+            --height "${{ inputs.height }}" \
+            $EXTRA_FLAGS
+
+          COUNT=$(find docs/images/dashboards -name '*.png' | wc -l)
+          echo "screenshot_count=$COUNT" >> $GITHUB_OUTPUT
+
+      # -----------------------------------------------------------------------
+      # 6. Tear down the stack regardless of capture outcome
+      # -----------------------------------------------------------------------
+      - name: Tear down screenshot stack
+        if: always()
+        run: |
+          docker compose -f docker-compose.screenshots.yml down -v --remove-orphans
+
+      # -----------------------------------------------------------------------
+      # 7. Upload screenshots as a workflow artifact
+      # -----------------------------------------------------------------------
+      - name: Upload screenshots artifact
+        if: steps.capture.outputs.screenshot_count != '0'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-screenshots
+          path: docs/images/dashboards/*.png
+          retention-days: 30
+
+      # -----------------------------------------------------------------------
+      # 8. Commit and push updated screenshots to a bot branch
+      # -----------------------------------------------------------------------
+      - name: Configure git identity
+        if: steps.capture.outputs.screenshot_count != '0'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Push screenshots to bot branch
+        if: steps.capture.outputs.screenshot_count != '0'
+        id: push
+        run: |
+          BRANCH="bot/dashboard-screenshots-$(date +%Y-%m-%d)"
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          git checkout -B "$BRANCH"
+          git add docs/images/dashboards/
+          git commit -m "docs(bot): refresh dashboard screenshots $(date +%Y-%m-%d)"
+          git push --force origin "$BRANCH"
+
+      # -----------------------------------------------------------------------
+      # 9. Open a pull-request for review
+      # -----------------------------------------------------------------------
+      - name: Open pull-request
+        if: steps.capture.outputs.screenshot_count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ steps.push.outputs.branch }}"
+          TODAY="$(date +%Y-%m-%d)"
+          COUNT="${{ steps.capture.outputs.screenshot_count }}"
+          ALL="${{ inputs.capture_all }}"
+          BASE="${{ inputs.base_ref }}"
+
+          if [ "$ALL" == "true" ]; then
+            SCOPE="all dashboards (forced full refresh)"
+          else
+            SCOPE="dashboards that changed since \`${BASE}\`"
+          fi
+
+          PR_BODY="## Dashboard Screenshot Refresh – ${TODAY}
+
+This pull request was automatically created by the **Update-Docs Bot** after
+capturing updated PNG screenshots for ${SCOPE}.
+
+**Screenshots updated**: ${COUNT}
+
+### What to do
+
+1. Review the updated screenshots in \`docs/images/dashboards/\`
+2. If the screenshots look correct, approve and merge this PR
+3. If something looks wrong (panel errors, layout issues), investigate the
+   dashboard JSON or the Grafana provisioning configuration
+
+### Screenshots included
+
+$(find docs/images/dashboards -name '*.png' -exec basename {} .png \; | sort | sed 's/^/- `/' | sed 's/$/`/')
+
+---
+
+_Screenshots were captured using Grafana's Image Renderer API against a
+TimescaleDB instance seeded with data from the project's e2e fixture scenarios._
+
+_To re-run: Actions → Update-Docs Bot → Run workflow_"
+
+          EXISTING=$(gh pr list --head "$BRANCH" --state open --json number \
+                     --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING" ]; then
+            echo "PR #${EXISTING} already open for branch ${BRANCH} – updating body"
+            gh pr edit "$EXISTING" --body "$PR_BODY"
+          else
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "docs(bot): dashboard screenshots ${TODAY}" \
+              --body "$PR_BODY" \
+              --label "documentation" || \
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "docs(bot): dashboard screenshots ${TODAY}" \
+              --body "$PR_BODY"
+          fi
+
+      # -----------------------------------------------------------------------
+      # 10. Summary
+      # -----------------------------------------------------------------------
+      - name: Print summary
+        if: always()
+        run: |
+          COUNT="${{ steps.capture.outputs.screenshot_count }}"
+          if [ "${COUNT:-0}" -eq 0 ]; then
+            echo "✅ No dashboards needed updating – nothing to commit."
+          else
+            echo "✅ ${COUNT} screenshot(s) captured and PR opened for review."
+          fi
+
+  # ============================================================================
+  # JOB 3 – Mermaid Diagram Refresh
+  # ============================================================================
+  mermaid:
+    name: Render Mermaid Diagrams
+    if: inputs.run_mermaid != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout with full history
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # -----------------------------------------------------------------------
+      # 2. Install @mermaid-js/mermaid-cli
+      # -----------------------------------------------------------------------
+      - name: Install mermaid-cli
+        run: npm install -g @mermaid-js/mermaid-cli
+
+      # -----------------------------------------------------------------------
+      # 3. Render each .mmd file to a .svg alongside it
+      # -----------------------------------------------------------------------
+      - name: Render .mmd files to SVG
+        id: render
+        run: |
+          COUNT=0
+          while IFS= read -r -d '' mmd_file; do
+            svg_file="${mmd_file%.mmd}.svg"
+            echo "  Rendering: $mmd_file → $svg_file"
+            mmdc -i "$mmd_file" -o "$svg_file" --backgroundColor transparent
+            COUNT=$((COUNT + 1))
+          done < <(find docs -name '*.mmd' -print0)
+
+          echo "diagram_count=$COUNT" >> $GITHUB_OUTPUT
+          echo "✅ Rendered $COUNT diagram(s)"
+
+      # -----------------------------------------------------------------------
+      # 4. Configure git identity for the bot commit
+      # -----------------------------------------------------------------------
+      - name: Configure git identity
+        if: steps.render.outputs.diagram_count != '0'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # -----------------------------------------------------------------------
+      # 5. Push updated SVGs to a bot branch
+      # -----------------------------------------------------------------------
+      - name: Push diagrams to bot branch
+        if: steps.render.outputs.diagram_count != '0'
+        id: push
+        run: |
+          BRANCH="bot/mermaid-diagrams-$(date +%Y-%m-%d)"
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          git checkout -B "$BRANCH"
+          git add docs/**/*.svg
+          git diff --cached --quiet && echo "No SVG changes – nothing to commit." && exit 0
+          git commit -m "docs(bot): refresh Mermaid diagram SVGs $(date +%Y-%m-%d)"
+          git push --force origin "$BRANCH"
+
+      # -----------------------------------------------------------------------
+      # 6. Open a pull-request for review
+      # -----------------------------------------------------------------------
+      - name: Open pull-request
+        if: steps.render.outputs.diagram_count != '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ steps.push.outputs.branch }}"
+          TODAY="$(date +%Y-%m-%d)"
+          COUNT="${{ steps.render.outputs.diagram_count }}"
+
+          PR_BODY="## Mermaid Diagram Refresh – ${TODAY}
+
+This pull request was automatically created by the **Update-Docs Bot** after
+re-rendering all \`.mmd\` source files to SVG.
+
+**Diagrams rendered**: ${COUNT}
+
+### What to do
+
+1. Review the updated SVG files in \`docs/\`
+2. If the diagrams look correct, approve and merge this PR
+3. If something looks wrong, update the corresponding \`.mmd\` source file and
+   re-run the workflow
+
+### Diagrams included
+
+$(find docs -name '*.mmd' -exec basename {} .mmd \; | sort | sed 's/^/- `/' | sed 's/$/`/')
+
+---
+
+_To re-run: Actions → Update-Docs Bot → Run workflow_"
+
+          EXISTING=$(gh pr list --head "$BRANCH" --state open --json number \
+                     --jq '.[0].number' 2>/dev/null || true)
+          if [ -n "$EXISTING" ]; then
+            echo "PR #${EXISTING} already open for branch ${BRANCH} – updating body"
+            gh pr edit "$EXISTING" --body "$PR_BODY"
+          else
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "docs(bot): Mermaid diagram refresh ${TODAY}" \
+              --body "$PR_BODY" \
+              --label "documentation" || \
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "docs(bot): Mermaid diagram refresh ${TODAY}" \
+              --body "$PR_BODY"
+          fi
+
+      # -----------------------------------------------------------------------
+      # 7. Summary
+      # -----------------------------------------------------------------------
+      - name: Print summary
+        if: always()
+        run: |
+          COUNT="${{ steps.render.outputs.diagram_count }}"
+          if [ "${COUNT:-0}" -eq 0 ]; then
+            echo "✅ No .mmd files found – nothing to render."
+          else
+            echo "✅ ${COUNT} diagram(s) rendered and PR opened for review."
           fi

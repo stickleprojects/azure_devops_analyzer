@@ -39,8 +39,8 @@ script (`scripts/doc_audit.py`).
 
 | Capability | Status | Reason |
 |------------|--------|--------|
-| Dashboard screenshots | Automated | `refresh-dashboard-screenshots.yml` workflow – spins up Grafana + Image Renderer in Docker, seeds the database from e2e fixtures, captures PNGs, and opens a PR |
-| Network/architecture diagram regeneration | Automated | `refresh-mermaid-diagrams.yml` workflow – renders `.mmd` source files to SVG via `@mermaid-js/mermaid-cli` and opens a PR |
+| Dashboard screenshots | Automated | `update-docs-bot.yml` (`screenshots` job) – spins up Grafana + Image Renderer in Docker, seeds the database from e2e fixtures, captures PNGs, and opens a PR |
+| Network/architecture diagram regeneration | Automated | `update-docs-bot.yml` (`mermaid` job) – renders `.mmd` source files to SVG via `@mermaid-js/mermaid-cli` and opens a PR |
 | Semantic content rewriting | Not automated | Content quality requires human review; auto-rewrite risks introducing inaccuracies |
 
 ---
@@ -51,12 +51,13 @@ script (`scripts/doc_audit.py`).
 
 - **`scripts/doc_audit.py`** – audit logic, ~300 lines of Python, no
   third-party dependencies (stdlib only)
-- **`.github/workflows/update-docs-bot.yml`** – documentation audit workflow
-  (manual `workflow_dispatch` trigger only)
-- **`.github/workflows/refresh-dashboard-screenshots.yml`** – captures Grafana
-  dashboard PNGs using a Docker stack seeded from e2e fixture data
-- **`.github/workflows/refresh-mermaid-diagrams.yml`** – renders `.mmd` Mermaid
-  source files to SVG via `@mermaid-js/mermaid-cli`
+- **`.github/workflows/update-docs-bot.yml`** – single manual workflow with
+  three parallel jobs:
+  - **`audit`** – static documentation audit; opens a PR when issues are found
+  - **`screenshots`** – captures Grafana dashboard PNGs using a Docker stack
+    seeded from e2e fixture data
+  - **`mermaid`** – renders `.mmd` Mermaid source files to SVG via
+    `@mermaid-js/mermaid-cli`
 
 ### Workflow summary
 
@@ -78,8 +79,8 @@ script (`scripts/doc_audit.py`).
 | Static doc checks | ✅ Fully feasible using stdlib Python and `git log` |
 | Commit-to-PROGRESS.md cross-check | ✅ Feasible; implemented via `git log` heuristics |
 | Automated PR creation | ✅ Fully feasible via `gh pr create` in GitHub Actions |
-| Dashboard screenshots | ✅ Implemented – `refresh-dashboard-screenshots.yml` runs fully in CI using Docker services |
-| Diagram regeneration | ✅ Implemented – `refresh-mermaid-diagrams.yml` renders `.mmd` sources to SVG via `@mermaid-js/mermaid-cli` |
+| Dashboard screenshots | ✅ Implemented – `update-docs-bot.yml` (`screenshots` job) runs fully in CI using Docker services |
+| Diagram regeneration | ✅ Implemented – `update-docs-bot.yml` (`mermaid` job) renders `.mmd` sources to SVG via `@mermaid-js/mermaid-cli` |
 
 ### Operational risk
 
@@ -127,7 +128,7 @@ Dashboard screenshots are captured by the `refresh-dashboard-screenshots.yml` wo
 |------|---------|
 | Docker service startup in CI | +5–10 minutes per run |
 | Grafana headless screenshot tooling | Implemented |
-| Mermaid diagram rendering | Implemented via `refresh-mermaid-diagrams.yml` |
+| Mermaid diagram rendering | Implemented via `update-docs-bot.yml` (`mermaid` job) |
 | Storage for screenshot artifacts | Negligible (GitHub artifact storage) |
 | **Additional annual compute cost** | **$0** (manual runs; no scheduled execution) |
 
@@ -139,8 +140,8 @@ Dashboard screenshots are captured by the `refresh-dashboard-screenshots.yml` wo
 
 - Static documentation audit running on demand (manual `workflow_dispatch`) via GitHub Actions
 - PR-based review workflow so no changes land without approval
-- Dashboard screenshots via `refresh-dashboard-screenshots.yml` (Docker + Grafana Image Renderer)
-- Mermaid diagram refresh via `refresh-mermaid-diagrams.yml`
+- Dashboard screenshots via `update-docs-bot.yml` (`screenshots` job; Docker + Grafana Image Renderer)
+- Mermaid diagram refresh via `update-docs-bot.yml` (`mermaid` job)
 
 ### Short-term (next sprint)
 
@@ -189,8 +190,8 @@ risk of incorrect automated changes landing without review)
 - The bot introduces no new Python source-code dependencies
 - The audit script lives in `scripts/` (utilities), not in `src/` (application
   logic) – consistent with Principle 2 (Architecture Guards Isolation)
-- No database writes; no extractor or analyzer boundaries violated
-- Workflow file is additive (new file in `.github/workflows/`)
+- No database writes from the audit job; no extractor or analyzer boundaries violated
+- All three jobs are contained in a single workflow file in `.github/workflows/`
 
 ---
 
