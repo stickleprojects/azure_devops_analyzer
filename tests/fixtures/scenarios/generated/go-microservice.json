@@ -287,5 +287,28 @@
       "lines_removed": 53,
       "merged_at": "2026-02-26T23:33:37Z"
     }
+  ],
+  "vulnerability_data": [
+    {
+      "package_name": "github.com/gin-gonic/gin",
+      "ecosystem": "go",
+      "pinned_version": "v1.7.5",
+      "latest_version": "v1.9.1",
+      "is_eol": false,
+      "eol_date": null,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2023-26125",
+          "osv_id": "GHSA-h395-qcrr-msq3",
+          "severity": "MEDIUM",
+          "summary": "Gin lacks protection against request smuggling via improper header parsing",
+          "details": "Missing validation of Content-Length header allows HTTP request smuggling",
+          "fixed_in_versions": [
+            "v1.9.0"
+          ],
+          "references": []
+        }
+      ]
+    }
   ]
 }

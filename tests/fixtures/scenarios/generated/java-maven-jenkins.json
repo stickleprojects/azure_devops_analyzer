@@ -241,5 +241,28 @@
       "lines_removed": 26,
       "merged_at": "2026-02-13T23:33:36Z"
     }
+  ],
+  "vulnerability_data": [
+    {
+      "package_name": "spring-web",
+      "ecosystem": "maven",
+      "pinned_version": "5.3.0",
+      "latest_version": "6.1.4",
+      "is_eol": false,
+      "eol_date": null,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2021-22096",
+          "osv_id": "GHSA-562r-vg33-8x8h",
+          "severity": "LOW",
+          "summary": "Spring Framework log injection vulnerability",
+          "details": "Log injection is possible via crafted user input without proper sanitisation",
+          "fixed_in_versions": [
+            "5.3.12"
+          ],
+          "references": []
+        }
+      ]
+    }
   ]
 }

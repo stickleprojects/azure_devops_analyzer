@@ -205,5 +205,28 @@
       "lines_added": 94,
       "lines_removed": 59
     }
+  ],
+  "vulnerability_data": [
+    {
+      "package_name": "axios",
+      "ecosystem": "npm",
+      "pinned_version": "0.21.1",
+      "latest_version": "1.6.7",
+      "is_eol": false,
+      "eol_date": null,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2021-3749",
+          "osv_id": "GHSA-cph5-m8f7-6c5x",
+          "severity": "LOW",
+          "summary": "axios ReDoS via inefficient regular expression",
+          "details": "Inefficient regular expression in trim() function leads to denial of service",
+          "fixed_in_versions": [
+            "0.21.2"
+          ],
+          "references": []
+        }
+      ]
+    }
   ]
 }

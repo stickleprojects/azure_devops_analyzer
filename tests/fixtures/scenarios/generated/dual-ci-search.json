@@ -212,5 +212,49 @@
       "lines_removed": 5,
       "merged_at": "2026-01-22T23:33:37Z"
     }
+  ],
+  "vulnerability_data": [
+    {
+      "package_name": "Flask",
+      "ecosystem": "pypi",
+      "pinned_version": "2.2.0",
+      "latest_version": "3.0.2",
+      "is_eol": false,
+      "eol_date": null,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2023-30861",
+          "osv_id": "GHSA-m2qf-hxjv-5gpq",
+          "severity": "HIGH",
+          "summary": "Flask vulnerable to possible disclosure of permanent session cookie",
+          "details": "Flask does not set Vary: Cookie header, allowing proxy caches to serve cached sessions",
+          "fixed_in_versions": [
+            "2.3.2"
+          ],
+          "references": []
+        }
+      ]
+    },
+    {
+      "package_name": "Werkzeug",
+      "ecosystem": "pypi",
+      "pinned_version": "2.2.0",
+      "latest_version": "3.0.1",
+      "is_eol": false,
+      "eol_date": null,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2023-25577",
+          "osv_id": "GHSA-px8h-6qxv-m22q",
+          "severity": "MEDIUM",
+          "summary": "Werkzeug multipart data parser resource exhaustion",
+          "details": "Parsing multipart/form-data with many fields triggers quadratic complexity",
+          "fixed_in_versions": [
+            "2.2.3"
+          ],
+          "references": []
+        }
+      ]
+    }
   ]
 }

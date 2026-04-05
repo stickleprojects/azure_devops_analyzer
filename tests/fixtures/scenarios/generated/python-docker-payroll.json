@@ -295,5 +295,59 @@
       "lines_added": 64,
       "lines_removed": 59
     }
+  ],
+  "vulnerability_data": [
+    {
+      "package_name": "urllib3",
+      "ecosystem": "pypi",
+      "pinned_version": "1.22",
+      "latest_version": "2.2.1",
+      "is_eol": false,
+      "eol_date": null,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2021-33503",
+          "osv_id": "GHSA-q2q7-5pp4-w6pg",
+          "severity": "CRITICAL",
+          "summary": "urllib3 ReDoS via catastrophic backtracking",
+          "details": "Catastrophic backtracking in URL regular expression leads to denial of service",
+          "fixed_in_versions": [
+            "1.26.5",
+            "2.0.2"
+          ],
+          "references": []
+        }
+      ]
+    },
+    {
+      "package_name": "requests",
+      "ecosystem": "pypi",
+      "pinned_version": "2.18.0",
+      "latest_version": "2.31.0",
+      "is_eol": false,
+      "eol_date": null,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2018-18074",
+          "osv_id": "GHSA-x84v-xcm2-53pg",
+          "severity": "HIGH",
+          "summary": "Requests sends HTTP Authorization header to redirect targets",
+          "details": "Requests library forwards auth headers to redirect destinations, enabling SSRF",
+          "fixed_in_versions": [
+            "2.20.0"
+          ],
+          "references": []
+        }
+      ]
+    },
+    {
+      "package_name": "certifi",
+      "ecosystem": "pypi",
+      "pinned_version": "2017.4.17",
+      "latest_version": "2024.2.2",
+      "is_eol": true,
+      "eol_date": "2022-05-01",
+      "vulnerabilities": []
+    }
   ]
 }

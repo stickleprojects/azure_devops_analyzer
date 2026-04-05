@@ -293,5 +293,28 @@
       "lines_removed": 47,
       "closed_at": "2026-02-20T23:33:36Z"
     }
+  ],
+  "vulnerability_data": [
+    {
+      "package_name": "Newtonsoft.Json",
+      "ecosystem": "nuget",
+      "pinned_version": "12.0.1",
+      "latest_version": "13.0.3",
+      "is_eol": false,
+      "eol_date": null,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2024-21907",
+          "osv_id": "GHSA-5crp-9r3c-p9vx",
+          "severity": "MEDIUM",
+          "summary": "Newtonsoft.Json vulnerable to ReDoS",
+          "details": "Improper handling of exceptional conditions in JSON parsing enables ReDoS",
+          "fixed_in_versions": [
+            "13.0.1"
+          ],
+          "references": []
+        }
+      ]
+    }
   ]
 }

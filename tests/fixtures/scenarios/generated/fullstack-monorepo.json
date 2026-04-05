@@ -428,5 +428,49 @@
       "lines_removed": 191,
       "merged_at": "2025-12-29T23:33:36Z"
     }
+  ],
+  "vulnerability_data": [
+    {
+      "package_name": "fastapi",
+      "ecosystem": "pypi",
+      "pinned_version": "0.92.0",
+      "latest_version": "0.110.0",
+      "is_eol": false,
+      "eol_date": null,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2024-24762",
+          "osv_id": "GHSA-2jv5-9r88-3w3p",
+          "severity": "MEDIUM",
+          "summary": "FastAPI denial of service via ReDoS in form data parsing",
+          "details": "python-multipart used by FastAPI has a ReDoS vulnerability in content-type header parsing",
+          "fixed_in_versions": [
+            "0.109.1"
+          ],
+          "references": []
+        }
+      ]
+    },
+    {
+      "package_name": "starlette",
+      "ecosystem": "pypi",
+      "pinned_version": "0.25.0",
+      "latest_version": "0.37.2",
+      "is_eol": false,
+      "eol_date": null,
+      "vulnerabilities": [
+        {
+          "cve_id": "CVE-2023-29159",
+          "osv_id": "GHSA-v5gw-mw7f-84px",
+          "severity": "LOW",
+          "summary": "Starlette directory traversal via static file path",
+          "details": "Improper path normalisation in static file handler allows reading files outside root",
+          "fixed_in_versions": [
+            "0.27.0"
+          ],
+          "references": []
+        }
+      ]
+    }
   ]
 }

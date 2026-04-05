@@ -13,7 +13,7 @@ Runs in CI under `-m 'not live_api'` (the standard test-runner command).
 """
 
 import pytest
-from datetime import datetime, timezone, timedelta, date
+from datetime import datetime, timezone, timedelta
 from sqlalchemy import text
 
 from tests.fixtures.fixture_extractor import FixtureExtractor
@@ -277,72 +277,34 @@ DEPENDENCY_SCENARIOS = {
     "fullstack-monorepo": {"ecosystem": "pypi", "min_deps": 1},
 }
 
-# Synthetic enrichment data — deterministic, no external API calls
-SYNTHETIC_PACKAGES = [
-    {
-        "package_name": "requests",
-        "ecosystem": "pypi",
-        "latest_version": "2.31.0",
-        "is_eol": False,
-        "eol_date": None,
-        "vulnerabilities": [
-            {
-                "cve_id": "CVE-2018-18074",
-                "osv_id": "GHSA-x84v-xcm2-53pg",
-                "severity": "HIGH",
-                "summary": "Redirect to non-HTTP schemes allows SSRF",
-                "details": "Requests sends auth header to redirect targets",
-                "fixed_in_versions": ["2.20.0"],
-                "references": [],
-            }
-        ],
-        "pinned_version": "2.18.0",
-    },
-    {
-        "package_name": "urllib3",
-        "ecosystem": "pypi",
-        "latest_version": "2.2.1",
-        "is_eol": False,
-        "eol_date": None,
-        "vulnerabilities": [
-            {
-                "cve_id": "CVE-2021-33503",
-                "osv_id": "GHSA-q2q7-5pp4-w6pg",
-                "severity": "CRITICAL",
-                "summary": "ReDoS in URL parsing",
-                "details": "Catastrophic backtracking in URL regular expression",
-                "fixed_in_versions": ["1.26.5", "2.0.2"],
-                "references": [],
-            }
-        ],
-        "pinned_version": "1.22",
-    },
-    {
-        "package_name": "certifi",
-        "ecosystem": "pypi",
-        "latest_version": "2024.2.2",
-        "is_eol": True,
-        "eol_date": date(2022, 5, 1),
-        "vulnerabilities": [],
-        "pinned_version": "2017.4.17",
-    },
-]
-
-
-def _enrich_scenario(session, repo_id: str) -> None:
+def _enrich_from_fixture(session, repo_id: str, scenario_name: str) -> None:
     """
-    Store synthetic package metadata + per-repo enriched deps for `repo_id`.
-    Covers 2 vulnerable packages (HIGH + CRITICAL) and 1 EOL package.
+    Store package metadata + per-repo enriched dependencies from the scenario's
+    fixture JSON (vulnerability_data field).
+
+    Each entry in vulnerability_data is passed directly to store_package_metadata
+    and store_repo_dependencies — no HTTP calls, no mocking.
+
+    The eol_date field is stored as an ISO-8601 string in JSON; it is parsed
+    back to a date object before being stored.
     """
+    from datetime import date as date_type
+    extractor = FixtureExtractor(scenario_name)
+    packages = extractor.get_vulnerability_data()
+
     enriched_deps = []
-    for pkg_data in SYNTHETIC_PACKAGES:
+    for pkg_data in packages:
+        raw_eol_date = pkg_data.get("eol_date")
+        eol_date = (
+            date_type.fromisoformat(raw_eol_date) if raw_eol_date else None
+        )
         store_package_metadata(
             session,
             package_name=pkg_data["package_name"],
             ecosystem=pkg_data["ecosystem"],
             latest_version=pkg_data["latest_version"],
             is_eol=pkg_data["is_eol"],
-            eol_date=pkg_data.get("eol_date"),
+            eol_date=eol_date,
             vulnerabilities=pkg_data["vulnerabilities"],
         )
         enriched_deps.append(
@@ -507,7 +469,7 @@ class TestSecurityEnrichmentContractsE2E:
         CONTRACT: v_security_overview_latest reflects stored vulnerability and EOL data.
         """
         repo = _load_scenario(db_session, "python-docker-billing")
-        _enrich_scenario(db_session, repo.repo_id)
+        _enrich_from_fixture(db_session, repo.repo_id, "python-docker-billing")
 
         row = db_session.execute(
             text(
@@ -536,7 +498,7 @@ class TestSecurityEnrichmentContractsE2E:
         CONTRACT: v_security_repository_overview has correct severity breakdown for the enriched repo.
         """
         repo = _load_scenario(db_session, "python-docker-billing")
-        _enrich_scenario(db_session, repo.repo_id)
+        _enrich_from_fixture(db_session, repo.repo_id, "python-docker-billing")
 
         row = db_session.execute(
             text(
@@ -564,7 +526,7 @@ class TestSecurityEnrichmentContractsE2E:
         Also verifies outdated_dependencies and eol_dependencies are counted.
         """
         repo = _load_scenario(db_session, "python-docker-billing")
-        _enrich_scenario(db_session, repo.repo_id)
+        _enrich_from_fixture(db_session, repo.repo_id, "python-docker-billing")
 
         row = db_session.execute(
             text(
@@ -592,7 +554,7 @@ class TestSecurityEnrichmentContractsE2E:
         urllib3 must appear with severity = 'CRITICAL'.
         """
         repo = _load_scenario(db_session, "python-docker-billing")
-        _enrich_scenario(db_session, repo.repo_id)
+        _enrich_from_fixture(db_session, repo.repo_id, "python-docker-billing")
 
         rows = db_session.execute(
             text("SELECT package_name, severity FROM v_security_top_vulnerable_dependencies")
@@ -613,7 +575,7 @@ class TestSecurityEnrichmentContractsE2E:
         CONTRACT: v_repo_vulnerability_details_latest returns CVE IDs for the enriched repo.
         """
         repo = _load_scenario(db_session, "python-docker-billing")
-        _enrich_scenario(db_session, repo.repo_id)
+        _enrich_from_fixture(db_session, repo.repo_id, "python-docker-billing")
 
         rows = db_session.execute(
             text(
@@ -636,7 +598,7 @@ class TestSecurityEnrichmentContractsE2E:
         CONTRACT: v_security_eol_status_latest shows certifi as 'Expired'.
         """
         repo = _load_scenario(db_session, "python-docker-billing")
-        _enrich_scenario(db_session, repo.repo_id)
+        _enrich_from_fixture(db_session, repo.repo_id, "python-docker-billing")
 
         rows = db_session.execute(
             text("SELECT category, count FROM v_security_eol_status_latest")
@@ -655,7 +617,7 @@ class TestSecurityEnrichmentContractsE2E:
         CONTRACT: v_repo_vulnerabilities_by_severity_latest lists CRITICAL and HIGH for the enriched repo.
         """
         repo = _load_scenario(db_session, "python-docker-billing")
-        _enrich_scenario(db_session, repo.repo_id)
+        _enrich_from_fixture(db_session, repo.repo_id, "python-docker-billing")
 
         rows = db_session.execute(
             text(
@@ -672,6 +634,79 @@ class TestSecurityEnrichmentContractsE2E:
         assert "HIGH" in severities, (
             f"'HIGH' not found in v_repo_vulnerabilities_by_severity_latest: {severities}"
         )
+
+    # ---- Multi-severity parametrized tests ----------------------------------------
+
+    # Scenarios and the specific severity levels expected in each repo's profile.
+    # python-docker → CRITICAL + HIGH + EOL
+    # dual-ci       → HIGH + MEDIUM
+    # fullstack     → MEDIUM + LOW
+    _SEVERITY_SCENARIOS = [
+        ("python-docker-billing", {"CRITICAL", "HIGH"}),
+        ("dual-ci-analytics",     {"HIGH", "MEDIUM"}),
+        ("fullstack-monorepo",    {"MEDIUM", "LOW"}),
+    ]
+
+    @pytest.mark.parametrize("scenario_name,expected_severities", _SEVERITY_SCENARIOS)
+    def test_per_repo_severity_profile_from_fixture(
+        self, scenario_name, expected_severities, db_session
+    ):
+        """
+        CONTRACT: v_repo_vulnerabilities_by_severity_latest contains the expected
+        severity levels for each fixture-enriched scenario.
+
+        Covers all four severity tiers across three scenarios:
+          python-docker-billing → CRITICAL + HIGH
+          dual-ci-analytics     → HIGH + MEDIUM
+          fullstack-monorepo    → MEDIUM + LOW
+        """
+        repo = _load_scenario(db_session, scenario_name)
+        _enrich_from_fixture(db_session, repo.repo_id, scenario_name)
+
+        rows = db_session.execute(
+            text(
+                "SELECT severity FROM v_repo_vulnerabilities_by_severity_latest "
+                "WHERE repo_id = :rid"
+            ),
+            {"rid": repo.repo_id},
+        ).fetchall()
+        actual_severities = {r.severity for r in rows}
+
+        for sev in expected_severities:
+            assert sev in actual_severities, (
+                f"{scenario_name}: expected severity '{sev}' in "
+                f"v_repo_vulnerabilities_by_severity_latest, got {actual_severities}"
+            )
+
+    def test_all_four_severities_represented_across_enriched_repos(self, db_session):
+        """
+        CONTRACT: When multiple repos with different vulnerability profiles are enriched,
+        v_security_vulnerabilities_by_severity_latest shows all four severity levels.
+
+        python-docker-billing → CRITICAL + HIGH
+        dual-ci-analytics     → HIGH + MEDIUM
+        fullstack-monorepo    → MEDIUM + LOW
+        Combined              → CRITICAL + HIGH + MEDIUM + LOW
+        """
+        for scenario_name in [
+            "python-docker-billing",
+            "dual-ci-analytics",
+            "fullstack-monorepo",
+        ]:
+            repo = _load_scenario(db_session, scenario_name)
+            _enrich_from_fixture(db_session, repo.repo_id, scenario_name)
+
+        rows = db_session.execute(
+            text("SELECT DISTINCT severity FROM v_security_vulnerabilities_by_severity_latest")
+        ).fetchall()
+        severities = {r.severity for r in rows}
+
+        for expected in ("CRITICAL", "HIGH", "MEDIUM", "LOW"):
+            assert expected in severities, (
+                f"Severity '{expected}' missing from v_security_vulnerabilities_by_severity_latest "
+                f"after enriching python-docker-billing + dual-ci-analytics + fullstack-monorepo. "
+                f"Got: {severities}"
+            )
 
 
 # =============================================================================
