@@ -6,34 +6,24 @@ This folder contains business requirements, project planning documents, and guid
 
 ## Contents
 
-- **[business-requirements.md](business-requirements.md)** — Complete functional and non-functional requirements, stakeholder analysis, constraints, and assumptions
-- **[requirements-status.md](requirements-status.md)** — Implementation progress tracker showing which requirements are complete, partial, or not started
+- **[requirements.md](requirements.md)** — Combined requirements and implementation status: definitions, acceptance criteria, current status, and platform parity in one place
 - **[project-rules.md](project-rules.md)** — Development guidelines, documentation standards, coding conventions, and architectural principles
 
 ## Quick Links
 
-| Document                 | Purpose                               | Audience                                      |
-| ------------------------ | ------------------------------------- | --------------------------------------------- |
-| business-requirements.md | WHAT we're building and WHY           | Product owners, stakeholders, team leads      |
-| requirements-status.md   | Current progress against requirements | Anyone tracking implementation status         |
-| project-rules.md         | Guidelines for contributing           | Developers, architects, documentation writers |
+| Document        | Purpose                                                | Audience                                      |
+| --------------- | ------------------------------------------------------ | --------------------------------------------- |
+| requirements.md | WHAT we're building, WHY, and current implementation status | Product owners, developers, stakeholders |
+| project-rules.md | Guidelines for contributing                           | Developers, architects, documentation writers |
 
-## Key Sections in Business Requirements
+## Key Sections in Requirements
 
 - **Business Objectives** (BO-1 to BO-9) — Strategic goals
-- **Functional Requirements** (FR-1 to FR-13) — What the system shall do
-- **Non-Functional Requirements** (NFR-1 to NFR-6) — Performance, scalability, reliability, security
-- **Constraints** — Technical and business limitations
-- **Dependencies** — External services and assumptions
-
-## Status Summary
-
-Use [requirements-status.md](requirements-status.md) to see:
-
-- How many functional requirements are complete/partial/not started
-- Implementation progress by feature area
-- Which external APIs are integrated
-- Recommended priorities for next phase
+- **Functional Requirements** (FR-1 to FR-14) — What the system shall do, with status per sub-requirement
+- **Non-Functional Requirements** (NFR-1 to NFR-7) — Performance, scalability, reliability, security, observability
+- **Platform Parity** — GitHub vs Azure DevOps feature comparison
+- **Implementation Roadmap** — Phased priorities
+- **Constraints / Assumptions / Dependencies** — Boundaries and external services
 
 ---
 

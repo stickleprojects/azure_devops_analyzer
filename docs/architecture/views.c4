@@ -1,0 +1,39 @@
+views {
+
+  // ── Level 1: System Context ──────────────────────────────────────────────────
+  // Shows the Analyzer and everything it interacts with.
+
+  view system-context {
+    title "Azure DevOps Analyzer — System Context (C4 Level 1)"
+    description "Who uses the system and which external systems does it depend on."
+
+    include analyst, admin
+    include analyzer
+    include analyzer -> *
+    include * -> analyzer
+
+    autoLayout TopBottom
+  }
+
+  // ── Level 2: Containers ──────────────────────────────────────────────────────
+  // Zooms into the Analyzer to show its internal containers.
+
+  view containers of analyzer {
+    title "Azure DevOps Analyzer — Containers (C4 Level 2)"
+    description "Internal containers, their responsibilities, and how they communicate."
+
+    include *
+
+    // show external actors and systems at the boundary
+    include analyst -> analyzer.*
+    include admin -> analyzer.*
+    include admin -> analyzer.*
+    include analyzer.* -> azureDevOps
+    include analyzer.* -> github
+    include analyzer.* -> osv
+    include analyzer.* -> eolDate
+    include analyzer.* -> claudeApi
+
+    autoLayout LeftRight
+  }
+}

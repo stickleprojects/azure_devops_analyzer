@@ -1,0 +1,121 @@
+model {
+  // ── External Users ──────────────────────────────────────────────────────────
+
+  analyst = actor "Analyst" {
+    description "Views dashboards and tracks repository health metrics"
+  }
+
+  admin = actor "Administrator" {
+    description "Manages extraction schedules and monitors system health"
+  }
+
+  // ── External Systems ─────────────────────────────────────────────────────────
+
+  azureDevOps = system "Azure DevOps" {
+    #external
+    description "Source of repository, commit, branch, and PR data via REST API"
+    style { color muted }
+  }
+
+  github = system "GitHub" {
+    #external
+    description "Source of repository, commit, branch, and PR data via REST API"
+    style { color muted }
+  }
+
+  osv = system "OSV.dev" {
+    #external
+    description "Open-source vulnerability database queried for CVE data"
+    style { color muted }
+  }
+
+  eolDate = system "endoflife.date" {
+    #external
+    description "API providing end-of-life dates for software packages"
+    style { color muted }
+  }
+
+  claudeApi = system "Claude API" {
+    #external
+    description "Anthropic LLM API used for AI-powered repository summarization"
+    style { color muted }
+  }
+
+  // ── Azure DevOps Analyzer (main system) ──────────────────────────────────────
+
+  analyzer = system "Azure DevOps Analyzer" {
+    description "Extracts, analyzes, and visualizes repository metrics from Azure DevOps and GitHub"
+
+    // ── Storage ────────────────────────────────────────────────────────────────
+
+    db = database "TimescaleDB" {
+      #storage
+      description """
+        PostgreSQL 16 + TimescaleDB.
+        30+ tables with time-series hypertables for languages, dependencies,
+        code quality, contributor metrics, and branch metrics.
+      """
+    }
+
+    // ── Messaging ──────────────────────────────────────────────────────────────
+
+    mq = queue "RabbitMQ" {
+      #async
+      description "AMQP message broker. Queues: default, extraction (I/O-bound), analysis (CPU-bound)"
+    }
+
+    // ── Application Containers ─────────────────────────────────────────────────
+
+    scheduler = container "Scheduler" {
+      description "APScheduler + Celery Beat. Triggers extraction and analysis jobs on a cron schedule."
+      style { shape component }
+    }
+
+    worker = container "Celery Worker" {
+      description """
+        Distributed task executor. Runs extraction (Azure DevOps / GitHub),
+        dependency analysis (7 ecosystems), vulnerability enrichment (OSV.dev),
+        EOL enrichment (endoflife.date), and README summarization (Claude API).
+      """
+      style { shape component }
+    }
+
+    api = container "REST API" {
+      description "Flask API (port 5000). Accepts manual rescan triggers and enqueues them to RabbitMQ."
+      style { shape component }
+    }
+
+    // ── Visualization ──────────────────────────────────────────────────────────
+
+    grafana = ui "Grafana" {
+      description "9 dashboards: Home, Team Overview, Repo Overview, Repo Deep-Dive, Service Overview, Pull Requests, Contributors, Security, Administration. Port 3000."
+    }
+
+    flower = ui "Flower" {
+      description "Celery task monitoring UI. Shows worker status, queue depth, and task history. Port 5555."
+    }
+  }
+
+  // ── Relationships: Users → System ──────────────────────────────────────────
+
+  analyst -[queries]-> analyzer.grafana "views dashboards"
+  admin -[calls]-> analyzer.api "triggers manual rescans"
+  admin -[queries]-> analyzer.flower "monitors worker health"
+
+  // ── Relationships: Workers → External APIs ─────────────────────────────────
+
+  analyzer.worker -[calls]-> azureDevOps "extracts repos, commits, branches, PRs"
+  analyzer.worker -[calls]-> github "extracts repos, commits, branches, PRs"
+  analyzer.worker -[calls]-> osv "queries vulnerability data per dependency"
+  analyzer.worker -[calls]-> eolDate "queries EOL dates per package"
+  analyzer.worker -[calls]-> claudeApi "generates repository summaries"
+
+  // ── Relationships: Internal ────────────────────────────────────────────────
+
+  analyzer.scheduler -[schedules]-> analyzer.mq "enqueues extraction tasks"
+  analyzer.api -[writes]-> analyzer.mq "enqueues manual rescan tasks"
+  analyzer.worker -[reads]-> analyzer.mq "consumes tasks"
+  analyzer.worker -[writes]-> analyzer.db "stores extracted and analysed data"
+  analyzer.grafana -[queries]-> analyzer.db "reads metrics via SQL views"
+  analyzer.flower -[queries]-> analyzer.mq "reads queue depth and task status"
+}

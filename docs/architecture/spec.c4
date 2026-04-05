@@ -1,0 +1,58 @@
+specification {
+  element actor {
+    notation "Person"
+    style { shape person; color secondary }
+  }
+
+  element system {
+    notation "Software System"
+    style { shape rectangle }
+  }
+
+  element container {
+    notation "Container"
+    style { shape component }
+  }
+
+  element database {
+    notation "Database"
+    style { shape storage; color green }
+  }
+
+  element queue {
+    notation "Message Queue"
+    style { shape queue; color amber }
+  }
+
+  element ui {
+    notation "UI / Dashboard"
+    style { shape browser; color muted }
+  }
+
+  relationship calls {
+    technology "HTTPS/REST"
+  }
+
+  relationship queries {
+    technology "SQL"
+    line dashed
+  }
+
+  relationship writes {
+    technology "SQLAlchemy/AMQP"
+  }
+
+  relationship reads {
+    technology "AMQP"
+    line dashed
+  }
+
+  relationship schedules {
+    technology "Celery"
+    line dotted
+  }
+
+  tag external
+  tag async
+  tag storage
+}
