@@ -14,6 +14,15 @@ Screenshots in `docs/images/screenshots/` are captured manually from a running s
 
 ---
 
+## Dashboard Screenshots
+
+Screenshots of all dashboards are stored in [`docs/images/dashboards/`](../images/dashboards/)
+and are updated automatically by the **Update-Docs Bot** workflow.
+
+To refresh screenshots: **Actions → Update-Docs Bot → Run workflow** (enable the `screenshots` job).
+
+---
+
 ## Implemented Dashboards
 
 ### 1. Dashboard Home (`dashboard-home.json`)
@@ -43,9 +52,9 @@ Screenshots in `docs/images/screenshots/` are captured manually from a running s
 - **Top Contributors**: Bar charts for top 10 by commits and reviews
 - **Recent Activity**: Table of PRs from last 7 days
 
----
+![Team Overview Dashboard](../images/dashboards/team-overview.png)
 
-### 3. Repository Overview (`repository-overview.json`)
+### 2. Repository Overview Dashboard (`repository-overview.json`)
 
 **UID**: `repo-overview`
 **Purpose**: List and compare all repositories
@@ -58,9 +67,9 @@ Screenshots in `docs/images/screenshots/` are captured manually from a running s
 - **Top 10 Active Repositories**: Table with clickable repo names → Deep-Dive
 - **All Repositories**: Full table with organization, branch, URLs, last analyzed, commit/PR counts
 
----
+![Repository Overview Dashboard](../images/dashboards/repository-overview.png)
 
-### 4. Repository Deep-Dive (`repository-deep-dive.json`)
+### 3. Repository Deep-Dive Dashboard (`repository-deep-dive.json`)
 
 **UID**: `repo-deep-dive`
 **Purpose**: Comprehensive view of a single repository selected via dropdown
@@ -79,25 +88,9 @@ Screenshots in `docs/images/screenshots/` are captured manually from a running s
 - **Technology Stack**: Language distribution donut, AI-generated summary
 - **Recent Activity**: Recent commits table, open PRs table
 
----
+![Repository Deep-Dive Dashboard](../images/dashboards/repository-deep-dive.png)
 
-### 5. Service Overview (`service-overview.json`)
-
-**UID**: `service-overview`
-**Purpose**: Metrics aggregated at the service level (a service groups one or more repositories)
-
-**Sections**:
-
-- **Service Summary**: Total Repositories, Active Repositories, Unique Contributors, Total Commits, PRs Merged, Critical Vulnerabilities — stat panels
-- **Services at a Glance**: Table comparing all services
-- **Activity Trends**: Commit Activity by Service (timeseries), PR Throughput Created vs Merged (timeseries)
-- **Quality Metrics**: Avg Test Coverage, Avg Maintainability Index, Total Quality Issues, Avg PR Review Time — stats + timeseries
-- **Security & Dependencies**: Critical/High Vulnerabilities, EOL Dependencies, Total Dependencies — stats + severity pie + vulnerability trend
-- **Repository Breakdown**: Table of repositories with per-service drill-down
-
----
-
-### 6. Pull Request Analysis (`pull-requests.json`)
+### 4. Pull Request Analysis Dashboard (`pull-requests.json`)
 
 **UID**: `pull-requests`
 **Purpose**: Track PR quality and review efficiency across all repositories
@@ -111,27 +104,16 @@ Screenshots in `docs/images/screenshots/` are captured manually from a running s
 - **PR Throughput**: Created vs merged over time
 - **Recent Pull Requests**: Table with clickable repo names → Deep-Dive
 
----
+![Pull Request Analysis Dashboard](../images/dashboards/pull-requests.png)
 
-### 7. Contributor Analytics (`contributor-analytics.json`)
+### 5. Contributor Analytics Dashboard (`contributor-analytics.json`)
 
 **UID**: `contributor-analytics`
-**Purpose**: Developer activity across all repositories over the last 30 days
+**Purpose**: Individual and team contributor metrics across all repositories
 
-**Panels**:
+![Contributor Analytics Dashboard](../images/dashboards/contributor-analytics.png)
 
-- **Active Contributors (30 Days)**: Count stat panel
-- **Commits (30 Days)**: Count stat panel
-- **PR Reviews (30 Days)**: Count stat panel
-- **Top 10 Contributors by Commits**: Bar chart
-- **Top 10 Reviewers**: Bar chart
-- **Contributor Activity Summary (30 Days)**: Full table with per-contributor breakdown
-
-> **Note**: FR-8.2 (detailed contributor metrics) and FR-8.4 (active days) are implemented but currently paused for performance reasons. See `CONTRIBUTOR_METRICS_GUIDE.md`.
-
----
-
-### 8. Security Dashboard (`security-dashboard.json`)
+### 6. Security Dashboard (`security-dashboard.json`)
 
 **UID**: `security-dashboard`
 **Purpose**: Organization-wide security overview with vulnerability and end-of-life dependency tracking
@@ -144,7 +126,30 @@ Screenshots in `docs/images/screenshots/` are captured manually from a running s
 - **Security Trends**: Time series of vulnerability counts over time
 - **Top Vulnerable Dependencies**: Table of most problematic packages across repositories
 
----
+![Security Dashboard](../images/dashboards/security-dashboard.png)
+
+### 7. Dashboard Home (`dashboard-home.json`)
+
+**UID**: `dashboard-home`
+**Purpose**: Landing page with navigation links to all other dashboards
+
+![Dashboard Home](../images/dashboards/dashboard-home.png)
+
+### 8. Admin Dashboard (`admin-dashboard.json`)
+
+**UID**: `admin-dashboard`
+**Purpose**: Administrative overview – job run history, extraction status, system health
+
+![Admin Dashboard](../images/dashboards/admin-dashboard.png)
+
+### 9. Service Overview Dashboard (`service-overview.json`)
+
+**UID**: `service-overview`
+**Purpose**: High-level service health and SLA metrics
+
+![Service Overview Dashboard](../images/dashboards/service-overview.png)
+
+## Dashboard Navigation
 
 ### 9. Administration (`admin-dashboard.json`)
 

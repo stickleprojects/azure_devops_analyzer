@@ -76,11 +76,16 @@ for i in {1..30}; do
 done
 
 # Ensure TimescaleDB extension exists before any migration/view references time_bucket.
+# TimescaleDB is required for hypertable features in production; warn if unavailable
+# (e.g. plain postgres:16 in local development or minimal CI environments).
 log_info "Ensuring TimescaleDB extension is enabled..."
 if PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "CREATE EXTENSION IF NOT EXISTS timescaledb;" >/dev/null 2>&1; then
     log_success "TimescaleDB extension is enabled"
 else
-    log_error "Failed to enable TimescaleDB extension"
+    log_warning "TimescaleDB extension is not available on this PostgreSQL server."
+    log_warning "Hypertable features (time_bucket, create_hypertable) will not be active."
+    log_warning "Migrations that reference TimescaleDB functions may be skipped or produce warnings."
+    log_warning "For production use, ensure the timescaledb/timescaledb Docker image is used."
 fi
 
 # Check if schema already exists
