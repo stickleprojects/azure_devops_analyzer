@@ -1,0 +1,191 @@
+## Update-Docs Bot
+##
+## Runs a documentation audit on a weekly schedule (or on demand) and, when
+## issues are found, opens a pull-request against the default branch that
+## contains the audit report plus any automatically-fixable changes.
+##
+## Triggers:
+##   - schedule: every Sunday at 03:00 UTC
+##   - workflow_dispatch: manual run from the Actions tab
+##
+## Required secrets (optional – bot still runs without them, just can't push):
+##   GITHUB_TOKEN  – automatically provided by GitHub Actions (default token)
+##
+## Permissions:
+##   contents: write   – to push the report branch
+##   pull-requests: write – to open the PR
+
+name: Update-Docs Bot
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'   # Every Sunday at 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run – generate report but do not open a PR'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  audit:
+    name: Documentation Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout the full history so git log works correctly
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # -----------------------------------------------------------------------
+      # 2. Set up Python (no extra deps needed – script uses stdlib only)
+      # -----------------------------------------------------------------------
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # -----------------------------------------------------------------------
+      # 3. Run the audit and save the report to a predictable location
+      # -----------------------------------------------------------------------
+      - name: Run documentation audit
+        id: audit
+        run: |
+          mkdir -p artifacts/doc-audit
+          python scripts/doc_audit.py --output artifacts/doc-audit/report.md
+          echo "Report preview:"
+          head -40 artifacts/doc-audit/report.md
+
+          # Determine whether there are any non-info findings
+          ERRORS=$(grep -c "^- ❌" artifacts/doc-audit/report.md || true)
+          WARNINGS=$(grep -c "^- ⚠️" artifacts/doc-audit/report.md || true)
+          echo "errors=$ERRORS"   >> $GITHUB_OUTPUT
+          echo "warnings=$WARNINGS" >> $GITHUB_OUTPUT
+
+          if [ "$ERRORS" -gt 0 ] || [ "$WARNINGS" -gt 0 ]; then
+            echo "has_findings=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_findings=false" >> $GITHUB_OUTPUT
+          fi
+
+      # -----------------------------------------------------------------------
+      # 4. Upload report as a workflow artifact (always, for reference)
+      # -----------------------------------------------------------------------
+      - name: Upload audit report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: doc-audit-report
+          path: artifacts/doc-audit/report.md
+          retention-days: 30
+
+      # -----------------------------------------------------------------------
+      # 5. Configure git identity for the bot commit
+      # -----------------------------------------------------------------------
+      - name: Configure git identity
+        if: steps.audit.outputs.has_findings == 'true' && inputs.dry_run != 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # -----------------------------------------------------------------------
+      # 6. Create (or reset) the docs-bot branch and push the report
+      # -----------------------------------------------------------------------
+      - name: Push report to bot branch
+        if: steps.audit.outputs.has_findings == 'true' && inputs.dry_run != 'true'
+        id: push
+        run: |
+          BRANCH="bot/update-docs-$(date +%Y-%m-%d)"
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+
+          # Reset or create the branch
+          git checkout -B "$BRANCH"
+
+          # Stage the audit report
+          git add artifacts/doc-audit/report.md
+          git commit -m "docs(bot): documentation audit report $(date +%Y-%m-%d)"
+
+          git push --force origin "$BRANCH"
+
+      # -----------------------------------------------------------------------
+      # 7. Open a pull-request for review
+      # -----------------------------------------------------------------------
+      - name: Open pull-request
+        if: steps.audit.outputs.has_findings == 'true' && inputs.dry_run != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ steps.push.outputs.branch }}"
+          TODAY="$(date +%Y-%m-%d)"
+          ERRORS="${{ steps.audit.outputs.errors }}"
+          WARNINGS="${{ steps.audit.outputs.warnings }}"
+
+          # Build PR body from the first 60 lines of the report
+          REPORT_PREVIEW="$(head -60 artifacts/doc-audit/report.md)"
+
+          PR_BODY="## Documentation Audit – ${TODAY}
+
+This pull request was automatically created by the **Update-Docs Bot** after
+detecting documentation issues that need human review.
+
+**Findings summary**: ${ERRORS} error(s), ${WARNINGS} warning(s)
+
+---
+
+${REPORT_PREVIEW}
+
+---
+
+### What to do
+
+1. Review the findings in \`artifacts/doc-audit/report.md\`
+2. Apply the recommended fixes to the relevant documentation files **on this
+   branch** (not directly on \`main\`)
+3. When all items are addressed, request a review and merge
+
+_Changes suggested by this bot should be reviewed and approved before merging._"
+
+          # Check whether an open PR already exists for today
+          EXISTING=$(gh pr list --head "$BRANCH" --state open --json number \
+                     --jq '.[0].number' 2>/dev/null || true)
+
+          if [ -n "$EXISTING" ]; then
+            echo "PR #${EXISTING} already open for branch ${BRANCH} – skipping creation"
+          else
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "docs(bot): documentation audit ${TODAY}" \
+              --body "$PR_BODY" \
+              --label "documentation" || \
+            gh pr create \
+              --base main \
+              --head "$BRANCH" \
+              --title "docs(bot): documentation audit ${TODAY}" \
+              --body "$PR_BODY"
+          fi
+
+      # -----------------------------------------------------------------------
+      # 8. Summary step (always runs)
+      # -----------------------------------------------------------------------
+      - name: Print summary
+        if: always()
+        run: |
+          if [ "${{ steps.audit.outputs.has_findings }}" == "true" ]; then
+            echo "✅ Audit complete – ${{ steps.audit.outputs.errors }} error(s), \
+          ${{ steps.audit.outputs.warnings }} warning(s) found."
+            if [ "${{ inputs.dry_run }}" == "true" ]; then
+              echo "ℹ️  Dry run – no PR was opened."
+            fi
+          else
+            echo "✅ Audit complete – no errors or warnings. Documentation looks good!"
+          fi
