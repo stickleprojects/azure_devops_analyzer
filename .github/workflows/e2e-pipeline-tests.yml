@@ -1,13 +1,37 @@
-## Manual trigger for the full pipeline E2E test suite.
+## Full pipeline E2E test suite.
 ##
 ## Runs tests/contract/database/test_full_pipeline_e2e.py against a fresh
 ## TimescaleDB instance — no live API credentials required.
 ##
-## Trigger: workflow_dispatch only (Actions → "Run workflow" button).
+## Triggers:
+##   - push / pull_request to main or develop (path-filtered to skip docs-only changes)
+##   - workflow_dispatch for manual runs from the Actions tab
 
 name: E2E Pipeline Tests
 
 on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'database/**'
+      - 'requirements.txt'
+      - 'docker/scripts/**'
+      - '.github/workflows/e2e-pipeline-tests.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'database/**'
+      - 'requirements.txt'
+      - 'docker/scripts/**'
+      - '.github/workflows/e2e-pipeline-tests.yml'
   workflow_dispatch:
 
 jobs:
