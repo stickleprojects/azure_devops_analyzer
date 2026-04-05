@@ -36,6 +36,3 @@ auth
 artifacts/assessment/*.json
 .claude/settings.local.json
 
-# Skill junction directories (canonical source: .ai/skills/)
-.agents/skills/
-.claude/skills/

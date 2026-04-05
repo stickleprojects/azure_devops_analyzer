@@ -24,10 +24,14 @@ For detailed operational specifics and reference material, see:
 
 **Remember**: Principles over rules. When uncertain, identify which principle applies and use judgment.
 
-**Skills**: Project skills live in `.ai/skills/`. On a fresh clone, wire them into Claude Code with:
+**Skills**: Project skills have two locations:
+- `.ai/skills/` — source of truth (edit skills here)
+- `.claude/skills/` — deployed copy (loaded by Claude Code automatically on checkout)
+
+At session start, check for drift between the two:
 ```
-ln -s ../../.ai/skills/likec4-dsl .claude/skills/likec4-dsl
+diff -rq .ai/skills/ .claude/skills/
 ```
-Tell the user if a skill listed in `.ai/skills/` is not loading (e.g. missing junction).
+If there are differences, alert the user — the deployed copy is out of sync with the source.
 
 **Tools**: Tell the user if any tools or MCPs are listed in .ai\agents or elsewhere but something is preventing those tools from being used
