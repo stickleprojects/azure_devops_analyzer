@@ -186,6 +186,7 @@ def audit_progress_md(repo_root: Path) -> list[Finding]:
     #    look like major feature work without a matching session entry
     recent_commits = _git_log(repo_root, max_count=50)
     feature_keywords = ["feat:", "fix:", "refactor:", "add ", "implement"]
+    content_lower = content.lower()
     undocumented: list[str] = []
     for subject in recent_commits[:20]:
         lower = subject.lower()
@@ -193,7 +194,7 @@ def audit_progress_md(repo_root: Path) -> list[Finding]:
             # Rough heuristic: check if any word from the commit appears in PROGRESS
             first_word = subject.split()[0] if subject.split() else ""
             # Only flag if a significant commit keyword isn't mentioned at all
-            if first_word.lower() not in content.lower() and len(subject) > 10:
+            if first_word.lower() not in content_lower and len(subject) > 10:
                 undocumented.append(subject)
 
     if undocumented:
