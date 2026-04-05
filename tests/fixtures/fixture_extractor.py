@@ -78,7 +78,8 @@ class FixtureExtractor(RepositoryExtractor):
         return [
             PullRequestData(
                 pr_number=pr["pr_number"],
-                platform_pr_id=pr.get("platform_pr_id", pr.get("pr_number")),
+                # Namespace fixture IDs by repo to avoid collisions across scenarios.
+                platform_pr_id=f"{repo_id}:{pr.get('platform_pr_id', pr.get('pr_number'))}",
                 title=pr["title"],
                 description=pr.get("description"),
                 source_branch=pr["source_branch"],

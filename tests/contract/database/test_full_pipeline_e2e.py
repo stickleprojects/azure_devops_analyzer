@@ -507,7 +507,7 @@ class TestDashboardViewContracts:
         across all loaded scenarios.
         """
         rows = db_session.execute(
-            text("SELECT status, COUNT(*) AS count FROM v_pr_status_distribution")
+            text("SELECT status, count FROM v_pr_status_distribution")
         ).fetchall()
         statuses = {r.status for r in rows}
         assert "open" in statuses, f"Expected 'open' in {statuses}"
