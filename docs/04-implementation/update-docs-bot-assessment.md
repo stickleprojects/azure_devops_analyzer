@@ -1,31 +1,32 @@
-# Update-Docs Bot – Feasibility & Cost Assessment
+# Update-Docs Bot – Implementation Reference
 
 ## Document Information
 
 | Field        | Value                          |
 | ------------ | ------------------------------ |
 | Last Updated | 2026-04-05                     |
-| Status       | Complete                       |
+| Status       | Implemented                    |
 | Owner        | Engineering                    |
 
 ---
 
 ## Overview
 
-This document assesses the feasibility and ongoing cost of an automated
-"update-docs bot" that audits project documentation and opens pull requests
-with corrections or recommendations rather than writing directly to the main
+The update-docs bot is a fully implemented GitHub Actions workflow that keeps
+project documentation up to date. It audits documentation for quality issues,
+captures Grafana dashboard screenshots, and regenerates Mermaid diagrams –
+opening pull requests for human review rather than writing directly to the main
 branch.
 
 ---
 
 ## What the Bot Does
 
-The bot is implemented as a scheduled GitHub Actions workflow
-(`.github/workflows/update-docs-bot.yml`) backed by a pure-Python audit
-script (`scripts/doc_audit.py`).
+The bot runs as a manual GitHub Actions workflow
+(`.github/workflows/update-docs-bot.yml`) with three independent parallel jobs,
+each backed by dedicated scripts or tooling.
 
-### Checks performed on every run
+### Checks performed by the `audit` job
 
 | Check | Description |
 |-------|-------------|
@@ -35,12 +36,12 @@ script (`scripts/doc_audit.py`).
 | **Plan staleness** | Identifies plans in `docs/04-implementation/` that appear complete but lack a Closed status |
 | **Readability** | Flags missing headings, oversized sections, and stale date markers across all docs |
 
-### What the bot does NOT do automatically
+### Automated documentation tasks
 
-| Capability | Status | Reason |
-|------------|--------|--------|
-| Dashboard screenshots | Automated | `update-docs-bot.yml` (`screenshots` job) – spins up Grafana + Image Renderer in Docker, seeds the database from e2e fixtures, captures PNGs, and opens a PR |
-| Network/architecture diagram regeneration | Automated | `update-docs-bot.yml` (`mermaid` job) – renders `.mmd` source files to SVG via `@mermaid-js/mermaid-cli` and opens a PR |
+| Capability | Job | Details |
+|------------|-----|---------|
+| Dashboard screenshots | `screenshots` | Spins up Grafana + Image Renderer in Docker, seeds the database from e2e fixtures, captures PNGs for all dashboards, and opens a PR |
+| Mermaid diagram rendering | `mermaid` | Renders every `.mmd` source file to SVG via `@mermaid-js/mermaid-cli` and opens a PR |
 | Semantic content rewriting | Not automated | Content quality requires human review; auto-rewrite risks introducing inaccuracies |
 
 ---
@@ -70,26 +71,15 @@ script (`scripts/doc_audit.py`).
 
 ---
 
-## Feasibility Assessment
+## Implementation Status
 
-### Technical feasibility
-
-| Aspect | Assessment |
-|--------|------------|
-| Static doc checks | ✅ Fully feasible using stdlib Python and `git log` |
-| Commit-to-PROGRESS.md cross-check | ✅ Feasible; implemented via `git log` heuristics |
-| Automated PR creation | ✅ Fully feasible via `gh pr create` in GitHub Actions |
+| Aspect | Status |
+|--------|--------|
+| Static doc checks | ✅ Implemented – stdlib Python + `git log` |
+| Commit-to-PROGRESS.md cross-check | ✅ Implemented – `git log` heuristics |
+| Automated PR creation | ✅ Implemented – `gh pr create` in GitHub Actions |
 | Dashboard screenshots | ✅ Implemented – `update-docs-bot.yml` (`screenshots` job) runs fully in CI using Docker services |
 | Diagram regeneration | ✅ Implemented – `update-docs-bot.yml` (`mermaid` job) renders `.mmd` sources to SVG via `@mermaid-js/mermaid-cli` |
-
-### Operational risk
-
-- **False positives** – heuristic checks may flag content that is intentionally
-  structured. Threshold tuning reduces noise over time.
-- **Branch conflicts** – the bot branch is force-pushed on each run; old bot
-  branches should be deleted after merging.
-- **GitHub token scope** – the default `GITHUB_TOKEN` is sufficient; no
-  personal access token is required.
 
 ---
 
@@ -119,31 +109,27 @@ GitHub Actions pricing for public and private repositories.
 | Adding new check types | 2–4 hours per check |
 | Reviewing and acting on bot PRs | 30–60 minutes per weekly run (human time) |
 
-### Screenshot automation (implemented)
+### Screenshot automation
 
-Dashboard screenshots are captured by the `refresh-dashboard-screenshots.yml` workflow
-(manual trigger only).
-
-| Item | Estimate |
+| Item | Details |
 |------|---------|
 | Docker service startup in CI | +5–10 minutes per run |
-| Grafana headless screenshot tooling | Implemented |
-| Mermaid diagram rendering | Implemented via `update-docs-bot.yml` (`mermaid` job) |
+| Grafana headless screenshot tooling | ✅ Implemented via `update-docs-bot.yml` (`screenshots` job) |
+| Mermaid diagram rendering | ✅ Implemented via `update-docs-bot.yml` (`mermaid` job) |
 | Storage for screenshot artifacts | Negligible (GitHub artifact storage) |
 | **Additional annual compute cost** | **$0** (manual runs; no scheduled execution) |
 
 ---
 
-## Recommendations
+## Operational Notes
 
-### Immediate (already implemented)
+- **False positives** – heuristic checks may flag content that is intentionally structured. Threshold tuning reduces noise over time.
+- **Branch conflicts** – the bot branch is force-pushed on each run; delete merged bot branches promptly to avoid confusion.
+- **GitHub token scope** – the default `GITHUB_TOKEN` is sufficient; no personal access token is required.
 
-- Static documentation audit running on demand (manual `workflow_dispatch`) via GitHub Actions
-- PR-based review workflow so no changes land without approval
-- Dashboard screenshots via `update-docs-bot.yml` (`screenshots` job; Docker + Grafana Image Renderer)
-- Mermaid diagram refresh via `update-docs-bot.yml` (`mermaid` job)
+---
 
-### Short-term (next sprint)
+## Enhancements (Next Steps)
 
 - Add `--fix` mode to `scripts/doc_audit.py` to auto-correct trivial issues
   (e.g., updating stale "Last Updated" markers to today's date) so the bot PR

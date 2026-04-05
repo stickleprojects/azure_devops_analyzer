@@ -14,8 +14,13 @@ The system requires PostgreSQL 15 with the TimescaleDB extension enabled. Additi
 
 ### Entity Relationship Diagram
 
-> **Note**: The diagram below renders in GitHub, VS Code, and other Mermaid-compatible viewers.
-> Source file: [images/database-schema.mmd](images/database-schema.mmd)
+> **Note**: The rendered SVG below is auto-generated from the Mermaid source.
+> Source file: [../images/database-schema.mmd](../images/database-schema.mmd)
+> To regenerate: Actions → Update-Docs Bot → Run workflow (`mermaid` job).
+
+![Database Schema](../images/database-schema.svg)
+
+The inline Mermaid source (also renders in GitHub and VS Code):
 
 ```mermaid
 erDiagram

@@ -8,6 +8,15 @@ Grafana provides interactive dashboards to visualize all collected metrics and e
 
 Grafana is configured to connect to the PostgreSQL database using a dedicated read-only user. The data source is set up with TimescaleDB support enabled.
 
+## Dashboard Screenshots
+
+Screenshots of all dashboards are stored in [`docs/images/dashboards/`](../images/dashboards/)
+and are updated automatically by the **Update-Docs Bot** workflow.
+
+To refresh screenshots: **Actions → Update-Docs Bot → Run workflow** (enable the `screenshots` job).
+
+---
+
 ## Implemented Dashboards
 
 All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on startup. Each dashboard includes navigation links to all other dashboards.
@@ -26,6 +35,8 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 - **Top Contributors**: Bar charts for top 10 by commits and reviews
 - **Recent Activity**: Table of PRs from last 7 days
 
+![Team Overview Dashboard](../images/dashboards/team-overview.png)
+
 ### 2. Repository Overview Dashboard (`repository-overview.json`)
 
 **UID**: `repo-overview`
@@ -38,6 +49,8 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 - **Commit Activity**: Time series of commits per day (30 days)
 - **Top 10 Active Repositories**: Table with clickable repo names → Deep-Dive
 - **All Repositories**: Full table with organization, branch, URLs, last analyzed, commit/PR counts
+
+![Repository Overview Dashboard](../images/dashboards/repository-overview.png)
 
 ### 3. Repository Deep-Dive Dashboard (`repository-deep-dive.json`)
 
@@ -58,6 +71,8 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 - **Technology Stack**: Language distribution donut, AI-generated summary
 - **Recent Activity**: Recent commits table, open PRs table
 
+![Repository Deep-Dive Dashboard](../images/dashboards/repository-deep-dive.png)
+
 ### 4. Pull Request Analysis Dashboard (`pull-requests.json`)
 
 **UID**: `pull-requests`
@@ -72,6 +87,15 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 - **PR Throughput**: Created vs. merged over time
 - **Recent Pull Requests**: Table with clickable repo names → Deep-Dive
 
+![Pull Request Analysis Dashboard](../images/dashboards/pull-requests.png)
+
+### 5. Contributor Analytics Dashboard (`contributor-analytics.json`)
+
+**UID**: `contributor-analytics`
+**Purpose**: Individual and team contributor metrics across all repositories
+
+![Contributor Analytics Dashboard](../images/dashboards/contributor-analytics.png)
+
 ### 6. Security Dashboard (`security-dashboard.json`)
 
 **UID**: `security-dashboard`
@@ -84,6 +108,29 @@ All dashboards are stored in `dashboards/` and auto-provisioned by Grafana on st
 - **End-of-Life Dependencies**: EOL status categorization (expired, expiring soon, future), repository security overview table with drilldown links
 - **Security Trends**: Time series of vulnerability counts over time
 - **Top Vulnerable Dependencies**: Table of most problematic packages across repositories
+
+![Security Dashboard](../images/dashboards/security-dashboard.png)
+
+### 7. Dashboard Home (`dashboard-home.json`)
+
+**UID**: `dashboard-home`
+**Purpose**: Landing page with navigation links to all other dashboards
+
+![Dashboard Home](../images/dashboards/dashboard-home.png)
+
+### 8. Admin Dashboard (`admin-dashboard.json`)
+
+**UID**: `admin-dashboard`
+**Purpose**: Administrative overview – job run history, extraction status, system health
+
+![Admin Dashboard](../images/dashboards/admin-dashboard.png)
+
+### 9. Service Overview Dashboard (`service-overview.json`)
+
+**UID**: `service-overview`
+**Purpose**: High-level service health and SLA metrics
+
+![Service Overview Dashboard](../images/dashboards/service-overview.png)
 
 ## Dashboard Navigation
 
