@@ -39,8 +39,8 @@ script (`scripts/doc_audit.py`).
 
 | Capability | Status | Reason |
 |------------|--------|--------|
-| Dashboard screenshots | Not automated | Requires a running Docker/Grafana stack; not feasible in a standard CI runner without significant setup time and infrastructure cost |
-| Network/architecture diagram regeneration | Not automated | Diagrams are maintained as Mermaid or image assets; regeneration requires human judgment about accuracy |
+| Dashboard screenshots | Automated | `refresh-dashboard-screenshots.yml` workflow – spins up Grafana + Image Renderer in Docker, seeds the database from e2e fixtures, captures PNGs, and opens a PR |
+| Network/architecture diagram regeneration | Automated | `refresh-mermaid-diagrams.yml` workflow – renders `.mmd` source files to SVG via `@mermaid-js/mermaid-cli` and opens a PR |
 | Semantic content rewriting | Not automated | Content quality requires human review; auto-rewrite risks introducing inaccuracies |
 
 ---
@@ -51,8 +51,12 @@ script (`scripts/doc_audit.py`).
 
 - **`scripts/doc_audit.py`** – audit logic, ~300 lines of Python, no
   third-party dependencies (stdlib only)
-- **`.github/workflows/update-docs-bot.yml`** – GitHub Actions workflow
-  (runs on schedule + `workflow_dispatch`)
+- **`.github/workflows/update-docs-bot.yml`** – documentation audit workflow
+  (manual `workflow_dispatch` trigger only)
+- **`.github/workflows/refresh-dashboard-screenshots.yml`** – captures Grafana
+  dashboard PNGs using a Docker stack seeded from e2e fixture data
+- **`.github/workflows/refresh-mermaid-diagrams.yml`** – renders `.mmd` Mermaid
+  source files to SVG via `@mermaid-js/mermaid-cli`
 
 ### Workflow summary
 
@@ -74,8 +78,8 @@ script (`scripts/doc_audit.py`).
 | Static doc checks | ✅ Fully feasible using stdlib Python and `git log` |
 | Commit-to-PROGRESS.md cross-check | ✅ Feasible; implemented via `git log` heuristics |
 | Automated PR creation | ✅ Fully feasible via `gh pr create` in GitHub Actions |
-| Dashboard screenshots | ⚠️ Feasible but costly – needs running Docker services in CI |
-| Diagram regeneration | ⚠️ Feasible for Mermaid diagrams; rendered images require additional tooling |
+| Dashboard screenshots | ✅ Implemented – `refresh-dashboard-screenshots.yml` runs fully in CI using Docker services |
+| Diagram regeneration | ✅ Implemented – `refresh-mermaid-diagrams.yml` renders `.mmd` sources to SVG via `@mermaid-js/mermaid-cli` |
 
 ### Operational risk
 
@@ -98,12 +102,12 @@ GitHub Actions pricing for public and private repositories.
 | Metric | Value |
 |--------|-------|
 | Estimated job duration | 3–5 minutes per run |
-| Schedule | Weekly (52 runs per year) |
-| Minutes per year | ~260 minutes |
+| Schedule | Manual (`workflow_dispatch`) only |
+| Minutes per year | Only on demand |
 | Free tier (public repo) | Unlimited |
 | Free tier (private repo) | 2 000 minutes/month included |
 | Overage rate | $0.008 per minute (ubuntu-latest) |
-| **Estimated annual cost** | **$0** (well within free tier) |
+| **Estimated annual cost** | **$0** (manual runs only; well within free tier) |
 
 ### Maintenance cost
 
@@ -114,17 +118,18 @@ GitHub Actions pricing for public and private repositories.
 | Adding new check types | 2–4 hours per check |
 | Reviewing and acting on bot PRs | 30–60 minutes per weekly run (human time) |
 
-### Screenshot automation (optional enhancement)
+### Screenshot automation (implemented)
 
-If dashboard screenshots are added as a future enhancement:
+Dashboard screenshots are captured by the `refresh-dashboard-screenshots.yml` workflow
+(manual trigger only).
 
 | Item | Estimate |
 |------|---------|
 | Docker service startup in CI | +5–10 minutes per run |
-| Grafana headless screenshot tooling | 4–8 hours of setup |
-| Additional runner minutes per year | ~520 extra minutes |
+| Grafana headless screenshot tooling | Implemented |
+| Mermaid diagram rendering | Implemented via `refresh-mermaid-diagrams.yml` |
 | Storage for screenshot artifacts | Negligible (GitHub artifact storage) |
-| **Additional annual compute cost** | **< $5** (still within free tier for most repos) |
+| **Additional annual compute cost** | **$0** (manual runs; no scheduled execution) |
 
 ---
 
@@ -132,8 +137,10 @@ If dashboard screenshots are added as a future enhancement:
 
 ### Immediate (already implemented)
 
-- Static documentation audit running weekly via GitHub Actions
+- Static documentation audit running on demand (manual `workflow_dispatch`) via GitHub Actions
 - PR-based review workflow so no changes land without approval
+- Dashboard screenshots via `refresh-dashboard-screenshots.yml` (Docker + Grafana Image Renderer)
+- Mermaid diagram refresh via `refresh-mermaid-diagrams.yml`
 
 ### Short-term (next sprint)
 
@@ -145,16 +152,13 @@ If dashboard screenshots are added as a future enhancement:
 
 ### Medium-term (next quarter)
 
-- Add Mermaid diagram regeneration: parse `docker-compose.yml` service
-  definitions and regenerate the architecture diagram in `docs/02-architecture/`
 - Integrate with the existing `validate-documentation.sh` script to catch
   code-to-prose ratio violations
+- Semantic drift detection: compare README against merged PR titles over the
+  last quarter and flag features that appear in commits but not in docs
 
 ### Long-term (future)
 
-- Dashboard screenshots via headless Grafana in Docker: start the stack,
-  wait for Grafana to be healthy, use the Grafana HTTP API to render panel
-  PNGs, commit them into `docs/images/`
 - Semantic drift detection: compare README against merged PR titles over the
   last quarter and flag features that appear in commits but not in docs
 

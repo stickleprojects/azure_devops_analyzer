@@ -1,11 +1,10 @@
 ## Update-Docs Bot
 ##
-## Runs a documentation audit on a weekly schedule (or on demand) and, when
-## issues are found, opens a pull-request against the default branch that
-## contains the audit report plus any automatically-fixable changes.
+## Runs a documentation audit on demand and, when issues are found, opens a
+## pull-request against the default branch that contains the audit report plus
+## any automatically-fixable changes.
 ##
 ## Triggers:
-##   - schedule: every Sunday at 03:00 UTC
 ##   - workflow_dispatch: manual run from the Actions tab
 ##
 ## Required secrets (optional – bot still runs without them, just can't push):
@@ -18,8 +17,6 @@
 name: Update-Docs Bot
 
 on:
-  schedule:
-    - cron: '0 3 * * 0'   # Every Sunday at 03:00 UTC
   workflow_dispatch:
     inputs:
       dry_run:
