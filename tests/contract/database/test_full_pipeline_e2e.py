@@ -13,7 +13,7 @@ Runs in CI under `-m 'not live_api'` (the standard test-runner command).
 """
 
 import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from sqlalchemy import text
 
 from tests.fixtures.fixture_extractor import FixtureExtractor
@@ -27,8 +27,11 @@ from src.database.storage import (
     store_pull_request,
     store_languages,
     store_dependencies,
+    store_package_metadata,
+    store_repo_dependencies,
 )
 from src.analyzers.dependency_analyzer import DependencyAnalyzer
+from src.analyzers.dependency_enricher import EnrichedDependency
 from src.database.models import Commit, PullRequest, RepositoryLanguage, RepositoryDependency
 from src.extractors.base import Platform
 
@@ -274,6 +277,88 @@ DEPENDENCY_SCENARIOS = {
     "fullstack-monorepo": {"ecosystem": "pypi", "min_deps": 1},
 }
 
+# Synthetic enrichment data — deterministic, no external API calls
+SYNTHETIC_PACKAGES = [
+    {
+        "package_name": "requests",
+        "ecosystem": "pypi",
+        "latest_version": "2.31.0",
+        "is_eol": False,
+        "eol_date": None,
+        "vulnerabilities": [
+            {
+                "cve_id": "CVE-2018-18074",
+                "osv_id": "GHSA-x84v-xcm2-53pg",
+                "severity": "HIGH",
+                "summary": "Redirect to non-HTTP schemes allows SSRF",
+                "details": "Requests sends auth header to redirect targets",
+                "fixed_in_versions": ["2.20.0"],
+                "references": [],
+            }
+        ],
+        "pinned_version": "2.18.0",
+    },
+    {
+        "package_name": "urllib3",
+        "ecosystem": "pypi",
+        "latest_version": "2.2.1",
+        "is_eol": False,
+        "eol_date": None,
+        "vulnerabilities": [
+            {
+                "cve_id": "CVE-2021-33503",
+                "osv_id": "GHSA-q2q7-5pp4-w6pg",
+                "severity": "CRITICAL",
+                "summary": "ReDoS in URL parsing",
+                "details": "Catastrophic backtracking in URL regular expression",
+                "fixed_in_versions": ["1.26.5", "2.0.2"],
+                "references": [],
+            }
+        ],
+        "pinned_version": "1.22",
+    },
+    {
+        "package_name": "certifi",
+        "ecosystem": "pypi",
+        "latest_version": "2024.2.2",
+        "is_eol": True,
+        "eol_date": date(2022, 5, 1),
+        "vulnerabilities": [],
+        "pinned_version": "2017.4.17",
+    },
+]
+
+
+def _enrich_scenario(session, repo_id: str) -> None:
+    """
+    Store synthetic package metadata + per-repo enriched deps for `repo_id`.
+    Covers 2 vulnerable packages (HIGH + CRITICAL) and 1 EOL package.
+    """
+    enriched_deps = []
+    for pkg_data in SYNTHETIC_PACKAGES:
+        store_package_metadata(
+            session,
+            package_name=pkg_data["package_name"],
+            ecosystem=pkg_data["ecosystem"],
+            latest_version=pkg_data["latest_version"],
+            is_eol=pkg_data["is_eol"],
+            eol_date=pkg_data.get("eol_date"),
+            vulnerabilities=pkg_data["vulnerabilities"],
+        )
+        enriched_deps.append(
+            EnrichedDependency(
+                package_name=pkg_data["package_name"],
+                version=pkg_data["pinned_version"],
+                ecosystem=pkg_data["ecosystem"],
+                is_dev_dependency=False,
+                source_file="requirements.txt",
+                version_constraint=None,
+                has_known_vulnerabilities=len(pkg_data["vulnerabilities"]) > 0,
+            )
+        )
+    store_repo_dependencies(session, repo_id, enriched_deps)
+    session.commit()
+
 
 @pytest.mark.integration
 class TestDependencyEnrichmentPipelineE2E:
@@ -401,8 +486,196 @@ class TestDependencyEnrichmentPipelineE2E:
         )
 
 
+
 # =============================================================================
-# 3. Dashboard View Contracts (shared multi-scenario dataset)
+# 3. Security Enrichment Contracts (synthetic data, no external API calls)
+# =============================================================================
+
+
+@pytest.mark.integration
+class TestSecurityEnrichmentContractsE2E:
+    """
+    CONTRACT: Security dashboard views return correct non-zero results after
+    storing synthetic enrichment data via store_package_metadata +
+    store_repo_dependencies.
+
+    All tests are CI-safe — no external network calls are made.
+    """
+
+    def test_v_security_overview_latest_non_zero_after_enrichment(self, db_session):
+        """
+        CONTRACT: v_security_overview_latest reflects stored vulnerability and EOL data.
+        """
+        repo = _load_scenario(db_session, "python-docker-billing")
+        _enrich_scenario(db_session, repo.repo_id)
+
+        row = db_session.execute(
+            text(
+                "SELECT total_vulnerabilities, total_eol_deps, "
+                "repos_with_vulns, repos_with_eol "
+                "FROM v_security_overview_latest"
+            )
+        ).fetchone()
+
+        assert row is not None
+        assert row.total_vulnerabilities >= 2, (
+            f"expected >= 2 vulnerabilities, got {row.total_vulnerabilities}"
+        )
+        assert row.total_eol_deps >= 1, (
+            f"expected >= 1 EOL dep (certifi), got {row.total_eol_deps}"
+        )
+        assert row.repos_with_vulns >= 1, (
+            f"expected >= 1 repo with vulns, got {row.repos_with_vulns}"
+        )
+        assert row.repos_with_eol >= 1, (
+            f"expected >= 1 repo with EOL deps, got {row.repos_with_eol}"
+        )
+
+    def test_v_security_repository_overview_per_repo_vuln_counts(self, db_session):
+        """
+        CONTRACT: v_security_repository_overview has correct severity breakdown for the enriched repo.
+        """
+        repo = _load_scenario(db_session, "python-docker-billing")
+        _enrich_scenario(db_session, repo.repo_id)
+
+        row = db_session.execute(
+            text(
+                "SELECT critical_vulns, high_vulns, eol_deps "
+                "FROM v_security_repository_overview "
+                "WHERE repo_id = :rid"
+            ),
+            {"rid": repo.repo_id},
+        ).fetchone()
+
+        assert row is not None, "no row in v_security_repository_overview for enriched repo"
+        assert row.critical_vulns >= 1, (
+            f"expected >= 1 CRITICAL vuln (urllib3), got {row.critical_vulns}"
+        )
+        assert row.high_vulns >= 1, (
+            f"expected >= 1 HIGH vuln (requests), got {row.high_vulns}"
+        )
+        assert row.eol_deps >= 1, (
+            f"expected >= 1 EOL dep (certifi), got {row.eol_deps}"
+        )
+
+    def test_v_repo_dependency_rollup_latest_vulnerabilities_counted(self, db_session):
+        """
+        CONTRACT: v_repo_dependency_rollup_latest.vulnerabilities > 0 for the enriched repo.
+        Also verifies outdated_dependencies and eol_dependencies are counted.
+        """
+        repo = _load_scenario(db_session, "python-docker-billing")
+        _enrich_scenario(db_session, repo.repo_id)
+
+        row = db_session.execute(
+            text(
+                "SELECT vulnerabilities, outdated_dependencies, eol_dependencies "
+                "FROM v_repo_dependency_rollup_latest "
+                "WHERE repo_id = :rid"
+            ),
+            {"rid": repo.repo_id},
+        ).fetchone()
+
+        assert row is not None, "no row in v_repo_dependency_rollup_latest for enriched repo"
+        assert row.vulnerabilities >= 2, (
+            f"expected >= 2 vulnerabilities, got {row.vulnerabilities}"
+        )
+        assert row.outdated_dependencies >= 2, (
+            f"expected >= 2 outdated deps (requests + urllib3), got {row.outdated_dependencies}"
+        )
+        assert row.eol_dependencies >= 1, (
+            f"expected >= 1 EOL dep (certifi), got {row.eol_dependencies}"
+        )
+
+    def test_v_security_top_vulnerable_dependencies_contains_urllib3(self, db_session):
+        """
+        CONTRACT: v_security_top_vulnerable_dependencies lists the most severe package.
+        urllib3 must appear with severity = 'CRITICAL'.
+        """
+        repo = _load_scenario(db_session, "python-docker-billing")
+        _enrich_scenario(db_session, repo.repo_id)
+
+        rows = db_session.execute(
+            text("SELECT package_name, severity FROM v_security_top_vulnerable_dependencies")
+        ).fetchall()
+
+        package_names = [r.package_name for r in rows]
+        assert "urllib3" in package_names, (
+            f"urllib3 not found in v_security_top_vulnerable_dependencies: {package_names}"
+        )
+
+        urllib3_row = next(r for r in rows if r.package_name == "urllib3")
+        assert urllib3_row.severity == "CRITICAL", (
+            f"expected urllib3 severity='CRITICAL', got '{urllib3_row.severity}'"
+        )
+
+    def test_v_repo_vulnerability_details_latest_has_cve_ids(self, db_session):
+        """
+        CONTRACT: v_repo_vulnerability_details_latest returns CVE IDs for the enriched repo.
+        """
+        repo = _load_scenario(db_session, "python-docker-billing")
+        _enrich_scenario(db_session, repo.repo_id)
+
+        rows = db_session.execute(
+            text(
+                "SELECT cve_id FROM v_repo_vulnerability_details_latest "
+                "WHERE repo_id = :rid"
+            ),
+            {"rid": repo.repo_id},
+        ).fetchall()
+
+        cve_ids = {r.cve_id for r in rows}
+        assert "CVE-2018-18074" in cve_ids, (
+            f"CVE-2018-18074 (requests) not found in v_repo_vulnerability_details_latest: {cve_ids}"
+        )
+        assert "CVE-2021-33503" in cve_ids, (
+            f"CVE-2021-33503 (urllib3) not found in v_repo_vulnerability_details_latest: {cve_ids}"
+        )
+
+    def test_v_security_eol_status_latest_shows_expired(self, db_session):
+        """
+        CONTRACT: v_security_eol_status_latest shows certifi as 'Expired'.
+        """
+        repo = _load_scenario(db_session, "python-docker-billing")
+        _enrich_scenario(db_session, repo.repo_id)
+
+        rows = db_session.execute(
+            text("SELECT category, count FROM v_security_eol_status_latest")
+        ).fetchall()
+
+        categories = {r.category: r.count for r in rows}
+        assert "Expired" in categories, (
+            f"'Expired' category not found in v_security_eol_status_latest: {list(categories.keys())}"
+        )
+        assert categories["Expired"] >= 1, (
+            f"expected >= 1 Expired dep, got {categories['Expired']}"
+        )
+
+    def test_v_repo_vulnerabilities_by_severity_latest_correct_severities(self, db_session):
+        """
+        CONTRACT: v_repo_vulnerabilities_by_severity_latest lists CRITICAL and HIGH for the enriched repo.
+        """
+        repo = _load_scenario(db_session, "python-docker-billing")
+        _enrich_scenario(db_session, repo.repo_id)
+
+        rows = db_session.execute(
+            text(
+                "SELECT severity FROM v_repo_vulnerabilities_by_severity_latest "
+                "WHERE repo_id = :rid"
+            ),
+            {"rid": repo.repo_id},
+        ).fetchall()
+
+        severities = {r.severity for r in rows}
+        assert "CRITICAL" in severities, (
+            f"'CRITICAL' not found in v_repo_vulnerabilities_by_severity_latest: {severities}"
+        )
+        assert "HIGH" in severities, (
+            f"'HIGH' not found in v_repo_vulnerabilities_by_severity_latest: {severities}"
+        )
+
+
+# =============================================================================
+# 4. Dashboard View Contracts (shared multi-scenario dataset)
 # =============================================================================
 
 # Scenarios that collectively cover all three PR statuses and multiple languages
@@ -692,6 +965,8 @@ class TestDashboardViewContracts:
         v_security_overview_latest is queryable and returns the expected columns.
         No enrichment is done, so vulnerabilities = 0 is expected.
         """
+        # This test verifies the view is queryable when no enrichment has been run.
+        # For non-zero enrichment coverage see TestSecurityEnrichmentContractsE2E.
         row = db_session.execute(
             text(
                 "SELECT total_vulnerabilities, total_eol_deps, "
