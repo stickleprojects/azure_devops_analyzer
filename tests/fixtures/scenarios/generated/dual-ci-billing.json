@@ -5,11 +5,11 @@
     "Python"
   ],
   "file_names": [
+    "app.py",
     "config.yaml",
     "requirements.txt",
-    "app.py",
-    "README.md",
-    "tests/test_app.py"
+    "tests/test_app.py",
+    "README.md"
   ],
   "manifests": {
     "requirements.txt": "# Python dependencies\nFlask==2.3.0\nrequests==2.31.0\npython-dotenv==1.0.0"
@@ -17,161 +17,6 @@
   "branches": [
     "main",
     "develop"
-  ],
-  "commits": [
-    {
-      "commit_hash": "8bc3be9498a88c2f3ba19c1da230581cc4a935b0",
-      "author_name": "David Smith",
-      "author_email": "david.smith@example.com",
-      "committer_name": "Charlie Williams",
-      "committer_email": "charlie.williams@test.org",
-      "message": "CI/CD improvement",
-      "commit_date": "2026-01-07T23:33:36Z",
-      "files_changed": 6,
-      "lines_added": 23,
-      "lines_removed": 12
-    },
-    {
-      "commit_hash": "76d3dc81a14a2fc049484a7da7e16e7d8bf93c1b",
-      "author_name": "Charlie Smith",
-      "author_email": "charlie.smith@test.org",
-      "committer_name": "Charlie Williams",
-      "committer_email": "charlie.williams@test.org",
-      "message": "CI/CD improvement",
-      "commit_date": "2026-01-13T23:33:36Z",
-      "files_changed": 2,
-      "lines_added": 73,
-      "lines_removed": 35
-    },
-    {
-      "commit_hash": "70d966ea4c855fdfda2993b75f3ff3301b2d07e5",
-      "author_name": "Charlie Williams",
-      "author_email": "charlie.williams@example.com",
-      "committer_name": "Charlie Williams",
-      "committer_email": "charlie.williams@example.com",
-      "message": "build optimization",
-      "commit_date": "2026-01-23T23:33:36Z",
-      "files_changed": 4,
-      "lines_added": 63,
-      "lines_removed": 34
-    },
-    {
-      "commit_hash": "3bb984cd0db8f7fd1bca8bf911fbe2a930f68669",
-      "author_name": "Bob Smith",
-      "author_email": "bob.smith@sample.net",
-      "committer_name": "Bob Smith",
-      "committer_email": "bob.smith@example.com",
-      "message": "pipeline trigger fix",
-      "commit_date": "2026-01-26T23:33:36Z",
-      "files_changed": 2,
-      "lines_added": 40,
-      "lines_removed": 35
-    },
-    {
-      "commit_hash": "703834c0860d365a5774c1b0cf48067a0c8f4952",
-      "author_name": "Alice Williams",
-      "author_email": "alice.williams@example.com",
-      "committer_name": "Alice Williams",
-      "committer_email": "alice.williams@test.org",
-      "message": "GitHub Actions workflow",
-      "commit_date": "2026-02-16T23:33:36Z",
-      "files_changed": 4,
-      "lines_added": 55,
-      "lines_removed": 29
-    },
-    {
-      "commit_hash": "8e00667b723a8b55cfb21ee4cfb5687d86b293d2",
-      "author_name": "Charlie Jones",
-      "author_email": "charlie.jones@example.com",
-      "committer_name": "Charlie Williams",
-      "committer_email": "charlie.williams@sample.net",
-      "message": "GitHub Actions workflow",
-      "commit_date": "2026-02-23T23:33:36Z",
-      "files_changed": 6,
-      "lines_added": 55,
-      "lines_removed": 26
-    },
-    {
-      "commit_hash": "e8172f1dd9816d3d3a7e532522f8c463005d9105",
-      "author_name": "Alice Smith",
-      "author_email": "alice.smith@sample.net",
-      "committer_name": "Alice Smith",
-      "committer_email": "alice.smith@sample.net",
-      "message": "GitHub Actions workflow",
-      "commit_date": "2026-02-26T23:33:36Z",
-      "files_changed": 5,
-      "lines_added": 47,
-      "lines_removed": 3
-    }
-  ],
-  "pull_requests": [
-    {
-      "pr_number": 1,
-      "title": "Add GitHub Actions workflow",
-      "description": "Added Improve build speed",
-      "source_branch": "develop",
-      "target_branch": "main",
-      "status": "merged",
-      "created_at": "2025-12-06T23:33:36Z",
-      "author_name": "Alice Johnson",
-      "author_email": "alice.johnson@example.com",
-      "review_comments": 4,
-      "commits_count": 4,
-      "files_changed": 5,
-      "lines_added": 107,
-      "lines_removed": 16,
-      "merged_at": "2025-12-25T23:33:36Z"
-    },
-    {
-      "pr_number": 2,
-      "title": "Improve build speed",
-      "description": "Added Fix CI trigger",
-      "source_branch": "develop",
-      "target_branch": "main",
-      "status": "open",
-      "created_at": "2026-01-25T23:33:36Z",
-      "author_name": "Charlie Jones",
-      "author_email": "charlie.jones@example.com",
-      "review_comments": 3,
-      "commits_count": 4,
-      "files_changed": 4,
-      "lines_added": 113,
-      "lines_removed": 52
-    },
-    {
-      "pr_number": 3,
-      "title": "Improve build speed",
-      "description": "Added Add Jenkins stage",
-      "source_branch": "develop",
-      "target_branch": "main",
-      "status": "merged",
-      "created_at": "2025-12-30T23:33:36Z",
-      "author_name": "Bob Brown",
-      "author_email": "bob.brown@sample.net",
-      "review_comments": 4,
-      "commits_count": 5,
-      "files_changed": 2,
-      "lines_added": 105,
-      "lines_removed": 31,
-      "merged_at": "2026-01-21T23:33:36Z"
-    },
-    {
-      "pr_number": 4,
-      "title": "Fix CI trigger",
-      "description": "Added Add Jenkins stage",
-      "source_branch": "develop",
-      "target_branch": "main",
-      "status": "merged",
-      "created_at": "2025-12-14T23:33:36Z",
-      "author_name": "Bob Williams",
-      "author_email": "bob.williams@test.org",
-      "review_comments": 2,
-      "commits_count": 4,
-      "files_changed": 4,
-      "lines_added": 45,
-      "lines_removed": 21,
-      "merged_at": "2026-01-24T23:33:36Z"
-    }
   ],
   "vulnerability_data": [
     {
