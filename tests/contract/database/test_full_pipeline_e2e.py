@@ -13,7 +13,7 @@ Runs in CI under `-m 'not live_api'` (the standard test-runner command).
 """
 
 import pytest
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 from sqlalchemy import text
 
 from tests.fixtures.fixture_extractor import FixtureExtractor
@@ -285,19 +285,15 @@ def _enrich_from_fixture(session, repo_id: str, scenario_name: str) -> None:
     Each entry in vulnerability_data is passed directly to store_package_metadata
     and store_repo_dependencies — no HTTP calls, no mocking.
 
-    The eol_date field is stored as an ISO-8601 string in JSON; it is parsed
-    back to a date object before being stored.
+    The eol_date field is stored as an ISO-8601 date string in JSON ('YYYY-MM-DD');
+    it is parsed back to a date object before being stored.
     """
-    from datetime import date as date_type
-    extractor = FixtureExtractor(scenario_name)
-    packages = extractor.get_vulnerability_data()
+    packages = FixtureExtractor(scenario_name).get_vulnerability_data()
 
     enriched_deps = []
     for pkg_data in packages:
         raw_eol_date = pkg_data.get("eol_date")
-        eol_date = (
-            date_type.fromisoformat(raw_eol_date) if raw_eol_date else None
-        )
+        eol_date = date.fromisoformat(raw_eol_date) if raw_eol_date else None
         store_package_metadata(
             session,
             package_name=pkg_data["package_name"],
