@@ -48,7 +48,16 @@
       "Bash(sort -k5 -n -r)",
       "Bash(xargs grep -l \"claude\")",
       "mcp__ollama__ollama_analyze_files",
-      "mcp__ollama__ollama_generate_code_with_context"
+      "mcp__ollama__ollama_generate_code_with_context",
+      "Bash(gh pr:*)",
+      "Bash(gh run:*)",
+      "Bash(git fetch:*)",
+      "Bash(gh issue:*)",
+      "Bash(find d:/code/tyl/azure-devops-analyzer/database -type f \\\\\\(-name *.sql -o -name *.py \\\\\\))",
+      "Bash(grep -E \"\\\\.py$\")",
+      "Bash(grep -r dependencies /d/code/tyl/azure-devops-analyzer/src/api/ --include=*.py)",
+      "Bash(grep -l \"dependencies\\\\|has_vulnerabilities\" /d/code/tyl/azure-devops-analyzer/dashboards/*.json)",
+      "Bash(grep -c \"dependencies\\\\|has_vulnerabilities\" /d/code/tyl/azure-devops-analyzer/dashboards/*.json)"
     ]
   }
 }
