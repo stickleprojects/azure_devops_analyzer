@@ -234,6 +234,15 @@ kubectl set image deployment/analyzer-celery-worker worker=myregistry/worker:v2.
 
 ---
 
+## Architecture Guardian
+
+This infrastructure planning document maintains architectural boundaries:
+
+- Extractors remain platform-isolated and unchanged by deployment topology.
+- Workflow orchestration remains in workflow/task layers, independent of runtime platform.
+- Database interactions remain centralized in existing storage/database modules.
+- Infrastructure choices (Compose/Kubernetes) affect operations, not domain ownership.
+
 ## 9. Revision History
 
 | Version | Date       | Notes                    |

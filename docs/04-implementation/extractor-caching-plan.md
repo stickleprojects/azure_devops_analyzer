@@ -115,3 +115,12 @@ Applied `@cached` decorator to:
    - `TestCacheManagement` (5 tests): initial state, stats, clear_cache, method stats tracking, fresh calls after clear
 2. **Existing tests**: ⚠️ Not re-verified in this update (tests not run)
 3. **Manual verification**: Run extraction against a repo and check DEBUG logs for cache hit messages
+
+## Architecture Guardian
+
+Guardian boundary check for this plan:
+
+- Extractor layer: cache wrappers optimize API calls but do not change ownership of business rules.
+- Workflow layer: orchestration uses cache stats/clear operations only.
+- Database layer: no new direct writes introduced by cache logic.
+- Cross-platform isolation: GitHub and Azure DevOps extractors keep platform-specific behavior separated.

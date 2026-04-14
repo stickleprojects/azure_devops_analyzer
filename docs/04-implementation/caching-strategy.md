@@ -267,3 +267,12 @@ The caching strategy is:
    - Can be manually cleared if stale
 
 This ensures all eventualities are covered.
+
+## Architecture Guardian
+
+This implementation plan stays within architecture boundaries:
+
+- Extractors remain API clients and do not own persistence logic.
+- Workflow code orchestrates extraction and cache lifecycle only.
+- Database writes remain in storage/database layers.
+- Caching concerns are isolated to extractor support utilities.

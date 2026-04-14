@@ -300,3 +300,12 @@ Cost to Fix Issues: 1-2 hours (caught early)
 - Week 3+: Build features on proven foundation = sustainable pace
 
 **Time investment same, but confidence and quality dramatically better.**
+
+## Architecture Guardian
+
+Architecture boundary validation:
+
+- Integration tests validate existing layer responsibilities rather than moving logic between layers.
+- Workflow tests keep orchestration concerns in workflows and do not embed storage internals.
+- Database assertions remain contract-level checks against reporting/storage contracts.
+- Extractor behavior is tested as an API boundary, not coupled to downstream business rules.

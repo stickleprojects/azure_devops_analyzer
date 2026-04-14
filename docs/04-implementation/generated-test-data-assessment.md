@@ -136,3 +136,12 @@ offending panels under `raw_sql_offenders`.
 4. **Run this workflow on every PR** by adding a `pull_request` trigger to
    `.github/workflows/generated-test-data-assessment.yml` once the baseline
    coverage is acceptable.
+
+## Architecture Guardian
+
+Boundary validation for this assessment:
+
+- Test-data generation and audit tooling remain outside runtime extraction workflows.
+- Reporting-view validation does not introduce direct production schema writes.
+- Workflow/CI adjustments remain operational orchestration, not domain logic migration.
+- Existing extractor and database service boundaries are unchanged.

@@ -49,3 +49,12 @@ Add optional file-based caching to the existing extractor cache decorator so it 
 - With file cache enabled, a second run hits file cache with no API call and populates RAM cache.
 - With file cache disabled, behavior is unchanged.
 - Unit tests pass and no regression in existing cache behavior.
+
+## Architecture Guardian
+
+This file-cache extension preserves core boundaries:
+
+- Caching remains an extractor support concern, not a workflow responsibility.
+- Workflow orchestration remains unchanged and does not embed cache policy logic.
+- Storage/database layers remain the only persistence writers for analysis data.
+- Platform extractor implementations stay isolated from one another.
