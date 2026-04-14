@@ -48,6 +48,7 @@ bash scripts/setup-branch-protection.sh
 ✅ Branch protection rules applied:
    • Require pull request reviews (1 approval minimum)
    • Dismiss stale reviews
+   • Require status checks: Documentation Validation, CI Tests
    • Enforce for administrators
    • Force pushes disabled
    • Branch deletion disabled
@@ -67,7 +68,7 @@ If you prefer to set this up manually:
    - ✅ **Dismiss stale pull request approvals when new commits are pushed**
    - ✅ **Require approval of reviews before merging** (1 required)
    - ✅ **Require status checks to pass before merging**
-   - If GitHub asks you to choose checks explicitly, select `Documentation Validation` and `CI Tests`
+   - Select required checks: `Documentation Validation` and `CI Tests`
    - ✅ **Include administrators** (enforce for all users)
 5. Disable these:
    - ☐ Allow force pushes

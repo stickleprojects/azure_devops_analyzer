@@ -5,6 +5,7 @@
   "powershell.enableProfileLoading": true,
   "git.ignoreLimitWarning": true,
   "chat.tools.terminal.autoApprove": {
-    "gh": true
+    "gh": true,
+    "diff": true
   }
 }
