@@ -567,6 +567,17 @@ With 4000 GitHub requests/hour and 40 calls per repo:
 
 ---
 
+## Architecture Guardian
+
+Boundary validation for parallelization rollout:
+
+- Coordinator/worker tasks remain orchestration components; extractors stay focused on API access.
+- Platform-specific extraction logic remains separated by extractor implementation.
+- Database writes remain centralized in database/storage services.
+- Concurrency controls are operational concerns and do not alter domain ownership boundaries.
+
+---
+
 **Document Status**: ✅ Ready for Review  
 **Last Updated**: January 19, 2026  
 **Owner**: Development Team
