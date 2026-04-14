@@ -57,8 +57,8 @@ DO $$ BEGIN
             -- heuristic-specific (non-null when source='heuristic')
             confidence NUMERIC(4,3),            -- 0.000-1.000
 
-            first_seen_at TIMESTAMPTZ NOT NULL,
-            last_seen_at TIMESTAMPTZ NOT NULL,
+            first_seen_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            last_seen_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
             CONSTRAINT fk_stack_repo
                 FOREIGN KEY (repo_id) REFERENCES repositories(repo_id) ON DELETE CASCADE,
