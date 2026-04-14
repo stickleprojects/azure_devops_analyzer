@@ -9,6 +9,7 @@ REPO="stickleprojects/azure_devops_analyzer"
 BRANCH="main"
 REQUIRED_CHECK_1="Documentation Validation"
 REQUIRED_CHECK_2="CI Tests"
+REQUIRED_APPROVALS=0
 
 echo "🔐 Setting up branch protection for: $REPO (branch: $BRANCH)"
 echo "=================================================="
@@ -32,8 +33,8 @@ echo ""
 echo "Configuring branch protection for: $BRANCH"
 echo "---------------------------------------"
 
-# Rule 1: Require pull request reviews before merging
-echo "→ Requiring 1 approval before merge..."
+# Rule 1: Require pull request review settings before merging
+echo "→ Configuring pull request review requirements..."
 gh api repos/$REPO/branches/$BRANCH/protection \
   -X PUT \
   --input - << 'EOF'
@@ -49,7 +50,7 @@ gh api repos/$REPO/branches/$BRANCH/protection \
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,
     "require_code_owner_reviews": false,
-    "required_approving_review_count": 1
+    "required_approving_review_count": 0
   },
   "restrictions": null,
   "allow_force_pushes": false,
@@ -59,7 +60,7 @@ EOF
 
 echo ""
 echo "✅ Branch protection rules applied:"
-echo "   • Require pull request reviews (1 approval minimum)"
+echo "   • Require pull request reviews ($REQUIRED_APPROVALS approval minimum)"
 echo "   • Dismiss stale reviews"
 echo "   • Require status checks: $REQUIRED_CHECK_1, $REQUIRED_CHECK_2"
 echo "   • Enforce for administrators"

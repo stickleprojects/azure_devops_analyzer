@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to protect the main branch to ensure all merges go through pull requests with required reviews.
+This guide explains how to protect the main branch while enforcing CI checks for safe merges in a solo-maintainer workflow.
 
 ## What Gets Protected
 
@@ -10,7 +10,7 @@ When branch protection is enabled on `main`:
 
 ✅ **All PRs require**:
 
-- At least 1 approval before merge
+- Pull request workflow (approval count set to 0 for solo-maintainer flow)
 - Stale reviews are dismissed when new commits are pushed
 - Status checks must pass
 
@@ -46,7 +46,7 @@ bash scripts/setup-branch-protection.sh
 
 ```
 ✅ Branch protection rules applied:
-   • Require pull request reviews (1 approval minimum)
+   • Require pull request reviews (0 approval minimum)
    • Dismiss stale reviews
    • Require status checks: Documentation Validation, CI Tests
    • Enforce for administrators
@@ -66,7 +66,7 @@ If you prefer to set this up manually:
 4. Enable these settings:
    - ✅ **Require a pull request before merging**
    - ✅ **Dismiss stale pull request approvals when new commits are pushed**
-   - ✅ **Require approval of reviews before merging** (1 required)
+   - ✅ **Require approval of reviews before merging** (0 required for solo-maintainer flow)
    - ✅ **Require status checks to pass before merging**
    - Select required checks: `Documentation Validation` and `CI Tests`
    - ✅ **Include administrators** (enforce for all users)
@@ -121,12 +121,12 @@ A: No - the protection is enforced for everyone, including repository admins.
 A: Reviewers need to re-review after new commits are pushed. This ensures review remains current.
 
 **Q: Can I merge without approval if I'm the owner?**  
-A: No - branch protection applies equally to all users.
+A: Yes in this setup, because required approval count is set to 0. Status checks are still required before merge.
 
 **Q: Do I need status checks configured?**  
 A: Yes. For this repository, PRs should require both `Documentation Validation` and `CI Tests` when specific checks are selected in GitHub branch protection.
 
 ---
 
-**Last Updated**: 2026-04-05  
+**Last Updated**: 2026-04-14  
 **Status**: ✅ Branch protection active
