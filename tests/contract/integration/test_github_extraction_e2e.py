@@ -494,7 +494,7 @@ class TestGitHubLanguageDetection:
         Verify:
         - Languages extracted from GitHub API
         - Byte counts and percentages calculated correctly
-        - Data stored in repository_languages table
+        - Data stored in repository_stack table
         - Percentages sum to approximately 100%
         """
         # Setup

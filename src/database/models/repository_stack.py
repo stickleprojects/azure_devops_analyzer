@@ -1,9 +1,9 @@
 """
 Repository technology stack model.
 
-Unified table replacing repository_languages. Stores both platform API language
-data (source='platform_api') and TechnologyDetector heuristic results
-(source='heuristic') for all 8 technology categories.
+Unified table for all per-repository technology data. Stores both platform API
+language statistics (source='platform_api') and TechnologyDetector heuristic
+results (source='heuristic') for all 8 technology categories.
 """
 
 from datetime import datetime

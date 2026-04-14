@@ -343,7 +343,7 @@ class TestAzureDevOpsLanguageDetection:
         
         Verify:
         - Languages extracted using file heuristics
-        - Data stored in repository_languages table
+        - Data stored in repository_stack table
         - Analyzed timestamps are UTC-aware
         """
         # Setup

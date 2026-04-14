@@ -34,7 +34,7 @@ erDiagram
     repositories ||--o{ repository_services : belongs_to
 
     %% Repository Analysis
-    repositories ||--o{ repository_languages : analyzed_for
+    repositories ||--o{ repository_stack : analyzed_for
     repositories ||--o{ dependencies : has
     repositories ||--o{ code_quality_metrics : measured_by
     repositories ||--o{ code_issues : contains
@@ -45,7 +45,7 @@ erDiagram
     repositories ||--o{ contributor_metrics : tracks
 
     %% Branch Analysis
-    branches ||--o{ repository_languages : analyzed_for
+    branches ||--o{ repository_stack : analyzed_for
     branches ||--o{ dependencies : has
     branches ||--o{ code_quality_metrics : measured_by
     branches ||--o{ code_issues : contains
@@ -118,15 +118,29 @@ erDiagram
         boolean is_active
     }
 
-    repository_languages {
+    repository_stack {
         serial id PK
         varchar repo_id FK
         integer branch_id FK
-        varchar language
+        varchar category
+        varchar name
+        varchar source
         decimal percentage
         integer line_count
         bigint byte_count
-        timestamp analyzed_at "hypertable"
+        decimal confidence
+        timestamp first_seen_at
+        timestamp last_seen_at
+    }
+
+    technologies {
+        serial id PK
+        varchar name
+        varchar category
+        boolean is_eol
+        date eol_date
+        varchar latest_supported_version
+        timestamp eol_enriched_at
     }
 
     dependencies {
@@ -345,7 +359,8 @@ The foundation of the data model consists of hierarchical entities:
 
 These tables track the technology makeup of each repository:
 
-- **repository_languages**: Stores detected languages with percentage, line count, and byte count. Configured as a TimescaleDB hypertable partitioned by `analyzed_at` (monthly chunks).
+- **repository_stack**: Unified table storing all per-repository technology data. Rows with `source='platform_api'` and `category='language'` come from the VCS API (byte counts, percentages). Rows with `source='heuristic'` come from the TechnologyDetector (frameworks, databases, CI/CD, etc.).
+- **technologies**: Global EOL metadata lookup table, one row per `(name, category)`. Populated by `TechnologyEnricher` from endoflife.date.
 - **dependencies**: Package information including name, version, ecosystem (PyPI, npm, Maven, NuGet), and security flags (`has_vulnerabilities`, `is_eol`). Also a hypertable for time-series tracking.
 - **vulnerabilities**: CVE and OSV vulnerability records linked to dependencies, storing severity, description, and fix version.
 
