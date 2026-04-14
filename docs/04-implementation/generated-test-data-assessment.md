@@ -13,11 +13,11 @@ machine-readable JSON artifacts under `artifacts/assessment/`. The artifacts
 give exact counts and lists that can be fed directly to an LLM to produce
 a precise findings table.
 
-| Script | What it measures |
-|--------|-----------------|
-| `scripts/audit_reporting_view_coverage.py` | Which views in `database/views.sql` have / lack direct test coverage in `tests/contract/database/test_reporting_views.py` |
-| `scripts/audit_fixture_scenarios.py` | How many generated fixture JSONs exist vs how many are exercised by `tests/contract/integration/test_fixture_scenarios.py` |
-| `scripts/audit_dashboards_routing.py` | Whether Grafana dashboard panels use `v_*` reporting views or bypass them with raw base-table SQL |
+| Script                                     | What it measures                                                                                                           |
+| ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `scripts/audit_reporting_view_coverage.py` | Which views in `database/views.sql` have / lack direct test coverage in `tests/contract/database/test_reporting_views.py`  |
+| `scripts/audit_fixture_scenarios.py`       | How many generated fixture JSONs exist vs how many are exercised by `tests/contract/integration/test_fixture_scenarios.py` |
+| `scripts/audit_dashboards_routing.py`      | Whether Grafana dashboard panels use `v_*` reporting views or bypass them with raw base-table SQL                          |
 
 ---
 
@@ -80,18 +80,18 @@ No secrets are required. The workflow runs entirely offline.
 
 All artifacts are written to `artifacts/assessment/`.
 
-| File | Contents |
-|------|---------|
-| `reporting_views_all.json` | Sorted list of all view names defined in `database/views.sql` |
-| `reporting_views_tested.json` | Views that are referenced in the test file |
-| `reporting_views_untested.json` | Views with no test coverage |
-| `reporting_views_summary.json` | Counts and percentage coverage |
-| `reporting_views_possible_renames.json` | Pairs where a tested name may be a renamed view (suffix drift) |
-| `fixture_generated_all.json` | Sorted list of generated fixture scenario base names |
-| `fixture_exercised.json` | Scenarios that appear in the `SCENARIOS` list in the test file |
-| `fixture_unexercised.json` | Generated scenarios not exercised by any test |
-| `fixture_summary.json` | Counts and coverage ratio |
-| `dashboards_routing_summary.json` | Total SQL targets, views count, raw-SQL count, and offender list |
+| File                                    | Contents                                                         |
+| --------------------------------------- | ---------------------------------------------------------------- |
+| `reporting_views_all.json`              | Sorted list of all view names defined in `database/views.sql`    |
+| `reporting_views_tested.json`           | Views that are referenced in the test file                       |
+| `reporting_views_untested.json`         | Views with no test coverage                                      |
+| `reporting_views_summary.json`          | Counts and percentage coverage                                   |
+| `reporting_views_possible_renames.json` | Pairs where a tested name may be a renamed view (suffix drift)   |
+| `fixture_generated_all.json`            | Sorted list of generated fixture scenario base names             |
+| `fixture_exercised.json`                | Scenarios that appear in the `SCENARIOS` list in the test file   |
+| `fixture_unexercised.json`              | Generated scenarios not exercised by any test                    |
+| `fixture_summary.json`                  | Counts and coverage ratio                                        |
+| `dashboards_routing_summary.json`       | Total SQL targets, views count, raw-SQL count, and offender list |
 
 ---
 
@@ -119,7 +119,7 @@ aren't in the `SCENARIOS` list in the integration test.
 
 ### Dashboard routing
 
-`dashboards_routing_summary.json` shows `raw_sql_count`.  If this is `0`
+`dashboards_routing_summary.json` shows `raw_sql_count`. If this is `0`
 all panels route through reporting views. Any non-zero value lists the
 offending panels under `raw_sql_offenders`.
 

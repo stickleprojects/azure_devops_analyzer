@@ -164,8 +164,8 @@ The system is designed for **distributed, stateless worker processing**:
 
 ## 6. Key Decision Criteria (To Be Validated)
 
-| Criterion                   | Importance | Current Status                    |
-| --------------------------- | ---------- | --------------------------------- |
+| Criterion                   | Importance | Current Status                     |
+| --------------------------- | ---------- | ---------------------------------- |
 | Horizontal worker scaling   | Critical   | ✅ Both support; K8s automatic     |
 | Single-host or multi-host   | Critical   | ❓ To be determined                |
 | HA for databases            | High       | ❓ Docker Compose limited          |
