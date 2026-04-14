@@ -85,8 +85,8 @@ def stack_summary():
             return jsonify({"status": "ok", "data": results, "count": len(results)})
 
     except Exception as exc:
-        logger.error("stack/summary error: %s", exc)
-        return jsonify({"status": "error", "message": str(exc)}), 500
+        logger.error("%s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 
 @stack_bp.route("/api/stack/by-service", methods=["GET"])
@@ -147,8 +147,8 @@ def stack_by_service():
             return jsonify({"status": "ok", "data": results, "count": len(results)})
 
     except Exception as exc:
-        logger.error("stack/by-service error: %s", exc)
-        return jsonify({"status": "error", "message": str(exc)}), 500
+        logger.error("%s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 
 @stack_bp.route("/api/stack/eol", methods=["GET"])
@@ -198,8 +198,8 @@ def stack_eol():
             return jsonify({"status": "ok", "data": results, "count": len(results)})
 
     except Exception as exc:
-        logger.error("stack/eol error: %s", exc)
-        return jsonify({"status": "error", "message": str(exc)}), 500
+        logger.error("%s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 
 @stack_bp.route("/api/stack/by-repo", methods=["GET"])
@@ -258,5 +258,5 @@ def stack_by_repo():
             return jsonify({"status": "ok", "data": results, "count": len(results)})
 
     except Exception as exc:
-        logger.error("stack/by-repo error: %s", exc)
-        return jsonify({"status": "error", "message": str(exc)}), 500
+        logger.error("%s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500

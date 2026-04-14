@@ -8,11 +8,12 @@ including organizations, repositories, branches, commits, and pull requests.
 import logging
 import socket
 from dataclasses import dataclass
-from datetime import datetime, UTC
+from datetime import datetime, timedelta, UTC
 from typing import Optional
 
 from src.database.connection import session_scope
-from src.database.models import Organization, Project
+from src.database.models import Organization, Project, Technology
+from src.analyzers.technology_enricher import TechnologyEnricher
 from src.database.storage import (
     should_scan_repository,
     store_organization,
@@ -356,22 +357,24 @@ class GitHubAnalysisWorkflow:
             with session_scope() as session:
                 stored_entries = store_detections(session, repo_data.repo_id, tech_detection)
 
-            # EOL enrichment (weekly staleness check)
-            from src.analyzers.technology_enricher import TechnologyEnricher
-            from src.database.models import Technology
-            from datetime import timedelta
+            # EOL enrichment (weekly staleness check) — fetch all matching rows in one query
+            cutoff = datetime.now(UTC) - timedelta(days=7)
             enricher = TechnologyEnricher()
             with session_scope() as session:
                 pairs = [(e.name, e.category) for e in stored_entries]
-                stale = [
-                    (name, cat) for name, cat in pairs
-                    if not session.query(Technology)
-                       .filter_by(name=name, category=cat)
-                       .filter(Technology.eol_enriched_at > datetime.now(UTC) - timedelta(days=7))
-                       .first()
-                ]
-                if stale:
-                    enricher.enrich(session, stale)
+                if pairs:
+                    recently_enriched = {
+                        (t.name, t.category)
+                        for t in session.query(Technology.name, Technology.category)
+                        .filter(
+                            Technology.eol_enriched_at > cutoff,
+                            Technology.name.in_([p[0] for p in pairs]),
+                        )
+                        .all()
+                    }
+                    stale = [p for p in pairs if p not in recently_enriched]
+                    if stale:
+                        enricher.enrich(session, stale)
 
         except Exception as e:
             logger.warning("      Failed to detect/persist technologies: %s", e)
