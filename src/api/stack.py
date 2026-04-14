@@ -43,43 +43,45 @@ def stack_summary():
 
     try:
         with get_session() as session:
+            only_eol = is_eol_filter and is_eol_filter.lower() == "true"
+
             q = session.query(
                 RepositoryStack.name,
                 RepositoryStack.category,
                 RepositoryStack.source,
                 func.count(func.distinct(RepositoryStack.repo_id)).label("repo_count"),
-            ).group_by(
-                RepositoryStack.name,
-                RepositoryStack.category,
-                RepositoryStack.source,
+                Technology.is_eol,
+                Technology.eol_date,
+            ).outerjoin(
+                Technology,
+                (RepositoryStack.name == Technology.name)
+                & (RepositoryStack.category == Technology.category),
             )
 
             if category_filter:
                 q = q.filter(RepositoryStack.category == category_filter)
             if source_filter:
                 q = q.filter(RepositoryStack.source == source_filter)
+            if only_eol:
+                q = q.filter(Technology.is_eol.is_(True))
 
-            rows = q.all()
-
-            # Join EOL data
-            tech_map = {
-                (t.name, t.category): t
-                for t in session.query(Technology).all()
-            }
+            rows = q.group_by(
+                RepositoryStack.name,
+                RepositoryStack.category,
+                RepositoryStack.source,
+                Technology.is_eol,
+                Technology.eol_date,
+            ).all()
 
             results = []
             for row in rows:
-                tech = tech_map.get((row.name, row.category))
-                if is_eol_filter and is_eol_filter.lower() == "true":
-                    if not (tech and tech.is_eol):
-                        continue
                 results.append({
                     "name": row.name,
                     "category": row.category,
                     "source": row.source,
                     "repo_count": row.repo_count,
-                    "is_eol": tech.is_eol if tech else None,
-                    "eol_date": tech.eol_date.isoformat() if tech and tech.eol_date else None,
+                    "is_eol": row.is_eol,
+                    "eol_date": row.eol_date.isoformat() if row.eol_date else None,
                 })
 
             return jsonify({"status": "ok", "data": results, "count": len(results)})
