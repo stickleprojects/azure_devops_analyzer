@@ -16,7 +16,7 @@ from datetime import datetime, UTC
 from sqlalchemy.orm import Session
 
 from src.extractors.github.extractor import GitHubExtractor
-from src.database.models import Repository, Branch, Commit, Contributor, RepositoryLanguage
+from src.database.models import Repository, Branch, Commit, Contributor, RepositoryStack
 from src.database.storage import store_commit, store_languages
 
 
@@ -533,8 +533,8 @@ class TestGitHubLanguageDetection:
         test_session.commit()
         
         # Assert: Languages stored correctly
-        stored_languages = test_session.query(RepositoryLanguage).filter_by(
-            repo_id=repo.repo_id
+        stored_languages = test_session.query(RepositoryStack).filter_by(
+            repo_id=repo.repo_id, category="language"
         ).all()
         
         assert len(stored_languages) == len(languages), \
@@ -542,7 +542,7 @@ class TestGitHubLanguageDetection:
         
         # Assert: Data integrity
         for stored_lang in stored_languages:
-            assert stored_lang.language is not None
+            assert stored_lang.name is not None
             assert stored_lang.byte_count > 0
             assert stored_lang.percentage is not None
             assert stored_lang.first_seen_at is not None
@@ -630,17 +630,17 @@ class TestGitHubLanguageDetection:
         test_session.commit()
         
         # Assert: Latest snapshot stored (upserted)
-        all_snapshots = test_session.query(RepositoryLanguage).filter_by(
-            repo_id=repo.repo_id
-        ).order_by(RepositoryLanguage.last_seen_at).all()
+        all_snapshots = test_session.query(RepositoryStack).filter_by(
+            repo_id=repo.repo_id, category="language"
+        ).order_by(RepositoryStack.last_seen_at).all()
         
         assert len(all_snapshots) == 2, \
             f"Expected 2 language records (upserted), got {len(all_snapshots)}"
         
-        lang_names = {snapshot.language for snapshot in all_snapshots}
+        lang_names = {snapshot.name for snapshot in all_snapshots}
         assert lang_names == {"Python", "JavaScript"}
 
-        python_record = next(s for s in all_snapshots if s.language == "Python")
+        python_record = next(s for s in all_snapshots if s.name == "Python")
         assert python_record.byte_count == 8000
         assert python_record.first_seen_at <= python_record.last_seen_at
 

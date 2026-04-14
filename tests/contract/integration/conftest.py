@@ -186,7 +186,7 @@ def cleanup_database(test_session):
         # Delete from hypertables first (TRUNCATE doesn't work well with TimescaleDB hypertables)
         # NOTE: "dependencies" was renamed to "repository_dependencies" in migration 013.
         hypertables = [
-            "repository_languages",
+            "repository_stack",
             "repository_dependencies",
             "code_quality_metrics",
             "branch_metrics",

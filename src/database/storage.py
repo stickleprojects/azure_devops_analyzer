@@ -5,7 +5,7 @@ Provides functions to persist extracted data into the database with
 deduplication, upsert logic, and relationship management.
 """
 
-from datetime import datetime, timedelta, UTC
+from datetime import date, datetime, timedelta, UTC
 import uuid
 from typing import Optional
 
@@ -26,7 +26,8 @@ from src.database.models import (
     RepositoryDependency,
     Package,
     Vulnerability,
-    RepositoryLanguage,
+    RepositoryStack,
+    Technology,
     ExtractionRun,
     ExtractionMetric,
 )
@@ -577,12 +578,13 @@ def store_languages(
     repo_id: str,
     languages: list[LanguageData],
     branch_id: Optional[int] = None,
-) -> list[RepositoryLanguage]:
+) -> list[RepositoryStack]:
     """
-    Upsert language statistics for a repository.
+    Upsert platform API language data into repository_stack.
 
-    Uses (repo_id, language) as the natural key. On first insert sets
-    first_seen_at; on every run updates last_seen_at and stats.
+    source='platform_api', category='language'.
+    On first insert sets first_seen_at; on every run updates
+    percentage, byte_count, line_count, and last_seen_at.
 
     Args:
         session: Database session.
@@ -591,14 +593,14 @@ def store_languages(
         branch_id: Optional branch ID (None for repository-wide stats).
 
     Returns:
-        List of upserted RepositoryLanguage instances.
+        List of upserted RepositoryStack instances.
     """
     now = datetime.now(UTC)
     results = []
     for lang_data in languages:
         existing = (
-            session.query(RepositoryLanguage)
-            .filter_by(repo_id=repo_id, language=lang_data.language)
+            session.query(RepositoryStack)
+            .filter_by(repo_id=repo_id, category="language", name=lang_data.language)
             .first()
         )
         if existing:
@@ -608,20 +610,139 @@ def store_languages(
             existing.last_seen_at = now
             results.append(existing)
         else:
-            lang = RepositoryLanguage(
+            entry = RepositoryStack(
                 repo_id=repo_id,
                 branch_id=branch_id,
-                language=lang_data.language,
+                category="language",
+                name=lang_data.language,
+                source="platform_api",
                 percentage=lang_data.percentage,
                 line_count=None,
                 byte_count=lang_data.byte_count,
                 first_seen_at=now,
                 last_seen_at=now,
             )
-            session.add(lang)
-            results.append(lang)
+            session.add(entry)
+            results.append(entry)
 
     return results
+
+
+def store_detections(
+    session: Session,
+    repo_id: str,
+    detection,
+    branch_id: Optional[int] = None,
+) -> list[RepositoryStack]:
+    """
+    Upsert TechnologyDetector results into repository_stack.
+
+    source='heuristic'. Covers 7 non-language categories:
+    framework, database, deployment_platform, build_tool,
+    testing_framework, ci_cd, documentation.
+
+    programming_languages from TechnologyDetection is NOT stored here;
+    language data comes from the platform API via store_languages().
+
+    Args:
+        session: Database session.
+        repo_id: Repository ID.
+        detection: TechnologyDetection instance from TechnologyDetector.detect().
+        branch_id: Optional branch ID.
+
+    Returns:
+        List of upserted RepositoryStack instances.
+    """
+    now = datetime.now(UTC)
+    results = []
+
+    category_map = {
+        "framework": detection.frameworks,
+        "database": detection.databases,
+        "deployment_platform": detection.deployment_platforms,
+        "build_tool": detection.build_tools,
+        "testing_framework": detection.testing_frameworks,
+        "ci_cd": detection.ci_cd_platforms,
+        "documentation": detection.documentation_tools,
+    }
+
+    for category, names in category_map.items():
+        for name in names:
+            if not name:
+                continue
+            existing = (
+                session.query(RepositoryStack)
+                .filter_by(repo_id=repo_id, category=category, name=name)
+                .first()
+            )
+            if existing:
+                existing.confidence = detection.overall_confidence
+                existing.last_seen_at = now
+                results.append(existing)
+            else:
+                entry = RepositoryStack(
+                    repo_id=repo_id,
+                    branch_id=branch_id,
+                    category=category,
+                    name=name,
+                    source="heuristic",
+                    confidence=detection.overall_confidence,
+                    first_seen_at=now,
+                    last_seen_at=now,
+                )
+                session.add(entry)
+                results.append(entry)
+
+    return results
+
+
+def store_technology_eol(
+    session: Session,
+    name: str,
+    category: str,
+    is_eol: bool,
+    eol_date: Optional[date],
+    latest_supported_version: Optional[str],
+) -> Technology:
+    """
+    Upsert EOL metadata into the technologies table.
+
+    Upsert on (name, category). Updates all EOL fields and eol_enriched_at.
+
+    Args:
+        session: Database session.
+        name: Technology name (e.g. 'Python', 'React').
+        category: Technology category (e.g. 'language', 'framework').
+        is_eol: Whether the technology is end-of-life.
+        eol_date: The EOL date (None if unknown or not EOL).
+        latest_supported_version: Latest non-EOL version string (or None).
+
+    Returns:
+        Upserted Technology instance.
+    """
+    now = datetime.now(UTC)
+    existing = (
+        session.query(Technology)
+        .filter_by(name=name, category=category)
+        .first()
+    )
+    if existing:
+        existing.is_eol = is_eol
+        existing.eol_date = eol_date
+        existing.latest_supported_version = latest_supported_version
+        existing.eol_enriched_at = now
+        return existing
+
+    tech = Technology(
+        name=name,
+        category=category,
+        is_eol=is_eol,
+        eol_date=eol_date,
+        latest_supported_version=latest_supported_version,
+        eol_enriched_at=now,
+    )
+    session.add(tech)
+    return tech
 
 
 def store_commit(

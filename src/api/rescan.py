@@ -26,6 +26,10 @@ logger = logging.getLogger(__name__)
 # Create Flask app
 app = Flask(__name__)
 
+# Register technology stack blueprint
+from src.api.stack import stack_bp  # noqa: E402
+app.register_blueprint(stack_bp)
+
 
 @app.route("/api/rescan/github", methods=["GET", "POST"])
 def trigger_github_rescan():

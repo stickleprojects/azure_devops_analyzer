@@ -269,7 +269,7 @@ SELECT
     r.is_active,
     COUNT(DISTINCT c.commit_sha) AS total_commits,
     COUNT(DISTINCT pr.id) AS total_prs,
-    COUNT(DISTINCT rl.language) AS language_count,
+    COUNT(DISTINCT rs.name) AS language_count,
     MAX(c.commit_date) AS last_commit_date
 FROM 
     repositories r
@@ -278,14 +278,15 @@ LEFT JOIN
 LEFT JOIN 
     pull_requests pr ON pr.repo_id = r.repo_id
 LEFT JOIN 
-    repository_languages rl ON rl.repo_id = r.repo_id
+    repository_stack rs ON rs.repo_id = r.repo_id AND rs.category = 'language'
 GROUP BY 
     r.repo_id, r.name, r.is_active;
 
 -- View 7: Language distribution per repository
 CREATE OR REPLACE VIEW v_language_summary AS
-SELECT repo_id, language, percentage, byte_count
-FROM repository_languages;
+SELECT repo_id, name AS language, percentage, byte_count
+FROM repository_stack
+WHERE category = 'language';
 
 -- View: Active repositories count
 CREATE OR REPLACE VIEW v_active_repositories_total AS
@@ -451,14 +452,16 @@ GROUP BY repo_id;
 
 -- View: Latest language distribution per repository
 CREATE OR REPLACE VIEW v_repo_language_distribution_latest AS
-SELECT rl.repo_id, rl.language, rl.percentage
-FROM repository_languages rl
-WHERE rl.last_seen_at = (
-    SELECT MAX(rl2.last_seen_at)
-    FROM repository_languages rl2
-    WHERE rl2.repo_id = rl.repo_id
+SELECT rs.repo_id, rs.name AS language, rs.percentage
+FROM repository_stack rs
+WHERE rs.category = 'language'
+  AND rs.last_seen_at = (
+    SELECT MAX(rs2.last_seen_at)
+    FROM repository_stack rs2
+    WHERE rs2.repo_id = rs.repo_id
+      AND rs2.category = 'language'
 )
-ORDER BY rl.percentage DESC;
+ORDER BY rs.percentage DESC;
 
 -- View: Recent commit details per repository
 CREATE OR REPLACE VIEW v_repo_recent_commits AS
@@ -1030,16 +1033,18 @@ GROUP BY rtl.team, v.severity;
 CREATE OR REPLACE VIEW v_team_language_distribution_latest AS
 SELECT
     rtl.team,
-    rl.language,
-    SUM(COALESCE(rl.line_count, 0)) AS lines
-FROM repository_languages rl
-JOIN v_repository_team_labels rtl ON rtl.repo_id = rl.repo_id
-WHERE rl.last_seen_at = (
-    SELECT MAX(rl2.last_seen_at)
-    FROM repository_languages rl2
-    WHERE rl2.repo_id = rl.repo_id
+    rs.name AS language,
+    SUM(COALESCE(rs.line_count, 0)) AS lines
+FROM repository_stack rs
+JOIN v_repository_team_labels rtl ON rtl.repo_id = rs.repo_id
+WHERE rs.category = 'language'
+  AND rs.last_seen_at = (
+    SELECT MAX(rs2.last_seen_at)
+    FROM repository_stack rs2
+    WHERE rs2.repo_id = rs.repo_id
+      AND rs2.category = 'language'
 )
-GROUP BY rtl.team, rl.language;
+GROUP BY rtl.team, rs.name;
 
 -- View: Team top contributors
 CREATE OR REPLACE VIEW v_team_top_contributors_30d AS

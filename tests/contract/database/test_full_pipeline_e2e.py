@@ -32,7 +32,7 @@ from src.database.storage import (
 )
 from src.analyzers.dependency_analyzer import DependencyAnalyzer
 from src.analyzers.dependency_enricher import EnrichedDependency
-from src.database.models import Commit, PullRequest, RepositoryLanguage, RepositoryDependency
+from src.database.models import Commit, PullRequest, RepositoryStack, RepositoryDependency
 from src.extractors.base import Platform
 
 
@@ -146,7 +146,9 @@ class TestExtractionPipelineE2E:
 
         expected = len(extractor.get_languages(repo.repo_id))
         stored = (
-            db_session.query(RepositoryLanguage).filter_by(repo_id=repo.repo_id).count()
+            db_session.query(RepositoryStack).filter_by(
+                repo_id=repo.repo_id, category="language"
+            ).count()
         )
         assert stored == expected, (
             f"{scenario_name}: expected {expected} languages stored, got {stored}"

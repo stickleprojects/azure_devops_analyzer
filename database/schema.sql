@@ -159,28 +159,47 @@ CREATE INDEX idx_branch_repo ON branches(repo_id);
 CREATE INDEX idx_branch_last_analyzed ON branches(last_analyzed_at);
 
 -- =============================================================================
--- LANGUAGE AND DEPENDENCY TABLES
+-- TECHNOLOGY STACK TABLES
 -- =============================================================================
 
--- Repository Languages
-CREATE TABLE repository_languages (
+-- Technologies: global EOL metadata per technology
+CREATE TABLE technologies (
     id SERIAL PRIMARY KEY,
-    repo_id VARCHAR(255),
+    name VARCHAR(200) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    is_eol BOOLEAN NOT NULL DEFAULT FALSE,
+    eol_date DATE,
+    latest_supported_version VARCHAR(100),
+    eol_enriched_at TIMESTAMPTZ,
+    CONSTRAINT uq_technology UNIQUE (name, category)
+);
+
+CREATE INDEX idx_tech_eol ON technologies(is_eol, eol_date);
+CREATE INDEX idx_tech_cat ON technologies(category);
+
+-- Repository Stack: unified per-repo technology usage
+CREATE TABLE repository_stack (
+    id SERIAL PRIMARY KEY,
+    repo_id VARCHAR(255) NOT NULL,
     branch_id INTEGER,
-    language VARCHAR(100) NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    name VARCHAR(200) NOT NULL,
+    source VARCHAR(20) NOT NULL DEFAULT 'heuristic',
     percentage DECIMAL(5,2),
     line_count INTEGER,
     byte_count BIGINT,
+    confidence NUMERIC(4,3),
     first_seen_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_seen_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (repo_id, language),
-    CONSTRAINT fk_repolang_repository FOREIGN KEY (repo_id) REFERENCES repositories(repo_id) ON DELETE CASCADE,
-    CONSTRAINT fk_repolang_branch FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE CASCADE
+    CONSTRAINT uq_stack UNIQUE (repo_id, category, name),
+    CONSTRAINT fk_stack_repo FOREIGN KEY (repo_id) REFERENCES repositories(repo_id) ON DELETE CASCADE,
+    CONSTRAINT fk_stack_branch FOREIGN KEY (branch_id) REFERENCES branches(branch_id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_lang_repo ON repository_languages(repo_id);
-CREATE INDEX idx_lang_branch ON repository_languages(branch_id);
-CREATE INDEX idx_lang_last_seen ON repository_languages(last_seen_at);
+CREATE INDEX idx_stack_repo_category ON repository_stack(repo_id, category);
+CREATE INDEX idx_stack_name ON repository_stack(name);
+CREATE INDEX idx_stack_cat_name ON repository_stack(category, name);
+CREATE INDEX idx_stack_source ON repository_stack(source, category);
 
 -- Dependencies
 CREATE TABLE dependencies (
