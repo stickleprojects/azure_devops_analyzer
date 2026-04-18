@@ -1746,7 +1746,7 @@ Completed all three FR-2 requirements by implementing language detection workflo
 - ✅ GitHub: Uses `repo.get_languages()` API (byte counts + percentages)
 - ✅ Azure DevOps: Uses heuristic file analysis (file extensions + project files)
 - ✅ Both workflows call `_process_languages()`
-- ✅ Data stored in `repository_languages` table
+- ✅ Data stored in `repository_stack` table (category=`language`)
 
 **FR-2.2: Language Distribution Over Time**
 
@@ -2626,7 +2626,7 @@ Implemented manifest extraction system, created Azure DevOps configuration class
 
 - `src/analyzers/parsers/dotnet_parser.py` → `dot_net_parser.py` (class: `DotNetParser`)
 - `src/analyzers/parsers/nodejs_parser.py` → `node_js_parser.py` (class: `NodeJsParser`)
-- `src/database/models/language.py` → `repository_language.py` (class: `RepositoryLanguage`)
+- `src/database/models/language.py` → `repository_language.py` → deleted in Plan 011 (replaced by `repository_stack.py`)
 
 **Import Updates**:
 
@@ -2661,7 +2661,7 @@ Implemented manifest extraction system, created Azure DevOps configuration class
 
 - `src/analyzers/parsers/dotnet_parser.py` → `dot_net_parser.py`
 - `src/analyzers/parsers/nodejs_parser.py` → `node_js_parser.py`
-- `src/database/models/language.py` → `repository_language.py`
+- `src/database/models/language.py` → `repository_language.py` (deleted in Plan 011; replaced by `repository_stack.py`)
 
 ### Test Results
 

@@ -20,7 +20,7 @@ from src.database.storage import (
     store_pull_request,
     store_languages,
 )
-from src.database.models import Commit, PullRequest, RepositoryLanguage
+from src.database.models import Commit, PullRequest, RepositoryStack
 
 
 SCENARIOS = [
@@ -134,8 +134,8 @@ class TestFixtureScenarioPipeline:
         test_session.commit()
 
         stored = (
-            test_session.query(RepositoryLanguage)
-            .filter_by(repo_id=repo.repo_id)
+            test_session.query(RepositoryStack)
+            .filter_by(repo_id=repo.repo_id, category="language")
             .all()
         )
         assert len(stored) == len(languages), (

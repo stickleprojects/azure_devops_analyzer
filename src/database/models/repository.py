@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from src.database.models.commit import Commit
     from src.database.models.contributor import ContributorMetric
     from src.database.models.dependency import RepositoryDependency
-    from src.database.models.repository_language import RepositoryLanguage
+    from src.database.models.repository_stack import RepositoryStack
     from src.database.models.organization import Project
     from src.database.models.pull_request import PullRequest
     from src.database.models.quality import CodeIssue, CodeQualityMetric
@@ -63,7 +63,7 @@ class Repository(Base):
     branches: Mapped[list["Branch"]] = relationship(
         back_populates="repository", cascade="all, delete-orphan"
     )
-    languages: Mapped[list["RepositoryLanguage"]] = relationship(
+    stack: Mapped[list["RepositoryStack"]] = relationship(
         back_populates="repository", cascade="all, delete-orphan"
     )
     repo_dependencies: Mapped[list["RepositoryDependency"]] = relationship(
@@ -120,8 +120,10 @@ class Branch(Base):
 
     # Relationships
     repository: Mapped["Repository"] = relationship(back_populates="branches")
-    languages: Mapped[list["RepositoryLanguage"]] = relationship(
-        back_populates="branch", cascade="all, delete-orphan"
+    stack: Mapped[list["RepositoryStack"]] = relationship(
+        "RepositoryStack",
+        back_populates="branch",
+        foreign_keys="RepositoryStack.branch_id",
     )
     repo_dependencies: Mapped[list["RepositoryDependency"]] = relationship(
         back_populates="branch", cascade="all, delete-orphan"

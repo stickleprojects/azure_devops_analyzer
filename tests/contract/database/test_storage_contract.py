@@ -31,7 +31,7 @@ from src.database.models import (
     PullRequest,
     Contributor,
     Team,
-    RepositoryLanguage,
+    RepositoryStack,
 )
 from tests.fixtures.sample_data import (
     sample_organization_data,
@@ -701,17 +701,20 @@ class TestLanguageStorage:
         db_session.commit()
         
         assert len(results) == 3
-        stored = db_session.query(RepositoryLanguage).filter_by(repo_id=repo.repo_id).all()
+        stored = db_session.query(RepositoryStack).filter_by(
+            repo_id=repo.repo_id, category="language"
+        ).all()
         assert len(stored) == 3
         
         # Verify first language
-        python_lang = next(l for l in stored if l.language == "Python")
+        python_lang = next(l for l in stored if l.name == "Python")
         assert python_lang.byte_count == 10000
         assert python_lang.percentage == 65.5
         assert python_lang.repo_id == repo.repo_id
         assert python_lang.branch_id is None
         assert python_lang.first_seen_at is not None
         assert python_lang.last_seen_at is not None
+        assert python_lang.source == "platform_api"
     
     def test_contract_store_languages_with_branch(self, db_session):
         """CONTRACT: Language statistics can be associated with specific branch."""
@@ -741,8 +744,9 @@ class TestLanguageStorage:
         )
         db_session.commit()
         
-        stored = db_session.query(RepositoryLanguage).filter_by(
+        stored = db_session.query(RepositoryStack).filter_by(
             repo_id=repo.repo_id,
+            category="language",
             branch_id=branch.branch_id
         ).all()
         
@@ -766,5 +770,7 @@ class TestLanguageStorage:
         db_session.commit()
         
         assert len(results) == 0
-        stored = db_session.query(RepositoryLanguage).filter_by(repo_id=repo.repo_id).all()
+        stored = db_session.query(RepositoryStack).filter_by(
+            repo_id=repo.repo_id, category="language"
+        ).all()
         assert len(stored) == 0

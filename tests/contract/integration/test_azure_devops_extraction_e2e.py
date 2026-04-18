@@ -18,7 +18,7 @@ from datetime import datetime, UTC
 from sqlalchemy.orm import Session
 
 from src.extractors.azure_devops.extractor import AzureDevOpsExtractor
-from src.database.models import Repository, Branch, Commit, Contributor, RepositoryLanguage
+from src.database.models import Repository, Branch, Commit, Contributor, RepositoryStack
 from src.database.storage import store_commit, store_languages
 from src.analyzers.technology_detector import TechnologyDetector
 
@@ -343,7 +343,7 @@ class TestAzureDevOpsLanguageDetection:
         
         Verify:
         - Languages extracted using file heuristics
-        - Data stored in repository_languages table
+        - Data stored in repository_stack table
         - Analyzed timestamps are UTC-aware
         """
         # Setup
@@ -381,8 +381,8 @@ class TestAzureDevOpsLanguageDetection:
             test_session.commit()
             
             # Assert: Languages stored correctly
-            stored_languages = test_session.query(RepositoryLanguage).filter_by(
-                repo_id=repo.repo_id
+            stored_languages = test_session.query(RepositoryStack).filter_by(
+                repo_id=repo.repo_id, category="language"
             ).all()
             
             assert len(stored_languages) == len(languages), \
@@ -390,7 +390,7 @@ class TestAzureDevOpsLanguageDetection:
             
             # Assert: Data integrity
             for stored_lang in stored_languages:
-                assert stored_lang.language is not None
+                assert stored_lang.name is not None
                 assert stored_lang.byte_count >= 0
                 assert stored_lang.percentage is not None
                 assert stored_lang.first_seen_at is not None
@@ -447,16 +447,16 @@ class TestAzureDevOpsLanguageDetection:
         test_session.commit()
         
         # Assert: Latest snapshot stored (upserted)
-        all_snapshots = test_session.query(RepositoryLanguage).filter_by(
-            repo_id=repo.repo_id
-        ).order_by(RepositoryLanguage.last_seen_at).all()
+        all_snapshots = test_session.query(RepositoryStack).filter_by(
+            repo_id=repo.repo_id, category="language"
+        ).order_by(RepositoryStack.last_seen_at).all()
         
         assert len(all_snapshots) == 2, \
             f"Expected 2 language records (upserted), got {len(all_snapshots)}"
         
-        lang_names = {snapshot.language for snapshot in all_snapshots}
+        lang_names = {snapshot.name for snapshot in all_snapshots}
         assert lang_names == {"Python", "JavaScript"}
-        python_record = next(s for s in all_snapshots if s.language == "Python")
+        python_record = next(s for s in all_snapshots if s.name == "Python")
         assert python_record.byte_count == 12000
         assert python_record.first_seen_at <= python_record.last_seen_at
 
@@ -638,18 +638,18 @@ class TestAzureDevOpsAndGitHubComparison:
         store_languages(test_session, "azure/test-repo", azure_languages)
         test_session.commit()
         
-        # Assert: Both stored in same RepositoryLanguage table
-        github_langs = test_session.query(RepositoryLanguage).filter_by(
-            repo_id="github/test-repo"
+        # Assert: Both stored in same repository_stack table
+        github_langs = test_session.query(RepositoryStack).filter_by(
+            repo_id="github/test-repo", category="language"
         ).all()
-        azure_langs = test_session.query(RepositoryLanguage).filter_by(
-            repo_id="azure/test-repo"
+        azure_langs = test_session.query(RepositoryStack).filter_by(
+            repo_id="azure/test-repo", category="language"
         ).all()
         
         assert len(github_langs) == 1
         assert len(azure_langs) == 1
-        assert github_langs[0].language == "Python"
-        assert azure_langs[0].language == "C#"
+        assert github_langs[0].name == "Python"
+        assert azure_langs[0].name == "C#"
 
 
 class TestAzureDevOpsFR15:

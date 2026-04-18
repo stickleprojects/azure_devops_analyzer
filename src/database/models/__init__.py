@@ -11,7 +11,8 @@ from src.database.models.contributor import Contributor, ContributorMetric
 from src.database.models.dependency import RepositoryDependency, Vulnerability
 from src.database.models.package import Package
 from src.database.models.extraction_metric import ExtractionMetric, ExtractionRun
-from src.database.models.repository_language import RepositoryLanguage
+from src.database.models.repository_stack import RepositoryStack
+from src.database.models.technology import Technology
 from src.database.models.organization import Organization, Project
 from src.database.models.pull_request import PRComment, PRReview, PullRequest
 from src.database.models.quality import CodeIssue, CodeQualityMetric
@@ -36,8 +37,10 @@ __all__ = [
     # Repository
     "Repository",
     "Branch",
-    # Language
-    "RepositoryLanguage",
+    # Language / Stack
+    "RepositoryStack",
+    # Technology EOL
+    "Technology",
     # Dependency
     "Package",
     "RepositoryDependency",

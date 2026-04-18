@@ -8,10 +8,12 @@ including organizations, repositories, branches, commits, and pull requests.
 import logging
 import socket
 from dataclasses import dataclass
+from datetime import datetime, timedelta, UTC
 from typing import Optional
 
 from src.database.connection import session_scope
-from src.database.models import Organization, Project
+from src.database.models import Organization, Project, Technology
+from src.analyzers.technology_enricher import TechnologyEnricher
 from src.database.storage import (
     should_scan_repository,
     store_organization,
@@ -25,6 +27,8 @@ from src.database.storage import (
     store_enriched_dependencies,
     store_package_metadata,
     store_repo_dependencies,
+    store_languages,
+    store_detections,
     update_repository_analyzed_timestamp,
     get_extraction_summary,
     start_extraction_run,
@@ -243,7 +247,7 @@ class GitHubAnalysisWorkflow:
             # Process repository contents
             branches_count = self._process_branches(repo_data)
             self._process_languages(repo_data)
-            self._process_technologies(repo_data)
+            self._process_detections(repo_data)
             self._process_readme_files(repo_data)
             commits_count = self._process_commits(repo_data)
             prs_count = self._process_pull_requests(repo_data)
@@ -311,9 +315,8 @@ class GitHubAnalysisWorkflow:
 
             if languages:
                 with session_scope() as session:
-                    from src.database.storage import store_languages
                     store_languages(session, repo_data.repo_id, languages)
-                    
+
                     # Log top 3 languages
                     top_langs = ", ".join(
                         f"{lang.language} ({lang.percentage:.1f}%)"
@@ -324,34 +327,57 @@ class GitHubAnalysisWorkflow:
         except Exception as e:
             logger.warning("      Failed to fetch languages: %s", e)
 
-    def _process_technologies(self, repo_data):
-        """Detect and log technology stack for a repository."""
+    def _process_detections(self, repo_data):
+        """Detect and persist technology stack for a repository."""
         try:
             # Get file tree to detect technologies
             file_tree = self.extractor.get_file_tree(repo_data.repo_id)
             if not file_tree:
                 logger.info("      No file tree available for technology detection")
                 return
-            
+
             # Extract file names from tree
             file_names = [f.path for f in file_tree]
-            
+
             # Detect technologies
             detector = TechnologyDetector()
             tech_detection = detector.detect(file_names)
-            
+
             if tech_detection.all_technologies:
                 logger.info("      Detected %d technologies", len(tech_detection.all_technologies))
                 logger.info("      Primary language: %s", tech_detection.primary_language)
-                
+
                 if tech_detection.frameworks:
                     logger.info("      Frameworks: %s", ", ".join(tech_detection.frameworks[:3]))
-                
+
                 if tech_detection.databases:
                     logger.info("      Databases: %s", ", ".join(tech_detection.databases[:2]))
 
+            # Persist detections
+            with session_scope() as session:
+                stored_entries = store_detections(session, repo_data.repo_id, tech_detection)
+
+            # EOL enrichment (weekly staleness check) — fetch all matching rows in one query
+            cutoff = datetime.now(UTC) - timedelta(days=7)
+            enricher = TechnologyEnricher()
+            with session_scope() as session:
+                pairs = [(e.name, e.category) for e in stored_entries]
+                if pairs:
+                    recently_enriched = {
+                        (t.name, t.category)
+                        for t in session.query(Technology.name, Technology.category)
+                        .filter(
+                            Technology.eol_enriched_at > cutoff,
+                            Technology.name.in_([p[0] for p in pairs]),
+                        )
+                        .all()
+                    }
+                    stale = [p for p in pairs if p not in recently_enriched]
+                    if stale:
+                        enricher.enrich(session, stale)
+
         except Exception as e:
-            logger.warning("      Failed to detect technologies: %s", e)
+            logger.warning("      Failed to detect/persist technologies: %s", e)
 
     def _process_readme_files(self, repo_data):
         """Fetch and store README files for a repository."""

@@ -90,7 +90,7 @@ run()
 - **Data:** File counts and byte estimates per language
 - **Implementation:** `get_languages()` uses file extensions and filename patterns
 
-Both store identical data structures in `RepositoryLanguage` table with time-series support.
+Both store identical data structures in the `repository_stack` table (category=`language`) with time-series support.
 
 ---
 
@@ -257,7 +257,8 @@ Both platforms write to **identical database schema**:
 
 ### Analysis Tables
 
-- `repository_languages` - Language distribution (TimescaleDB hypertable)
+- `repository_stack` - Technology stack (languages, frameworks, databases, etc.)
+- `technologies` - Global EOL metadata per technology
 - `repository_dependencies` - Dependency tracking
 - `vulnerabilities` - Security issues
 

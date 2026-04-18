@@ -270,30 +270,77 @@ ORDER BY commits DESC, prs_authored DESC, reviews_given DESC;
 -- =============================================================================
 
 -- View 6: Repository aggregate summary
-CREATE OR REPLACE VIEW v_repository_summary AS
-SELECT 
-    r.repo_id,
-    r.name,
-    r.is_active,
-    COUNT(DISTINCT c.commit_sha) AS total_commits,
-    COUNT(DISTINCT pr.id) AS total_prs,
-    COUNT(DISTINCT rl.language) AS language_count,
-    MAX(c.commit_date) AS last_commit_date
-FROM 
-    repositories r
-LEFT JOIN 
-    commits c ON c.repo_id = r.repo_id
-LEFT JOIN 
-    pull_requests pr ON pr.repo_id = r.repo_id
-LEFT JOIN 
-    repository_languages rl ON rl.repo_id = r.repo_id
-GROUP BY 
-    r.repo_id, r.name, r.is_active;
+-- NOTE: repository_languages was replaced by repository_stack in migration 015.
+-- On a fresh database (new schema), repository_languages does not exist, so we
+-- create these views using repository_stack directly. On an upgrade path
+-- (existing database still has repository_languages), we use the old table;
+-- migration 015 will later recreate the views pointing at repository_stack.
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'repository_languages'
+          AND table_type = 'BASE TABLE'
+    ) THEN
+        EXECUTE $v$
+            CREATE OR REPLACE VIEW v_repository_summary AS
+            SELECT
+                r.repo_id,
+                r.name,
+                r.is_active,
+                COUNT(DISTINCT c.commit_sha) AS total_commits,
+                COUNT(DISTINCT pr.id)        AS total_prs,
+                COUNT(DISTINCT rl.language)  AS language_count,
+                MAX(c.commit_date)           AS last_commit_date
+            FROM repositories r
+            LEFT JOIN commits c          ON c.repo_id  = r.repo_id
+            LEFT JOIN pull_requests pr   ON pr.repo_id = r.repo_id
+            LEFT JOIN repository_languages rl ON rl.repo_id = r.repo_id
+            GROUP BY r.repo_id, r.name, r.is_active
+        $v$;
+    ELSE
+        EXECUTE $v$
+            CREATE OR REPLACE VIEW v_repository_summary AS
+            SELECT
+                r.repo_id,
+                r.name,
+                r.is_active,
+                COUNT(DISTINCT c.commit_sha) AS total_commits,
+                COUNT(DISTINCT pr.id)        AS total_prs,
+                COUNT(DISTINCT rs.name)      AS language_count,
+                MAX(c.commit_date)           AS last_commit_date
+            FROM repositories r
+            LEFT JOIN commits c        ON c.repo_id  = r.repo_id
+            LEFT JOIN pull_requests pr ON pr.repo_id = r.repo_id
+            LEFT JOIN repository_stack rs
+                ON rs.repo_id = r.repo_id AND rs.category = 'language'
+            GROUP BY r.repo_id, r.name, r.is_active
+        $v$;
+    END IF;
+END $$;
 
 -- View 7: Language distribution per repository
-CREATE OR REPLACE VIEW v_language_summary AS
-SELECT repo_id, language, percentage, byte_count
-FROM repository_languages;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'repository_languages'
+          AND table_type = 'BASE TABLE'
+    ) THEN
+        EXECUTE $v$
+            CREATE OR REPLACE VIEW v_language_summary AS
+            SELECT repo_id, language, percentage, byte_count
+            FROM repository_languages
+        $v$;
+    ELSE
+        EXECUTE $v$
+            CREATE OR REPLACE VIEW v_language_summary AS
+            SELECT repo_id, name AS language, percentage, byte_count
+            FROM repository_stack
+            WHERE category = 'language'
+        $v$;
+    END IF;
+END $$;
 
 -- View: Active repositories count
 CREATE OR REPLACE VIEW v_active_repositories_total AS
@@ -458,15 +505,40 @@ FROM pull_requests
 GROUP BY repo_id;
 
 -- View: Latest language distribution per repository
-CREATE OR REPLACE VIEW v_repo_language_distribution_latest AS
-SELECT rl.repo_id, rl.language, rl.percentage
-FROM repository_languages rl
-WHERE rl.last_seen_at = (
-    SELECT MAX(rl2.last_seen_at)
-    FROM repository_languages rl2
-    WHERE rl2.repo_id = rl.repo_id
-)
-ORDER BY rl.percentage DESC;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'repository_languages'
+          AND table_type = 'BASE TABLE'
+    ) THEN
+        EXECUTE $v$
+            CREATE OR REPLACE VIEW v_repo_language_distribution_latest AS
+            SELECT rl.repo_id, rl.language, rl.percentage
+            FROM repository_languages rl
+            WHERE rl.last_seen_at = (
+                SELECT MAX(rl2.last_seen_at)
+                FROM repository_languages rl2
+                WHERE rl2.repo_id = rl.repo_id
+            )
+            ORDER BY rl.percentage DESC
+        $v$;
+    ELSE
+        EXECUTE $v$
+            CREATE OR REPLACE VIEW v_repo_language_distribution_latest AS
+            SELECT rs.repo_id, rs.name AS language, rs.percentage
+            FROM repository_stack rs
+            WHERE rs.category = 'language'
+              AND rs.last_seen_at = (
+                SELECT MAX(rs2.last_seen_at)
+                FROM repository_stack rs2
+                WHERE rs2.repo_id = rs.repo_id
+                  AND rs2.category = 'language'
+            )
+            ORDER BY rs.percentage DESC
+        $v$;
+    END IF;
+END $$;
 
 -- View: Recent commit details per repository
 CREATE OR REPLACE VIEW v_repo_recent_commits AS
@@ -1017,19 +1089,48 @@ JOIN vulnerabilities v ON v.dependency_id = d.id
 GROUP BY rtl.team, v.severity;
 
 -- View: Team language distribution
-CREATE OR REPLACE VIEW v_team_language_distribution_latest AS
-SELECT
-    rtl.team,
-    rl.language,
-    SUM(COALESCE(rl.line_count, 0)) AS lines
-FROM repository_languages rl
-JOIN v_repository_team_labels rtl ON rtl.repo_id = rl.repo_id
-WHERE rl.last_seen_at = (
-    SELECT MAX(rl2.last_seen_at)
-    FROM repository_languages rl2
-    WHERE rl2.repo_id = rl.repo_id
-)
-GROUP BY rtl.team, rl.language;
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = 'repository_languages'
+          AND table_type = 'BASE TABLE'
+    ) THEN
+        EXECUTE $v$
+            CREATE OR REPLACE VIEW v_team_language_distribution_latest AS
+            SELECT
+                rtl.team,
+                rl.language,
+                SUM(COALESCE(rl.line_count, 0)) AS lines
+            FROM repository_languages rl
+            JOIN v_repository_team_labels rtl ON rtl.repo_id = rl.repo_id
+            WHERE rl.last_seen_at = (
+                SELECT MAX(rl2.last_seen_at)
+                FROM repository_languages rl2
+                WHERE rl2.repo_id = rl.repo_id
+            )
+            GROUP BY rtl.team, rl.language
+        $v$;
+    ELSE
+        EXECUTE $v$
+            CREATE OR REPLACE VIEW v_team_language_distribution_latest AS
+            SELECT
+                rtl.team,
+                rs.name AS language,
+                SUM(COALESCE(rs.line_count, 0)) AS lines
+            FROM repository_stack rs
+            JOIN v_repository_team_labels rtl ON rtl.repo_id = rs.repo_id
+            WHERE rs.category = 'language'
+              AND rs.last_seen_at = (
+                SELECT MAX(rs2.last_seen_at)
+                FROM repository_stack rs2
+                WHERE rs2.repo_id = rs.repo_id
+                  AND rs2.category = 'language'
+            )
+            GROUP BY rtl.team, rs.name
+        $v$;
+    END IF;
+END $$;
 
 -- View: Team top contributors
 CREATE OR REPLACE VIEW v_team_top_contributors_30d AS

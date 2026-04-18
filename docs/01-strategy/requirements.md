@@ -84,8 +84,8 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 
 | ID     | Requirement                                                       | Priority | Status | Notes                                                                                                                       |
 | ------ | ----------------------------------------------------------------- | -------- | ------ | --------------------------------------------------------------------------------------------------------------------------- |
-| FR-2.1 | System shall detect programming languages used in each repository | High     | ✅     | `RepositoryLanguage` entity; GitHub uses API, Azure DevOps uses heuristic file analysis — implemented 2026-01-24           |
-| FR-2.2 | System shall track language distribution over time                | Medium   | ✅     | TimescaleDB hypertable with monthly chunks; `_process_languages()` populates percentage/byte_count — implemented 2026-01-24 |
+| FR-2.1 | System shall detect programming languages used in each repository | High     | ✅     | `repository_stack` (category=`language`); GitHub uses API, Azure DevOps uses heuristic file analysis — implemented 2026-01-24           |
+| FR-2.2 | System shall track language distribution over time                | Medium   | ✅     | `repository_stack` with `first_seen_at`/`last_seen_at` upsert semantics; `_process_languages()` populates percentage/byte_count — implemented 2026-01-24 |
 | FR-2.3 | System shall identify key technologies and frameworks             | High     | ✅     | `TechnologyDetector` detects 8 categories (languages, frameworks, databases, platforms, build tools, testing, CI/CD, docs) — 2026-01-24 |
 
 **Summary:** 3/3 Complete
