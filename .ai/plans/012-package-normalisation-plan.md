@@ -1,5 +1,27 @@
 # Plan: Package Normalisation — `packages` + `repository_dependencies`
 
+## Status: Mostly Complete
+
+**Branch**: `copilot/implement-plan-012`  
+**Last updated**: 2026-04-19
+
+| Section | Status | Notes |
+|---------|--------|-------|
+| Migration | ✅ Done | Implemented as `014_normalise_packages.sql` (012 and 013 were taken) |
+| ORM models | ✅ Done | `package.py` created; `dependency.py` updated; `repository.py` updated |
+| Storage functions | ✅ Done | `store_package_metadata`, `store_repo_dependencies`, deprecated alias kept |
+| DependencyEnricher | ✅ Done | `PackageMetadata`, `EnrichedDependency`, `_version_is_affected` |
+| Workflow integration | ✅ Done | `_process_dependencies` updated |
+| Unit tests | ✅ Done | `test_package_storage.py` (8 tests), `test_version_comparison.py` (15 tests) — all passing |
+| API endpoints | ✅ Done | `/api/packages/search`, `/api/packages/by-repo`, `/api/packages/vulnerable`, `/api/packages/eol` in `rescan.py` |
+| `/api/packages/by-service` | ❌ Not done | Endpoint described in plan but not implemented |
+| Dashboard — repository-deep-dive.json | ❌ Not done | CVE detail panel and EOL JOIN not added |
+| Dashboard — service-overview.json | ❌ Not done | `has_known_vulnerabilities` and EOL panels not updated |
+
+**Remaining work**: `/api/packages/by-service` endpoint + 2 dashboard panel updates.
+
+---
+
 ## Context
 
 The existing `dependencies` table mixes per-repo usage facts with global facts about
@@ -481,21 +503,21 @@ GET /api/packages/eol
 
 ## Critical Files
 
-| Action | File |
-|--------|------|
-| Create | `database/migrations/012_normalise_packages.sql` |
-| Create | `src/database/models/package.py` |
-| Modify | `src/database/models/dependency.py` (rename class + table, drop EOL cols, rename has_vulnerabilities, re-link Vulnerability) |
-| Modify | `src/database/models/repository.py` (rename `dependencies` rel → `repo_dependencies`) |
-| Modify | `src/database/storage.py` (update `store_dependencies`, split `store_enriched_dependencies`, update `get_extraction_summary`) |
-| Modify | `src/analyzers/dependency_enricher.py` (add `PackageMetadata`, compute `has_known_vulnerabilities` in `_enrich_single`, add `_version_is_affected` helper) |
-| Modify | `src/workflows/github_analysis.py` (update `_process_dependencies`) |
-| Modify | `src/api/rescan.py` (add 4 package endpoints) |
-| Modify | `dashboards/repository-deep-dive.json` |
-| Modify | `dashboards/service-overview.json` |
-| Create | `tests/unit/test_package_storage.py` |
-| Create | `tests/unit/test_version_comparison.py` |
-| Modify | `tests/unit/test_dependency_storage.py` (if it exists) |
+| Status | Action | File |
+|--------|--------|------|
+| ✅ Done | Create | `database/migrations/014_normalise_packages.sql` (renumbered from 012) |
+| ✅ Done | Create | `src/database/models/package.py` |
+| ✅ Done | Modify | `src/database/models/dependency.py` (class → `RepositoryDependency`, table renamed, EOL cols dropped, `has_known_vulnerabilities`, `Vulnerability` re-linked) |
+| ✅ Done | Modify | `src/database/models/repository.py` (`dependencies` rel → `repo_dependencies`) |
+| ✅ Done | Modify | `src/database/storage.py` (`store_package_metadata`, `store_repo_dependencies`, deprecated `store_enriched_dependencies` alias) |
+| ✅ Done | Modify | `src/analyzers/dependency_enricher.py` (`PackageMetadata`, `_version_is_affected`, `has_known_vulnerabilities` computation) |
+| ✅ Done | Modify | `src/workflows/github_analysis.py` (`_process_dependencies` updated) |
+| ✅ Done | Modify | `src/api/rescan.py` (search, by-repo, vulnerable, eol endpoints added) |
+| ✅ Done | Create | `tests/unit/test_package_storage.py` |
+| ✅ Done | Create | `tests/unit/test_version_comparison.py` |
+| ❌ Todo | Modify | `src/api/rescan.py` (add `/api/packages/by-service` endpoint) |
+| ❌ Todo | Modify | `dashboards/repository-deep-dive.json` (CVE detail panel via packages→vulnerabilities JOIN; EOL via packages JOIN) |
+| ❌ Todo | Modify | `dashboards/service-overview.json` (`has_known_vulnerabilities` count; EOL via packages JOIN) |
 
 ---
 
