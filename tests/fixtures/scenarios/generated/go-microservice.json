@@ -145,7 +145,21 @@
       "files_changed": 7,
       "lines_added": 61,
       "lines_removed": 27,
-      "merged_at": "2026-03-22T00:00:00Z"
+      "merged_at": "2026-03-22T00:00:00Z",
+      "reviews": [
+        {
+          "reviewer_email": "Eve.Williams@Sample.NET",
+          "reviewer_name": "Eve Williams",
+          "review_date": "2026-03-20T00:00:00Z",
+          "state": "APPROVED"
+        },
+        {
+          "reviewer_email": "Bob.Johnson@Test.ORG",
+          "reviewer_name": "Bob Johnson",
+          "review_date": "2026-03-21T00:00:00Z",
+          "state": "COMMENTED"
+        }
+      ]
     },
     {
       "pr_number": 2,

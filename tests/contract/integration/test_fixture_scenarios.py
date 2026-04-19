@@ -9,6 +9,7 @@ from tests/fixtures/scenarios/generated/. Existing live-API tests are untouched.
 """
 
 import pytest
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from tests.fixtures.fixture_extractor import FixtureExtractor
@@ -20,7 +21,7 @@ from src.database.storage import (
     store_pull_request,
     store_languages,
 )
-from src.database.models import Commit, PullRequest, RepositoryStack
+from src.database.models import Commit, Contributor, PullRequest, PRReview, RepositoryStack
 
 
 SCENARIOS = [
@@ -123,6 +124,79 @@ class TestFixtureScenarioPipeline:
         assert len(stored) == len(prs), (
             f"{scenario_name}: expected {len(prs)} PRs, got {len(stored)}"
         )
+
+    @pytest.mark.parametrize("scenario_name", SCENARIOS)
+    def test_pull_requests_author_links_are_sound(self, scenario_name, test_session, organization):
+        """CONTRACT: Every stored PR's author_id must resolve to the correct contributor.
+
+        Regression guard for DASH-CONTRIB-002: PR→contributor FK must be non-null,
+        must point at an existing contributors row, and that row's email must match
+        the normalised source email from the fixture.  Zero orphans are permitted.
+        """
+        extractor = FixtureExtractor(scenario_name)
+        repo = _create_fixture_repo(test_session, organization, scenario_name)
+
+        prs = extractor.get_pull_requests(repo.repo_id)
+        for pr_data in prs:
+            store_pull_request(test_session, repo.repo_id, pr_data)
+        test_session.commit()
+
+        # No orphaned author FKs across any PR in this scenario
+        orphan_count = test_session.execute(
+            text(
+                """
+                SELECT count(*) FROM pull_requests
+                WHERE repo_id = :repo_id
+                  AND (author_id IS NULL
+                       OR author_id NOT IN (SELECT id FROM contributors))
+                """
+            ),
+            {"repo_id": repo.repo_id},
+        ).scalar()
+        assert orphan_count == 0, (
+            f"{scenario_name}: found {orphan_count} pull_requests rows with "
+            "NULL or dangling author_id"
+        )
+
+        # Each PR's author resolves to the normalised source email
+        for pr_data in prs:
+            stored = test_session.query(PullRequest).filter_by(
+                repo_id=repo.repo_id, pr_number=pr_data.pr_number
+            ).one()
+            contributor = test_session.get(Contributor, stored.author_id)
+            assert contributor is not None, (
+                f"{scenario_name} PR#{pr_data.pr_number}: author_id {stored.author_id} "
+                "resolves to no contributor row"
+            )
+            expected_email = pr_data.author_email.strip().lower()
+            assert contributor.email == expected_email, (
+                f"{scenario_name} PR#{pr_data.pr_number}: contributor.email "
+                f"'{contributor.email}' != expected '{expected_email}'"
+            )
+
+        # Reviews: each review's reviewer_id resolves to the correct contributor
+        for pr_data in prs:
+            if not pr_data.reviews:
+                continue
+            stored_pr = test_session.query(PullRequest).filter_by(
+                repo_id=repo.repo_id, pr_number=pr_data.pr_number
+            ).one()
+            stored_reviews = test_session.query(PRReview).filter_by(pr_id=stored_pr.id).all()
+            assert len(stored_reviews) == len(pr_data.reviews), (
+                f"{scenario_name} PR#{pr_data.pr_number}: expected {len(pr_data.reviews)} "
+                f"reviews stored, got {len(stored_reviews)}"
+            )
+            for review_data, stored_review in zip(pr_data.reviews, stored_reviews):
+                reviewer = test_session.get(Contributor, stored_review.reviewer_id)
+                assert reviewer is not None, (
+                    f"{scenario_name} PR#{pr_data.pr_number}: reviewer_id "
+                    f"{stored_review.reviewer_id} resolves to no contributor row"
+                )
+                expected_reviewer_email = review_data.reviewer_email.strip().lower()
+                assert reviewer.email == expected_reviewer_email, (
+                    f"{scenario_name} PR#{pr_data.pr_number}: reviewer.email "
+                    f"'{reviewer.email}' != expected '{expected_reviewer_email}'"
+                )
 
     @pytest.mark.parametrize("scenario_name", SCENARIOS)
     def test_languages_stored(self, scenario_name, test_session, organization):

@@ -501,6 +501,186 @@ class TestContributorStorage:
             f"Expected 2 commits for the canonical contributor; got {len(commits)}"
         )
 
+    def test_contract_store_pull_request_deduplicates_author_across_email_cases(self, db_session):
+        """CONTRACT: PR author email variants must map to a single contributor record.
+
+        Regression guard: two PRs submitted by the same person under different email
+        casings must share one contributors row and the same author_id.
+        """
+        from src.database.storage import store_organization, store_project, store_repository, store_pull_request
+        from tests.fixtures.sample_data import (
+            sample_organization_data,
+            sample_repository_data,
+            sample_pull_request_data,
+        )
+
+        org = store_organization(db_session, sample_organization_data())
+        project = store_project(db_session, org, "test-project")
+        repo = store_repository(db_session, project, sample_repository_data())
+        db_session.commit()
+
+        pr1 = store_pull_request(
+            db_session, repo.repo_id,
+            sample_pull_request_data(pr_number=101, author_email="alice@example.com"),
+        )
+        db_session.commit()
+
+        pr2 = store_pull_request(
+            db_session, repo.repo_id,
+            sample_pull_request_data(pr_number=102, author_email="Alice@Example.COM"),
+        )
+        db_session.commit()
+
+        pr3 = store_pull_request(
+            db_session, repo.repo_id,
+            sample_pull_request_data(pr_number=103, author_email="  alice@example.com  "),
+        )
+        db_session.commit()
+
+        alice_contribs = db_session.query(Contributor).all()
+        assert len(alice_contribs) == 1, (
+            f"Expected exactly one contributor for alice across all email casings; "
+            f"got {len(alice_contribs)}"
+        )
+
+        # All three PRs must share the same author_id
+        assert pr1.author_id == pr2.author_id == pr3.author_id, (
+            "PRs with case-variant author emails must share the same author_id"
+        )
+
+    def test_contract_store_pr_review_deduplicates_reviewer_across_email_cases(self, db_session):
+        """CONTRACT: PR reviewer email variants must map to a single contributor record.
+
+        Regression guard: two reviews by the same person under different email casings
+        must share one contributors row and the same reviewer_id.
+        """
+        from src.database.storage import (
+            store_organization, store_project, store_repository,
+            store_pull_request, store_pr_review,
+        )
+        from src.extractors.base import PRReviewData
+        from datetime import datetime, UTC
+        from tests.fixtures.sample_data import (
+            sample_organization_data,
+            sample_repository_data,
+            sample_pull_request_data,
+        )
+
+        org = store_organization(db_session, sample_organization_data())
+        project = store_project(db_session, org, "test-project")
+        repo = store_repository(db_session, project, sample_repository_data())
+        db_session.commit()
+
+        pr = store_pull_request(
+            db_session, repo.repo_id,
+            sample_pull_request_data(pr_number=201, author_email="author@example.com"),
+        )
+        db_session.commit()
+
+        review_date = datetime(2026, 1, 15, 10, 0, 0, tzinfo=UTC)
+        review1 = store_pr_review(
+            db_session, pr.id,
+            PRReviewData(
+                reviewer_email="bob@example.com",
+                reviewer_name="Bob",
+                review_date=review_date,
+                state="approved",
+            ),
+        )
+        db_session.commit()
+
+        review2 = store_pr_review(
+            db_session, pr.id,
+            PRReviewData(
+                reviewer_email="BOB@EXAMPLE.COM",
+                reviewer_name="Bob (upper)",
+                review_date=review_date,
+                state="commented",
+            ),
+        )
+        db_session.commit()
+
+        from src.database.models import PRReview
+        # author + reviewer = 2 contributors; but reviewer deduplicated = still 2 total
+        bob_contribs = db_session.query(Contributor).filter(
+            Contributor.email == "bob@example.com"
+        ).all()
+        assert len(bob_contribs) == 1, (
+            f"Expected one contributor for bob across email casings; got {len(bob_contribs)}"
+        )
+
+        assert review1.reviewer_id == review2.reviewer_id, (
+            "Reviews with case-variant reviewer emails must share the same reviewer_id"
+        )
+
+    def test_contract_pr_author_resolves_to_matching_contributor(self, db_session):
+        """CONTRACT: pull_requests.author_id FK must resolve to the normalised source email.
+
+        Regression guard: the contributor record pointed to by author_id must have
+        email == pr_data.author_email.strip().lower().
+        """
+        from src.database.storage import store_organization, store_project, store_repository, store_pull_request
+        from tests.fixtures.sample_data import (
+            sample_organization_data,
+            sample_repository_data,
+            sample_pull_request_data,
+        )
+
+        org = store_organization(db_session, sample_organization_data())
+        project = store_project(db_session, org, "test-project")
+        repo = store_repository(db_session, project, sample_repository_data())
+        db_session.commit()
+
+        raw_email = "  Carol@Example.COM  "
+        pr_data = sample_pull_request_data(pr_number=301, author_email=raw_email)
+        pr = store_pull_request(db_session, repo.repo_id, pr_data)
+        db_session.commit()
+
+        contributor = db_session.get(Contributor, pr.author_id)
+        assert contributor is not None, "author_id FK must resolve to a contributor row"
+        assert contributor.email == raw_email.strip().lower(), (
+            f"Expected contributor.email == '{raw_email.strip().lower()}'; "
+            f"got '{contributor.email}'"
+        )
+
+    def test_contract_pr_has_no_orphaned_author_fk(self, db_session):
+        """CONTRACT: No pull_requests row may have a NULL or dangling author_id.
+
+        Regression guard: after storing a PR, author_id must reference an existing
+        contributors row — no orphans are permitted.
+        """
+        from sqlalchemy import text
+        from src.database.storage import store_organization, store_project, store_repository, store_pull_request
+        from tests.fixtures.sample_data import (
+            sample_organization_data,
+            sample_repository_data,
+            sample_pull_request_data,
+        )
+
+        org = store_organization(db_session, sample_organization_data())
+        project = store_project(db_session, org, "test-project")
+        repo = store_repository(db_session, project, sample_repository_data())
+        db_session.commit()
+
+        store_pull_request(
+            db_session, repo.repo_id,
+            sample_pull_request_data(pr_number=401, author_email="dave@example.com"),
+        )
+        db_session.commit()
+
+        orphan_count = db_session.execute(
+            text(
+                """
+                SELECT count(*) FROM pull_requests
+                WHERE author_id IS NULL
+                   OR author_id NOT IN (SELECT id FROM contributors)
+                """
+            )
+        ).scalar()
+        assert orphan_count == 0, (
+            f"Found {orphan_count} pull_requests rows with NULL or dangling author_id"
+        )
+
 
 class TestTeamStorage:
     """CONTRACT: Team storage and retrieval."""

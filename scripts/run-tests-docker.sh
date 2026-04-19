@@ -299,6 +299,19 @@ else
             # Continue to cleanup
         else
             log_success "Integration tests passed"
+
+            # =================================================================
+            # Post-integration: Extraction invariant scan
+            # =================================================================
+            log_info "Running post-extraction invariant checks (verify-extraction.sh)..."
+            docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
+                sh -c "bash /app/scripts/verify-extraction.sh" || TEST_EXIT_CODE=$?
+
+            if [ $TEST_EXIT_CODE -ne 0 ]; then
+                log_error "Extraction invariant checks failed (exit code: $TEST_EXIT_CODE)"
+            else
+                log_success "Extraction invariant checks passed"
+            fi
             echo
             
             # =================================================================
