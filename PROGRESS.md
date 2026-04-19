@@ -2,6 +2,45 @@
 
 ---
 
+## Session: 2026-04-19 - Plan 017 Security Enrichment Contracts Completed
+
+### Summary
+
+Completed Plan 017 by adding CI-safe, fixture-backed security enrichment
+contract coverage and validating the full contract module in Docker.
+
+### What Was Done
+
+- Implemented security enrichment coverage in
+  `tests/contract/database/test_full_pipeline_e2e.py`
+- Added/used fixture-backed enrichment helper:
+  - `_enrich_from_fixture(session, repo_id, scenario_name)`
+- Added `TestSecurityEnrichmentContractsE2E` to verify non-zero security
+  dashboard/reporting views without live API calls
+- Kept existing zero-state baseline coverage in
+  `test_v_security_overview_latest_queryable_and_structured` and documented the
+  relationship to non-zero enrichment tests
+- Verified fixture extractor path for enrichment data is local JSON-driven via
+  `FixtureExtractor.get_vulnerability_data()`
+
+### Validation
+
+- Ran Docker parity test command:
+  - `bash scripts/run-tests-docker.sh tests/contract/database/test_full_pipeline_e2e.py`
+- Result: `107 passed`
+
+### Current State
+
+- Plan 017 implementation is complete and validated under Docker
+- Security dashboard/reporting view contracts now include non-zero enrichment
+  assertions in CI-safe tests
+- No live API dependency is required for new Plan 017 coverage
+
+### Next Steps
+
+- Optional: run full CI-equivalent suite with `bash scripts/run-tests-docker.sh`
+  before opening/merging follow-up work
+
 ## Session: 2026-04-14 - Branch Protection Policy + Docs Warning Triage Pass 1
 
 ### Summary

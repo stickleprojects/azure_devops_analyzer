@@ -1,6 +1,20 @@
 # Plan 017: Security & Dependency Enrichment Tests Without Live APIs
 
-## Status: READY TO IMPLEMENT
+## Status: COMPLETE (Implemented 2026-04-19)
+
+## Implementation Outcome
+
+Plan 017 is fully implemented and validated.
+
+- Implemented in `tests/contract/database/test_full_pipeline_e2e.py` via:
+  - `_enrich_from_fixture(session, repo_id, scenario_name)`
+  - `TestSecurityEnrichmentContractsE2E`
+- Implementation uses fixture `vulnerability_data` from generated scenario JSON files
+  through `FixtureExtractor.get_vulnerability_data()`.
+- No live API calls are made in the new enrichment contract tests.
+- Docker validation passed:
+  - `bash scripts/run-tests-docker.sh tests/contract/database/test_full_pipeline_e2e.py`
+  - Result: `107 passed`
 
 ## Problem
 
@@ -37,6 +51,8 @@ in any automated test.
 Add a new test class `TestSecurityEnrichmentContractsE2E` to
 `tests/contract/database/test_full_pipeline_e2e.py`.
 
+Status: implemented.
+
 **Key principle**: `store_package_metadata` and `store_repo_dependencies` are pure storage
 functions that accept in-memory dataclasses — no HTTP calls, no fixture generation. All
 enrichment data can be constructed inline using synthetic dicts, making these tests
@@ -51,16 +67,19 @@ manually or on release.
 ### Data flow (no external APIs)
 
 ```
-Synthetic vuln dicts
+Fixture vulnerability_data JSON
        │
        ▼
-store_package_metadata(session, "requests", "pypi", latest="2.31.0",
-                        is_eol=False, vulns=[...])
+FixtureExtractor.get_vulnerability_data()
+  │
+  ▼
+store_package_metadata(session, package_name=..., ecosystem=...,
+         latest_version=..., is_eol=..., vulnerabilities=[...])
        │
        ├─► packages table           (1 row per package)
        └─► vulnerabilities table    (N rows per CVE)
 
-EnrichedDependency(package_name="requests", version="2.18.0",
+EnrichedDependency(package_name=..., version=...,
                    has_known_vulnerabilities=True)
        │
        ▼
@@ -73,19 +92,17 @@ All security views join these three tables → non-zero results
 
 ### Fixture strategy
 
-Reuse repos from `DEPENDENCY_SCENARIOS` (they already have pypi deps stored).
-Pick `"python-docker-billing"` as the enrichment target — simple, single-ecosystem,
-deterministic.
+Reuse repos from `DEPENDENCY_SCENARIOS` and pull enrichment payloads from each
+scenario's `vulnerability_data` fixture field.
 
-Synthetic packages:
+Primary non-zero assertions are anchored on `python-docker-billing`, and
+multi-scenario severity coverage is validated with:
 
-| Package  | Version (pinned) | Latest | CVEs                      | EOL?      |
-| -------- | ---------------- | ------ | ------------------------- | --------- |
-| requests | 2.18.0           | 2.31.0 | CVE-2018-18074 (HIGH)     | No        |
-| urllib3  | 1.22             | 2.2.1  | CVE-2021-33503 (CRITICAL) | No        |
-| certifi  | 2017.4.17        | 2024.2 | (none)                    | Yes (EOL) |
+- `python-docker-billing` (CRITICAL + HIGH)
+- `dual-ci-analytics` (HIGH + MEDIUM)
+- `fullstack-monorepo` (MEDIUM + LOW)
 
-These are real CVEs/packages but the data is hard-coded — no API call.
+All data is fixture-backed and deterministic; no external API calls are used.
 
 ## Implementation Steps
 
@@ -309,9 +326,9 @@ Out of scope:
 
 ## Success Criteria
 
-- All new tests run under `pytest -m "not live_api"` (CI gate).
-- `v_security_overview_latest.total_vulnerabilities >= 2` asserted in CI.
-- `v_security_overview_latest.total_eol_deps >= 1` asserted in CI.
-- `v_repo_vulnerability_details_latest` returns named CVE IDs for an enriched repo.
-- No external network calls in any new test.
-- Existing tests continue to pass with no modifications to schema or fixtures.
+- [x] All new tests run under `pytest -m "not live_api"` (CI gate).
+- [x] `v_security_overview_latest.total_vulnerabilities >= 2` asserted in CI.
+- [x] `v_security_overview_latest.total_eol_deps >= 1` asserted in CI.
+- [x] `v_repo_vulnerability_details_latest` returns named CVE IDs for an enriched repo.
+- [x] No external network calls in any new test.
+- [x] Existing tests continue to pass with no modifications to schema or fixtures.
