@@ -1,5 +1,30 @@
 # Plan: Technology Detection Persistence & Cross-Org Analysis
 
+## Status: Mostly Complete
+
+**Branch**: `copilot/implement-plan-011-persistence-eol-enrichment` (merged to main via PR #56)  
+**Last updated**: 2026-04-19
+
+| Section | Status | Notes |
+|---------|--------|-------|
+| Migration | ✅ Done | Implemented as `015_add_repository_stack.sql` (011 was taken) |
+| ORM models | ✅ Done | `technology.py`, `repository_stack.py` created; `repository_language.py` deleted; `repository.py` updated |
+| Storage functions | ✅ Done | `store_languages`, `store_detections`, `store_technology_eol` all implemented |
+| Workflow integration | ✅ Done | `_process_languages` updated, `_process_detections` added, `TechnologyEnricher` integrated |
+| Unit tests | ✅ Done | `tests/unit/test_stack_storage.py` — all passing |
+| Technology Enricher | ✅ Done | `src/analyzers/technology_enricher.py` with slug map and 7-day staleness check |
+| Contract test — enricher | ✅ Done | `tests/contract/test_technology_enrichment.py` |
+| API endpoints | ✅ Done | `src/api/stack.py` — all 4 endpoints (`/api/stack/summary`, `by-service`, `eol`, `by-repo`) |
+| Technology Landscape dashboard | ✅ Done | `dashboards/technology-landscape.json` |
+| Contract test — dashboard SQL | ✅ Done | `tests/contract/database/test_stack_dashboard_queries.py` |
+| service-overview "Technology Stack" row | ❌ Not done | New row with language/framework/eol panels not added |
+| repository-deep-dive — language panels | ❌ Not done | Panels still use reporting views; no `repository_stack` queries or Technologies section added |
+| Fixture scenarios (EOL/stack categories) | ❌ Not done | `tests/fixtures/scenarios/config.json` not updated with explicit EOL, no-slug, mixed-source scenarios per Addendum A |
+
+**Remaining work**: Two dashboard extensions + fixture scenario additions for Addendum A coverage.
+
+---
+
 ## Context
 
 `TechnologyDetector` already identifies 8 categories of technology per repo (languages,
@@ -507,25 +532,24 @@ Dashboard uid: `technology-landscape`
 
 ## Critical Files
 
-| Action        | File                                                                                                     |
-| ------------- | -------------------------------------------------------------------------------------------------------- |
-| Create        | `database/migrations/011_add_repository_stack.sql`                                                       |
-| Create        | `src/database/models/technology.py`                                                                      |
-| Create        | `src/database/models/repository_stack.py`                                                                |
-| Delete        | `src/database/models/repository_language.py`                                                             |
-| Modify        | `src/database/models/repository.py` (replace `languages` rel → `stack`)                                  |
-| Modify        | `src/database/storage.py` (update `store_languages`, add `store_detections`, add `store_technology_eol`) |
-| Modify        | `src/workflows/github_analysis.py` (update `_process_languages`, add `_process_detections`)              |
-| Create        | `src/analyzers/technology_enricher.py`                                                                   |
-| Modify        | `src/api/rescan.py` (or create `src/api/stack.py` with 4 endpoints)                                      |
-| Create        | `dashboards/technology-landscape.json`                                                                   |
-| Modify        | `dashboards/service-overview.json` (update queries + add Technology Stack row)                           |
-| Modify        | `dashboards/repository-deep-dive.json` (update queries + add Technologies section)                       |
-| Create        | `tests/unit/test_stack_storage.py`                                                                       |
-| Create        | `tests/contract/test_technology_enrichment.py`                                                           |
-| Modify        | `tests/fixtures/scenarios/config.json` (add deterministic stack/EOL fixtures)                            |
-| Modify/Create | `tests/fixtures/scenarios/generated/*.json` (scenario coverage for categories + EOL cases)               |
-| Create        | `tests/contract/database/test_stack_dashboard_queries.py`                                                |
+| Status | Action        | File |
+| ------ | ------------- | ---- |
+| ✅ Done | Create        | `database/migrations/015_add_repository_stack.sql` (renumbered from 011) |
+| ✅ Done | Create        | `src/database/models/technology.py` |
+| ✅ Done | Create        | `src/database/models/repository_stack.py` |
+| ✅ Done | Delete        | `src/database/models/repository_language.py` |
+| ✅ Done | Modify        | `src/database/models/repository.py` (`languages` rel → `stack`) |
+| ✅ Done | Modify        | `src/database/storage.py` (`store_languages`, `store_detections`, `store_technology_eol`) |
+| ✅ Done | Modify        | `src/workflows/github_analysis.py` (`_process_languages`, `_process_detections`) |
+| ✅ Done | Create        | `src/analyzers/technology_enricher.py` |
+| ✅ Done | Create        | `src/api/stack.py` (4 endpoints: summary, by-service, eol, by-repo) |
+| ✅ Done | Create        | `dashboards/technology-landscape.json` |
+| ✅ Done | Create        | `tests/unit/test_stack_storage.py` |
+| ✅ Done | Create        | `tests/contract/test_technology_enrichment.py` |
+| ✅ Done | Create        | `tests/contract/database/test_stack_dashboard_queries.py` |
+| ❌ Todo | Modify        | `dashboards/service-overview.json` (add Technology Stack row with language/framework/eol panels) |
+| ❌ Todo | Modify        | `dashboards/repository-deep-dive.json` (add Technologies section; update language panels to query `repository_stack`) |
+| ❌ Todo | Modify        | `tests/fixtures/scenarios/config.json` (add EOL, no-slug, mixed-source scenarios per Addendum A) |
 
 ## Agent Execution Addendum (Required)
 

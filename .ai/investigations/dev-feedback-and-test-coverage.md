@@ -2,7 +2,7 @@
 
 **Status**: Complete — all answers filled in; solution design in `.ai/plans/013-fixture-factory-plan.md`
 **Created**: 2026-02-21
-**Related plans**: `.ai/plans/011-technology-detection-persistence-plan.md`
+**Related plans**: `.ai/plans/011-technology-detection-persistence-plan.md` (mostly complete — see plan for remaining items)
 
 ---
 
