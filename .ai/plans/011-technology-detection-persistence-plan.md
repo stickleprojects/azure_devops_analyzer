@@ -13,6 +13,7 @@ the platform API. This plan **replaces that table with a unified `repository_sta
 table**, removing the split between "language stats" and "technology detections".
 
 This plan covers:
+
 1. **Unify** — replace `repository_languages` with `repository_stack`; persist all
    TechnologyDetector results into the same table
 2. **Enrich** — query endoflife.date API and store EOL metadata in a separate
@@ -37,6 +38,7 @@ is true regardless of which repositories use it. Enrichment runs once per techno
 not once per repo.
 
 **Query examples:**
+
 ```sql
 -- which repos use C#?
 SELECT DISTINCT rs.repo_id FROM repository_stack rs
@@ -205,6 +207,7 @@ class RepositoryStack(Base):
 ```
 
 In `src/database/models/repository.py`:
+
 - Remove `languages: Mapped[list["RepositoryLanguage"]]` relationship
 - Add `stack: Mapped[list["RepositoryStack"]]` relationship
 
@@ -244,15 +247,15 @@ def store_detections(
 
 **Category → field mapping for `store_detections`** (7 categories):
 
-| category               | TechnologyDetection field  |
-|------------------------|----------------------------|
-| `framework`            | `frameworks`               |
-| `database`             | `databases`                |
-| `deployment_platform`  | `deployment_platforms`     |
-| `build_tool`           | `build_tools`              |
-| `testing_framework`    | `testing_frameworks`       |
-| `ci_cd`                | `ci_cd_platforms`          |
-| `documentation`        | `documentation_tools`      |
+| category              | TechnologyDetection field |
+| --------------------- | ------------------------- |
+| `framework`           | `frameworks`              |
+| `database`            | `databases`               |
+| `deployment_platform` | `deployment_platforms`    |
+| `build_tool`          | `build_tools`             |
+| `testing_framework`   | `testing_frameworks`      |
+| `ci_cd`               | `ci_cd_platforms`         |
+| `documentation`       | `documentation_tools`     |
 
 `programming_languages` from `TechnologyDetection` is **not stored** by `store_detections` —
 language data comes from the platform API via `store_languages`.
@@ -303,6 +306,7 @@ Call `_process_detections()` in `_process_repository()` after `_process_language
 New file: `tests/unit/test_stack_storage.py`
 
 Test:
+
 - `store_languages()` creates rows with `source='platform_api'`, `category='language'`
 - `store_detections()` creates rows for all 7 non-language categories with `source='heuristic'`
 - `store_detections()` does **not** create rows with `category='language'`
@@ -394,6 +398,7 @@ on every scan.
 New file: `tests/contract/test_technology_enrichment.py`
 
 Validate against mocked endoflife.date responses:
+
 - Sets `is_eol=True` when all cycles are past EOL
 - Sets `is_eol=False` and populates `latest_supported_version` when active cycle exists
 - Skips technologies without slug mapping without raising
@@ -451,17 +456,20 @@ All repo-usage queries target `repository_stack`; EOL status comes from a JOIN
 with `technologies`.
 
 **Language & Framework Overview** (row)
+
 - Pie chart: top languages by repo count — `WHERE rs.category = 'language'`
 - Pie chart: top frameworks by repo count — `WHERE rs.category = 'framework'`
 - Stat: total distinct non-language entries — `WHERE rs.category != 'language'`
 - Stat: count of EOL technologies — `SELECT COUNT(*) FROM technologies WHERE is_eol = true`
 
 **Technology by Service** (row)
+
 - Table: service | languages | frameworks | databases | eol_count
   — languages/frameworks/databases via `repository_stack` joined through `repository_services`
   — eol_count via additional JOIN on `technologies WHERE is_eol = true`
 
 **EOL & Risk** (row)
+
 - Table: name | category | eol_date | affected_repos | affected_services
   — source: `technologies JOIN repository_stack JOIN repository_services`
   — colour-coded: red if `is_eol=true`, yellow if `eol_date < now()+90days`
@@ -469,6 +477,7 @@ with `technologies`.
 - Stat: services using ≥1 EOL technology
 
 **Repository Stack Heatmap** (row)
+
 - Table: repo | service | languages | frameworks | ci_cd | eol_affected
   — all from `repository_stack` with category filters
   — `eol_affected`: EXISTS subquery joining `technologies WHERE is_eol=true`
@@ -482,12 +491,14 @@ Dashboard uid: `technology-landscape`
 ### Step 11: Extend Existing Dashboards
 
 **Service Overview** (`dashboards/service-overview.json`):
+
 - Add new row "Technology Stack" (after Security row)
 - Panel 1: Table — service + languages + frameworks + eol_count
   (all from `repository_stack` + `technologies` JOIN for EOL)
 - Panel 2: Bar chart — top 10 non-language entries across selected services
 
 **Repository Deep-Dive** (`dashboards/repository-deep-dive.json`):
+
 - Replace panels querying `repository_languages` with `repository_stack WHERE category='language'`
 - Add "Technologies" section showing stack entries grouped by category + EOL status
   (EOL status via JOIN on `technologies`)
@@ -496,22 +507,75 @@ Dashboard uid: `technology-landscape`
 
 ## Critical Files
 
-| Action | File |
-|--------|------|
-| Create | `database/migrations/011_add_repository_stack.sql` |
-| Create | `src/database/models/technology.py` |
-| Create | `src/database/models/repository_stack.py` |
-| Delete | `src/database/models/repository_language.py` |
-| Modify | `src/database/models/repository.py` (replace `languages` rel → `stack`) |
-| Modify | `src/database/storage.py` (update `store_languages`, add `store_detections`, add `store_technology_eol`) |
-| Modify | `src/workflows/github_analysis.py` (update `_process_languages`, add `_process_detections`) |
-| Create | `src/analyzers/technology_enricher.py` |
-| Modify | `src/api/rescan.py` (or create `src/api/stack.py` with 4 endpoints) |
-| Create | `dashboards/technology-landscape.json` |
-| Modify | `dashboards/service-overview.json` (update queries + add Technology Stack row) |
-| Modify | `dashboards/repository-deep-dive.json` (update queries + add Technologies section) |
-| Create | `tests/unit/test_stack_storage.py` |
-| Create | `tests/contract/test_technology_enrichment.py` |
+| Action        | File                                                                                                     |
+| ------------- | -------------------------------------------------------------------------------------------------------- |
+| Create        | `database/migrations/011_add_repository_stack.sql`                                                       |
+| Create        | `src/database/models/technology.py`                                                                      |
+| Create        | `src/database/models/repository_stack.py`                                                                |
+| Delete        | `src/database/models/repository_language.py`                                                             |
+| Modify        | `src/database/models/repository.py` (replace `languages` rel → `stack`)                                  |
+| Modify        | `src/database/storage.py` (update `store_languages`, add `store_detections`, add `store_technology_eol`) |
+| Modify        | `src/workflows/github_analysis.py` (update `_process_languages`, add `_process_detections`)              |
+| Create        | `src/analyzers/technology_enricher.py`                                                                   |
+| Modify        | `src/api/rescan.py` (or create `src/api/stack.py` with 4 endpoints)                                      |
+| Create        | `dashboards/technology-landscape.json`                                                                   |
+| Modify        | `dashboards/service-overview.json` (update queries + add Technology Stack row)                           |
+| Modify        | `dashboards/repository-deep-dive.json` (update queries + add Technologies section)                       |
+| Create        | `tests/unit/test_stack_storage.py`                                                                       |
+| Create        | `tests/contract/test_technology_enrichment.py`                                                           |
+| Modify        | `tests/fixtures/scenarios/config.json` (add deterministic stack/EOL fixtures)                            |
+| Modify/Create | `tests/fixtures/scenarios/generated/*.json` (scenario coverage for categories + EOL cases)               |
+| Create        | `tests/contract/database/test_stack_dashboard_queries.py`                                                |
+
+## Agent Execution Addendum (Required)
+
+This section is mandatory if delegating implementation to a GitHub coding agent.
+The agent should not open a PR until all items below are complete.
+
+### A. Deterministic Test Data Requirements
+
+- Update fixture generation so seeded scenarios include deterministic technology stack
+  coverage for all non-language categories:
+  - `framework`, `database`, `deployment_platform`, `build_tool`,
+    `testing_framework`, `ci_cd`, `documentation`
+- Keep language rows sourced from platform-style language payloads so language
+  stats still validate `source='platform_api'` behavior.
+- Include at least one scenario each for:
+  - active (non-EOL) technology
+  - EOL technology
+  - unknown/no-slug technology (must be skipped without failing)
+  - mixed-source repository (platform language + heuristic detections)
+
+### B. Dashboard Query Verification Scope
+
+- Add contract tests for dashboard SQL semantics, not just API shape.
+- New contract test file: `tests/contract/database/test_stack_dashboard_queries.py`
+- Validate query expectations used by:
+  - `dashboards/technology-landscape.json`
+  - `dashboards/service-overview.json` (Technology Stack row)
+  - `dashboards/repository-deep-dive.json` (language + technologies sections)
+- Required assertions:
+  - language counts come from `repository_stack` with `category='language'`
+    and `source='platform_api'`
+  - non-language counts come from `source='heuristic'`
+  - EOL counts and dates come from `technologies` join, not duplicated per repo
+  - service-level dedup works (service with many repos using same tech counts once)
+
+### C. External API Isolation
+
+- Tests must not rely on live endoflife.date responses.
+- Mock/stub `TechnologyEnricher` HTTP responses in contract tests.
+- Add explicit test coverage for stale-window behavior (`eol_enriched_at` 7-day rule).
+
+### D. Docker-First Verification Gate
+
+- Run all new/changed tests via Docker to match CI parity.
+- Minimum required commands before PR:
+  - `bash scripts/run-tests-docker.sh tests/unit/test_stack_storage.py`
+  - `bash scripts/run-tests-docker.sh tests/contract/test_technology_enrichment.py`
+  - `bash scripts/run-tests-docker.sh tests/contract/database/test_stack_dashboard_queries.py`
+  - `bash scripts/run-tests-docker.sh`
+- A PR is incomplete unless all four commands pass.
 
 ## Reuse
 
@@ -522,13 +586,13 @@ Dashboard uid: `technology-landscape`
 
 ## Data Source Boundaries
 
-| Data | Table | category | source | Notes |
-|------|-------|----------|--------|-------|
-| Programming languages | `repository_stack` | `language` | `platform_api` | Authoritative; byte counts + percentages |
-| Frameworks, DBs, CI/CD, etc. | `repository_stack` | various | `heuristic` | 7 categories; confidence score |
-| EOL metadata | `technologies` | — | endoflife.date | Global fact; not per-repo |
-| AI-summarised tech keywords | `repository_summaries.key_technologies` | — | Claude AI | Unstructured TEXT[]; different purpose |
-| Package-level dependencies | `dependencies` | — | Package file parsing | Per-package with version + ecosystem |
+| Data                         | Table                                   | category   | source               | Notes                                    |
+| ---------------------------- | --------------------------------------- | ---------- | -------------------- | ---------------------------------------- |
+| Programming languages        | `repository_stack`                      | `language` | `platform_api`       | Authoritative; byte counts + percentages |
+| Frameworks, DBs, CI/CD, etc. | `repository_stack`                      | various    | `heuristic`          | 7 categories; confidence score           |
+| EOL metadata                 | `technologies`                          | —          | endoflife.date       | Global fact; not per-repo                |
+| AI-summarised tech keywords  | `repository_summaries.key_technologies` | —          | Claude AI            | Unstructured TEXT[]; different purpose   |
+| Package-level dependencies   | `dependencies`                          | —          | Package file parsing | Per-package with version + ecosystem     |
 
 > **Note:** The same EOL-normalisation principle applies to `dependencies.is_eol` /
 > `dependencies.eol_date` — those columns are also per-repo copies of a global fact.
@@ -542,10 +606,12 @@ Dashboard uid: `technology-landscape`
 3. Storage functions (`store_languages`, `store_detections`, `store_technology_eol`) — testable in isolation
 4. Workflow integration
 5. Unit tests
-6. EOL enricher + contract test
-7. API endpoints
-8. Technology Landscape dashboard
-9. Update existing dashboards
+6. Fixture generation updates for deterministic stack/EOL scenarios
+7. EOL enricher + contract test
+8. API endpoints
+9. Technology Landscape dashboard
+10. Update existing dashboards
+11. Dashboard SQL contract tests (`test_stack_dashboard_queries.py`)
 
 ## Verification
 
@@ -559,7 +625,9 @@ Dashboard uid: `technology-landscape`
   LEFT JOIN technologies t ON t.name = rs.name AND t.category = rs.category
   WHERE rs.repo_id = '<id>';
   ```
-- Unit tests: `pytest tests/unit/test_stack_storage.py -v`
-- Contract tests: `pytest tests/contract/test_technology_enrichment.py -v`
+- Unit tests (Docker parity): `bash scripts/run-tests-docker.sh tests/unit/test_stack_storage.py`
+- Contract tests (Docker parity): `bash scripts/run-tests-docker.sh tests/contract/test_technology_enrichment.py`
+- Dashboard query contract tests (Docker parity): `bash scripts/run-tests-docker.sh tests/contract/database/test_stack_dashboard_queries.py`
+- Full CI-equivalent run: `bash scripts/run-tests-docker.sh`
 - API: `curl http://localhost:5000/api/stack/summary`
 - Grafana: import `dashboards/technology-landscape.json`, verify all panels populate
