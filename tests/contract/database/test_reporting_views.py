@@ -1057,7 +1057,7 @@ class TestContributorFragmentationResistance:
         db_session.commit()
 
         alice_rows = db_session.execute(
-            text("SELECT count(*) FROM contributors WHERE lower(email) = 'alice@example.com'")
+            text("SELECT count(*) FROM contributors WHERE email = 'alice@example.com'")
         ).scalar()
         assert alice_rows == 1, (
             f"Expected exactly 1 contributors row for alice; got {alice_rows}. "
@@ -1098,7 +1098,7 @@ class TestContributorFragmentationResistance:
 
         # Resolve Alice's contributor id
         alice = db_session.execute(
-            text("SELECT id FROM contributors WHERE lower(email) = 'alice@example.com'")
+            text("SELECT id FROM contributors WHERE email = 'alice@example.com'")
         ).fetchone()
         assert alice is not None, "Alice contributor row not found"
 
@@ -1110,7 +1110,7 @@ class TestContributorFragmentationResistance:
                 WHERE contributor IN (
                     SELECT COALESCE(name, email)
                     FROM contributors
-                    WHERE lower(email) = 'alice@example.com'
+                    WHERE email = 'alice@example.com'
                 )
                 """
             )
@@ -1173,7 +1173,7 @@ class TestContributorFragmentationResistance:
                 WHERE reviewer IN (
                     SELECT COALESCE(name, email)
                     FROM contributors
-                    WHERE lower(email) = 'alice@example.com'
+                    WHERE email = 'alice@example.com'
                 )
                 """
             )
@@ -1236,7 +1236,7 @@ class TestContributorFragmentationResistance:
                 """
                 SELECT contributor, commits, prs_authored, reviews_given
                 FROM v_contributor_activity_30d
-                WHERE lower(email) = 'alice@example.com'
+                WHERE email = 'alice@example.com'
                 """
             )
         ).fetchall()

@@ -501,7 +501,6 @@ class TestContributorStorage:
             f"Expected 2 commits for the canonical contributor; got {len(commits)}"
         )
 
-    @pytest.mark.integration
     def test_contract_store_pull_request_deduplicates_author_across_email_cases(self, db_session):
         """CONTRACT: PR author email variants must map to a single contributor record.
 
@@ -549,7 +548,6 @@ class TestContributorStorage:
             "PRs with case-variant author emails must share the same author_id"
         )
 
-    @pytest.mark.integration
     def test_contract_store_pr_review_deduplicates_reviewer_across_email_cases(self, db_session):
         """CONTRACT: PR reviewer email variants must map to a single contributor record.
 
@@ -615,7 +613,6 @@ class TestContributorStorage:
             "Reviews with case-variant reviewer emails must share the same reviewer_id"
         )
 
-    @pytest.mark.integration
     def test_contract_pr_author_resolves_to_matching_contributor(self, db_session):
         """CONTRACT: pull_requests.author_id FK must resolve to the normalised source email.
 
@@ -646,7 +643,6 @@ class TestContributorStorage:
             f"got '{contributor.email}'"
         )
 
-    @pytest.mark.integration
     def test_contract_pr_has_no_orphaned_author_fk(self, db_session):
         """CONTRACT: No pull_requests row may have a NULL or dangling author_id.
 
