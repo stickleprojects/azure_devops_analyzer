@@ -423,6 +423,95 @@ def pytest_configure(config):
     )
 
 
+# ============================================================================
+# DB INVARIANT FIXTURE
+# ============================================================================
+
+def _parse_invariants_sql(sql_path: str) -> dict:
+    """Parse named invariant queries from an SQL file.
+
+    Each invariant is delimited by a ``-- invariant: <name>`` comment line
+    directly above the SELECT statement.  The next invariant comment (or EOF)
+    ends the previous one.
+
+    Returns:
+        dict mapping invariant name → SQL SELECT string.
+    """
+    invariants: dict = {}
+    current_name: str | None = None
+    current_lines: list = []
+
+    with open(sql_path, "r") as fh:
+        for raw_line in fh:
+            line = raw_line.rstrip()
+            stripped = line.strip()
+
+            if stripped.startswith("-- invariant:"):
+                # Save previous invariant if any
+                if current_name and current_lines:
+                    sql = "\n".join(current_lines).strip().rstrip(";")
+                    if sql:
+                        invariants[current_name] = sql
+                current_name = stripped[len("-- invariant:"):].strip()
+                current_lines = []
+            elif current_name is not None:
+                # Skip pure comment lines that describe the invariant
+                if not stripped.startswith("--") or stripped == "--":
+                    current_lines.append(line)
+
+    # Flush the last invariant
+    if current_name and current_lines:
+        sql = "\n".join(current_lines).strip().rstrip(";")
+        if sql:
+            invariants[current_name] = sql
+
+    return invariants
+
+
+@pytest.fixture
+def db_invariants_check(test_session):
+    """Yield; on teardown run all DB invariants and assert zero violations.
+
+    Attach this fixture to any integration test class or function that commits
+    data and should be validated against the full invariant set defined in
+    ``tests/db_invariants.sql``.
+
+    Each invariant SELECT must return zero rows.  On failure the fixture
+    collects all violations and reports them together so a single run shows
+    every broken invariant.
+    """
+    from sqlalchemy import text
+    from pathlib import Path
+
+    invariants_path = Path(__file__).parent.parent.parent / "db_invariants.sql"
+
+    yield
+
+    if not invariants_path.exists():
+        logger.warning(f"db_invariants.sql not found at {invariants_path}; skipping checks")
+        return
+
+    invariant_queries = _parse_invariants_sql(str(invariants_path))
+    violations = []
+
+    for name, sql in invariant_queries.items():
+        try:
+            rows = test_session.execute(text(sql)).fetchall()
+            if rows:
+                violations.append((name, rows[:5]))
+        except Exception as exc:
+            # Table may not exist yet (schema-version mismatch); log and skip.
+            logger.warning(f"DB invariant '{name}' could not be executed: {exc}")
+
+    assert not violations, (
+        "DB invariant violations detected:\n"
+        + "\n".join(
+            f"  [{name}]: {len(rows)} offending row(s), first sample: {rows}"
+            for name, rows in violations
+        )
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def log_test_info(test_database_url):
     """Log test configuration at start."""

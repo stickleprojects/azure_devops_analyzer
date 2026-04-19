@@ -1,6 +1,6 @@
 # Plan 019: Production-Data-Shaped Bug Defence
 
-## Status: DRAFT
+## Status: IMPLEMENTED
 
 ## Problem
 

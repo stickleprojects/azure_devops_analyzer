@@ -18,10 +18,13 @@ class FixtureExtractor(RepositoryExtractor):
     
     def __init__(self, scenario: str | dict):
         if isinstance(scenario, str):
-            # Try generated first
-            path = pathlib.Path(__file__).parent / "scenarios" / "generated" / f"{scenario}.json"
+            # Try generated first, then adversarial, then legacy root
+            _scenarios_root = pathlib.Path(__file__).parent / "scenarios"
+            path = _scenarios_root / "generated" / f"{scenario}.json"
             if not path.exists():
-                path = pathlib.Path(__file__).parent / "scenarios" / f"{scenario}.json"
+                path = _scenarios_root / "adversarial" / f"{scenario}.json"
+            if not path.exists():
+                path = _scenarios_root / f"{scenario}.json"
             if not path.exists():
                 raise FileNotFoundError(f"No scenario found for {scenario}")
             
@@ -96,7 +99,7 @@ class FixtureExtractor(RepositoryExtractor):
                 description=pr.get("description"),
                 source_branch=pr["source_branch"],
                 target_branch=pr["target_branch"],
-                author_email=pr["author_email"],
+                author_email=pr.get("author_email") or "",
                 author_name=pr.get("author_name"),
                 status=pr["status"],
                 created_at=datetime.fromisoformat(pr["created_at"]),

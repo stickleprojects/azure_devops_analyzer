@@ -1,0 +1,46 @@
+{
+  "name": "self-review",
+  "description": "PR where the author email matches the reviewer email (self-review)",
+  "languages": ["Ruby"],
+  "file_names": ["Gemfile"],
+  "manifests": {"Gemfile": "source 'https://rubygems.org'\ngem 'rails', '~> 7.0'"},
+  "branches": ["main"],
+  "commits": [
+    {
+      "commit_hash": "aaa1000000000000000000000000000000000001",
+      "author_name": "Eve Self",
+      "author_email": "eve@example.com",
+      "committer_name": "Eve Self",
+      "committer_email": "eve@example.com",
+      "message": "Add Gemfile",
+      "commit_date": "2026-01-10T00:00:00Z",
+      "files_changed": 1,
+      "lines_added": 2,
+      "lines_removed": 0
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Add Rails dependency",
+      "source_branch": "feature/rails",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-12T00:00:00Z",
+      "merged_at": "2026-01-14T00:00:00Z",
+      "author_name": "Eve Self",
+      "author_email": "eve@example.com",
+      "files_changed": 1,
+      "lines_added": 2,
+      "lines_removed": 0,
+      "reviews": [
+        {
+          "reviewer_email": "eve@example.com",
+          "reviewer_name": "Eve Self",
+          "review_date": "2026-01-13T00:00:00Z",
+          "state": "APPROVED"
+        }
+      ]
+    }
+  ]
+}

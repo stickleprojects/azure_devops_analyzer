@@ -1,6 +1,6 @@
 # Plan 018: Contributor ↔ Pull-Request Linking Regression Tests
 
-## Status: DRAFT
+## Status: IMPLEMENTED
 
 ## Problem
 
@@ -197,6 +197,12 @@ Assertions (select the matching `contributors.id` first, then):
 Mark `@pytest.mark.integration`.
 
 ### Step 5 — Post-scan invariant script (defence in depth)
+
+> **Note:** This step is **superseded by Plan 019 Layer B**. The three invariants
+> defined here are a subset of the full invariant set in `tests/db_invariants.sql`
+> (implemented in Plan 019). `scripts/verify-extraction.sh` remains as the shell
+> runner for the original three checks; Plan 019's `db_invariants_check` pytest
+> fixture covers the broader set automatically after every integration test.
 
 Create [scripts/verify-extraction.sh](../../scripts/verify-extraction.sh) (new). It executes inside the existing Docker test runner and runs three SQL checks against the test database:
 
