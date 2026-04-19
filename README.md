@@ -72,15 +72,6 @@ The `agents/` directory contains comprehensive guides for AI-driven development:
 
 See [agents/](agents/) directory for complete guide collection.
 
-### AI Development Patterns
-
-The `.ai/patterns/` directory contains reusable patterns for AI-assisted development:
-
-- [ollama-fixture-and-code-generation.md](.ai/patterns/ollama-fixture-and-code-generation.md) - Local LLM code generation using Ollama
-  - Used for test fixture generation, boilerplate code, utilities
-  - Example: Test fixture generation uses this pattern for all fixture, extractor, and verification code
-  - See `scripts/README.md` and `.ai/ollama-prompts/` for working examples
-
 ## Session Start Guide
 
 At the start of your session:
@@ -102,39 +93,6 @@ Start with [docs/README.md](docs/README.md) for role-based navigation, then revi
 - PostgreSQL 15+ with TimescaleDB
 - Grafana 10+
 - RabbitMQ 3.12+
-
-## AI-Powered Development
-
-This project leverages local LLMs (Ollama) for automated code generation:
-
-### Test Fixture Generation
-
-Generate realistic test scenarios using a two-layer Ollama pipeline:
-
-- **Layer 1 — Seeds**: one Ollama call generates `generate-repo-seeds.py`, which writes compact seed JSON files (structure, languages, manifests, branches) for every repo in config
-- **Layer 2 — Enrichment**: for each seed, a second Ollama call generates a per-repo `enrich-<name>.py` script that adds realistic commits and pull requests in-place
-
-```bash
-# Run the full pipeline (validate → seeds → enrich)
-./scripts/generate-fixtures.sh
-
-# Run a single step
-./scripts/generate-fixtures.sh --step validate
-./scripts/generate-fixtures.sh --step seeds
-./scripts/generate-fixtures.sh --step enrich
-
-# Use a different model
-./scripts/generate-fixtures.sh --model qwen2.5-coder:7b
-```
-
-**Prerequisites:** Ollama running at `localhost:11434`, Docker running, model pulled (`ollama pull qwen2.5-coder:14b`).
-
-**Output:**
-
-- Seed + enriched scenario JSONs → `tests/fixtures/scenarios/generated/`
-- Generated scripts → `scripts/generated/` (version-controlled, re-runnable)
-
-See [scripts/README.md](scripts/README.md) for full reference and step-by-step details.
 
 ## Repository Structure
 
