@@ -199,7 +199,6 @@ Use this template at the end of each session:
 ```bash
 # Any setup or verification commands for next session
 git status
-bash scripts/check_mcp_health.sh
 bash scripts/run-tests-docker.sh
 ```
 ````
@@ -229,9 +228,6 @@ ls -la src/
 ### Verify Environment
 
 ```bash
-# Verify workspace automation and local MCP tooling
-bash scripts/check_mcp_health.sh
-
 # Run the Docker-based test suite
 bash scripts/run-tests-docker.sh
 

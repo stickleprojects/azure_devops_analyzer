@@ -46,61 +46,21 @@ pytest  # Will automatically use .env.test
 
 ## Test Fixtures & Scenarios
 
-### Generating Test Scenarios with Ollama
+Scenario JSONs in `tests/fixtures/scenarios/generated/` define repository
+structures, dependencies, commits, branches, and pull requests for
+integration tests. They are loaded by `tests/fixtures/fixture_extractor.py`
+(a drop-in `RepositoryExtractor` backed by JSON) and consumed via the
+parametrised tests in `tests/contract/integration/test_fixture_scenarios.py`.
 
-This project uses local LLM (Ollama) to generate realistic test fixture scenarios. Test scenarios are JSON files that define repository structures, dependencies, commits, branches, and pull requests for testing.
+To enrich an existing seed JSON with commits and PRs, run
+`python scripts/enrich-repo.py <seed.json>` (no external dependencies).
 
-**Quick Start (config-driven, Plan 014):**
-
-```bash
-# Validate config structure
-python scripts/validate-fixture-config.py
-
-# Generate the seed generator script
-python scripts/ollama-generate.py \
-  --model qwen2.5-coder:14b \
-  --prompt .ai/ollama-prompts/fixture-repo-seeds.md \
-  --output scripts/generated/generate-repo-seeds.py \
-  --context tests/fixtures/scenarios/config.json
-
-# Create seed JSON files
-python scripts/generated/generate-repo-seeds.py
-
-# Enrich a seed (repeat per repo)
-python scripts/ollama-generate.py \
-  --model qwen2.5-coder:14b \
-  --prompt .ai/ollama-prompts/fixture-repo-enrichment.md \
-  --output scripts/generated/enrich-python-docker.py \
-  --context tests/fixtures/scenarios/config.json \
-  --context tests/fixtures/scenarios/generated/python-docker.json
-
-python scripts/generated/enrich-python-docker.py \
-  tests/fixtures/scenarios/generated/python-docker.json
-```
-
-**Legacy (Plan 013, monolithic):**
-
-```bash
-# Generates scenarios + extractor + factories using fixture-scenarios.md
-bash scripts/generate-test-fixtures.sh
-```
-
-**What gets generated:**
-
-- N scenario JSON files in `tests/fixtures/scenarios/generated/` (N derived from `repo_sets`)
-- Python script (`generate-repo-seeds.py`) that creates seed scenarios
-- Per-repo enrichment scripts (`enrich-<name>.py`) that add commits/PRs
-- `FixtureExtractor` class for loading scenarios in tests (unchanged)
-- Factory functions for test data construction (unchanged)
-
-**Scenarios include:**
+**Scenarios cover:**
 
 - Various tech stacks (Python/Docker, React/TypeScript, Java/Maven, .NET, Go)
 - Different CI/CD platforms (GitHub Actions, Jenkins, Azure Pipelines)
 - Edge cases (dual dependencies, nested manifests, empty repos)
 - Commit history, branches, and pull requests for workflow testing
-
-**See:** [.ai/patterns/ollama-fixture-and-code-generation.md](.ai/patterns/ollama-fixture-and-code-generation.md) for the generation pattern.
 
 ### Using Scenarios in Tests
 
