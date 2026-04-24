@@ -6,7 +6,7 @@
 
 The contributor↔pull-request linking bug (addressed narrowly by [Plan 018](018-contributor-pr-linking-regression-tests.md)) was one instance of a broader class: **bugs that only manifest against real production data**. The current test suite is well-structured (unit / contract / integration) but has two structural gaps that let the whole class through:
 
-**Gap 1 — Fixtures are aspirational, not adversarial.** Scenarios in `tests/fixtures/scenarios/generated/` are produced by an Ollama prompt that reflects our mental model of the data. They inherit our blind spots. Happy-path is tested; the ugly edges — nulls, case variation, unicode, ghost users, force-pushed PRs, bot committers — are not represented.
+**Gap 1 — Fixtures are aspirational, not adversarial.** Scenarios in `tests/fixtures/scenarios/generated/` are produced by a seeded-PRNG generator pipeline (`scripts/generated/generate-repo-seeds.py` + `scripts/enrich-repo.py`) that reflects our mental model of the data. They inherit our blind spots. Happy-path is tested; the ugly edges — nulls, case variation, unicode, ghost users, force-pushed PRs, bot committers — are not represented.
 
 **Gap 2 — No cross-cutting invariants.** Every test asserts "this specific thing in this specific scenario." Nothing asserts "after *any* extraction, these DB-level truths hold." Invariants like "no case-variant contributor twins" or "every FK resolves" would fire regardless of which scenario triggered the data, but they don't exist as a reusable post-condition.
 
