@@ -130,7 +130,7 @@ def _capture_state(session: Session, repo_id: str) -> dict:
     ).fetchall()
 
     def _hash(rows) -> str:
-        return hashlib.md5("|".join(str(r) for r in rows).encode()).hexdigest()
+        return hashlib.sha256("|".join(str(r) for r in rows).encode()).hexdigest()
 
     return {
         "row_counts": {
