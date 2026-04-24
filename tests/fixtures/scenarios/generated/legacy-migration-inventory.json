@@ -44,6 +44,37 @@
       ]
     }
   ],
+  "technology_stack": {
+    "frameworks": [
+      "ASP.NET"
+    ],
+    "databases": [
+      "SQL Server"
+    ],
+    "deployment_platforms": [
+      "Windows Server"
+    ],
+    "build_tools": [
+      "MSBuild"
+    ],
+    "testing_frameworks": [
+      "xUnit"
+    ],
+    "ci_cd_platforms": [
+      "Azure Pipelines"
+    ],
+    "documentation_tools": [],
+    "confidence": 0.85,
+    "eol_technologies": [
+      {
+        "name": "ASP.NET",
+        "category": "framework",
+        "is_eol": true,
+        "eol_date": "2022-04-26",
+        "latest_supported_version": null
+      }
+    ]
+  },
   "commits": [
     {
       "commit_hash": "65a166601a4e8f8c18b2543a731ba5d350da6bbc",

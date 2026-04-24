@@ -69,6 +69,29 @@
       ]
     }
   ],
+  "technology_stack": {
+    "frameworks": [
+      "Django",
+      "React"
+    ],
+    "databases": [
+      "PostgreSQL"
+    ],
+    "deployment_platforms": [
+      "Docker"
+    ],
+    "build_tools": [],
+    "testing_frameworks": [
+      "pytest",
+      "Jest"
+    ],
+    "ci_cd_platforms": [
+      "GitHub Actions"
+    ],
+    "documentation_tools": [],
+    "confidence": 0.87,
+    "eol_technologies": []
+  },
   "commits": [
     {
       "commit_hash": "1b91336e0e694e0df7a37b6c35fe6599d90bee38",

@@ -320,3 +320,292 @@ class TestStackSourceSeparation:
 
         assert api_rows >= 1
         assert heuristic_rows >= 1
+
+
+# =============================================================================
+# Service Overview — Technology Stack row queries (R1)
+# =============================================================================
+
+@pytest.mark.integration
+class TestServiceOverviewTechStackQueries:
+    """SQL queries backing the service-overview Technology Stack row."""
+
+    def _setup_service_repo(self, db_session, service_name, repo_id, repo_name):
+        """Create org/project/repo/service and link them."""
+        from src.database.storage import get_or_create_service, store_repository
+        from src.database.models.service import RepositoryService
+        from datetime import datetime, UTC
+
+        org_data = sample_organization_data(name=f"org-svc-{repo_name}")
+        org = store_organization(db_session, org_data)
+        project = store_project(db_session, org, f"proj-{repo_name}", "Test Project")
+        repo_data = sample_repository_data(repo_id=repo_id, name=repo_name)
+        repo = store_repository(db_session, project, repo_data)
+
+        service = get_or_create_service(db_session, service_name)
+        from sqlalchemy.orm import Session
+        existing = db_session.query(RepositoryService).filter_by(
+            repo_id=repo.repo_id, service_id=service.service_id
+        ).first()
+        if not existing:
+            link = RepositoryService(
+                repo_id=repo.repo_id,
+                service_id=service.service_id,
+                linked_at=datetime.now(UTC),
+            )
+            db_session.add(link)
+            db_session.flush()
+
+        return repo, service
+
+    def test_service_tech_stack_table_query(self, db_session):
+        """Panel: Technology Stack by Service — service, languages, frameworks, eol_count."""
+        repo, service = self._setup_service_repo(
+            db_session, "svc-stack-test", "org/svc-stack-repo", "svc-stack-repo"
+        )
+        langs = [LanguageData(language="Python", byte_count=8000, percentage=100.0)]
+        detection = _make_detection(frameworks=["Django"])
+        store_languages(db_session, repo.repo_id, langs)
+        store_detections(db_session, repo.repo_id, detection)
+        db_session.commit()
+
+        result = db_session.execute(text("""
+            SELECT
+              s.name AS service,
+              COALESCE(STRING_AGG(DISTINCT CASE WHEN rs.category = 'language' THEN rs.name END, ', '), '-') AS languages,
+              COALESCE(STRING_AGG(DISTINCT CASE WHEN rs.category = 'framework' THEN rs.name END, ', '), '-') AS frameworks,
+              COUNT(DISTINCT CASE WHEN t.is_eol = true THEN rs.name || '|' || rs.category END) AS eol_count
+            FROM services s
+            JOIN repository_services rsvc ON rsvc.service_id = s.service_id
+            JOIN repository_stack rs ON rs.repo_id = rsvc.repo_id
+            LEFT JOIN technologies t ON t.name = rs.name AND t.category = rs.category
+            WHERE s.name = :service_name
+            GROUP BY s.name
+            ORDER BY s.name
+        """), {"service_name": service.name}).fetchall()
+
+        assert len(result) == 1
+        row = result[0]
+        assert row.service == service.name
+        assert "Python" in row.languages
+        assert "Django" in row.frameworks
+        assert row.eol_count == 0
+
+    def test_service_tech_stack_eol_count(self, db_session):
+        """Panel: eol_count increments when service repos use EOL technologies."""
+        from datetime import date
+        repo, service = self._setup_service_repo(
+            db_session, "svc-eol-test", "org/svc-eol-repo", "svc-eol-repo"
+        )
+        langs = [LanguageData(language="Python", byte_count=5000, percentage=100.0)]
+        store_languages(db_session, repo.repo_id, langs)
+        store_technology_eol(
+            db_session,
+            name="Python",
+            category="language",
+            is_eol=True,
+            eol_date=date(2020, 1, 1),
+            latest_supported_version=None,
+        )
+        db_session.commit()
+
+        result = db_session.execute(text("""
+            SELECT
+              s.name AS service,
+              COUNT(DISTINCT CASE WHEN t.is_eol = true THEN rs.name || '|' || rs.category END) AS eol_count
+            FROM services s
+            JOIN repository_services rsvc ON rsvc.service_id = s.service_id
+            JOIN repository_stack rs ON rs.repo_id = rsvc.repo_id
+            LEFT JOIN technologies t ON t.name = rs.name AND t.category = rs.category
+            WHERE s.name = :service_name
+            GROUP BY s.name
+        """), {"service_name": service.name}).fetchone()
+
+        assert result is not None
+        assert result.eol_count >= 1
+
+    def test_top_non_language_entries_across_service(self, db_session):
+        """Panel: Bar chart — top 10 non-language entries across selected services."""
+        repo, service = self._setup_service_repo(
+            db_session, "svc-bar-test", "org/svc-bar-repo", "svc-bar-repo"
+        )
+        detection = _make_detection(
+            frameworks=["FastAPI"],
+            databases=["Redis"],
+            ci_cd_platforms=["GitHub Actions"],
+        )
+        store_detections(db_session, repo.repo_id, detection)
+        db_session.commit()
+
+        result = db_session.execute(text("""
+            SELECT rs.name, COUNT(DISTINCT rs.repo_id) AS repo_count
+            FROM repository_stack rs
+            JOIN repository_services rsvc ON rsvc.repo_id = rs.repo_id
+            JOIN services s ON s.service_id = rsvc.service_id
+            WHERE rs.category != 'language'
+              AND s.name = :service_name
+            GROUP BY rs.name
+            ORDER BY repo_count DESC
+            LIMIT 10
+        """), {"service_name": service.name}).fetchall()
+
+        assert len(result) >= 3
+        names = [r.name for r in result]
+        assert "FastAPI" in names
+        assert "Redis" in names
+        assert "GitHub Actions" in names
+
+    def test_service_deduplication(self, db_session):
+        """Service with multiple repos using same tech counts once per service."""
+        from src.database.storage import store_repository, get_or_create_service
+        from src.database.models.service import RepositoryService
+        from datetime import datetime, UTC
+
+        service_name = "svc-dedup-test"
+        org_data = sample_organization_data(name="org-dedup")
+        org = store_organization(db_session, org_data)
+        project = store_project(db_session, org, "proj-dedup", "Test Project")
+        service = get_or_create_service(db_session, service_name)
+
+        for i in range(2):
+            repo_data = sample_repository_data(
+                repo_id=f"org/dedup-repo-{i}", name=f"dedup-repo-{i}"
+            )
+            repo = store_repository(db_session, project, repo_data)
+            link = RepositoryService(
+                repo_id=repo.repo_id,
+                service_id=service.service_id,
+                linked_at=datetime.now(UTC),
+            )
+            db_session.add(link)
+            db_session.flush()
+
+            detection = _make_detection(frameworks=["Django"])
+            store_detections(db_session, repo.repo_id, detection)
+
+        db_session.commit()
+
+        result = db_session.execute(text("""
+            SELECT rs.name, COUNT(DISTINCT rs.repo_id) AS repo_count
+            FROM repository_stack rs
+            JOIN repository_services rsvc ON rsvc.repo_id = rs.repo_id
+            JOIN services s ON s.service_id = rsvc.service_id
+            WHERE rs.category != 'language'
+              AND s.name = :service_name
+            GROUP BY rs.name
+            ORDER BY repo_count DESC
+            LIMIT 10
+        """), {"service_name": service_name}).fetchone()
+
+        assert result is not None
+        assert result.name == "Django"
+        assert result.repo_count == 2
+
+
+# =============================================================================
+# Repository Deep-Dive — Technologies section queries (R2)
+# =============================================================================
+
+@pytest.mark.integration
+class TestRepoDeepDiveTechQueries:
+    """SQL queries backing the repository-deep-dive Technologies panel."""
+
+    def test_non_language_stack_entries_with_eol(self, db_session):
+        """Technologies panel: non-language stack entries with EOL status."""
+        from datetime import date
+        repo = _setup_repo(db_session, repo_id="org/rddt-repo", name="rddt-repo")
+        detection = _make_detection(
+            frameworks=["Django"],
+            databases=["PostgreSQL"],
+            ci_cd_platforms=["GitHub Actions"],
+        )
+        store_detections(db_session, repo.repo_id, detection)
+        store_technology_eol(
+            db_session,
+            name="Django",
+            category="framework",
+            is_eol=False,
+            eol_date=None,
+            latest_supported_version="4.2",
+        )
+        db_session.commit()
+
+        result = db_session.execute(text("""
+            SELECT
+              rs.category,
+              rs.name,
+              rs.source,
+              COALESCE(t.is_eol, false) AS is_eol,
+              to_char(t.eol_date, 'YYYY-MM-DD') AS eol_date,
+              t.latest_supported_version
+            FROM repository_stack rs
+            LEFT JOIN technologies t ON t.name = rs.name AND t.category = rs.category
+            WHERE rs.repo_id = :repo_id
+              AND rs.category != 'language'
+            ORDER BY rs.category, rs.name
+        """), {"repo_id": repo.repo_id}).fetchall()
+
+        assert len(result) >= 3
+        categories = {r.category for r in result}
+        assert "framework" in categories
+        assert "database" in categories
+        assert "ci_cd" in categories
+
+        django_row = next((r for r in result if r.name == "Django"), None)
+        assert django_row is not None
+        assert django_row.is_eol is False
+        assert django_row.latest_supported_version == "4.2"
+
+    def test_language_panel_still_uses_repository_stack(self, db_session):
+        """Language Distribution panel: data comes from repository_stack, category='language'."""
+        repo = _setup_repo(db_session, repo_id="org/rddt-lang-repo", name="rddt-lang-repo")
+        langs = [
+            LanguageData(language="TypeScript", byte_count=9000, percentage=90.0),
+            LanguageData(language="CSS", byte_count=1000, percentage=10.0),
+        ]
+        store_languages(db_session, repo.repo_id, langs)
+        db_session.commit()
+
+        result = db_session.execute(text("""
+            SELECT name AS language, percentage
+            FROM repository_stack
+            WHERE repo_id = :repo_id
+              AND category = 'language'
+            ORDER BY percentage DESC
+        """), {"repo_id": repo.repo_id}).fetchall()
+
+        assert len(result) == 2
+        assert result[0].language == "TypeScript"
+        assert float(result[0].percentage) == 90.0
+
+    def test_eol_technology_highlighted_in_technologies_panel(self, db_session):
+        """Technologies panel: EOL technology is flagged is_eol=true."""
+        from datetime import date
+        repo = _setup_repo(db_session, repo_id="org/rddt-eol-repo", name="rddt-eol-repo")
+        detection = _make_detection(frameworks=["ASP.NET"])
+        store_detections(db_session, repo.repo_id, detection)
+        store_technology_eol(
+            db_session,
+            name="ASP.NET",
+            category="framework",
+            is_eol=True,
+            eol_date=date(2022, 4, 26),
+            latest_supported_version=None,
+        )
+        db_session.commit()
+
+        result = db_session.execute(text("""
+            SELECT
+              rs.name,
+              COALESCE(t.is_eol, false) AS is_eol,
+              to_char(t.eol_date, 'YYYY-MM-DD') AS eol_date
+            FROM repository_stack rs
+            LEFT JOIN technologies t ON t.name = rs.name AND t.category = rs.category
+            WHERE rs.repo_id = :repo_id
+              AND rs.category = 'framework'
+        """), {"repo_id": repo.repo_id}).fetchone()
+
+        assert result is not None
+        assert result.name == "ASP.NET"
+        assert result.is_eol is True
+        assert result.eol_date == "2022-04-26"

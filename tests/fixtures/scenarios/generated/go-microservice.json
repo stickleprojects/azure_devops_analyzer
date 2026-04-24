@@ -43,6 +43,7 @@
       ]
     }
   ],
+  "technology_stack": {},
   "commits": [
     {
       "commit_hash": "77cbf54490123a5b163c62127fcf0149be3d7372",
@@ -145,21 +146,7 @@
       "files_changed": 7,
       "lines_added": 61,
       "lines_removed": 27,
-      "merged_at": "2026-03-22T00:00:00Z",
-      "reviews": [
-        {
-          "reviewer_email": "Eve.Williams@Sample.NET",
-          "reviewer_name": "Eve Williams",
-          "review_date": "2026-03-20T00:00:00Z",
-          "state": "APPROVED"
-        },
-        {
-          "reviewer_email": "Bob.Johnson@Test.ORG",
-          "reviewer_name": "Bob Johnson",
-          "review_date": "2026-03-21T00:00:00Z",
-          "state": "COMMENTED"
-        }
-      ]
+      "merged_at": "2026-03-22T00:00:00Z"
     },
     {
       "pr_number": 2,

@@ -42,6 +42,27 @@
       ]
     }
   ],
+  "technology_stack": {
+    "frameworks": [
+      "React"
+    ],
+    "databases": [],
+    "deployment_platforms": [],
+    "build_tools": [
+      "Webpack"
+    ],
+    "testing_frameworks": [
+      "Jest"
+    ],
+    "ci_cd_platforms": [
+      "GitHub Actions"
+    ],
+    "documentation_tools": [
+      "Storybook"
+    ],
+    "confidence": 0.88,
+    "eol_technologies": []
+  },
   "commits": [
     {
       "commit_hash": "9dc36e1cea519e77d3b9c52c8e0a2e0b01697fa6",
