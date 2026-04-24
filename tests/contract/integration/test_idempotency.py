@@ -74,7 +74,7 @@ def _capture_state(session: Session, repo_id: str) -> dict:
     Hashing strategy — content keys rather than surrogate PKs:
         commits       – commit_sha  (content-addressed, stable across re-inserts)
         pull_requests – pr_number   (business key; unique per repo)
-        pr_reviews    – (pr_number, reviewer_id, state) tuple
+        pr_reviews    – (pr_number, reviewer_id, vote) tuple
         contributors  – normalised email (what the dedup logic actually stores)
 
     Using content keys means the hash detects genuine duplication or omission
@@ -98,14 +98,15 @@ def _capture_state(session: Session, repo_id: str) -> dict:
         {"rid": repo_id},
     ).fetchall()
 
-    # pr_reviews — hash sorted (pr_number, reviewer_id, state) tuples
+    # pr_reviews — hash sorted (pr_number, reviewer_id, vote) tuples
+    # pr_reviews has no `state` column; the verdict is stored as `vote` (integer).
     review_rows = session.execute(
         text("""
-            SELECT pr.pr_number, r.reviewer_id, r.state
+            SELECT pr.pr_number, r.reviewer_id, r.vote
             FROM pr_reviews r
             JOIN pull_requests pr ON r.pr_id = pr.id
             WHERE pr.repo_id = :rid
-            ORDER BY pr.pr_number, r.reviewer_id, r.state
+            ORDER BY pr.pr_number, r.reviewer_id, r.vote
         """),
         {"rid": repo_id},
     ).fetchall()
