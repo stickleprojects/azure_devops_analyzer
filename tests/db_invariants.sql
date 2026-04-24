@@ -43,10 +43,10 @@ GROUP BY repo_id, pr_number
 HAVING count(*) > 1;
 
 -- invariant: no_duplicate_commit_per_repo
--- No two commits rows share (repo_id, sha).
-SELECT repo_id, sha, count(*) AS occurrences
+-- No two commits rows share (repo_id, commit_sha).
+SELECT repo_id, commit_sha, count(*) AS occurrences
 FROM commits
-GROUP BY repo_id, sha
+GROUP BY repo_id, commit_sha
 HAVING count(*) > 1;
 
 -- invariant: no_review_before_pr_created

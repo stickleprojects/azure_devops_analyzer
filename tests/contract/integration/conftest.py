@@ -495,11 +495,22 @@ def db_invariants_check(test_session):
     violations = []
 
     for name, sql in invariant_queries.items():
+        # Use a SAVEPOINT so that a query error (e.g. missing column due to schema
+        # version mismatch) does not abort the entire PostgreSQL transaction and
+        # corrupt the session for the cleanup_database autouse fixture.
+        sp_name = f"sp_invariant_{name}"
         try:
+            test_session.execute(text(f"SAVEPOINT {sp_name}"))
             rows = test_session.execute(text(sql)).fetchall()
+            test_session.execute(text(f"RELEASE SAVEPOINT {sp_name}"))
             if rows:
                 violations.append((name, rows[:5]))
         except Exception as exc:
+            # Roll back to the savepoint so the transaction stays usable.
+            try:
+                test_session.execute(text(f"ROLLBACK TO SAVEPOINT {sp_name}"))
+            except Exception:
+                pass
             # Table may not exist yet (schema-version mismatch); log and skip.
             logger.warning(f"DB invariant '{name}' could not be executed: {exc}")
 

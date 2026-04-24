@@ -95,7 +95,7 @@ def _capture_state(session: Session, repo_id: str) -> dict:
         id_hashes:  {table: hex}   stable hash of the sorted set of PKs
     """
     tables_scoped = {
-        "commits": "SELECT id FROM commits WHERE repo_id = :rid ORDER BY id",
+        "commits": "SELECT commit_sha FROM commits WHERE repo_id = :rid ORDER BY commit_sha",
         "pull_requests": "SELECT id FROM pull_requests WHERE repo_id = :rid ORDER BY id",
     }
     tables_via_pr = {
