@@ -194,6 +194,8 @@ Attach as autouse fixture at the integration-test base class level so it runs au
 
 Create [scripts/verify-extraction.sh](../../scripts/verify-extraction.sh). Uses `psql` inside the existing test-runner container. Iterates the invariants in `tests/db_invariants.sql`, prints pass/fail for each, exits non-zero on any violation with up to 5 offending rows per failure.
 
+> Follow-up (2026-04-24, PR #66): the `python:3.12-slim` base had `libpq-dev` but no `psql` client, so this step initially failed with `psql: command not found`. Resolved by adding `postgresql-client` to [Dockerfile](../../Dockerfile) and bind-mounting `./scripts` in `docker-compose.test.yml` so script updates land without a rebuild.
+
 Wire into tail of [scripts/run-tests-docker.sh](../../scripts/run-tests-docker.sh) **after** integration tests complete, before coverage output. This gives a single-command way to validate an extraction run against a real populated DB — not just test-data.
 
 ### Layer C — Idempotency harness
