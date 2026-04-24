@@ -2,6 +2,43 @@
 
 ---
 
+## Session: 2026-04-24 - Test-Runner verify-extraction.sh Runtime Fix
+
+### Summary
+
+Fixed `scripts/run-tests-docker.sh` failures triggered by Plan 019's
+post-integration invariant check. The `verify-extraction.sh` step could not run
+inside the `test-runner` container: first the script was missing entirely
+(stale image), then `psql` was unavailable once the script was found.
+
+### What Was Done
+
+- Installed `postgresql-client` in [Dockerfile](Dockerfile) so `psql` is
+  available to in-container DB scripts.
+- Added `./scripts:/app/scripts:ro` bind mount to the `test-runner` service in
+  [docker-compose.test.yml](docker-compose.test.yml) so shell-script updates
+  apply on the next run without an image rebuild.
+- Untracked `.claude/settings.local.json` (already in `.gitignore`; held
+  per-user permission state).
+- Updated [docs/03-operations/docker-setup.md](docs/03-operations/docker-setup.md)
+  to note the new build dependency and the test-runner bind mounts.
+- Added a follow-up note to
+  [.ai/plans/019-production-data-bug-defence.md](.ai/plans/019-production-data-bug-defence.md)
+  Step B.3 recording the runtime gap and its fix.
+
+### CI Impact
+
+None. `.github/workflows/tests.yml` runs on `ubuntu-latest` directly and does
+not build the Dockerfile; `psql` is already preinstalled on GitHub runners.
+`generated-test-data-assessment.yml` rebuilds the image on the next run and
+gains the ~8 MB `postgresql-client` layer.
+
+### Pull Request
+
+- PR #66 — `fix/test-runner-verify-extraction`
+
+---
+
 ## Session: 2026-04-19 - Plan 017 Security Enrichment Contracts Completed
 
 ### Summary
