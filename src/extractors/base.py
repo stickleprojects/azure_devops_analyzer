@@ -134,7 +134,7 @@ class PullRequestData:
     description: Optional[str]
     source_branch: str
     target_branch: str
-    author_email: str
+    author_email: Optional[str]
     author_name: Optional[str]
     status: str  # open, merged, closed
     created_at: datetime

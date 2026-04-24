@@ -1,0 +1,58 @@
+{
+  "name": "dismissed-review",
+  "description": "Review with state DISMISSED after an earlier APPROVED on the same PR",
+  "languages": ["Java"],
+  "file_names": ["pom.xml"],
+  "manifests": {"pom.xml": "<project><modelVersion>4.0.0</modelVersion><groupId>com.example</groupId><artifactId>app</artifactId><version>1.0</version></project>"},
+  "branches": ["main"],
+  "commits": [
+    {
+      "commit_hash": "bbb1000000000000000000000000000000000001",
+      "author_name": "Frank Dev",
+      "author_email": "frank@example.com",
+      "committer_name": "Frank Dev",
+      "committer_email": "frank@example.com",
+      "message": "Initial Maven project",
+      "commit_date": "2026-01-10T00:00:00Z",
+      "files_changed": 1,
+      "lines_added": 10,
+      "lines_removed": 0
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Add Maven project",
+      "source_branch": "feature/maven",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-12T00:00:00Z",
+      "merged_at": "2026-01-16T00:00:00Z",
+      "author_name": "Frank Dev",
+      "author_email": "frank@example.com",
+      "files_changed": 1,
+      "lines_added": 10,
+      "lines_removed": 0,
+      "reviews": [
+        {
+          "reviewer_email": "grace@example.com",
+          "reviewer_name": "Grace Approver",
+          "review_date": "2026-01-13T00:00:00Z",
+          "state": "APPROVED"
+        },
+        {
+          "reviewer_email": "grace@example.com",
+          "reviewer_name": "Grace Approver",
+          "review_date": "2026-01-14T00:00:00Z",
+          "state": "DISMISSED"
+        },
+        {
+          "reviewer_email": "grace@example.com",
+          "reviewer_name": "Grace Approver",
+          "review_date": "2026-01-15T00:00:00Z",
+          "state": "APPROVED"
+        }
+      ]
+    }
+  ]
+}

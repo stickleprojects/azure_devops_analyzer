@@ -1,0 +1,163 @@
+{
+  "name": "azure-devops-snapshot",
+  "description": "Anonymised snapshot of a real Azure DevOps repository. Emails use Azure identity format; bot/service account patterns preserved.",
+  "languages": ["C#", "XML"],
+  "file_names": [
+    "src/Api/Api.csproj",
+    "src/Core/Core.csproj",
+    "Directory.Build.props",
+    "azure-pipelines.yml"
+  ],
+  "manifests": {
+    "src/Api/Api.csproj": "<Project Sdk=\"Microsoft.NET.Sdk.Web\"><PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup><ItemGroup><PackageReference Include=\"Microsoft.AspNetCore.Authentication.JwtBearer\" Version=\"8.0.0\" /></ItemGroup></Project>"
+  },
+  "branches": [
+    {"name": "main", "latest_commit_sha": "azdo0000000000000000000000000000000001"},
+    {"name": "release/2.0", "latest_commit_sha": "azdo0000000000000000000000000000000005"}
+  ],
+  "commits": [
+    {
+      "commit_hash": "azdo0000000000000000000000000000000001",
+      "author_name": "User 1",
+      "author_email": "user1@fixture.local",
+      "committer_name": "User 1",
+      "committer_email": "user1@fixture.local",
+      "message": "fix: resolve null reference in token validator",
+      "commit_date": "2026-01-20T14:30:00Z",
+      "files_changed": 2,
+      "lines_added": 18,
+      "lines_removed": 5
+    },
+    {
+      "commit_hash": "azdo0000000000000000000000000000000002",
+      "author_name": "Project Collection Build Service (fixture-org)",
+      "author_email": "fixture-build-service@fixture.local",
+      "committer_name": "Project Collection Build Service (fixture-org)",
+      "committer_email": "fixture-build-service@fixture.local",
+      "message": "Merged PR 42: Add JWT authentication",
+      "commit_date": "2026-01-19T16:00:00Z",
+      "files_changed": 12,
+      "lines_added": 280,
+      "lines_removed": 45
+    },
+    {
+      "commit_hash": "azdo0000000000000000000000000000000003",
+      "author_name": "User 2",
+      "author_email": "USER2@fixture.local",
+      "committer_name": "User 2",
+      "committer_email": "User2@Fixture.LOCAL",
+      "message": "feat: implement JWT bearer authentication\n\nAdds Microsoft.AspNetCore.Authentication.JwtBearer package and\nconfigures token validation middleware.",
+      "commit_date": "2026-01-18T11:00:00Z",
+      "files_changed": 8,
+      "lines_added": 200,
+      "lines_removed": 20
+    },
+    {
+      "commit_hash": "azdo0000000000000000000000000000000004",
+      "author_name": "User 3",
+      "author_email": "user3@fixture.local",
+      "committer_name": "User 3",
+      "committer_email": "user3@fixture.local",
+      "message": "chore: update Directory.Build.props for .NET 8",
+      "commit_date": "2026-01-17T09:00:00Z",
+      "files_changed": 1,
+      "lines_added": 3,
+      "lines_removed": 3
+    },
+    {
+      "commit_hash": "azdo0000000000000000000000000000000005",
+      "author_name": "User 1",
+      "author_email": "  user1@fixture.local",
+      "committer_name": "User 1",
+      "committer_email": "user1@fixture.local",
+      "message": "release: prepare 2.0 release branch",
+      "commit_date": "2026-01-16T10:00:00Z",
+      "files_changed": 2,
+      "lines_added": 10,
+      "lines_removed": 5
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 43,
+      "platform_pr_id": "azdo_pr_43",
+      "title": "fix: resolve null reference in token validator",
+      "description": "Fixes the NullReferenceException when the token expiry claim is missing.",
+      "source_branch": "fix/token-validator-null",
+      "target_branch": "main",
+      "status": "open",
+      "created_at": "2026-01-20T12:00:00Z",
+      "author_name": "User 1",
+      "author_email": "user1@fixture.local",
+      "files_changed": 2,
+      "lines_added": 18,
+      "lines_removed": 5,
+      "reviews": [
+        {
+          "reviewer_email": "USER2@fixture.local",
+          "reviewer_name": "User 2",
+          "review_date": "2026-01-20T15:00:00Z",
+          "state": "COMMENTED",
+          "is_required": true
+        }
+      ]
+    },
+    {
+      "pr_number": 42,
+      "platform_pr_id": "azdo_pr_42",
+      "title": "feat: Add JWT authentication",
+      "description": "Implements JWT bearer token authentication using Microsoft.AspNetCore.Authentication.JwtBearer.\n\n## Changes\n- Add package reference\n- Configure middleware\n- Add token validation service",
+      "source_branch": "feature/jwt-auth",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-17T13:00:00Z",
+      "merged_at": "2026-01-19T16:00:00Z",
+      "author_name": "User 2",
+      "author_email": "user2@fixture.local",
+      "files_changed": 12,
+      "lines_added": 280,
+      "lines_removed": 45,
+      "reviews": [
+        {
+          "reviewer_email": "user1@fixture.local",
+          "reviewer_name": "User 1",
+          "review_date": "2026-01-18T14:00:00Z",
+          "state": "APPROVED",
+          "is_required": true
+        },
+        {
+          "reviewer_email": "  User3@fixture.local  ",
+          "reviewer_name": "User 3",
+          "review_date": "2026-01-19T10:00:00Z",
+          "state": "APPROVED",
+          "is_required": false
+        }
+      ]
+    },
+    {
+      "pr_number": 41,
+      "platform_pr_id": "azdo_pr_41",
+      "title": "chore: update Directory.Build.props for .NET 8",
+      "description": null,
+      "source_branch": "chore/dotnet8-update",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-16T08:00:00Z",
+      "merged_at": "2026-01-17T09:00:00Z",
+      "author_name": "User 3",
+      "author_email": "user3@fixture.local",
+      "files_changed": 1,
+      "lines_added": 3,
+      "lines_removed": 3,
+      "reviews": [
+        {
+          "reviewer_email": "user2@fixture.local",
+          "reviewer_name": "User 2",
+          "review_date": "2026-01-16T16:00:00Z",
+          "state": "APPROVED",
+          "is_required": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "name": "whitespace-emails",
+  "description": "Emails with leading/trailing whitespace that must be normalised",
+  "languages": ["Python"],
+  "file_names": ["setup.py"],
+  "manifests": {"setup.py": "from setuptools import setup\nsetup(name='app')"},
+  "branches": ["main"],
+  "commits": [
+    {
+      "commit_hash": "bbb0000000000000000000000000000000000001",
+      "author_name": "Bob Whitespace",
+      "author_email": "  bob@example.com  ",
+      "committer_name": "Bob Whitespace",
+      "committer_email": "  bob@example.com  ",
+      "message": "Add setup.py",
+      "commit_date": "2026-01-10T00:00:00Z",
+      "files_changed": 1,
+      "lines_added": 3,
+      "lines_removed": 0
+    },
+    {
+      "commit_hash": "bbb0000000000000000000000000000000000002",
+      "author_name": "Bob Whitespace",
+      "author_email": "bob@example.com",
+      "committer_name": "Bob Whitespace",
+      "committer_email": "bob@example.com",
+      "message": "Fix setup.py",
+      "commit_date": "2026-01-11T00:00:00Z",
+      "files_changed": 1,
+      "lines_added": 1,
+      "lines_removed": 1
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Add setup.py",
+      "source_branch": "feature/setup",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-12T00:00:00Z",
+      "merged_at": "2026-01-14T00:00:00Z",
+      "author_name": "Bob Whitespace",
+      "author_email": "\tbob@example.com\t",
+      "files_changed": 1,
+      "lines_added": 3,
+      "lines_removed": 0,
+      "reviews": [
+        {
+          "reviewer_email": "  bob@example.com",
+          "reviewer_name": "Bob Whitespace",
+          "review_date": "2026-01-13T00:00:00Z",
+          "state": "APPROVED"
+        }
+      ]
+    }
+  ]
+}

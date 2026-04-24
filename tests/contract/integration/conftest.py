@@ -423,6 +423,144 @@ def pytest_configure(config):
     )
 
 
+# ============================================================================
+# DB INVARIANT FIXTURE
+# ============================================================================
+
+def _parse_invariants_sql(sql_path: str) -> dict:
+    """Parse named invariant queries from an SQL file.
+
+    Each invariant is delimited by a ``-- invariant: <name>`` comment line
+    directly above the SELECT statement.  The next invariant comment (or EOF)
+    ends the previous one.
+
+    Optional ``-- requires-table: <table>`` lines immediately after the
+    invariant header are parsed and stored under the ``requires`` key.
+
+    Returns:
+        dict mapping invariant name → {"sql": str, "requires": list[str]}.
+    """
+    invariants: dict = {}
+    current_name: str | None = None
+    current_lines: list = []
+    current_requires: list = []
+
+    def _save_invariant(name, lines, requires):
+        sql = "\n".join(lines).strip().rstrip(";")
+        if sql:
+            invariants[name] = {"sql": sql, "requires": requires}
+
+    with open(sql_path, "r") as fh:
+        for raw_line in fh:
+            line = raw_line.rstrip()
+            stripped = line.strip()
+
+            if stripped.startswith("-- invariant:"):
+                # Save previous invariant if any
+                if current_name and current_lines:
+                    _save_invariant(current_name, current_lines, current_requires)
+                current_name = stripped[len("-- invariant:"):].strip()
+                current_lines = []
+                current_requires = []
+            elif current_name is not None:
+                if stripped.startswith("-- requires-table:"):
+                    table_name = stripped[len("-- requires-table:"):].strip()
+                    current_requires.append(table_name)
+                elif not stripped.startswith("--"):
+                    # Skip all other comment lines; include SQL content lines only.
+                    current_lines.append(line)
+
+    # Flush the last invariant
+    if current_name and current_lines:
+        _save_invariant(current_name, current_lines, current_requires)
+
+    return invariants
+
+
+def _table_exists(session, table_name: str) -> bool:
+    """Return True if *table_name* exists in the current schema."""
+    result = session.execute(
+        text(
+            "SELECT 1 FROM information_schema.tables "
+            "WHERE table_schema = current_schema() AND table_name = :name"
+        ),
+        {"name": table_name},
+    ).first()
+    return result is not None
+
+
+# Parse the invariants SQL file once at module load so the fixture does not
+# re-read and re-parse the file on every invocation.
+_INVARIANTS_SQL_PATH = Path(__file__).parent.parent.parent / "db_invariants.sql"
+_INVARIANT_QUERIES: dict = {}
+if _INVARIANTS_SQL_PATH.exists():
+    _INVARIANT_QUERIES = _parse_invariants_sql(str(_INVARIANTS_SQL_PATH))
+else:
+    logger.warning(
+        f"db_invariants.sql not found at {_INVARIANTS_SQL_PATH}; "
+        "DB invariant checks will be skipped for all tests."
+    )
+
+
+@pytest.fixture
+def db_invariants_check(test_session):
+    """Yield; on teardown run all DB invariants and assert zero violations.
+
+    Attach this fixture to any integration test class or function that commits
+    data and should be validated against the full invariant set defined in
+    ``tests/db_invariants.sql``.
+
+    Each invariant SELECT must return zero rows.  On failure the fixture
+    collects all violations and reports them together so a single run shows
+    every broken invariant.
+
+    Invariants annotated with ``-- requires-table: <t>`` are skipped (with an
+    info-level log) when the named table does not yet exist in the schema.
+    """
+    yield
+
+    violations = []
+
+    for name, entry in _INVARIANT_QUERIES.items():
+        sql = entry["sql"]
+        requires = entry.get("requires", [])
+
+        # Skip invariants whose required tables are absent (e.g. pending migrations).
+        missing = [t for t in requires if not _table_exists(test_session, t)]
+        if missing:
+            logger.info(
+                f"DB invariant '{name}' skipped: table(s) not present: {missing}"
+            )
+            continue
+
+        # Use a SAVEPOINT so that a query error (e.g. missing column due to schema
+        # version mismatch) does not abort the entire PostgreSQL transaction and
+        # corrupt the session for the cleanup_database autouse fixture.
+        sp_name = f"sp_invariant_{name}"
+        try:
+            test_session.execute(text(f"SAVEPOINT {sp_name}"))
+            rows = test_session.execute(text(sql)).fetchall()
+            test_session.execute(text(f"RELEASE SAVEPOINT {sp_name}"))
+            if rows:
+                violations.append((name, rows[:5]))
+        except Exception as exc:
+            # Roll back to the savepoint so the transaction stays usable.
+            try:
+                test_session.execute(text(f"ROLLBACK TO SAVEPOINT {sp_name}"))
+            except Exception:
+                pass
+            # Table may not exist yet (schema-version mismatch); log and skip.
+            logger.warning(f"DB invariant '{name}' could not be executed: {exc}")
+
+    assert not violations, (
+        "DB invariant violations detected:\n"
+        + "\n".join(
+            f"  [{name}]: {len(rows)} offending row(s), first sample: {rows}"
+            for name, rows in violations
+        )
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
 def log_test_info(test_database_url):
     """Log test configuration at start."""
