@@ -1,0 +1,46 @@
+{
+  "name": "mixed-case-emails",
+  "description": "One person arriving via three email casings: commit author, PR author, PR reviewer",
+  "languages": ["Python"],
+  "file_names": ["requirements.txt"],
+  "manifests": {"requirements.txt": "requests==2.28.0"},
+  "branches": ["main"],
+  "commits": [
+    {
+      "commit_hash": "aaa0000000000000000000000000000000000001",
+      "author_name": "Alice Example",
+      "author_email": "alice@example.com",
+      "committer_name": "Alice Example",
+      "committer_email": "alice@example.com",
+      "message": "Initial commit",
+      "commit_date": "2026-01-10T00:00:00Z",
+      "files_changed": 1,
+      "lines_added": 10,
+      "lines_removed": 0
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Add requests library",
+      "source_branch": "feature/add-requests",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-12T00:00:00Z",
+      "merged_at": "2026-01-15T00:00:00Z",
+      "author_name": "Alice Example",
+      "author_email": "Alice@Example.COM",
+      "files_changed": 1,
+      "lines_added": 1,
+      "lines_removed": 0,
+      "reviews": [
+        {
+          "reviewer_email": "  ALICE@example.com  ",
+          "reviewer_name": "Alice Example",
+          "review_date": "2026-01-13T00:00:00Z",
+          "state": "APPROVED"
+        }
+      ]
+    }
+  ]
+}

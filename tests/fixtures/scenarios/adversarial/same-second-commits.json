@@ -1,0 +1,58 @@
+{
+  "name": "same-second-commits",
+  "description": "Two commits with identical commit_date timestamps (within same second)",
+  "languages": ["C#"],
+  "file_names": ["Project.csproj"],
+  "manifests": {"Project.csproj": "<Project Sdk=\"Microsoft.NET.Sdk\"><PropertyGroup><TargetFramework>net8.0</TargetFramework></PropertyGroup></Project>"},
+  "branches": ["main"],
+  "commits": [
+    {
+      "commit_hash": "ddd1000000000000000000000000000000000001",
+      "author_name": "Julia Csharp",
+      "author_email": "julia@example.com",
+      "committer_name": "Julia Csharp",
+      "committer_email": "julia@example.com",
+      "message": "First commit at identical timestamp",
+      "commit_date": "2026-01-10T12:00:00Z",
+      "files_changed": 1,
+      "lines_added": 5,
+      "lines_removed": 0
+    },
+    {
+      "commit_hash": "ddd1000000000000000000000000000000000002",
+      "author_name": "Karl Csharp",
+      "author_email": "karl@example.com",
+      "committer_name": "Karl Csharp",
+      "committer_email": "karl@example.com",
+      "message": "Second commit at identical timestamp",
+      "commit_date": "2026-01-10T12:00:00Z",
+      "files_changed": 1,
+      "lines_added": 3,
+      "lines_removed": 1
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Add .NET project",
+      "source_branch": "feature/dotnet",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-11T00:00:00Z",
+      "merged_at": "2026-01-13T00:00:00Z",
+      "author_name": "Julia Csharp",
+      "author_email": "julia@example.com",
+      "files_changed": 1,
+      "lines_added": 5,
+      "lines_removed": 0,
+      "reviews": [
+        {
+          "reviewer_email": "karl@example.com",
+          "reviewer_name": "Karl Csharp",
+          "review_date": "2026-01-12T00:00:00Z",
+          "state": "APPROVED"
+        }
+      ]
+    }
+  ]
+}

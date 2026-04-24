@@ -1,0 +1,46 @@
+{
+  "name": "ghost-author",
+  "description": "PR with null author_email and author_name (deleted GitHub user scenario). Ghost authors are expected to result in pull_requests.author_id = NULL, not a blank-email contributor row.",
+  "languages": ["JavaScript"],
+  "file_names": ["package.json"],
+  "manifests": {"package.json": "{\"name\": \"app\", \"version\": \"1.0.0\"}"},
+  "branches": ["main"],
+  "commits": [
+    {
+      "commit_hash": "ccc0000000000000000000000000000000000001",
+      "author_name": "Regular User",
+      "author_email": "regular@example.com",
+      "committer_name": "Regular User",
+      "committer_email": "regular@example.com",
+      "message": "Add package.json",
+      "commit_date": "2026-01-10T00:00:00Z",
+      "files_changed": 1,
+      "lines_added": 3,
+      "lines_removed": 0
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Add package.json",
+      "source_branch": "feature/pkg",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-12T00:00:00Z",
+      "merged_at": "2026-01-14T00:00:00Z",
+      "author_name": null,
+      "author_email": null,
+      "files_changed": 1,
+      "lines_added": 3,
+      "lines_removed": 0,
+      "reviews": [
+        {
+          "reviewer_email": "regular@example.com",
+          "reviewer_name": "Regular User",
+          "review_date": "2026-01-13T00:00:00Z",
+          "state": "APPROVED"
+        }
+      ]
+    }
+  ]
+}

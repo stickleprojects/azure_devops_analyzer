@@ -1,0 +1,74 @@
+-- =============================================================================
+-- DB Invariant Queries
+-- =============================================================================
+-- Each invariant is a named SELECT that MUST return zero rows for the database
+-- to be considered valid.
+--
+-- The invariant name is parsed from the "-- invariant: <name>" comment
+-- immediately above each query block.
+--
+-- Used by:
+--   - tests/contract/integration/conftest.py  (db_invariants_check fixture)
+--   - scripts/verify-extraction.sh             (shell wrapper for manual runs)
+-- =============================================================================
+
+-- invariant: no_case_variant_contributor_twins
+-- No two contributors rows share the same normalised email (lower + trim).
+SELECT lower(trim(email)) AS email_key, count(*) AS occurrences
+FROM contributors
+GROUP BY lower(trim(email))
+HAVING count(*) > 1;
+
+-- invariant: no_orphan_pr_author_fk
+-- Every pull_requests row with a non-null author_id must resolve to a
+-- contributors row.  NULL author_id is allowed (ghost/deleted user).
+SELECT id, repo_id, pr_number, author_id
+FROM pull_requests
+WHERE author_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM contributors c WHERE c.id = pull_requests.author_id);
+
+-- invariant: no_orphan_pr_reviewer_fk
+-- Every pr_reviews row must have a non-null reviewer_id that resolves to a
+-- contributors row.
+SELECT pr_id, reviewer_id
+FROM pr_reviews
+WHERE reviewer_id IS NULL
+   OR NOT EXISTS (SELECT 1 FROM contributors c WHERE c.id = pr_reviews.reviewer_id);
+
+-- invariant: no_duplicate_pr_per_repo
+-- No two pull_requests rows share (repo_id, pr_number).
+SELECT repo_id, pr_number, count(*) AS occurrences
+FROM pull_requests
+GROUP BY repo_id, pr_number
+HAVING count(*) > 1;
+
+-- invariant: no_duplicate_commit_per_repo
+-- No two commits rows share (repo_id, commit_sha).
+SELECT repo_id, commit_sha, count(*) AS occurrences
+FROM commits
+GROUP BY repo_id, commit_sha
+HAVING count(*) > 1;
+
+-- invariant: no_review_before_pr_created
+-- A review cannot be dated before the PR it belongs to was created.
+SELECT r.pr_id, r.review_date, pr.created_at
+FROM pr_reviews r
+JOIN pull_requests pr ON r.pr_id = pr.id
+WHERE r.review_date < pr.created_at;
+
+-- invariant: no_orphan_repo_dependency
+-- requires-table: repository_dependencies
+-- Every repository_dependencies row must reference a valid repositories row.
+-- Falls back gracefully if the table has been renamed or not yet created.
+SELECT rd.repo_id
+FROM repository_dependencies rd
+WHERE NOT EXISTS (SELECT 1 FROM repositories r WHERE r.repo_id = rd.repo_id);
+
+-- invariant: no_vulnerability_without_package
+-- requires-table: packages
+-- Every vulnerabilities row must reference a valid packages row (migration 014+).
+-- Skip if packages table not yet present to keep schema-version compatibility.
+SELECT v.id, v.package_id
+FROM vulnerabilities v
+WHERE v.package_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.id = v.package_id);

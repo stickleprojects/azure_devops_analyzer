@@ -1,0 +1,209 @@
+{
+  "name": "github-snapshot",
+  "description": "Anonymised snapshot of a real GitHub repository. Emails use noreply format; case patterns and unicode preserved from source.",
+  "languages": ["TypeScript", "JavaScript"],
+  "file_names": [
+    "package.json",
+    "tsconfig.json",
+    "src/index.ts",
+    "src/utils.ts",
+    ".github/workflows/ci.yml"
+  ],
+  "manifests": {
+    "package.json": "{\"name\": \"fixture-repo\", \"version\": \"2.1.0\", \"dependencies\": {\"express\": \"^4.18.2\", \"lodash\": \"^4.17.21\"}, \"devDependencies\": {\"typescript\": \"^5.0.0\", \"jest\": \"^29.0.0\"}}",
+    "tsconfig.json": "{\"compilerOptions\": {\"target\": \"ES2020\", \"module\": \"commonjs\", \"strict\": true}}"
+  },
+  "branches": [
+    {"name": "main", "latest_commit_sha": "snapshot000000000000000000000000000001"},
+    {"name": "develop", "latest_commit_sha": "snapshot000000000000000000000000000007"}
+  ],
+  "commits": [
+    {
+      "commit_hash": "snapshot000000000000000000000000000001",
+      "author_name": "User 1",
+      "author_email": "user1@fixture.local",
+      "committer_name": "GitHub",
+      "committer_email": "noreply@github.com",
+      "message": "fix: handle edge case in parser\n\nAddresses issue reported in production.\nFixes #42",
+      "commit_date": "2026-01-15T10:23:00Z",
+      "files_changed": 3,
+      "lines_added": 45,
+      "lines_removed": 12
+    },
+    {
+      "commit_hash": "snapshot000000000000000000000000000002",
+      "author_name": "dependabot[bot]",
+      "author_email": "dependabot[bot]@users.noreply.github.com",
+      "committer_name": "GitHub",
+      "committer_email": "noreply@github.com",
+      "message": "Bump express from 4.18.1 to 4.18.2\n\nBumps [express](https://github.com/expressjs/express) from 4.18.1 to 4.18.2.",
+      "commit_date": "2026-01-14T08:00:00Z",
+      "files_changed": 1,
+      "lines_added": 1,
+      "lines_removed": 1
+    },
+    {
+      "commit_hash": "snapshot000000000000000000000000000003",
+      "author_name": "User 2",
+      "author_email": "User2@Fixture.LOCAL",
+      "committer_name": "User 2",
+      "committer_email": "user2@fixture.local",
+      "message": "feat: add request validation middleware 🔒",
+      "commit_date": "2026-01-13T16:45:00Z",
+      "files_changed": 5,
+      "lines_added": 120,
+      "lines_removed": 8
+    },
+    {
+      "commit_hash": "snapshot000000000000000000000000000004",
+      "author_name": "User 3",
+      "author_email": "  user3@fixture.local  ",
+      "committer_name": "User 3",
+      "committer_email": "user3@fixture.local",
+      "message": "chore: update tsconfig strict settings",
+      "commit_date": "2026-01-12T09:15:00Z",
+      "files_changed": 1,
+      "lines_added": 4,
+      "lines_removed": 2
+    },
+    {
+      "commit_hash": "snapshot000000000000000000000000000005",
+      "author_name": "User 1",
+      "author_email": "USER1@fixture.local",
+      "committer_name": "GitHub",
+      "committer_email": "noreply@github.com",
+      "message": "Merge pull request #3 from fixture-org/feature/validation",
+      "commit_date": "2026-01-11T14:00:00Z",
+      "files_changed": 7,
+      "lines_added": 200,
+      "lines_removed": 30
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 5,
+      "platform_pr_id": "PR_snapshot_005",
+      "title": "fix: handle edge case in parser",
+      "description": "## Summary\n\nThis PR addresses the edge case reported in production.\n\n## Testing\n- Unit tests added\n- Integration tested",
+      "source_branch": "fix/parser-edge-case",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-14T09:00:00Z",
+      "merged_at": "2026-01-15T10:00:00Z",
+      "author_name": "User 1",
+      "author_email": "user1@fixture.local",
+      "files_changed": 3,
+      "lines_added": 45,
+      "lines_removed": 12,
+      "reviews": [
+        {
+          "reviewer_email": "User2@Fixture.LOCAL",
+          "reviewer_name": "User 2",
+          "review_date": "2026-01-15T08:00:00Z",
+          "state": "APPROVED"
+        },
+        {
+          "reviewer_email": "user3@fixture.local",
+          "reviewer_name": "User 3",
+          "review_date": "2026-01-15T09:00:00Z",
+          "state": "COMMENTED"
+        }
+      ]
+    },
+    {
+      "pr_number": 4,
+      "platform_pr_id": "PR_snapshot_004",
+      "title": "feat: add request validation middleware 🔒",
+      "description": "Adds express-validator integration for all POST endpoints.",
+      "source_branch": "feature/validation",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-10T11:00:00Z",
+      "merged_at": "2026-01-11T14:00:00Z",
+      "author_name": "User 2",
+      "author_email": "user2@fixture.local",
+      "files_changed": 7,
+      "lines_added": 200,
+      "lines_removed": 30,
+      "reviews": [
+        {
+          "reviewer_email": "  USER1@fixture.local  ",
+          "reviewer_name": "User 1",
+          "review_date": "2026-01-11T10:00:00Z",
+          "state": "APPROVED"
+        }
+      ]
+    },
+    {
+      "pr_number": 3,
+      "platform_pr_id": "PR_snapshot_003",
+      "title": "Bump express from 4.18.1 to 4.18.2",
+      "description": "Automated dependency bump by Dependabot.",
+      "source_branch": "dependabot/npm_and_yarn/express-4.18.2",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-14T08:00:00Z",
+      "merged_at": "2026-01-14T09:00:00Z",
+      "author_name": "dependabot[bot]",
+      "author_email": "dependabot[bot]@users.noreply.github.com",
+      "files_changed": 1,
+      "lines_added": 1,
+      "lines_removed": 1,
+      "reviews": [
+        {
+          "reviewer_email": "user1@fixture.local",
+          "reviewer_name": "User 1",
+          "review_date": "2026-01-14T08:30:00Z",
+          "state": "APPROVED"
+        }
+      ]
+    },
+    {
+      "pr_number": 2,
+      "platform_pr_id": "PR_snapshot_002",
+      "title": "chore: update tsconfig strict settings",
+      "description": null,
+      "source_branch": "chore/tsconfig-strict",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-11T09:00:00Z",
+      "merged_at": "2026-01-12T10:00:00Z",
+      "author_name": "User 3",
+      "author_email": "user3@fixture.local",
+      "files_changed": 1,
+      "lines_added": 4,
+      "lines_removed": 2,
+      "reviews": []
+    },
+    {
+      "pr_number": 1,
+      "platform_pr_id": "PR_snapshot_001",
+      "title": "Initial project setup",
+      "description": "Bootstrap TypeScript project with CI pipeline.",
+      "source_branch": "feature/initial-setup",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-05T08:00:00Z",
+      "merged_at": "2026-01-06T10:00:00Z",
+      "author_name": "User 1",
+      "author_email": "user1@fixture.local",
+      "files_changed": 8,
+      "lines_added": 350,
+      "lines_removed": 0,
+      "reviews": [
+        {
+          "reviewer_email": "user2@fixture.local",
+          "reviewer_name": "User 2",
+          "review_date": "2026-01-06T08:00:00Z",
+          "state": "APPROVED"
+        },
+        {
+          "reviewer_email": "user3@fixture.local",
+          "reviewer_name": "User 3",
+          "review_date": "2026-01-06T09:00:00Z",
+          "state": "APPROVED"
+        }
+      ]
+    }
+  ]
+}

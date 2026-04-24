@@ -1,0 +1,58 @@
+{
+  "name": "future-dated-commit",
+  "description": "Commit with commit_date 48 hours in the future (clock skew scenario)",
+  "languages": ["Rust"],
+  "file_names": ["Cargo.toml"],
+  "manifests": {"Cargo.toml": "[package]\nname = \"my-app\"\nversion = \"0.1.0\"\nedition = \"2021\""},
+  "branches": ["main"],
+  "commits": [
+    {
+      "commit_hash": "ccc1000000000000000000000000000000000001",
+      "author_name": "Hannah Rust",
+      "author_email": "hannah@example.com",
+      "committer_name": "Hannah Rust",
+      "committer_email": "hannah@example.com",
+      "message": "Normal past commit",
+      "commit_date": "2026-01-10T00:00:00Z",
+      "files_changed": 1,
+      "lines_added": 5,
+      "lines_removed": 0
+    },
+    {
+      "commit_hash": "ccc1000000000000000000000000000000000002",
+      "author_name": "Hannah Rust",
+      "author_email": "hannah@example.com",
+      "committer_name": "Hannah Rust",
+      "committer_email": "hannah@example.com",
+      "message": "Commit from the future (clock skew)",
+      "commit_date": "2030-01-01T00:00:00Z",
+      "files_changed": 2,
+      "lines_added": 15,
+      "lines_removed": 3
+    }
+  ],
+  "pull_requests": [
+    {
+      "pr_number": 1,
+      "title": "Add Cargo.toml",
+      "source_branch": "feature/cargo",
+      "target_branch": "main",
+      "status": "merged",
+      "created_at": "2026-01-12T00:00:00Z",
+      "merged_at": "2026-01-14T00:00:00Z",
+      "author_name": "Hannah Rust",
+      "author_email": "hannah@example.com",
+      "files_changed": 1,
+      "lines_added": 5,
+      "lines_removed": 0,
+      "reviews": [
+        {
+          "reviewer_email": "ivan@example.com",
+          "reviewer_name": "Ivan Review",
+          "review_date": "2026-01-13T00:00:00Z",
+          "state": "APPROVED"
+        }
+      ]
+    }
+  ]
+}
