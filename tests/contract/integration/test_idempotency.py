@@ -17,14 +17,11 @@ from sqlalchemy.orm import Session
 
 from tests.fixtures.fixture_extractor import FixtureExtractor
 from tests.fixtures.sample_data import sample_organization_data, sample_repository_data
+from tests.contract.integration._pipeline_helpers import run_pipeline
 from src.database.storage import (
     store_organization,
     store_project,
     store_repository,
-    store_branch,
-    store_commit,
-    store_pull_request,
-    store_languages,
 )
 from src.extractors.base import Platform
 from src.database.models import Commit, PullRequest, PRReview, Contributor
@@ -63,28 +60,8 @@ def _setup_repo(session: Session, scenario_name: str):
 
 
 def _run_pipeline(session: Session, repo_id: str, extractor: FixtureExtractor):
-    """Run branches → commits → PRs → languages for a single repo."""
-    branches = extractor.get_branches(repo_id)
-    default_branch = branches[0].name if branches else "main"
-
-    for branch in branches:
-        store_branch(session, repo_id, branch)
-    session.flush()
-
-    for commit_data in extractor.get_commits(repo_id):
-        store_commit(session, repo_id, default_branch, commit_data)
-    session.flush()
-
-    for pr_data in extractor.get_pull_requests(repo_id):
-        store_pull_request(session, repo_id, pr_data)
-    session.flush()
-
-    languages = extractor.get_languages(repo_id)
-    if languages:
-        store_languages(session, repo_id, languages)
-        session.flush()
-
-    session.commit()
+    """Run the extraction pipeline for a single repo (delegates to shared helper)."""
+    run_pipeline(session, repo_id, extractor)
 
 
 def _capture_state(session: Session, repo_id: str) -> dict:
@@ -92,33 +69,51 @@ def _capture_state(session: Session, repo_id: str) -> dict:
 
     Returns a dict with:
         row_counts: {table: count}  scoped to repo_id where possible
-        id_hashes:  {table: hex}   stable hash of the sorted set of PKs
+        id_hashes:  {table: hex}   stable hash of the sorted set of *content* keys
+
+    Hashing strategy — content keys rather than surrogate PKs:
+        commits       – commit_sha  (content-addressed, stable across re-inserts)
+        pull_requests – pr_number   (business key; unique per repo)
+        pr_reviews    – (pr_number, reviewer_id, state) tuple
+        contributors  – normalised email (what the dedup logic actually stores)
+
+    Using content keys means the hash detects genuine duplication or omission
+    even if autoincrement sequences reset between test runs.  It does NOT detect
+    field-level mutations (e.g. a title change) — that is out of scope for the
+    current "insert-once" idempotency guarantee (see TODO below).
+
+    TODO: extend once store_pull_request gains upsert semantics.  At that point
+    the snapshot should capture (pr_number, status, review_count) tuples so that
+    field-level convergence is also verified.
     """
-    tables_scoped = {
-        "commits": "SELECT commit_sha FROM commits WHERE repo_id = :rid ORDER BY commit_sha",
-        "pull_requests": "SELECT id FROM pull_requests WHERE repo_id = :rid ORDER BY id",
-    }
-    tables_via_pr = {
-        "pr_reviews": (
-            "SELECT r.id FROM pr_reviews r "
-            "JOIN pull_requests pr ON r.pr_id = pr.id "
-            "WHERE pr.repo_id = :rid ORDER BY r.id"
-        ),
-    }
+    # commits — hash sorted commit_sha values (already content-addressed)
+    commit_rows = session.execute(
+        text("SELECT commit_sha FROM commits WHERE repo_id = :rid ORDER BY commit_sha"),
+        {"rid": repo_id},
+    ).fetchall()
 
-    row_counts = {}
-    id_hashes = {}
+    # pull_requests — hash sorted pr_number values (natural business key)
+    pr_rows = session.execute(
+        text("SELECT pr_number FROM pull_requests WHERE repo_id = :rid ORDER BY pr_number"),
+        {"rid": repo_id},
+    ).fetchall()
 
-    for table, sql in {**tables_scoped, **tables_via_pr}.items():
-        rows = session.execute(text(sql), {"rid": repo_id}).fetchall()
-        row_counts[table] = len(rows)
-        id_str = ",".join(str(r[0]) for r in rows)
-        id_hashes[table] = hashlib.md5(id_str.encode()).hexdigest()
-
-    # contributors — scoped by email appearing in this repo's commits/PRs
-    contributor_ids = session.execute(
+    # pr_reviews — hash sorted (pr_number, reviewer_id, state) tuples
+    review_rows = session.execute(
         text("""
-            SELECT DISTINCT c.id
+            SELECT pr.pr_number, r.reviewer_id, r.state
+            FROM pr_reviews r
+            JOIN pull_requests pr ON r.pr_id = pr.id
+            WHERE pr.repo_id = :rid
+            ORDER BY pr.pr_number, r.reviewer_id, r.state
+        """),
+        {"rid": repo_id},
+    ).fetchall()
+
+    # contributors — hash sorted normalised emails
+    contributor_rows = session.execute(
+        text("""
+            SELECT DISTINCT c.email
             FROM contributors c
             WHERE c.id IN (
                 SELECT author_id FROM commits WHERE repo_id = :rid
@@ -129,16 +124,28 @@ def _capture_state(session: Session, repo_id: str) -> dict:
                 JOIN pull_requests pr ON r.pr_id = pr.id
                 WHERE pr.repo_id = :rid
             )
-            ORDER BY c.id
+            ORDER BY c.email
         """),
         {"rid": repo_id},
     ).fetchall()
-    row_counts["contributors"] = len(contributor_ids)
-    id_hashes["contributors"] = hashlib.md5(
-        ",".join(str(r[0]) for r in contributor_ids).encode()
-    ).hexdigest()
 
-    return {"row_counts": row_counts, "id_hashes": id_hashes}
+    def _hash(rows) -> str:
+        return hashlib.md5("|".join(str(r) for r in rows).encode()).hexdigest()
+
+    return {
+        "row_counts": {
+            "commits": len(commit_rows),
+            "pull_requests": len(pr_rows),
+            "pr_reviews": len(review_rows),
+            "contributors": len(contributor_rows),
+        },
+        "id_hashes": {
+            "commits": _hash(commit_rows),
+            "pull_requests": _hash(pr_rows),
+            "pr_reviews": _hash(review_rows),
+            "contributors": _hash(contributor_rows),
+        },
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -157,6 +164,16 @@ class TestExtractionIdempotency:
         self, scenario, test_session, db_invariants_check
     ):
         """Two pipeline passes over the same data must yield identical DB state.
+
+        Idempotency guarantee — current semantics are **insert-once at the PR
+        level**: ``store_pull_request`` is a no-op when the (repo_id, pr_number)
+        row already exists and does not update reviews or any other field.  Pass
+        2 therefore produces the same row set as pass 1.
+
+        This harness catches regressions *away* from the insert-once behaviour
+        (e.g. a code change that accidentally inserts duplicate rows on re-run).
+        It does not verify genuine re-convergence / upsert semantics — that is
+        a TODO for when ``store_pull_request`` gains explicit upsert semantics.
 
         Also asserts DB invariants via the db_invariants_check fixture.
         """

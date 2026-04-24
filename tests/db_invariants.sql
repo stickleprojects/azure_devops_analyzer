@@ -25,7 +25,7 @@ HAVING count(*) > 1;
 SELECT id, repo_id, pr_number, author_id
 FROM pull_requests
 WHERE author_id IS NULL
-   OR author_id NOT IN (SELECT id FROM contributors);
+   OR NOT EXISTS (SELECT 1 FROM contributors c WHERE c.id = pull_requests.author_id);
 
 -- invariant: no_orphan_pr_reviewer_fk
 -- Every pr_reviews row must have a non-null reviewer_id that resolves to a
@@ -33,7 +33,7 @@ WHERE author_id IS NULL
 SELECT pr_id, reviewer_id
 FROM pr_reviews
 WHERE reviewer_id IS NULL
-   OR reviewer_id NOT IN (SELECT id FROM contributors);
+   OR NOT EXISTS (SELECT 1 FROM contributors c WHERE c.id = pr_reviews.reviewer_id);
 
 -- invariant: no_duplicate_pr_per_repo
 -- No two pull_requests rows share (repo_id, pr_number).
@@ -61,7 +61,7 @@ WHERE r.review_date < pr.created_at;
 -- Falls back gracefully if the table has been renamed or not yet created.
 SELECT rd.repo_id
 FROM repository_dependencies rd
-WHERE rd.repo_id NOT IN (SELECT repo_id FROM repositories);
+WHERE NOT EXISTS (SELECT 1 FROM repositories r WHERE r.repo_id = rd.repo_id);
 
 -- invariant: no_vulnerability_without_package
 -- Every vulnerabilities row must reference a valid packages row (migration 014+).
@@ -69,4 +69,4 @@ WHERE rd.repo_id NOT IN (SELECT repo_id FROM repositories);
 SELECT v.id, v.package_id
 FROM vulnerabilities v
 WHERE v.package_id IS NOT NULL
-  AND v.package_id NOT IN (SELECT id FROM packages);
+  AND NOT EXISTS (SELECT 1 FROM packages p WHERE p.id = v.package_id);

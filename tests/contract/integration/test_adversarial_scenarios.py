@@ -17,12 +17,10 @@ from sqlalchemy.orm import Session
 
 from tests.fixtures.fixture_extractor import FixtureExtractor
 from tests.fixtures.sample_data import sample_repository_data
+from tests.contract.integration._pipeline_helpers import run_pipeline
 from src.database.storage import (
     store_project,
     store_repository,
-    store_commit,
-    store_pull_request,
-    store_languages,
 )
 from src.database.models import Commit, Contributor, PullRequest, PRReview
 
@@ -62,21 +60,8 @@ def _create_fixture_repo(session: Session, organization, scenario_name: str):
 
 
 def _run_full_pipeline(session: Session, repo_id: str, extractor: FixtureExtractor):
-    """Run the extraction pipeline for a single repo: commits + PRs + languages."""
-    branches = extractor.get_branches(repo_id)
-    default_branch = branches[0].name if branches else "main"
-
-    for commit_data in extractor.get_commits(repo_id):
-        store_commit(session, repo_id, default_branch, commit_data)
-
-    for pr_data in extractor.get_pull_requests(repo_id):
-        store_pull_request(session, repo_id, pr_data)
-
-    languages = extractor.get_languages(repo_id)
-    if languages:
-        store_languages(session, repo_id, languages)
-
-    session.commit()
+    """Run the extraction pipeline for a single repo (delegates to shared helper)."""
+    run_pipeline(session, repo_id, extractor)
 
 
 # ---------------------------------------------------------------------------

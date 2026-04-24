@@ -33,7 +33,6 @@ import json
 import pathlib
 import re
 import sys
-from datetime import datetime, timezone
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 RAW_DIR = PROJECT_ROOT / "tmp" / "snapshots-raw"
@@ -102,12 +101,6 @@ class Anonymiser:
         anon_e = self.anon_email(email) if email else None
         anon_n = self._anon_name(email or "", name)
         return anon_e, anon_n
-
-
-def _parse_date(s: str | None) -> str | None:
-    if not s:
-        return None
-    return s
 
 
 def build_github_scenario(anon: Anonymiser, raw_dir: pathlib.Path) -> dict:

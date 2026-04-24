@@ -200,9 +200,10 @@ Mark `@pytest.mark.integration`.
 
 > **Note:** This step is **superseded by Plan 019 Layer B**. The three invariants
 > defined here are a subset of the full invariant set in `tests/db_invariants.sql`
-> (implemented in Plan 019). `scripts/verify-extraction.sh` remains as the shell
-> runner for the original three checks; Plan 019's `db_invariants_check` pytest
-> fixture covers the broader set automatically after every integration test.
+> (implemented in Plan 019). `scripts/verify-extraction.sh` implements the original
+> three checks as a shell runner for manual use against `$DATABASE_URL`; Plan 019's
+> `db_invariants_check` pytest fixture covers the broader set automatically after
+> every integration test.
 
 Create [scripts/verify-extraction.sh](../../scripts/verify-extraction.sh) (new). It executes inside the existing Docker test runner and runs three SQL checks against the test database:
 

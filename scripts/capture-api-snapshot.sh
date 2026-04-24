@@ -71,9 +71,9 @@ if [[ "${PLATFORM}" == "github" ]]; then
     echo "  ✓ pull_requests.json"
 
     # Capture reviews for the most recent PR
-    PR_NUMBER=$(python3 -c "
-import json, sys
-with open('${RAW_DIR}/${PLATFORM}/pull_requests.json') as f:
+    PR_NUMBER=$(RAW_FILE="${RAW_DIR}/${PLATFORM}/pull_requests.json" python3 -c "
+import json, os, sys
+with open(os.environ['RAW_FILE']) as f:
     prs = json.load(f)
 if prs:
     print(prs[0]['number'])
@@ -110,9 +110,9 @@ elif [[ "${PLATFORM}" == "azure_devops" ]]; then
         > "${RAW_DIR}/${PLATFORM}/pull_requests.json"
     echo "  ✓ pull_requests.json"
 
-    PR_ID=$(python3 -c "
-import json, sys
-with open('${RAW_DIR}/${PLATFORM}/pull_requests.json') as f:
+    PR_ID=$(RAW_FILE="${RAW_DIR}/${PLATFORM}/pull_requests.json" python3 -c "
+import json, os, sys
+with open(os.environ['RAW_FILE']) as f:
     data = json.load(f)
 prs = data.get('value', [])
 if prs:

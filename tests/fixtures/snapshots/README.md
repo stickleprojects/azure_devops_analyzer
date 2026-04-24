@@ -37,6 +37,15 @@ transformations **before** committing:
 6. **Nested structure and field ordering**: unchanged.
 7. **Internal hostnames / URLs**: replaced with `https://fixture.example`.
 
+## Initial seed
+
+The `github/fixture.json` and `azure_devops/fixture.json` files committed to
+this repository are **hand-authored seeds** written to match the output schema
+that `anonymise-snapshot.py` would produce.  They are not the output of a real
+`capture-api-snapshot.sh` + `anonymise-snapshot.py` run.  The capture scripts
+are the **refresh path** for future updates; the hand-authored files are a
+bootstrap placeholder that lets CI run without live credentials.
+
 ## Refresh cadence
 
 Refresh snapshots quarterly or when an API version change is detected.
