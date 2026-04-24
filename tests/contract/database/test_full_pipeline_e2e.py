@@ -27,11 +27,14 @@ from src.database.storage import (
     store_pull_request,
     store_languages,
     store_dependencies,
+    store_detections,
     store_package_metadata,
     store_repo_dependencies,
+    store_technology_eol,
 )
 from src.analyzers.dependency_analyzer import DependencyAnalyzer
 from src.analyzers.dependency_enricher import EnrichedDependency
+from src.analyzers.technology_detector import TechnologyDetection
 from src.database.models import Commit, PullRequest, RepositoryStack, RepositoryDependency
 from src.extractors.base import Platform
 
@@ -87,6 +90,41 @@ def _load_scenario(db_session, scenario_name: str):
     languages = extractor.get_languages(repo.repo_id)
     if languages:
         store_languages(db_session, repo.repo_id, languages)
+        db_session.flush()
+
+    # Technology stack (heuristic detections + EOL metadata from fixture)
+    tech_stack = extractor.get_technology_stack()
+    if tech_stack:
+        detection = TechnologyDetection(
+            programming_languages=[],
+            frameworks=tech_stack.get("frameworks", []),
+            databases=tech_stack.get("databases", []),
+            deployment_platforms=tech_stack.get("deployment_platforms", []),
+            build_tools=tech_stack.get("build_tools", []),
+            testing_frameworks=tech_stack.get("testing_frameworks", []),
+            ci_cd_platforms=tech_stack.get("ci_cd_platforms", []),
+            documentation_tools=tech_stack.get("documentation_tools", []),
+            language_confidence=tech_stack.get("confidence", 0.8),
+            framework_confidence=tech_stack.get("confidence", 0.8),
+            overall_confidence=tech_stack.get("confidence", 0.8),
+            all_technologies=[],
+            primary_language=None,
+            analyzed_at=datetime.now(timezone.utc),
+        )
+        store_detections(db_session, repo.repo_id, detection)
+        db_session.flush()
+
+        for eol_entry in tech_stack.get("eol_technologies", []):
+            raw_eol_date = eol_entry.get("eol_date")
+            eol_date = date.fromisoformat(raw_eol_date) if raw_eol_date else None
+            store_technology_eol(
+                db_session,
+                name=eol_entry["name"],
+                category=eol_entry["category"],
+                is_eol=eol_entry.get("is_eol", False),
+                eol_date=eol_date,
+                latest_supported_version=eol_entry.get("latest_supported_version"),
+            )
         db_session.flush()
 
     db_session.commit()

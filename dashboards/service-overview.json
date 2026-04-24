@@ -102,9 +102,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -163,9 +161,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -224,9 +220,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -285,9 +279,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -346,9 +338,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -415,9 +405,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -470,103 +458,45 @@
         },
         "overrides": [
           {
-            "matcher": {
-              "id": "byName",
-              "options": "service"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Service"
-              }
-            ]
+            "matcher": { "id": "byName", "options": "service" },
+            "properties": [{ "id": "displayName", "value": "Service" }]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "total_repositories"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Total Repos"
-              }
-            ]
+            "matcher": { "id": "byName", "options": "total_repositories" },
+            "properties": [{ "id": "displayName", "value": "Total Repos" }]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "active_repositories"
-            },
+            "matcher": { "id": "byName", "options": "active_repositories" },
             "properties": [
-              {
-                "id": "displayName",
-                "value": "Active Repos"
-              },
+              { "id": "displayName", "value": "Active Repos" },
               {
                 "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "color-background"
-                }
+                "value": { "mode": "gradient", "type": "color-background" }
               },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 1
-                    },
-                    {
-                      "color": "green",
-                      "value": 3
-                    }
+                    { "color": "red", "value": null },
+                    { "color": "yellow", "value": 1 },
+                    { "color": "green", "value": 3 }
                   ]
                 }
               }
             ]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "unique_contributors"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Contributors"
-              }
-            ]
+            "matcher": { "id": "byName", "options": "unique_contributors" },
+            "properties": [{ "id": "displayName", "value": "Contributors" }]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "total_commits"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Commits"
-              }
-            ]
+            "matcher": { "id": "byName", "options": "total_commits" },
+            "properties": [{ "id": "displayName", "value": "Commits" }]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "total_prs_merged"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "PRs Merged"
-              }
-            ]
+            "matcher": { "id": "byName", "options": "total_prs_merged" },
+            "properties": [{ "id": "displayName", "value": "PRs Merged" }]
           },
           {
             "matcher": {
@@ -574,120 +504,63 @@
               "options": "critical_vulnerabilities"
             },
             "properties": [
-              {
-                "id": "displayName",
-                "value": "Critical Vulns"
-              },
+              { "id": "displayName", "value": "Critical Vulns" },
               {
                 "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "color-background"
-                }
+                "value": { "mode": "gradient", "type": "color-background" }
               },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 1
-                    },
-                    {
-                      "color": "red",
-                      "value": 3
-                    }
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 1 },
+                    { "color": "red", "value": 3 }
                   ]
                 }
               }
             ]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "test_coverage_pct"
-            },
+            "matcher": { "id": "byName", "options": "test_coverage_pct" },
             "properties": [
-              {
-                "id": "displayName",
-                "value": "Test Coverage"
-              },
-              {
-                "id": "unit",
-                "value": "percent"
-              },
+              { "id": "displayName", "value": "Test Coverage" },
+              { "id": "unit", "value": "percent" },
               {
                 "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "color-background"
-                }
+                "value": { "mode": "gradient", "type": "color-background" }
               },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 50
-                    },
-                    {
-                      "color": "green",
-                      "value": 80
-                    }
+                    { "color": "red", "value": null },
+                    { "color": "yellow", "value": 50 },
+                    { "color": "green", "value": 80 }
                   ]
                 }
               }
             ]
           },
           {
-            "matcher": {
-              "id": "byName",
-              "options": "avg_pr_review_hrs"
-            },
+            "matcher": { "id": "byName", "options": "avg_pr_review_hrs" },
             "properties": [
-              {
-                "id": "displayName",
-                "value": "Avg PR Review"
-              },
-              {
-                "id": "unit",
-                "value": "h"
-              },
+              { "id": "displayName", "value": "Avg PR Review" },
+              { "id": "unit", "value": "h" },
               {
                 "id": "custom.cellOptions",
-                "value": {
-                  "mode": "gradient",
-                  "type": "color-background"
-                }
+                "value": { "mode": "gradient", "type": "color-background" }
               },
               {
                 "id": "thresholds",
                 "value": {
                   "mode": "absolute",
                   "steps": [
-                    {
-                      "color": "green",
-                      "value": null
-                    },
-                    {
-                      "color": "yellow",
-                      "value": 4
-                    },
-                    {
-                      "color": "red",
-                      "value": 24
-                    }
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 4 },
+                    { "color": "red", "value": 24 }
                   ]
                 }
               }
@@ -707,9 +580,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true,
@@ -734,7 +605,7 @@
           "refId": "A"
         }
       ],
-      "description": "Latest-period snapshot for each service. **Active Repos** \u2014 repos with \u22651 commit in the period (red=0, yellow=1\u20132, green\u22653). **Critical Vulns** \u2014 critical severity vulnerabilities (green=0, yellow=1\u20132, red\u22653). **Test Coverage** \u2014 average across repos (red<50%, yellow 50\u201379%, green\u226580%). **Avg PR Review** \u2014 mean open-to-merge time (green<4 h, yellow 4\u201324 h, red\u226524 h).",
+      "description": "Latest-period snapshot for each service. **Active Repos** — repos with ≥1 commit in the period (red=0, yellow=1–2, green≥3). **Critical Vulns** — critical severity vulnerabilities (green=0, yellow=1–2, red≥3). **Test Coverage** — average across repos (red<50%, yellow 50–79%, green≥80%). **Avg PR Review** — mean open-to-merge time (green<4 h, yellow 4–24 h, red≥24 h).",
       "title": "Services at a Glance",
       "type": "table"
     },
@@ -814,9 +685,7 @@
       "id": 7,
       "options": {
         "legend": {
-          "calcs": [
-            "sum"
-          ],
+          "calcs": ["sum"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -937,9 +806,7 @@
       "id": 8,
       "options": {
         "legend": {
-          "calcs": [
-            "sum"
-          ],
+          "calcs": ["sum"],
           "displayMode": "list",
           "placement": "bottom",
           "showLegend": true
@@ -1036,9 +903,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1105,9 +970,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1174,9 +1037,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1244,9 +1105,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1428,9 +1287,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1497,9 +1354,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1566,9 +1421,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1627,9 +1480,7 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": false
         },
@@ -1749,9 +1600,7 @@
         },
         "pieType": "pie",
         "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
+          "calcs": ["lastNotNull"],
           "fields": "",
           "values": true
         },
@@ -1912,10 +1761,6 @@
     },
     {
       "collapsed": false,
-      "datasource": {
-        "type": "datasource",
-        "uid": "-- Mixed --"
-      },
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1923,6 +1768,7 @@
         "y": 48
       },
       "id": 105,
+      "panels": [],
       "title": "Technology Stack",
       "type": "row"
     },
@@ -1950,10 +1796,6 @@
               {
                 "color": "green",
                 "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
               }
             ]
           }
@@ -2003,9 +1845,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true
@@ -2304,9 +2144,7 @@
         "footer": {
           "countRows": false,
           "fields": "",
-          "reducer": [
-            "sum"
-          ],
+          "reducer": ["sum"],
           "show": false
         },
         "showHeader": true,
@@ -2337,11 +2175,7 @@
   ],
   "refresh": "5m",
   "schemaVersion": 39,
-  "tags": [
-    "service",
-    "overview",
-    "summary"
-  ],
+  "tags": ["service", "overview", "summary"],
   "templating": {
     "list": [
       {
