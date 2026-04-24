@@ -855,11 +855,17 @@ def store_pull_request(
     if existing:
         return None
 
-    author = get_or_create_contributor(
-        session,
-        pr_data.author_email,
-        pr_data.author_name,
-    )
+    # Ghost authors (deleted users) have no email; store author_id as NULL rather
+    # than creating a spurious blank-email contributor row.
+    if pr_data.author_email:
+        author = get_or_create_contributor(
+            session,
+            pr_data.author_email,
+            pr_data.author_name,
+        )
+        author_id = author.id
+    else:
+        author_id = None
 
     size = classify_pr_size(pr_data.lines_added, pr_data.lines_removed)
 
@@ -871,7 +877,7 @@ def store_pull_request(
         description=pr_data.description[:2000] if pr_data.description else None,
         source_branch=pr_data.source_branch,
         target_branch=pr_data.target_branch,
-        author_id=author.id,
+        author_id=author_id,
         status=pr_data.status,
         created_at=pr_data.created_at,
         updated_at=pr_data.updated_at,

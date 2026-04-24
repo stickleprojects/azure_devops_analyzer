@@ -105,7 +105,10 @@ class TestGitHubSnapshot:
         # db_invariants_check teardown fires here
 
     def test_no_orphan_pr_author_fk(self, test_session):
-        """Every PR stored from the snapshot must have a valid author_id FK."""
+        """PRs with a non-null author_id must point to a valid contributors row.
+
+        NULL author_id is allowed for ghost/deleted users.
+        """
         extractor = SnapshotExtractor("github")
         repo = _run_snapshot_pipeline(test_session, "github", extractor)
 
@@ -113,12 +116,12 @@ class TestGitHubSnapshot:
             text("""
                 SELECT count(*) FROM pull_requests
                 WHERE repo_id = :rid
-                  AND (author_id IS NULL
-                       OR author_id NOT IN (SELECT id FROM contributors))
+                  AND author_id IS NOT NULL
+                  AND NOT EXISTS (SELECT 1 FROM contributors c WHERE c.id = pull_requests.author_id)
             """),
             {"rid": repo.repo_id},
         ).scalar()
-        assert orphans == 0, f"GitHub snapshot: {orphans} PRs with NULL/dangling author_id"
+        assert orphans == 0, f"GitHub snapshot: {orphans} PRs with dangling author_id"
 
     def test_no_case_variant_contributor_twins(self, test_session):
         """Case-variant emails in the snapshot must map to a single contributor row."""
@@ -160,7 +163,10 @@ class TestAzureDevOpsSnapshot:
         # db_invariants_check teardown fires here
 
     def test_no_orphan_pr_author_fk(self, test_session):
-        """Every PR stored from the snapshot must have a valid author_id FK."""
+        """PRs with a non-null author_id must point to a valid contributors row.
+
+        NULL author_id is allowed for ghost/deleted users.
+        """
         extractor = SnapshotExtractor("azure_devops")
         repo = _run_snapshot_pipeline(test_session, "azure_devops", extractor)
 
@@ -168,12 +174,12 @@ class TestAzureDevOpsSnapshot:
             text("""
                 SELECT count(*) FROM pull_requests
                 WHERE repo_id = :rid
-                  AND (author_id IS NULL
-                       OR author_id NOT IN (SELECT id FROM contributors))
+                  AND author_id IS NOT NULL
+                  AND NOT EXISTS (SELECT 1 FROM contributors c WHERE c.id = pull_requests.author_id)
             """),
             {"rid": repo.repo_id},
         ).scalar()
-        assert orphans == 0, f"Azure DevOps snapshot: {orphans} PRs with NULL/dangling author_id"
+        assert orphans == 0, f"Azure DevOps snapshot: {orphans} PRs with dangling author_id"
 
     def test_no_case_variant_contributor_twins(self, test_session):
         """Case-variant emails in the snapshot must map to a single contributor row."""

@@ -99,7 +99,7 @@ class FixtureExtractor(RepositoryExtractor):
                 description=pr.get("description"),
                 source_branch=pr["source_branch"],
                 target_branch=pr["target_branch"],
-                author_email=pr.get("author_email") or "",
+                author_email=pr.get("author_email"),
                 author_name=pr.get("author_name"),
                 status=pr["status"],
                 created_at=datetime.fromisoformat(pr["created_at"]),

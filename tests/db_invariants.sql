@@ -20,12 +20,12 @@ GROUP BY lower(trim(email))
 HAVING count(*) > 1;
 
 -- invariant: no_orphan_pr_author_fk
--- Every pull_requests row must have a non-null author_id that resolves to a
--- contributors row.
+-- Every pull_requests row with a non-null author_id must resolve to a
+-- contributors row.  NULL author_id is allowed (ghost/deleted user).
 SELECT id, repo_id, pr_number, author_id
 FROM pull_requests
-WHERE author_id IS NULL
-   OR NOT EXISTS (SELECT 1 FROM contributors c WHERE c.id = pull_requests.author_id);
+WHERE author_id IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM contributors c WHERE c.id = pull_requests.author_id);
 
 -- invariant: no_orphan_pr_reviewer_fk
 -- Every pr_reviews row must have a non-null reviewer_id that resolves to a
@@ -57,6 +57,7 @@ JOIN pull_requests pr ON r.pr_id = pr.id
 WHERE r.review_date < pr.created_at;
 
 -- invariant: no_orphan_repo_dependency
+-- requires-table: repository_dependencies
 -- Every repository_dependencies row must reference a valid repositories row.
 -- Falls back gracefully if the table has been renamed or not yet created.
 SELECT rd.repo_id
@@ -64,6 +65,7 @@ FROM repository_dependencies rd
 WHERE NOT EXISTS (SELECT 1 FROM repositories r WHERE r.repo_id = rd.repo_id);
 
 -- invariant: no_vulnerability_without_package
+-- requires-table: packages
 -- Every vulnerabilities row must reference a valid packages row (migration 014+).
 -- Skip if packages table not yet present to keep schema-version compatibility.
 SELECT v.id, v.package_id

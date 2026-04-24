@@ -24,7 +24,6 @@ from src.database.storage import (
     store_repository,
 )
 from src.extractors.base import Platform
-from src.database.models import Commit, PullRequest, PRReview, Contributor
 
 # ---------------------------------------------------------------------------
 # Scenarios to exercise idempotency.
@@ -57,11 +56,6 @@ def _setup_repo(session: Session, scenario_name: str):
     repo = store_repository(session, project, repo_data)
     session.commit()
     return repo
-
-
-def _run_pipeline(session: Session, repo_id: str, extractor: FixtureExtractor):
-    """Run the extraction pipeline for a single repo (delegates to shared helper)."""
-    run_pipeline(session, repo_id, extractor)
 
 
 def _capture_state(session: Session, repo_id: str) -> dict:
@@ -182,11 +176,11 @@ class TestExtractionIdempotency:
         repo = _setup_repo(test_session, scenario)
 
         # Pass 1
-        _run_pipeline(test_session, repo.repo_id, extractor)
+        run_pipeline(test_session, repo.repo_id, extractor)
         snapshot_1 = _capture_state(test_session, repo.repo_id)
 
         # Pass 2 — same extractor, same target repo
-        _run_pipeline(test_session, repo.repo_id, extractor)
+        run_pipeline(test_session, repo.repo_id, extractor)
         snapshot_2 = _capture_state(test_session, repo.repo_id)
 
         assert snapshot_1 == snapshot_2, (

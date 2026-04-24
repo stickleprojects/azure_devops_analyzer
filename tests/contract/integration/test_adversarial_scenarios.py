@@ -22,7 +22,7 @@ from src.database.storage import (
     store_project,
     store_repository,
 )
-from src.database.models import Commit, Contributor, PullRequest, PRReview
+from src.database.models import PullRequest
 
 # ---------------------------------------------------------------------------
 # Scenario registry
@@ -58,12 +58,6 @@ def _create_fixture_repo(session: Session, organization, scenario_name: str):
     session.commit()
     return repo
 
-
-def _run_full_pipeline(session: Session, repo_id: str, extractor: FixtureExtractor):
-    """Run the extraction pipeline for a single repo (delegates to shared helper)."""
-    run_pipeline(session, repo_id, extractor)
-
-
 # ---------------------------------------------------------------------------
 # Test class
 # ---------------------------------------------------------------------------
@@ -81,7 +75,7 @@ class TestAdversarialScenarios:
         extractor = FixtureExtractor(scenario)
         repo = _create_fixture_repo(test_session, organization, scenario)
         # Must not raise
-        _run_full_pipeline(test_session, repo.repo_id, extractor)
+        run_pipeline(test_session, repo.repo_id, extractor)
 
     def test_db_invariants_hold(self, scenario, test_session, organization, db_invariants_check):
         """All DB invariants defined in tests/db_invariants.sql must hold.
@@ -91,34 +85,38 @@ class TestAdversarialScenarios:
         """
         extractor = FixtureExtractor(scenario)
         repo = _create_fixture_repo(test_session, organization, scenario)
-        _run_full_pipeline(test_session, repo.repo_id, extractor)
+        run_pipeline(test_session, repo.repo_id, extractor)
         # db_invariants_check teardown fires here
 
     def test_no_orphan_pr_author_fk(self, scenario, test_session, organization):
-        """No pull_requests row may have a null or dangling author_id."""
+        """PRs with a non-null author_id must point to a valid contributors row.
+
+        Ghost authors (deleted users) legitimately have author_id = NULL and
+        must not be flagged as violations.
+        """
         extractor = FixtureExtractor(scenario)
         repo = _create_fixture_repo(test_session, organization, scenario)
-        _run_full_pipeline(test_session, repo.repo_id, extractor)
+        run_pipeline(test_session, repo.repo_id, extractor)
 
         orphan_count = test_session.execute(
             text("""
                 SELECT count(*) FROM pull_requests
                 WHERE repo_id = :repo_id
-                  AND (author_id IS NULL
-                       OR author_id NOT IN (SELECT id FROM contributors))
+                  AND author_id IS NOT NULL
+                  AND NOT EXISTS (SELECT 1 FROM contributors c WHERE c.id = pull_requests.author_id)
             """),
             {"repo_id": repo.repo_id},
         ).scalar()
         assert orphan_count == 0, (
             f"Adversarial scenario '{scenario}': found {orphan_count} PRs with "
-            "NULL or dangling author_id"
+            "dangling author_id"
         )
 
     def test_no_orphan_pr_reviewer_fk(self, scenario, test_session, organization):
         """No pr_reviews row may have a null or dangling reviewer_id."""
         extractor = FixtureExtractor(scenario)
         repo = _create_fixture_repo(test_session, organization, scenario)
-        _run_full_pipeline(test_session, repo.repo_id, extractor)
+        run_pipeline(test_session, repo.repo_id, extractor)
 
         stored_prs = test_session.query(PullRequest).filter_by(repo_id=repo.repo_id).all()
         pr_ids = [p.id for p in stored_prs]
@@ -142,7 +140,7 @@ class TestAdversarialScenarios:
         """No two contributors rows may share the same normalised email."""
         extractor = FixtureExtractor(scenario)
         repo = _create_fixture_repo(test_session, organization, scenario)
-        _run_full_pipeline(test_session, repo.repo_id, extractor)
+        run_pipeline(test_session, repo.repo_id, extractor)
 
         twin_count = test_session.execute(
             text("""

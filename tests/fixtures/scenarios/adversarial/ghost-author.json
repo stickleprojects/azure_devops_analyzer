@@ -1,6 +1,6 @@
 {
   "name": "ghost-author",
-  "description": "PR with null author_email and author_name (deleted GitHub user scenario)",
+  "description": "PR with null author_email and author_name (deleted GitHub user scenario). Ghost authors are expected to result in pull_requests.author_id = NULL, not a blank-email contributor row.",
   "languages": ["JavaScript"],
   "file_names": ["package.json"],
   "manifests": {"package.json": "{\"name\": \"app\", \"version\": \"1.0.0\"}"},

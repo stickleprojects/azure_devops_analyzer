@@ -49,13 +49,19 @@ done
 
 mkdir -p "${RAW_DIR}/${PLATFORM}"
 
+# ─── Helper: URL-encode a single path segment ────────────────────────────────
+# Usage: url_encode_path <value>
+url_encode_path() {
+    _SEG_VALUE="$1" python3 -c "import os, urllib.parse; print(urllib.parse.quote(os.environ['_SEG_VALUE'], safe=''))"
+}
+
 # ─── GitHub ──────────────────────────────────────────────────────────────────
 if [[ "${PLATFORM}" == "github" ]]; then
     : "${GITHUB_TOKEN:?GITHUB_TOKEN must be set}"
     : "${GITHUB_ORG:?GITHUB_ORG must be set}"
     : "${GITHUB_REPO:?GITHUB_REPO must be set}"
 
-    BASE="https://api.github.com/repos/${GITHUB_ORG}/${GITHUB_REPO}"
+    BASE="https://api.github.com/repos/$(url_encode_path "${GITHUB_ORG}")/$(url_encode_path "${GITHUB_REPO}")"
     AUTH="Authorization: Bearer ${GITHUB_TOKEN}"
 
     echo "Capturing GitHub commits for ${GITHUB_ORG}/${GITHUB_REPO}…"
@@ -95,7 +101,8 @@ elif [[ "${PLATFORM}" == "azure_devops" ]]; then
 
     B64_PAT=$(printf ":%s" "${AZURE_DEVOPS_PAT}" | base64)
     AUTH="Authorization: Basic ${B64_PAT}"
-    BASE="${AZURE_DEVOPS_ORG_URL}/${AZURE_DEVOPS_PROJECT}/_apis/git/repositories/${AZURE_DEVOPS_REPO}"
+    ORG_URL="${AZURE_DEVOPS_ORG_URL%/}"
+    BASE="${ORG_URL}/$(url_encode_path "${AZURE_DEVOPS_PROJECT}")/_apis/git/repositories/$(url_encode_path "${AZURE_DEVOPS_REPO}")"
     API_VER="api-version=7.1"
 
     echo "Capturing Azure DevOps commits…"
@@ -121,7 +128,7 @@ if prs:
     if [[ -n "${PR_ID:-}" ]]; then
         echo "Capturing reviewers for PR ${PR_ID}…"
         curl -s -H "${AUTH}" \
-            "${AZURE_DEVOPS_ORG_URL}/${AZURE_DEVOPS_PROJECT}/_apis/git/pullrequests/${PR_ID}/reviewers?${API_VER}" \
+            "${ORG_URL}/$(url_encode_path "${AZURE_DEVOPS_PROJECT}")/_apis/git/pullrequests/${PR_ID}/reviewers?${API_VER}" \
             > "${RAW_DIR}/${PLATFORM}/pr_reviews.json"
         echo "  ✓ pr_reviews.json"
     fi
