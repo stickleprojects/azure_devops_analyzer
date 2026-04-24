@@ -132,6 +132,7 @@ services:
       # Mount source code (read-only for safety)
       - ./tests:/app/tests:ro
       - ./src:/app/src
+      - ./scripts:/app/scripts:ro
       - ./database:/app/database:ro
       - ./pyproject.toml:/app/pyproject.toml:ro
       - ./.env.resolved:/app/.env.resolved:ro
