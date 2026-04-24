@@ -995,3 +995,257 @@ def test_v_extraction_runs_recent_includes_error_category(db_session):
 
     assert row is not None
     assert row.error_category == "AUTH_401_UNAUTHORIZED"
+
+
+# =============================================================================
+# Contributor Fragmentation Resistance Tests
+# =============================================================================
+
+@pytest.mark.integration
+class TestContributorFragmentationResistance:
+    """CONTRACT: views attribute commits, PR authorship, and PR reviews to a single
+    contributor even when the same person arrives via multiple email casings.
+
+    Regression guard for DASH-CONTRIB-002: the root cause was contributor identity
+    fragmentation caused by case-variant emails creating multiple contributor rows.
+    """
+
+    def test_single_person_three_email_casings_one_contributor_row(self, db_session):
+        """CONTRACT: Three events using three casings of the same email must produce
+        exactly one contributors row.
+        """
+        from src.database.storage import store_pr_review
+        from src.extractors.base import PRReviewData
+        from src.database.models import Contributor
+        from datetime import datetime, UTC
+
+        org = store_organization(db_session, sample_organization_data())
+        project = store_project(db_session, org, "test-project")
+        repo = store_repository(db_session, project, sample_repository_data(repo_id="frag-test-repo"))
+        db_session.commit()
+
+        # 1. Commit via lowercase email
+        store_commit(
+            db_session, repo.repo_id, "main",
+            sample_commit_data(
+                sha="frag-sha-001",
+                author_email="alice@example.com",
+                commit_date=datetime.now() - timedelta(days=2),
+            ),
+        )
+
+        # 2. PR via mixed-case email
+        pr = store_pull_request(
+            db_session, repo.repo_id,
+            sample_pull_request_data(
+                pr_number=9001,
+                author_email="Alice@Example.COM",
+                created_at=datetime.now() - timedelta(days=1),
+            ),
+        )
+
+        # 3. Review via padded uppercase email
+        store_pr_review(
+            db_session, pr.id,
+            PRReviewData(
+                reviewer_email="  ALICE@example.com  ",
+                reviewer_name="Alice",
+                review_date=datetime.now() - timedelta(hours=12),
+                state="approved",
+            ),
+        )
+        db_session.commit()
+
+        alice_rows = db_session.execute(
+            text("SELECT count(*) FROM contributors WHERE email = 'alice@example.com'")
+        ).scalar()
+        assert alice_rows == 1, (
+            f"Expected exactly 1 contributors row for alice; got {alice_rows}. "
+            "Email normalisation may be broken."
+        )
+
+    def test_fragmentation_resistance_top_contributors_30d(self, db_session):
+        """CONTRACT: v_top_contributors_30d must show a single row for Alice with
+        commits >= 1 and must not be split across multiple rows.
+        """
+        from src.database.storage import store_pr_review
+        from src.extractors.base import PRReviewData
+        from src.database.models import Contributor
+        from datetime import datetime, UTC
+
+        org = store_organization(db_session, sample_organization_data())
+        project = store_project(db_session, org, "test-project")
+        repo = store_repository(db_session, project, sample_repository_data(repo_id="frag-top-contrib-repo"))
+        db_session.commit()
+
+        store_commit(
+            db_session, repo.repo_id, "main",
+            sample_commit_data(
+                sha="frag-sha-tc-001",
+                author_email="alice@example.com",
+                commit_date=datetime.now() - timedelta(days=2),
+            ),
+        )
+        store_pull_request(
+            db_session, repo.repo_id,
+            sample_pull_request_data(
+                pr_number=9101,
+                author_email="Alice@Example.COM",
+                created_at=datetime.now() - timedelta(days=1),
+            ),
+        )
+        db_session.commit()
+
+        # Resolve Alice's contributor id
+        alice = db_session.execute(
+            text("SELECT id FROM contributors WHERE email = 'alice@example.com'")
+        ).fetchone()
+        assert alice is not None, "Alice contributor row not found"
+
+        rows = db_session.execute(
+            text(
+                """
+                SELECT contributor, commits
+                FROM v_top_contributors_30d
+                WHERE contributor IN (
+                    SELECT COALESCE(name, email)
+                    FROM contributors
+                    WHERE email = 'alice@example.com'
+                )
+                """
+            )
+        ).fetchall()
+
+        assert len(rows) == 1, (
+            f"Expected exactly 1 row for Alice in v_top_contributors_30d; got {len(rows)}. "
+            "Fragmentation detected — email normalisation may have failed."
+        )
+        assert rows[0].commits >= 1
+
+    def test_fragmentation_resistance_top_reviewers_30d(self, db_session):
+        """CONTRACT: v_top_reviewers_30d must show a single row for Alice when she
+        reviewed using a case-variant email.
+        """
+        from src.database.storage import store_pr_review
+        from src.extractors.base import PRReviewData
+        from datetime import datetime, UTC
+
+        org = store_organization(db_session, sample_organization_data())
+        project = store_project(db_session, org, "test-project")
+        repo = store_repository(db_session, project, sample_repository_data(repo_id="frag-top-rev-repo"))
+        db_session.commit()
+
+        pr = store_pull_request(
+            db_session, repo.repo_id,
+            sample_pull_request_data(
+                pr_number=9201,
+                author_email="bob@example.com",
+                created_at=datetime.now() - timedelta(days=5),
+            ),
+        )
+
+        # Two reviews from Alice via different casings
+        store_pr_review(
+            db_session, pr.id,
+            PRReviewData(
+                reviewer_email="alice@example.com",
+                reviewer_name="Alice",
+                review_date=datetime.now() - timedelta(days=2),
+                state="approved",
+            ),
+        )
+        store_pr_review(
+            db_session, pr.id,
+            PRReviewData(
+                reviewer_email="ALICE@EXAMPLE.COM",
+                reviewer_name="Alice",
+                review_date=datetime.now() - timedelta(days=1),
+                state="commented",
+            ),
+        )
+        db_session.commit()
+
+        rows = db_session.execute(
+            text(
+                """
+                SELECT reviewer, reviews
+                FROM v_top_reviewers_30d
+                WHERE reviewer IN (
+                    SELECT COALESCE(name, email)
+                    FROM contributors
+                    WHERE email = 'alice@example.com'
+                )
+                """
+            )
+        ).fetchall()
+
+        assert len(rows) == 1, (
+            f"Expected exactly 1 row for Alice in v_top_reviewers_30d; got {len(rows)}. "
+            "Fragmentation detected — email normalisation may have failed."
+        )
+        assert rows[0].reviews >= 1
+
+    def test_fragmentation_resistance_contributor_activity_30d(self, db_session):
+        """CONTRACT: v_contributor_activity_30d must show a single row for Alice
+        combining commits, PR authorship, and reviews even when all three arrive
+        via different email casings.
+        """
+        from src.database.storage import store_pr_review
+        from src.extractors.base import PRReviewData
+        from datetime import datetime, UTC
+
+        org = store_organization(db_session, sample_organization_data())
+        project = store_project(db_session, org, "test-project")
+        repo = store_repository(db_session, project, sample_repository_data(repo_id="frag-activity-repo"))
+        db_session.commit()
+
+        # 1. Commit via lowercase
+        store_commit(
+            db_session, repo.repo_id, "main",
+            sample_commit_data(
+                sha="frag-sha-act-001",
+                author_email="alice@example.com",
+                commit_date=datetime.now() - timedelta(days=5),
+            ),
+        )
+
+        # 2. PR via mixed-case
+        pr = store_pull_request(
+            db_session, repo.repo_id,
+            sample_pull_request_data(
+                pr_number=9301,
+                author_email="Alice@Example.COM",
+                created_at=datetime.now() - timedelta(days=3),
+            ),
+        )
+
+        # 3. Review via padded uppercase
+        store_pr_review(
+            db_session, pr.id,
+            PRReviewData(
+                reviewer_email="  ALICE@example.com  ",
+                reviewer_name="Alice",
+                review_date=datetime.now() - timedelta(days=1),
+                state="approved",
+            ),
+        )
+        db_session.commit()
+
+        rows = db_session.execute(
+            text(
+                """
+                SELECT contributor, commits, prs_authored, reviews_given
+                FROM v_contributor_activity_30d
+                WHERE email = 'alice@example.com'
+                """
+            )
+        ).fetchall()
+
+        assert len(rows) == 1, (
+            f"Expected exactly 1 row for Alice in v_contributor_activity_30d; got {len(rows)}. "
+            "Fragmentation detected — email normalisation may have failed."
+        )
+        row = rows[0]
+        assert row.commits >= 1, f"Expected commits >= 1; got {row.commits}"
+        assert row.prs_authored >= 1, f"Expected prs_authored >= 1; got {row.prs_authored}"
+        assert row.reviews_given >= 1, f"Expected reviews_given >= 1; got {row.reviews_given}"

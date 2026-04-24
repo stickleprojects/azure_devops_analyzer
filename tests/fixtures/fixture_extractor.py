@@ -8,6 +8,7 @@ from src.extractors.base import (
     LanguageData,
     ManifestFileData,
     Platform,
+    PRReviewData,
     PullRequestData,
     RepositoryExtractor,
 )
@@ -75,8 +76,19 @@ class FixtureExtractor(RepositoryExtractor):
         ]
 
     def get_pull_requests(self, repo_id, **kwargs) -> list[PullRequestData]:
-        return [
-            PullRequestData(
+        result = []
+        for pr in self._scenario.get("pull_requests", []):
+            reviews = [
+                PRReviewData(
+                    reviewer_email=r["reviewer_email"],
+                    reviewer_name=r.get("reviewer_name"),
+                    review_date=datetime.fromisoformat(r["review_date"]) if r.get("review_date") else datetime.fromisoformat(pr["created_at"]),
+                    state=r.get("state", "approved"),
+                    is_required=r.get("is_required", False),
+                )
+                for r in pr.get("reviews", [])
+            ]
+            result.append(PullRequestData(
                 pr_number=pr["pr_number"],
                 # Namespace fixture IDs by repo to avoid collisions across scenarios.
                 platform_pr_id=f"{repo_id}:{pr.get('platform_pr_id', pr.get('pr_number'))}",
@@ -92,10 +104,10 @@ class FixtureExtractor(RepositoryExtractor):
                 closed_at=datetime.fromisoformat(pr["closed_at"]) if pr.get("closed_at") else None,
                 files_changed=pr.get("files_changed", 0),
                 lines_added=pr.get("lines_added", 0),
-                lines_removed=pr.get("lines_removed", 0)
-            )
-            for pr in self._scenario.get("pull_requests", [])
-        ]
+                lines_removed=pr.get("lines_removed", 0),
+                reviews=reviews,
+            ))
+        return result
 
     def get_vulnerability_data(self) -> list[dict]:
         """Return synthetic vulnerability/enrichment data stored in the fixture.
