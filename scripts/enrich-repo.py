@@ -3,7 +3,6 @@
 
 Reads enrichment parameters (themes, sizing, PR status distribution) from
 config.json by resolving the seed name to its repo_template and pattern.
-No Ollama required.
 
 Usage:
     python enrich-repo.py <seed.json> [config.json]

@@ -61,74 +61,6 @@ Generates:
 
 ---
 
-### `ollama-generate.py`
-
-Core Ollama API caller used by all orchestration scripts. Runs inside Docker (`python:3.12-slim`) — no host Python dependencies required.
-
-**Usage:**
-
-```bash
-docker run --rm -v "$PROJECT_ROOT:/app" -w /app python:3.12-slim \
-    python scripts/ollama-generate.py \
-    --model qwen2.5-coder:14b \
-    --prompt .ai/ollama-prompts/fixture-repo-seeds.md \
-    --output scripts/generated/generate-repo-seeds.py \
-    [--context src/extractors/base.py] \
-    [--ollama-url http://host.docker.internal:11434] \
-    [--num-ctx 8192] \
-    [--raw]
-```
-
-**What it does:**
-
-- Calls the Ollama `/api/chat` endpoint with streaming
-- Injects optional context files as a system message (for extending existing classes)
-- Extracts the largest fenced code block from the response (avoids capturing usage examples)
-- Shows live token/s progress and final performance stats
-- Writes the extracted code directly to `--output`
-
-**Flags:**
-
-| Flag             | Description                                                    |
-| ---------------- | -------------------------------------------------------------- |
-| `--model`        | Ollama model name (e.g. `qwen2.5-coder:14b`)                   |
-| `--prompt`       | Markdown prompt file                                           |
-| `--output`       | Destination file path                                          |
-| `--context FILE` | Read-only context file shown as system message (repeatable)    |
-| `--ollama-url`   | Ollama base URL (default: `http://host.docker.internal:11434`) |
-| `--num-ctx`      | Context window tokens (default: 8192)                          |
-| `--raw`          | Write full model response instead of extracting code block     |
-
-**Pattern documentation:** [.ai/patterns/ollama-fixture-and-code-generation.md](../.ai/patterns/ollama-fixture-and-code-generation.md)
-
----
-
-### `check_mcp_health.sh`
-
-Checks workspace MCP server configuration and warns when configured servers are not available.
-If the `ollama` MCP server is configured but unreachable, it can auto-start `ollama serve`.
-
-**Usage:**
-
-```bash
-bash scripts/check_mcp_health.sh
-```
-
-**What it checks:**
-
-- Reads MCP servers from `.vscode/mcp.json`
-- Verifies each server `command` exists in `PATH`
-- For the `ollama` server, verifies `OLLAMA_HOST` is reachable via `/api/tags`
-- Automatically launches `ollama serve` when missing
-
-**Related VS Code automation:**
-
-- `.vscode/tasks.json` includes `MCP health check (folder open)`
-- Runs automatically on workspace open (`runOn: folderOpen`)
-- Uses `bash scripts/check_mcp_health.sh`
-
----
-
 ### `capture_snapshot.py`
 
 Captures a live repository snapshot and saves it as a fixture scenario JSON file. Used to create realistic test fixtures from real repositories.
@@ -152,7 +84,7 @@ docker compose run --rm scheduler python scripts/capture_snapshot.py \
 | `--output`   | Path to write scenario JSON                          |
 | `--branch`   | Branch to scan (default: repository default branch)  |
 
-**Output format:** Fixture scenario JSON matching the schema in [.ai/ollama-prompts/fixture-scenarios.md](../.ai/ollama-prompts/fixture-scenarios.md). Captured snapshots should be placed in `tests/fixtures/scenarios/captured/` to distinguish them from generated scenarios.
+**Output format:** Fixture scenario JSON. Captured snapshots should be placed in `tests/fixtures/scenarios/captured/` to distinguish them from generated scenarios.
 
 ---
 
@@ -185,24 +117,6 @@ Exits `0` if all checks pass, `1` if any fail.
 
 ---
 
-### `generate-fixtures.sh`
-
-Config-driven fixture generation (Plan 014) using templates and repo sets.
-
-**Usage:**
-
-```bash
-# Full run: validate config, generate seeds, enrich all repos
-./scripts/generate-fixtures.sh
-
-# Run a single step
-./scripts/generate-fixtures.sh --step validate
-./scripts/generate-fixtures.sh --step seeds
-./scripts/generate-fixtures.sh --step enrich
-```
-
----
-
 ### `validate-fixture-config.py`
 
 Validates the config-driven fixture generation format in `tests/fixtures/scenarios/config.json`.
@@ -223,34 +137,49 @@ Checks:
 
 ---
 
-### Config-Driven Fixture Generation (Plan 014)
+### `enrich-repo.py`
 
-Two-layer generation using config templates and repo sets:
+Enriches a fixture repository seed (JSON) with commits and pull requests
+based on templates in `tests/fixtures/scenarios/config.json`.
+
+**Usage:**
 
 ```bash
-# Use different model
-./scripts/generate-fixtures.sh --model qwen3-coder-next:latest
+python scripts/enrich-repo.py tests/fixtures/scenarios/generated/python-docker.json
 ```
 
-**What it generates:**
+Writes atomically in-place. No external services required.
 
-- N test scenario JSON files (count derived from `repo_sets`)
-- Seed generator script (`scripts/generated/generate-repo-seeds.py`)
-- Per-repo enrichment scripts (`scripts/generated/enrich-<name>.py`)
-- Utility scripts for snapshot capture and verification (unchanged)
+---
 
-**Output locations:**
+### `run-enrich.py`
 
-- Scenarios: `tests/fixtures/scenarios/generated/`
-- Code: `tests/fixtures/fixture_extractor.py`, `scripts/generate-fixture-scenarios.py`
+Orchestrates `enrich-repo.py` across every seed listed in
+`tests/fixtures/scenarios/config.json`.
 
-**Prerequisites:**
+**Usage:**
 
-- Ollama running at `localhost:11434`
-- Model available: `ollama pull qwen2.5-coder:14b`
-- Docker running (scripts execute inside containers)
+```bash
+python scripts/run-enrich.py
+```
 
-**Pattern documentation:** [.ai/patterns/ollama-fixture-and-code-generation.md](../.ai/patterns/ollama-fixture-and-code-generation.md)
+---
+
+### `generated/generate-repo-seeds.py` and `generated/generate-fixture-scenarios.py`
+
+Deterministic (seeded-PRNG) fixture generators. They produce the JSON files
+in `tests/fixtures/scenarios/generated/` from templates in
+`tests/fixtures/scenarios/config.json`, including synthetic vulnerability
+data. No external services — re-runs are idempotent.
+
+**Usage:**
+
+```bash
+python scripts/generated/generate-repo-seeds.py
+python scripts/generated/generate-fixture-scenarios.py
+```
+
+---
 
 ### `run_coverage.sh`
 

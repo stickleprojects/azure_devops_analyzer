@@ -38,18 +38,6 @@ bash scripts/run-tests-docker.sh
 
 Docker is source of truth (catches environment issues local Python misses).
 
-### Gate 3.5: Ollama-Assisted Drift Check (Recommended)
-
-Before pushing changes that touch CI, migrations, or test orchestration, run an Ollama-assisted consistency pass using `.ai/agents/08-ollama-delegation.md`.
-
-Recommended focus areas:
-
-- CI/local parity: `.github/workflows/tests.yml` vs `scripts/run-tests-docker.sh`
-- DB initialization parity: `docker/scripts/run_migrations.sh` vs `database/schema.sql` and `database/migrations/*.sql`
-- Test fixture/setup parity: `tests/contract/database/conftest.py` vs schema/view assumptions
-
-Use Ollama for first-pass analysis and draft suggestions, then validate with local Docker tests (`bash scripts/run-tests-docker.sh`) before committing.
-
 ### Gate 3.6: CI/Local Parity Check (Required for test/DB/CI changes)
 
 If a change touches any of the following, you must validate using the same execution shape as GitHub Actions:
@@ -184,11 +172,7 @@ See `agents/07-session-continuity-agent.md` for detailed session tracking patter
 .ai/
   ├─ principles.md           ← Mental framework (7 core principles)
   ├─ operations.md           ← This file (conventions & procedures)
-  ├─ instructions.md         ← Legacy redirect (being phased out, ignore)
-  ├─ agents/
-  │   └─ 08-ollama-delegation.md  ← Ollama MCP tool delegation policy
-  └─ patterns/
-      └─ ollama-fixture-and-code-generation.md  ← Ollama codegen pattern
+  └─ instructions.md         ← Legacy redirect (being phased out, ignore)
 
 agents/
   ├─ 00-documentation-standards.md

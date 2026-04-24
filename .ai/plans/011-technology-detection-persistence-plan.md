@@ -3,7 +3,7 @@
 ## Status: Mostly Complete
 
 **Branch**: `copilot/implement-plan-011-persistence-eol-enrichment` (merged to main via PR #56)  
-**Last updated**: 2026-04-19
+**Last updated**: 2026-04-24
 
 | Section | Status | Notes |
 |---------|--------|-------|
@@ -17,11 +17,79 @@
 | API endpoints | ✅ Done | `src/api/stack.py` — all 4 endpoints (`/api/stack/summary`, `by-service`, `eol`, `by-repo`) |
 | Technology Landscape dashboard | ✅ Done | `dashboards/technology-landscape.json` |
 | Contract test — dashboard SQL | ✅ Done | `tests/contract/database/test_stack_dashboard_queries.py` |
-| service-overview "Technology Stack" row | ❌ Not done | New row with language/framework/eol panels not added |
-| repository-deep-dive — language panels | ❌ Not done | Panels still use reporting views; no `repository_stack` queries or Technologies section added |
-| Fixture scenarios (EOL/stack categories) | ❌ Not done | `tests/fixtures/scenarios/config.json` not updated with explicit EOL, no-slug, mixed-source scenarios per Addendum A |
+| service-overview "Technology Stack" row | ❌ Not done | `service-overview.json` contains no `repository_stack` / `technologies` references (verified 2026-04-24) |
+| repository-deep-dive — language panels | ❌ Not done | `repository-deep-dive.json` only references `key_technologies` from summaries; no `repository_stack` queries or Technologies section (verified 2026-04-24) |
+| Fixture scenarios (EOL/stack categories) | ❌ Not done | `tests/fixtures/scenarios/config.json` has no `is_eol` / `framework` / `heuristic` entries per Addendum A (verified 2026-04-24) |
 
-**Remaining work**: Two dashboard extensions + fixture scenario additions for Addendum A coverage.
+---
+
+## Remaining Work Summary (2026-04-24)
+
+Three discrete, independent items remain. All foundational code (migration, models,
+storage, enricher, API, Technology Landscape dashboard, dashboard-SQL contract tests)
+is merged and green. What's left is surface-area extension plus the fixture coverage
+required by Addendum A.
+
+### R1 — `dashboards/service-overview.json`: add "Technology Stack" row
+- Insert after the Security row.
+- **Panel 1 (Table)**: service + languages + frameworks + eol_count
+  (all from `repository_stack` joined through `repository_services`;
+   `eol_count` via JOIN on `technologies WHERE is_eol = true`).
+- **Panel 2 (Bar chart)**: top 10 non-language entries across the selected services
+  (`WHERE rs.category != 'language'`).
+- Contract-test semantics already enforced by
+  `tests/contract/database/test_stack_dashboard_queries.py` — panel SQL must satisfy
+  those existing assertions.
+
+### R2 — `dashboards/repository-deep-dive.json`: migrate language panels + add Technologies section
+- Replace any panel querying the old `repository_languages` table with
+  `repository_stack WHERE category = 'language' AND source = 'platform_api'`.
+  (Current file has no `repository_languages` refs, so this is primarily *adding*
+  language panels sourced from `repository_stack` rather than *replacing*.)
+- Add a new "Technologies" section: stack entries grouped by category (framework,
+  database, deployment_platform, build_tool, testing_framework, ci_cd, documentation)
+  with EOL status via LEFT JOIN on `technologies`.
+- Must satisfy dashboard SQL contract tests.
+
+### R3 — `tests/fixtures/scenarios/config.json` + generator updates (Addendum A)
+- Add deterministic scenarios covering all seven non-language categories:
+  `framework`, `database`, `deployment_platform`, `build_tool`, `testing_framework`,
+  `ci_cd`, `documentation`.
+- Include at least one scenario each for:
+  - active (non-EOL) technology
+  - EOL technology
+  - unknown / no-slug technology (must be skipped gracefully)
+  - mixed-source repository (platform language + heuristic detections)
+- Preserve determinism: the existing `scripts/generated/generate-repo-seeds.py` and
+  `scripts/enrich-repo.py` pipeline is seeded-PRNG; any generator changes must keep
+  output reproducible across runs.
+
+---
+
+## GitHub Coding Agent Suitability Assessment
+
+| Item | Suitability | Why | Primary risk |
+|------|-------------|-----|--------------|
+| R1 — service-overview row | **High** | Fully specified (panel types, SQL predicates, placement). Contract tests already pin the SQL semantics — the agent has an explicit success signal. | JSON structural accidents (breaking adjacent panel layout). Low risk — contract tests + Docker parity run will catch regressions. |
+| R2 — repository-deep-dive | **Medium** | Specification is clear but the file is 3,504 lines. Agent must identify the right insertion points and not duplicate existing panels. "Add Technologies section" is slightly looser than R1. | Panel-id / grid-position collisions; accidentally breaking dashboard import. Mitigated by Grafana import verification + contract tests. |
+| R3 — fixture scenarios | **Medium** | Addendum A is explicit about categories and scenario types, but touches the deterministic seed generator. Agent must understand the seeded-PRNG contract. | Non-determinism introduced into fixtures (e.g. `time.time()` / unseeded `random`). Mitigated by running fixture regeneration twice and diffing. |
+
+**Recommendation**: delegate to a GitHub coding agent, but split into **two PRs**:
+
+1. **PR A — Dashboards** (R1 + R2): constrained to `dashboards/*.json`. Easy to review,
+   single verification gate (`test_stack_dashboard_queries.py` + full Docker test run).
+2. **PR B — Fixtures** (R3): constrained to `tests/fixtures/**` and
+   `scripts/generated/**` / `scripts/enrich-repo.py`. Requires determinism check —
+   the agent should run fixture regeneration twice and assert zero diff before
+   opening the PR.
+
+**Non-negotiables for the agent (already encoded in Addendum D)**:
+- All verification via `bash scripts/run-tests-docker.sh ...` (Docker parity).
+- Tests must not hit live endoflife.date (already true — mocked in contract tests).
+- PR must pass the full suite: `bash scripts/run-tests-docker.sh`.
+
+**What the agent should *not* be asked to do**: renumber the migration, touch ORM
+models, or rework the enricher — those are merged and in production use.
 
 ---
 
