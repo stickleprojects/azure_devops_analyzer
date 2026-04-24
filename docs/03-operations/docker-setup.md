@@ -16,6 +16,7 @@ The application image includes native build and runtime dependencies required by
 
 - gcc, g++, make
 - libpq-dev
+- postgresql-client (provides `psql` for in-container DB scripts such as `scripts/verify-extraction.sh`)
 - libffi-dev
 - libssl-dev
 - python3-dev
@@ -95,7 +96,10 @@ The test stack behavior:
 - Creates isolated test database services
 - Applies migrations before tests
 - Runs tests in containers
+- Runs post-integration DB invariant checks via `scripts/verify-extraction.sh`
 - Cleans up resources when finished
+
+The `test-runner` service in `docker-compose.test.yml` bind-mounts `./scripts`, `./src`, `./tests`, and `./database` into `/app`, so shell and Python changes in those directories apply on the next run without an image rebuild. Rebuild (`docker compose -f docker-compose.test.yml build test-runner`) is only required when `Dockerfile` or `requirements.txt` changes.
 
 ## Troubleshooting
 
