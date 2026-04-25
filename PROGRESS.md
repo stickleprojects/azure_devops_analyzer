@@ -2,6 +2,51 @@
 
 ---
 
+## Session: 2026-04-25 - Plan 012 Reconciliation + R-A/R-B Specs Recorded
+
+### Summary
+
+Reconciled [plan 012](.ai/plans/012-package-normalisation-plan.md) against the
+current codebase, recorded the design decision on vulnerability count semantics,
+and authored contract test specs so the remaining work is ready for GitHub coding
+agent delegation.
+
+### What Was Done
+
+- **Status reconciliation**: three of the four "remaining" rows in plan 012's
+  status table flipped to ✅ — the dashboards already display EOL counts and CVE
+  details via the reporting-view layer that landed in plan 016 *after* plan 012
+  was written. Specifically, [database/views.sql:667](database/views.sql#L667)
+  (`v_dependency_snapshot_latest`), [views.sql:692](database/views.sql#L692)
+  (`v_repo_dependency_rollup_latest`), and [views.sql:726](database/views.sql#L726)
+  (`v_repo_vulnerability_details_latest`) bridge the new schema to existing
+  dashboard panels.
+- **Decision recorded**: dashboards will switch from `JOIN vulnerabilities` to
+  the precomputed `repository_dependencies.has_known_vulnerabilities` flag,
+  matching plan 012's original design intent. A repo on a fixed version no longer
+  inflates "vulnerable repo" counts.
+- **Addendum A** added to plan 012: contract test spec for the missing
+  `/api/packages/by-service` endpoint (R-A) — 10 test cases (A1–A10) covering
+  required-param validation, single/multi service rollups, dedup of
+  `versions_in_use`, version filter, ecosystem filter, and orphan-repo handling.
+- **Addendum B** added to plan 012: contract test spec for the flag-based
+  vulnerability count migration (R-B) — 8 test cases (B1–B8) covering the view
+  changes, `service_analytics.py` change, and EOL-path regression guard.
+- **Critical Files** table in plan 012 expanded with concrete R-A and R-B rows
+  pointing at specific files and addenda.
+
+### No Code Changes
+
+This session is documentation-only. Implementation of R-A and R-B is intended
+for GitHub coding agent delegation in a follow-up PR (or two — Addendum B
+suggests a PR-A / PR-B split).
+
+### Pull Request
+
+- (this branch — `docs/plan-012-decision-test-specs`)
+
+---
+
 ## Session: 2026-04-25 - Plan 011 R1/R2/R3 Completed (PR #65)
 
 ### Summary
