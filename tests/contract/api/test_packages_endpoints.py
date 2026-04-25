@@ -93,6 +93,10 @@ class TestPackagesByServiceEndpoint:
 
     def test_a2_package_no_usage_returns_empty(self, app_client, db_session):
         """A2: package row exists but zero repo usage → []."""
+        # The endpoint queries repository_dependencies joined through
+        # repository_services to services; it never touches the packages table.
+        # The Package row below is present only for FK integrity in _add_dep;
+        # its existence alone does not influence the endpoint's response.
         pkg = Package(package_name="unused-pkg-a2", ecosystem="npm")
         db_session.add(pkg)
         db_session.commit()
