@@ -2,6 +2,53 @@
 
 ---
 
+## Session: 2026-04-25 - Plan 011 R1/R2/R3 Completed (PR #65)
+
+### Summary
+
+Closed out the three remaining surface-area items from
+[Plan 011](.ai/plans/011-technology-detection-persistence-plan.md): Technology Stack
+row on the Service Overview dashboard, Technologies panel on the Repository Deep-Dive
+dashboard, and deterministic fixture coverage for the seven non-language stack
+categories. Foundational code had been merged earlier via PR #56; PR #65 is the final
+close-out.
+
+### What Was Done
+
+- **R1** — Added "Technology Stack" row to
+  [dashboards/service-overview.json](dashboards/service-overview.json):
+  row header (id 105), `Technology Stack by Service` table (id 106), and
+  `Top Technologies (Non-Language) Across Services` bar chart (id 107).
+- **R2** — Added `Technologies (Detected Stack)` table panel (id 57) to
+  [dashboards/repository-deep-dive.json](dashboards/repository-deep-dive.json) with
+  EOL highlighting via LEFT JOIN on `technologies`.
+- **R3** — Added `TECHNOLOGY_STACK_BY_TEMPLATE` to
+  [scripts/generated/generate-repo-seeds.py](scripts/generated/generate-repo-seeds.py);
+  populated `technology_stack` on all 27 generated fixtures; added
+  `FixtureExtractor.get_technology_stack()`; wired the e2e pipeline in
+  `tests/contract/database/test_full_pipeline_e2e.py` to feed fixture stack data
+  through `store_detections()` + `store_technology_eol()`.
+- New contract tests in
+  [tests/contract/database/test_stack_dashboard_queries.py](tests/contract/database/test_stack_dashboard_queries.py)
+  pin the SQL semantics for both dashboards.
+
+### Validation
+
+- CI green on PR #65: CI Tests, Documentation Validation, Full Pipeline E2E Tests.
+- Determinism preserved — `TECHNOLOGY_STACK_BY_TEMPLATE` is a static dict, no RNG.
+
+### Pull Request
+
+- PR #65 — `copilot/review-plan-011` (merged via GitHub coding agent delegation)
+
+### Follow-up
+
+- Manual Grafana import recommended on first deployment to visually confirm panel
+  layout (gridPos `y` shifts at 49/57/58 on service-overview; 94/103/104/114 on
+  repository-deep-dive). Automated tests verify SQL but not rendering.
+
+---
+
 ## Session: 2026-04-24 - Test-Runner verify-extraction.sh Runtime Fix
 
 ### Summary

@@ -86,6 +86,7 @@ To refresh screenshots: **Actions → Update-Docs Bot → Run workflow** (enable
 - **Security & Dependencies**: Vulnerabilities by severity, outdated/EOL deps, ecosystems, vulnerability details table
 - **Branch Health**: Active branches, staleness chart, divergence from main, branch details table
 - **Technology Stack**: Language distribution donut, AI-generated summary
+- **Technologies (Detected Stack)**: Non-language stack entries (frameworks, databases, deployment platforms, build tools, testing frameworks, CI/CD, documentation) sourced from `repository_stack` with EOL flags via LEFT JOIN on `technologies`
 - **Recent Activity**: Recent commits table, open PRs table
 
 ![Repository Deep-Dive Dashboard](../images/dashboards/repository-deep-dive.png)
@@ -146,6 +147,12 @@ To refresh screenshots: **Actions → Update-Docs Bot → Run workflow** (enable
 
 **UID**: `service-overview`
 **Purpose**: High-level service health and SLA metrics
+
+**Sections** (technology coverage added in PR #65):
+
+- **Technology Stack**:
+  - `Technology Stack by Service` table — service, languages, frameworks, EOL count (joins `repository_stack` through `repository_services`; EOL count from `technologies WHERE is_eol = true`)
+  - `Top Technologies (Non-Language) Across Services` bar chart — top 10 non-language entries (`WHERE rs.category != 'language'`) for the selected services
 
 ![Service Overview Dashboard](../images/dashboards/service-overview.png)
 
