@@ -153,7 +153,7 @@ def test_engine(test_database_url):
     if views_file.exists():
         with engine.begin() as conn:
             _ensure_time_bucket_support(conn)
-            with open(views_file) as f:
+            with open(views_file, encoding="utf-8") as f:
                 views_sql = f.read()
                 statements = list(_iter_sql_statements(views_sql))
                 for statement in statements:
