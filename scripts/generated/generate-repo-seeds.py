@@ -242,6 +242,72 @@ VULNERABILITY_DATA_BY_TEMPLATE = {
     ],
 }
 
+# Synthetic technology stack data per template — deterministic, no external API calls.
+# Each entry maps to store_detections() (heuristic source, non-language categories).
+# eol_technologies entries map to store_technology_eol() (global technologies table).
+#
+# Scenario coverage:
+#   python-docker    → active (non-EOL) technologies: Django, pytest, Docker, GitHub Actions, PostgreSQL
+#   legacy-migration → EOL technology (ASP.NET/.NET Framework), unknown/no-slug (Windows Server)
+#   react-spa        → active: React, Jest, Webpack, GitHub Actions
+#   fullstack-monorepo → mixed-source: Django, React, PostgreSQL, Docker, pytest (lang from platform_api)
+#   others           → {} (no heuristic detections)
+TECHNOLOGY_STACK_BY_TEMPLATE = {
+    "python-docker": {
+        "frameworks": ["Django"],
+        "databases": ["PostgreSQL"],
+        "deployment_platforms": ["Docker"],
+        "build_tools": [],
+        "testing_frameworks": ["pytest"],
+        "ci_cd_platforms": ["GitHub Actions"],
+        "documentation_tools": ["Sphinx"],
+        "confidence": 0.9,
+        "eol_technologies": [],
+    },
+    "legacy-migration": {
+        "frameworks": ["ASP.NET"],
+        "databases": ["SQL Server"],
+        "deployment_platforms": ["Windows Server"],
+        "build_tools": ["MSBuild"],
+        "testing_frameworks": ["xUnit"],
+        "ci_cd_platforms": ["Azure Pipelines"],
+        "documentation_tools": [],
+        "confidence": 0.85,
+        "eol_technologies": [
+            {
+                "name": "ASP.NET",
+                "category": "framework",
+                "is_eol": True,
+                "eol_date": "2022-04-26",
+                "latest_supported_version": None,
+            }
+        ],
+    },
+    "react-spa": {
+        "frameworks": ["React"],
+        "databases": [],
+        "deployment_platforms": [],
+        "build_tools": ["Webpack"],
+        "testing_frameworks": ["Jest"],
+        "ci_cd_platforms": ["GitHub Actions"],
+        "documentation_tools": ["Storybook"],
+        "confidence": 0.88,
+        "eol_technologies": [],
+    },
+    "fullstack-monorepo": {
+        "frameworks": ["Django", "React"],
+        "databases": ["PostgreSQL"],
+        "deployment_platforms": ["Docker"],
+        "build_tools": [],
+        "testing_frameworks": ["pytest", "Jest"],
+        "ci_cd_platforms": ["GitHub Actions"],
+        "documentation_tools": [],
+        "confidence": 0.87,
+        "eol_technologies": [],
+    },
+}
+
+
 # Define default file names and content for different languages
 DEFAULT_FILE_NAMES = {
     "Python": [
@@ -470,6 +536,9 @@ def generate_repo_seed(config, repo_set):
         # Vulnerability data is fully deterministic — no RNG needed.
         vulnerability_data = VULNERABILITY_DATA_BY_TEMPLATE.get(template_name, [])
 
+        # Technology stack data is fully deterministic — no RNG needed.
+        technology_stack = TECHNOLOGY_STACK_BY_TEMPLATE.get(template_name, {})
+
         # Seed the PRNG from the repo name so commit/PR data is stable across
         # re-runs while still varying between repos.
         random.seed(_repo_rng_seed(name))
@@ -489,6 +558,7 @@ def generate_repo_seed(config, repo_set):
             "manifests": manifests,
             "branches": branches,
             "vulnerability_data": vulnerability_data,
+            "technology_stack": technology_stack,
             "commits": commits,
             "pull_requests": pull_requests,
         }

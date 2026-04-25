@@ -72,6 +72,29 @@
       "vulnerabilities": []
     }
   ],
+  "technology_stack": {
+    "frameworks": [
+      "Django"
+    ],
+    "databases": [
+      "PostgreSQL"
+    ],
+    "deployment_platforms": [
+      "Docker"
+    ],
+    "build_tools": [],
+    "testing_frameworks": [
+      "pytest"
+    ],
+    "ci_cd_platforms": [
+      "GitHub Actions"
+    ],
+    "documentation_tools": [
+      "Sphinx"
+    ],
+    "confidence": 0.9,
+    "eol_technologies": []
+  },
   "commits": [
     {
       "commit_hash": "c577f54d3a4a11241abe47d9b8c642f5e0fefb0a",

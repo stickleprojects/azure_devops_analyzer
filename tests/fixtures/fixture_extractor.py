@@ -123,6 +123,20 @@ class FixtureExtractor(RepositoryExtractor):
         """
         return self._scenario.get("vulnerability_data", [])
 
+    def get_technology_stack(self) -> dict:
+        """Return deterministic technology stack (heuristic detections) for the fixture.
+
+        Returns a dict with keys:
+            frameworks, databases, deployment_platforms, build_tools,
+            testing_frameworks, ci_cd_platforms, documentation_tools  (each a list[str])
+            confidence  (float, 0–1)
+            eol_technologies  (list[dict] with name, category, is_eol, eol_date,
+                               latest_supported_version — for store_technology_eol())
+
+        Returns an empty dict if the fixture has no technology_stack.
+        """
+        return self._scenario.get("technology_stack", {})
+
     def get_organizations(self):
         return []
 

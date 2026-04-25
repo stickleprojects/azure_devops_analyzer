@@ -1767,6 +1767,201 @@
         "x": 0,
         "y": 48
       },
+      "id": 105,
+      "panels": [],
+      "title": "Technology Stack",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "eol_count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 49
+      },
+      "id": 106,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  s.name AS service,\n  COALESCE(STRING_AGG(DISTINCT CASE WHEN rs.category = 'language' THEN rs.name END, ', '), '-') AS languages,\n  COALESCE(STRING_AGG(DISTINCT CASE WHEN rs.category = 'framework' THEN rs.name END, ', '), '-') AS frameworks,\n  COUNT(DISTINCT CASE WHEN t.is_eol = true THEN rs.name || '|' || rs.category END) AS eol_count\nFROM services s\nJOIN repository_services rsvc ON rsvc.service_id = s.service_id\nJOIN repository_stack rs ON rs.repo_id = rsvc.repo_id\nLEFT JOIN technologies t ON t.name = rs.name AND t.category = rs.category\nWHERE s.name IN (${service:singlequote})\nGROUP BY s.name\nORDER BY s.name;",
+          "refId": "A"
+        }
+      ],
+      "title": "Technology Stack by Service",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 49
+      },
+      "id": 107,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.97,
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "orientation": "horizontal",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 100
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT rs.name, COUNT(DISTINCT rs.repo_id) AS repo_count\nFROM repository_stack rs\nJOIN repository_services rsvc ON rsvc.repo_id = rs.repo_id\nJOIN services s ON s.service_id = rsvc.service_id\nWHERE rs.category != 'language'\n  AND s.name IN (${service:singlequote})\nGROUP BY rs.name\nORDER BY repo_count DESC\nLIMIT 10;",
+          "refId": "A"
+        }
+      ],
+      "title": "Top Technologies (Non-Language) Across Services",
+      "type": "barchart"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 57
+      },
       "id": 104,
       "panels": [],
       "title": "Repository Breakdown",
@@ -1941,7 +2136,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 49
+        "y": 58
       },
       "id": 20,
       "options": {

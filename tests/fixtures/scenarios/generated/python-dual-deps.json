@@ -19,6 +19,7 @@
     "develop"
   ],
   "vulnerability_data": [],
+  "technology_stack": {},
   "commits": [
     {
       "commit_hash": "f4fe096bc3c68f3e60ecc9b07a5be5b2e8f41405",
