@@ -1,9 +1,12 @@
 # Plan: Technology Detection Persistence & Cross-Org Analysis
 
-## Status: Mostly Complete
+## Status: Complete
 
-**Branch**: `copilot/implement-plan-011-persistence-eol-enrichment` (merged to main via PR #56)  
-**Last updated**: 2026-04-24
+**Branches**:
+- `copilot/implement-plan-011-persistence-eol-enrichment` (merged via PR #56) — foundational items
+- `copilot/review-plan-011` (merged via PR #65) — R1/R2/R3 surface-area items
+
+**Last updated**: 2026-04-25
 
 | Section | Status | Notes |
 |---------|--------|-------|
@@ -17,18 +20,18 @@
 | API endpoints | ✅ Done | `src/api/stack.py` — all 4 endpoints (`/api/stack/summary`, `by-service`, `eol`, `by-repo`) |
 | Technology Landscape dashboard | ✅ Done | `dashboards/technology-landscape.json` |
 | Contract test — dashboard SQL | ✅ Done | `tests/contract/database/test_stack_dashboard_queries.py` |
-| service-overview "Technology Stack" row | ❌ Not done | `service-overview.json` contains no `repository_stack` / `technologies` references (verified 2026-04-24) |
-| repository-deep-dive — language panels | ❌ Not done | `repository-deep-dive.json` only references `key_technologies` from summaries; no `repository_stack` queries or Technologies section (verified 2026-04-24) |
-| Fixture scenarios (EOL/stack categories) | ❌ Not done | `tests/fixtures/scenarios/config.json` has no `is_eol` / `framework` / `heuristic` entries per Addendum A (verified 2026-04-24) |
+| service-overview "Technology Stack" row (R1) | ✅ Done | Row + table panel + bar chart panel added in PR #65; SQL pinned by `TestServiceOverviewTechStackQueries` |
+| repository-deep-dive — Technologies section (R2) | ✅ Done | "Technologies (Detected Stack)" table panel with EOL highlighting added in PR #65; SQL pinned by `TestRepoDeepDiveTechQueries` |
+| Fixture scenarios (EOL/stack categories) (R3) | ✅ Done | `TECHNOLOGY_STACK_BY_TEMPLATE` in `scripts/generated/generate-repo-seeds.py`; `technology_stack` field on all 27 fixtures; e2e wiring via `FixtureExtractor.get_technology_stack()` (PR #65) |
 
 ---
 
-## Remaining Work Summary (2026-04-24)
+## Completed R1/R2/R3 — PR #65 (merged 2026-04-25)
 
-Three discrete, independent items remain. All foundational code (migration, models,
-storage, enricher, API, Technology Landscape dashboard, dashboard-SQL contract tests)
-is merged and green. What's left is surface-area extension plus the fixture coverage
-required by Addendum A.
+All three remaining items shipped together in PR #65 via the GitHub coding agent
+delegation described below. Foundational code (migration, models, storage, enricher,
+API, Technology Landscape dashboard, dashboard-SQL contract tests) had already shipped
+in PR #56. Specs for R1/R2/R3 are preserved below as the historical delivery record.
 
 ### R1 — `dashboards/service-overview.json`: add "Technology Stack" row
 - Insert after the Security row.
