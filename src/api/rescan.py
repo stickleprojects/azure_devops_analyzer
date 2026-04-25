@@ -20,7 +20,7 @@ from src.database import get_session
 from src.database.models.repository import Repository
 from src.database.models.package import Package
 from src.database.models.dependency import RepositoryDependency, Vulnerability
-from src.database.models.service import RepositoryService
+from src.database.models.service import RepositoryService, Service
 
 logger = logging.getLogger(__name__)
 
@@ -558,35 +558,38 @@ def packages_by_service():
 
     try:
         with get_session() as session:
-            query = session.query(RepositoryDependency).filter(
-                RepositoryDependency.package_name == name
+            query = (
+                session.query(
+                    Service.service_id,
+                    Service.name,
+                    RepositoryDependency.repo_id,
+                    RepositoryDependency.version,
+                )
+                .join(RepositoryService, RepositoryService.service_id == Service.service_id)
+                .join(
+                    RepositoryDependency,
+                    RepositoryDependency.repo_id == RepositoryService.repo_id,
+                )
+                .filter(RepositoryDependency.package_name == name)
             )
             if ecosystem:
                 query = query.filter(RepositoryDependency.ecosystem == ecosystem)
             if version:
                 query = query.filter(RepositoryDependency.version == version)
-            deps = query.all()
+            rows = query.all()
 
             by_service: dict = {}
-            for dep in deps:
-                rs = (
-                    session.query(RepositoryService)
-                    .filter_by(repo_id=dep.repo_id)
-                    .first()
-                )
-                if rs is None:
-                    continue
-                svc = rs.service
-                key = svc.service_id
+            for row in rows:
+                key = row.service_id
                 if key not in by_service:
                     by_service[key] = {
-                        "service_name": svc.name,
+                        "service_name": row.name,
                         "repos": set(),
                         "versions": set(),
                     }
-                by_service[key]["repos"].add(dep.repo_id)
-                if dep.version:
-                    by_service[key]["versions"].add(dep.version)
+                by_service[key]["repos"].add(row.repo_id)
+                if row.version:
+                    by_service[key]["versions"].add(row.version)
 
             results = [
                 {
