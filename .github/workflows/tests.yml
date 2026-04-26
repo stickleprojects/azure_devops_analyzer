@@ -174,7 +174,7 @@ jobs:
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
-          pytest tests/contract/integration/ tests/contract/api/ -v --tb=short --durations=10 -m "not live_api"
+          pytest tests/contract/ -v --tb=short --durations=10 -m "not live_api"
 
       # - name: Run live API tests
       #   if: steps.test_scope.outputs.run_python == 'true'

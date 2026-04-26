@@ -291,7 +291,10 @@ def _aggregate_security_metrics(
     Dependencies represent current state rather than time-series data,
     so no period filter is applied here.
     """
-    # Vulnerability counts by severity (via packages → vulnerabilities)
+    # Vulnerability counts by severity — only count deps where the repo's pinned
+    # version is actually affected (has_known_vulnerabilities = true).  This
+    # prevents false-positive counts for repos that have already upgraded past
+    # the fixed_in_version of a CVE.
     vuln_result = session.execute(
         select(
             func.count(func.distinct(RepositoryDependency.id)).label("total_vulnerable_deps"),
@@ -309,7 +312,10 @@ def _aggregate_security_metrics(
             & (Package.ecosystem == RepositoryDependency.ecosystem),
         )
         .join(Vulnerability, Vulnerability.package_id == Package.id)
-        .where(RepositoryDependency.repo_id.in_(repo_ids))
+        .where(
+            RepositoryDependency.repo_id.in_(repo_ids),
+            RepositoryDependency.has_known_vulnerabilities.is_(True),
+        )
     ).one()
 
     # Total dependency counts including EOL (EOL comes from packages table)

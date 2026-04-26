@@ -586,6 +586,8 @@ JOIN services s ON s.service_id = rs.service_id
 WHERE r.is_active = true;
 
 -- View: Vulnerability severity distribution per service (latest dependency scan per repo)
+-- Only repository_dependencies rows where has_known_vulnerabilities = true are
+-- considered, so repos on patched versions are excluded from the counts.
 CREATE OR REPLACE VIEW v_service_vulnerabilities_by_severity AS
 SELECT
     s.name AS service,
@@ -601,6 +603,7 @@ WHERE d.last_seen_at = (
     FROM repository_dependencies d2
     WHERE d2.repo_id = d.repo_id
 )
+  AND d.has_known_vulnerabilities = true
 GROUP BY s.name, v.severity;
 
 -- View: Extraction throughput as repositories per hour in 5-minute buckets
@@ -689,10 +692,13 @@ WHERE d.last_seen_at = (
 );
 
 -- View: Repository dependency/security rollup from latest dependency snapshot
+-- vulnerabilities uses the pre-computed has_known_vulnerabilities flag on
+-- repository_dependencies rather than a JOIN to the vulnerabilities table, so
+-- only repos pinned to an affected version (flag = true) are counted.
 CREATE OR REPLACE VIEW v_repo_dependency_rollup_latest AS
 SELECT
     d.repo_id,
-    COUNT(DISTINCT v.id) AS vulnerabilities,
+    COUNT(*) FILTER (WHERE d.has_known_vulnerabilities = true) AS vulnerabilities,
     COUNT(*) FILTER (
         WHERE d.version != d.latest_version AND d.latest_version IS NOT NULL
     ) AS outdated_dependencies,
@@ -700,7 +706,6 @@ SELECT
     COUNT(*) AS total_dependencies,
     COUNT(*) FILTER (WHERE d.is_dev_dependency = true) AS dev_dependencies
 FROM v_dependency_snapshot_latest d
-LEFT JOIN vulnerabilities v ON v.package_id = d.package_id
 GROUP BY d.repo_id;
 
 -- View: Vulnerability severity distribution per repository from latest dependency snapshot
