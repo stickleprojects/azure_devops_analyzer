@@ -61,7 +61,7 @@ services:
   # Used for: Task queue, job distribution to workers
   # ===========================================
   rabbitmq:
-    image: rabbitmq:4-management-alpine
+    image: rabbitmq:3.13-management-alpine
     container_name: analyzer-rabbitmq
     restart: unless-stopped
     environment:
