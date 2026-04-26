@@ -214,11 +214,25 @@ class TestCategorizationAdditional:
         assert blip.quadrant == Quadrant.INFRASTRUCTURE
 
     def test_is_new_when_no_prior(self):
-        """No prior_ring → is_new=True, is_moved=False."""
+        """No prior_ring but prior publication exists → is_new=True, is_moved=False."""
         categorizer = RadarCategorizer()
-        blip = categorizer.categorize("lib", "npm", _make_metrics(repo_count=30, time_in_use_days=200))
+        blip = categorizer.categorize(
+            "lib", "npm",
+            _make_metrics(repo_count=30, time_in_use_days=200),
+            has_prior_publication=True,
+        )
         assert blip.is_new is True
         assert blip.is_moved is False
+
+    def test_is_new_false_when_no_prior_publication(self):
+        """First-ever publication (has_prior_publication=False) → is_new=False for all."""
+        categorizer = RadarCategorizer()
+        blip = categorizer.categorize(
+            "lib", "npm",
+            _make_metrics(repo_count=30, time_in_use_days=200),
+            has_prior_publication=False,
+        )
+        assert blip.is_new is False
 
     def test_is_moved_when_ring_changed(self):
         """Different prior_ring → is_moved=True."""
@@ -264,6 +278,120 @@ class TestCategorizationAdditional:
             _make_metrics(repo_count=100, time_in_use_days=1000, exposed_cves=1),
         )
         assert blip.ring != Ring.ADOPT
+
+
+# ---------------------------------------------------------------------------
+# Detect-movements unit tests
+# ---------------------------------------------------------------------------
+
+class TestDetectMovements:
+    """Tests for RadarPublicationWorkflow._detect_movements logic."""
+
+    def _make_blip(self, package_name, ecosystem, ring, repo_count=10, exposed_cves=0):
+        from src.analyzers.radar_categorization import Ring, Quadrant
+        from src.workflows.radar_publication import RadarBlip as WFBlip  # noqa: F401
+        from src.analyzers.radar_categorization import RadarBlip
+        return RadarBlip(
+            package_name=package_name,
+            ecosystem=ecosystem,
+            ring=Ring(ring),
+            quadrant=Quadrant.TOOLS,
+            label=package_name,
+            description="",
+            repo_count=repo_count,
+            is_new=False,
+            is_moved=False,
+            adopted_date=None,
+            exposed_to_cves=exposed_cves,
+            is_eol=False,
+            eol_date=None,
+            latest_version=None,
+        )
+
+    def _workflow(self):
+        from unittest.mock import MagicMock
+        from src.workflows.radar_publication import RadarPublicationWorkflow
+        return RadarPublicationWorkflow(session=MagicMock())
+
+    def test_ring_unchanged_no_history_row(self):
+        """Ring unchanged → no history row."""
+        wf = self._workflow()
+        prior = {("lib", "npm"): {"ring": "Adopt", "repo_count": 10, "exposed_to_cves": 0}}
+        current = [self._make_blip("lib", "npm", "Adopt", repo_count=12)]
+        history = wf._detect_movements(prior, current)
+        assert len(history) == 0
+
+    def test_ring_changed_creates_history_row(self):
+        """Ring change → history row with prior_ring and current_ring."""
+        wf = self._workflow()
+        prior = {("lib", "npm"): {"ring": "Trial", "repo_count": 5, "exposed_to_cves": 0}}
+        current = [self._make_blip("lib", "npm", "Adopt", repo_count=30)]
+        history = wf._detect_movements(prior, current)
+        assert len(history) == 1
+        assert history[0]["prior_ring"] == "Trial"
+        assert history[0]["current_ring"] == "Adopt"
+
+    def test_repo_count_delta_computed(self):
+        """repo_count_delta = current - prior."""
+        wf = self._workflow()
+        prior = {("lib", "npm"): {"ring": "Trial", "repo_count": 5, "exposed_to_cves": 0}}
+        current = [self._make_blip("lib", "npm", "Adopt", repo_count=8)]
+        history = wf._detect_movements(prior, current)
+        assert history[0]["repo_count_delta"] == 3
+
+    def test_vulnerability_now_exposed(self):
+        """Prior 0 CVEs, current > 0 → 'now_exposed'."""
+        wf = self._workflow()
+        prior = {("lib", "npm"): {"ring": "Adopt", "repo_count": 30, "exposed_to_cves": 0}}
+        current = [self._make_blip("lib", "npm", "Hold", repo_count=30, exposed_cves=3)]
+        history = wf._detect_movements(prior, current)
+        assert history[0]["vulnerability_change"] == "now_exposed"
+
+    def test_vulnerability_fixed(self):
+        """Prior > 0 CVEs, current 0 → 'fixed'."""
+        wf = self._workflow()
+        prior = {("lib", "npm"): {"ring": "Hold", "repo_count": 10, "exposed_to_cves": 2}}
+        current = [self._make_blip("lib", "npm", "Trial", repo_count=15, exposed_cves=0)]
+        history = wf._detect_movements(prior, current)
+        assert history[0]["vulnerability_change"] == "fixed"
+
+    def test_vulnerability_unchanged(self):
+        """Both prior and current have no CVEs → 'unchanged'."""
+        wf = self._workflow()
+        prior = {("lib", "npm"): {"ring": "Trial", "repo_count": 5, "exposed_to_cves": 0}}
+        current = [self._make_blip("lib", "npm", "Adopt", repo_count=30, exposed_cves=0)]
+        history = wf._detect_movements(prior, current)
+        assert history[0]["vulnerability_change"] == "unchanged"
+
+    def test_removed_package_creates_history_row(self):
+        """Package in prior but absent from current → 'Removed' history row."""
+        wf = self._workflow()
+        prior = {("removed-lib", "npm"): {"ring": "Adopt", "repo_count": 20, "exposed_to_cves": 0}}
+        current = []  # nothing in current
+        history = wf._detect_movements(prior, current)
+        assert len(history) == 1
+        assert history[0]["current_ring"] == "Removed"
+        assert history[0]["prior_ring"] == "Adopt"
+        assert history[0]["repo_count_delta"] == -20
+
+    def test_removed_with_cves_is_fixed(self):
+        """Removed package that had CVE exposure → vulnerability_change='fixed'."""
+        wf = self._workflow()
+        prior = {("vuln-lib", "npm"): {"ring": "Hold", "repo_count": 5, "exposed_to_cves": 3}}
+        current = []
+        history = wf._detect_movements(prior, current)
+        assert history[0]["vulnerability_change"] == "fixed"
+
+    def test_new_package_no_prior_data(self):
+        """Package absent from prior (new package in current) → prior_ring=None."""
+        wf = self._workflow()
+        prior = {}
+        current = [self._make_blip("new-lib", "npm", "Assess", repo_count=3)]
+        history = wf._detect_movements(prior, current)
+        assert len(history) == 1
+        assert history[0]["prior_ring"] is None
+        assert history[0]["current_ring"] == "Assess"
+        assert history[0]["repo_count_delta"] == 3
 
 
 # ---------------------------------------------------------------------------

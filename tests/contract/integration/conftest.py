@@ -208,6 +208,9 @@ def cleanup_database(test_session):
         # Order matters: truncate dependent tables first, then their parents
         # Use RESTART IDENTITY to reset auto-increment sequences
         truncate_tables = [
+            "radar_blips",
+            "radar_blip_history",
+            "radar_publications",
             "team_metrics",
             "team_contributors",
             "packages",

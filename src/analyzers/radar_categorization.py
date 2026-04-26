@@ -81,6 +81,7 @@ class RadarCategorizer:
         ecosystem: str,
         metrics: dict,
         prior_ring: Optional[str] = None,
+        has_prior_publication: bool = True,
     ) -> RadarBlip:
         """Return a RadarBlip for *package_name* given *metrics*.
 
@@ -93,6 +94,11 @@ class RadarCategorizer:
           - category           (str)   technology category hint (language/framework/…)
           - adopted_date       (date)  first adoption date
           - latest_version     (str)   latest known version
+
+        *has_prior_publication* — set to ``False`` when this is the very first
+        publication ever.  In that case *is_new* is set to ``False`` for every
+        blip to avoid marking all packages as new when there is nothing to
+        compare against.
         """
         repo_count = int(metrics.get("repo_count") or 0)
         time_in_use_days = int(metrics.get("time_in_use_days") or 0)
@@ -106,6 +112,9 @@ class RadarCategorizer:
         ring = self._determine_ring(repo_count, time_in_use_days, exposed_cves, is_eol)
         quadrant = self._determine_quadrant(category, ecosystem)
 
+        # A blip is "new" only when there is a prior publication to compare against
+        # AND the package was absent from that prior publication.
+        is_new = has_prior_publication and prior_ring is None
         is_moved = prior_ring is not None and prior_ring != ring.value
 
         label = metrics.get("label") or package_name
@@ -119,7 +128,7 @@ class RadarCategorizer:
             label=label,
             description=description,
             repo_count=repo_count,
-            is_new=prior_ring is None,
+            is_new=is_new,
             is_moved=is_moved,
             adopted_date=adopted_date,
             exposed_to_cves=exposed_cves,

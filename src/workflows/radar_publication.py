@@ -4,7 +4,7 @@ RadarPublicationWorkflow — orchestrates Tech Radar generation (Plan 022).
 Steps:
   1. Query packages + repository_dependencies + vulnerabilities
   2. Categorize each package via RadarCategorizer
-  3. Detect ring movements vs. the prior publication
+  3. Detect ring movements vs. the prior publication (including removed packages)
   4. Store radar_publications + radar_blips + radar_blip_history
   5. Mark new publication as is_latest, clear the flag on prior ones
 """
@@ -52,7 +52,8 @@ class RadarPublicationWorkflow:
         logger.info("Starting radar publication (published_by=%s)", published_by)
 
         # 1. Load prior blips for movement detection
-        prior_blips = self._load_prior_blips()
+        prior_blip_data = self._load_prior_blip_data()
+        has_prior_publication = len(prior_blip_data) > 0
 
         # 2. Query packages with usage metrics
         package_metrics = self._load_package_metrics()
@@ -64,14 +65,16 @@ class RadarPublicationWorkflow:
             package_name, ecosystem = key
             if self._categorizer.is_excluded(package_name):
                 continue
-            prior_ring = prior_blips.get(key)
+            prior_ring = prior_blip_data[key]["ring"] if key in prior_blip_data else None
             blip = self._categorizer.categorize(
-                package_name, ecosystem, metrics, prior_ring=prior_ring
+                package_name, ecosystem, metrics,
+                prior_ring=prior_ring,
+                has_prior_publication=has_prior_publication,
             )
             blips.append(blip)
 
-        # 4. Detect movements
-        history_rows = self._detect_movements(prior_blips, blips)
+        # 4. Detect movements (ring changes, new packages, removed packages)
+        history_rows = self._detect_movements(prior_blip_data, blips)
 
         # 5. Persist
         publication = self._store_publication(blips, history_rows, description, published_by, publication_version)
@@ -88,8 +91,11 @@ class RadarPublicationWorkflow:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    def _load_prior_blips(self) -> dict[tuple[str, str], str]:
-        """Return {(package_name, ecosystem): ring} for the latest publication."""
+    def _load_prior_blip_data(self) -> dict[tuple[str, str], dict]:
+        """Return per-package data from the latest publication.
+
+        Returns {(package_name, ecosystem): {"ring": str, "repo_count": int, "exposed_to_cves": int}}
+        """
         latest = (
             self._session.query(RadarPublication)
             .filter(RadarPublication.is_latest == True)  # noqa: E712
@@ -99,11 +105,24 @@ class RadarPublicationWorkflow:
             return {}
 
         rows = (
-            self._session.query(RadarBlipModel.package_name, RadarBlipModel.ecosystem, RadarBlipModel.ring)
+            self._session.query(
+                RadarBlipModel.package_name,
+                RadarBlipModel.ecosystem,
+                RadarBlipModel.ring,
+                RadarBlipModel.repo_count,
+                RadarBlipModel.exposed_to_cves,
+            )
             .filter(RadarBlipModel.publication_id == latest.id)
             .all()
         )
-        return {(r.package_name, r.ecosystem): r.ring for r in rows}
+        return {
+            (r.package_name, r.ecosystem): {
+                "ring": r.ring,
+                "repo_count": r.repo_count or 0,
+                "exposed_to_cves": r.exposed_to_cves or 0,
+            }
+            for r in rows
+        }
 
     def _load_package_metrics(self) -> dict[tuple[str, str], dict]:
         """Aggregate per-package metrics from repository_dependencies and packages."""
@@ -154,26 +173,69 @@ class RadarPublicationWorkflow:
 
     def _detect_movements(
         self,
-        prior: dict[tuple[str, str], str],
+        prior: dict[tuple[str, str], dict],
         current: list[RadarBlip],
     ) -> list[dict]:
-        """Build history rows for changed or new blips."""
+        """Build history rows for ring changes, new blips, and removed packages.
+
+        ``prior`` maps (package_name, ecosystem) → {"ring", "repo_count", "exposed_to_cves"}.
+        History is written for:
+        - new packages (present in current, absent in prior)
+        - ring movements (present in both, ring changed)
+        - removed packages (present in prior, absent in current)
+        """
         history = []
         today = datetime.now(UTC).date()
+        current_keys = {(blip.package_name, blip.ecosystem) for blip in current}
 
+        # New / moved blips
         for blip in current:
             key = (blip.package_name, blip.ecosystem)
-            prior_ring = prior.get(key)
-            if prior_ring is None or prior_ring != blip.ring.value:
+            prior_data = prior.get(key)
+            prior_ring = prior_data["ring"] if prior_data else None
+
+            if prior_ring is not None and prior_ring == blip.ring.value:
+                # Ring unchanged — no history record needed
+                continue
+
+            prior_repo_count = prior_data["repo_count"] if prior_data else 0
+            prior_exposed = prior_data["exposed_to_cves"] if prior_data else 0
+            current_exposed = blip.exposed_to_cves
+
+            repo_count_delta = blip.repo_count - prior_repo_count
+
+            if prior_exposed == 0 and current_exposed > 0:
+                vulnerability_change = "now_exposed"
+            elif prior_exposed > 0 and current_exposed == 0:
+                vulnerability_change = "fixed"
+            else:
+                vulnerability_change = "unchanged"
+
+            history.append(
+                {
+                    "package_name": blip.package_name,
+                    "ecosystem": blip.ecosystem,
+                    "publication_date": today,
+                    "prior_ring": prior_ring,
+                    "current_ring": blip.ring.value,
+                    "repo_count_delta": repo_count_delta,
+                    "vulnerability_change": vulnerability_change,
+                }
+            )
+
+        # Removed packages (in prior but no longer in current snapshot)
+        for (package_name, ecosystem), prior_data in prior.items():
+            if (package_name, ecosystem) not in current_keys:
+                prior_exposed = prior_data["exposed_to_cves"]
                 history.append(
                     {
-                        "package_name": blip.package_name,
-                        "ecosystem": blip.ecosystem,
+                        "package_name": package_name,
+                        "ecosystem": ecosystem,
                         "publication_date": today,
-                        "prior_ring": prior_ring,
-                        "current_ring": blip.ring.value,
-                        "repo_count_delta": None,
-                        "vulnerability_change": "unchanged",
+                        "prior_ring": prior_data["ring"],
+                        "current_ring": "Removed",
+                        "repo_count_delta": -prior_data["repo_count"],
+                        "vulnerability_change": "fixed" if prior_exposed > 0 else "unchanged",
                     }
                 )
 
