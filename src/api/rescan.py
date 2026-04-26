@@ -673,9 +673,10 @@ def packages_health():
                     "  SELECT 1 FROM v_package_vulnerabilities_detail pvd"
                     "  WHERE pvd.package_name = h.package_name"
                     "    AND pvd.ecosystem = h.ecosystem"
-                    f"   AND pvd.severity IN ({','.join(repr(s) for s in allowed)})"
+                    "    AND pvd.severity = ANY(:allowed_severities)"
                     " )"
                 )
+                params["allowed_severities"] = allowed
 
             rows = session.execute(_text(base_sql), params).fetchall()
 

@@ -189,18 +189,19 @@ def test_t3_health_critical_exposed_classification(db_session):
 
 @pytest.mark.integration
 def test_t4_adoption_timeline_date_grouping(db_session):
-    """T4: 3 repos with last_seen_at on 3 recent dates → 3 adoption_date rows."""
+    """T4: 3 repos each on a distinct date → 3 adoption_date rows, 1 repo each."""
     pkg = _make_package(db_session, "t4-react", "npm")
     base = datetime.now(UTC)
-    for i in range(3):
+    # Use days 1, 2, 3 to guarantee 3 distinct dates within the 90-day window.
+    distinct_days = [1, 2, 3]
+    for i, day in enumerate(distinct_days):
         repo_id = f"org/t4-repo-{i}"
         _make_repo(db_session, repo_id, f"t4-repo-{i}")
-        ts = base.replace(day=max(1, base.day - i - 1)) if base.day > i + 1 else base
         _make_dep(
             db_session,
             repo_id,
             "t4-react",
-            last_seen_at=datetime(base.year, base.month, max(1, base.day - i), tzinfo=UTC),
+            last_seen_at=datetime(base.year, base.month, day, tzinfo=UTC),
         )
     db_session.commit()
 
@@ -213,10 +214,8 @@ def test_t4_adoption_timeline_date_grouping(db_session):
         )
     ).fetchall()
 
-    # We inserted 3 deps; because each has a different date, we expect 3 rows
-    # (some may land on the same day if base.day is small — guard with >=1)
-    assert len(rows) >= 1
-    assert all(r.repo_count >= 1 for r in rows)
+    assert len(rows) == 3, f"Expected 3 date rows, got {len(rows)}"
+    assert all(r.repo_count == 1 for r in rows), "Each date should have exactly 1 repo"
 
 
 # ---------------------------------------------------------------------------

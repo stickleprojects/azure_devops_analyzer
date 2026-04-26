@@ -22,7 +22,7 @@ DO $$ BEGIN
         p.eol_date,
         COUNT(DISTINCT rd.repo_id) AS repo_count,
         COUNT(DISTINCT s.service_id) AS service_count,
-        COUNT(DISTINCT rd.id) FILTER (WHERE rd.has_known_vulnerabilities = true) AS exposed_repos,
+        COUNT(DISTINCT rd.repo_id) FILTER (WHERE rd.has_known_vulnerabilities = true) AS exposed_repos,
         COUNT(DISTINCT v.id) AS total_cves,
         MAX(CASE WHEN v.severity = 'CRITICAL' THEN 1 ELSE 0 END) AS has_critical_cve,
         MAX(v.severity) FILTER (
@@ -47,10 +47,10 @@ DO $$ BEGIN
             WHEN p.is_eol THEN 'EOL'
             WHEN p.eol_date IS NOT NULL AND p.eol_date < CURRENT_DATE + INTERVAL '90 days' THEN 'APPROACHING_EOL'
             WHEN MAX(CASE WHEN v.severity = 'CRITICAL' THEN 1 ELSE 0 END) = 1
-                 AND COUNT(DISTINCT rd.id) FILTER (WHERE rd.has_known_vulnerabilities = true) > 0
+                 AND COUNT(DISTINCT rd.repo_id) FILTER (WHERE rd.has_known_vulnerabilities = true) > 0
             THEN 'CRITICAL_EXPOSED'
             WHEN MAX(CASE WHEN v.severity IN ('CRITICAL', 'HIGH') THEN 1 ELSE 0 END) = 1
-                 AND COUNT(DISTINCT rd.id) FILTER (WHERE rd.has_known_vulnerabilities = true) > 0
+                 AND COUNT(DISTINCT rd.repo_id) FILTER (WHERE rd.has_known_vulnerabilities = true) > 0
             THEN 'HIGH_EXPOSED'
             ELSE 'HEALTHY'
         END AS health_status,
@@ -82,7 +82,7 @@ DO $$ BEGIN
         p.ecosystem,
         COALESCE(t.name, 'Unknown') AS team_name,
         COUNT(DISTINCT rd.repo_id) AS repo_count,
-        COUNT(DISTINCT rd.id) FILTER (WHERE rd.has_known_vulnerabilities = true) AS exposed_repos,
+        COUNT(DISTINCT rd.repo_id) FILTER (WHERE rd.has_known_vulnerabilities = true) AS exposed_repos,
         STRING_AGG(DISTINCT rd.version, ', ') AS versions_in_use
     FROM packages p
     LEFT JOIN repository_dependencies rd
@@ -100,7 +100,7 @@ DO $$ BEGIN
         v.summary,
         v.fixed_in_version,
         v.published_date,
-        COUNT(DISTINCT rd.id) FILTER (WHERE rd.has_known_vulnerabilities = true) AS exposed_repo_count
+        COUNT(DISTINCT rd.repo_id) FILTER (WHERE rd.has_known_vulnerabilities = true) AS exposed_repo_count
     FROM packages p
     JOIN vulnerabilities v ON p.id = v.package_id
     LEFT JOIN repository_dependencies rd ON (
