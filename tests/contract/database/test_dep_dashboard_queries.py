@@ -281,12 +281,6 @@ def test_b5_aggregate_security_metrics_exposed_vs_patched(db_session):
     db_session.flush()
     vuln = Vulnerability(package_id=pkg.id, cve_id="CVE-2021-3749", severity="HIGH", fixed_in_version="0.21.4")
     db_session.add(vuln)
-    db_session.flush()
-
-    # Link dep_a's package to the package record so the join works
-    dep_a.package_name = "axios"
-    db_session.flush()
-
     db_session.commit()
 
     result = _aggregate_security_metrics(
