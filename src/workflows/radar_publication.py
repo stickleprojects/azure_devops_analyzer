@@ -13,7 +13,7 @@ import logging
 from datetime import datetime, UTC
 from typing import Optional
 
-from sqlalchemy import func, text
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.analyzers.radar_categorization import RadarBlip, RadarCategorizer
@@ -107,23 +107,6 @@ class RadarPublicationWorkflow:
 
     def _load_package_metrics(self) -> dict[tuple[str, str], dict]:
         """Aggregate per-package metrics from repository_dependencies and packages."""
-        rows = (
-            self._session.query(
-                RepositoryDependency.package_name,
-                RepositoryDependency.ecosystem,
-                func.count(RepositoryDependency.repo_id.distinct()).label("repo_count"),
-                func.min(RepositoryDependency.first_seen_at).label("first_seen_at"),
-                func.sum(
-                    func.cast(RepositoryDependency.has_known_vulnerabilities, type_=func.cast.__class__)
-                ).label("exposed_cves_raw"),
-            )
-            .group_by(RepositoryDependency.package_name, RepositoryDependency.ecosystem)
-            .all()
-        )
-
-        # Fall back to a raw SQL count for the boolean sum (SQLAlchemy dialect-safe)
-        # because func.cast is not universally available.
-        # Replace the loop above with a raw query.
         rows = self._session.execute(
             text(
                 """

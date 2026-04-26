@@ -688,7 +688,7 @@ def get_radar():
 
     except Exception as e:
         logger.error("Failed to retrieve radar: %s", e, exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 
 @app.route("/api/radar/history", methods=["GET"])
@@ -733,7 +733,7 @@ def radar_history():
 
     except Exception as e:
         logger.error("Failed to retrieve radar history: %s", e, exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 
 @app.route("/api/radar/export", methods=["GET"])
@@ -847,7 +847,7 @@ def export_radar():
 
     except Exception as e:
         logger.error("Failed to export radar: %s", e, exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 
 @app.errorhandler(404)

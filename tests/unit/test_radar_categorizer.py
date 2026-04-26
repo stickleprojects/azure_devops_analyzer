@@ -24,6 +24,10 @@ except ImportError:
         return decorator
 
     class st:
+        """Stub for hypothesis.strategies — only present when hypothesis is not installed.
+        Methods return None because they are called at class-definition time
+        (as decorator arguments); the outer ``given`` stub skips the test.
+        """
         @staticmethod
         def integers(**kwargs):
             return None
