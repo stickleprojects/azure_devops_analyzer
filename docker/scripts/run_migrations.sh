@@ -126,12 +126,18 @@ for migration_file in "$MIGRATIONS_DIR"/*.sql; do
         log_success "Applied migration: $migration_name"
         MIGRATION_APPLIED=$((MIGRATION_APPLIED + 1))
     else
-        # Check if the error is about already existing columns/tables (idempotent)
+        # Re-run once with captured output for idempotency/error classification.
+        # Disable errexit briefly so we can inspect psql failures instead of exiting early.
+        set +e
         OUTPUT=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$migration_file" 2>&1)
+        RETRY_EXIT_CODE=$?
+        set -e
 
-        if echo "$OUTPUT" | grep -q "already exists\|duplicate"; then
+        if echo "$OUTPUT" | grep -Eiq "already exists|duplicate"; then
             log_info "Migration already applied: $migration_name"
             MIGRATION_SKIPPED=$((MIGRATION_SKIPPED + 1))
+        elif [ $RETRY_EXIT_CODE -ne 0 ]; then
+            log_error "Migration failed: $migration_name\n$OUTPUT"
         else
             log_warning "Migration had warnings: $migration_name"
             log_info "Output: $OUTPUT"

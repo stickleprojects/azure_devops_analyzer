@@ -71,7 +71,9 @@ jobs:
             CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }})
           fi
 
-          PYTHON_CHANGES=$(echo "$CHANGED_FILES" | grep -E '\.py$' | wc -l)
+          # Python test scope includes core code plus DB/schema/migration and CI plumbing
+          # that can affect runtime behavior without changing .py files.
+          PYTHON_CHANGES=$(echo "$CHANGED_FILES" | grep -E '(^|/)src/|(^|/)tests/|\.py$|(^|/)database/|\.sql$|(^|/)docker/scripts/|(^|/)scripts/run-tests-docker\.sh$|(^|/)scripts/run_migrations\.sh$|(^|/)requirements\.txt$|(^|/)pyproject\.toml$|(^|/)docker-compose\.test\.yml$|^\.github/workflows/tests\.yml$|^\.github/workflows/e2e-pipeline-tests\.yml$' | wc -l)
           BATS_CHANGES=$(echo "$CHANGED_FILES" | grep -E '\.(sh|bash|bats)$' | wc -l)
 
           if [ "$PYTHON_CHANGES" -gt 0 ]; then

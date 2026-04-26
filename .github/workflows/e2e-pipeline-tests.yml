@@ -112,3 +112,14 @@ jobs:
         run: |
           pytest tests/contract/database/test_full_pipeline_e2e.py \
             -v --tb=short --durations=10 -m "not live_api"
+
+      - name: Run adversarial scenario smoke tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          GITHUB_TOKEN: ${{ secrets.REPO_ANALYZER_GITHUB_TOKEN || github.token }}
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
+        run: |
+          pytest tests/contract/integration/test_adversarial_scenarios.py \
+            -v --tb=short --durations=10 -m "not live_api" \
+            -k "mixed-case-emails or ghost-author"
