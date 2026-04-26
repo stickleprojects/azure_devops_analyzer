@@ -1,5 +1,41 @@
 # Plans 021 & 022: Parallel Implementation Strategy for Copilot Delegation
 
+## Status (2026-04-26)
+
+| Plan | PR | Status | Notes |
+|------|----|--------|-------|
+| 021 — Dependency Vulnerability & EOL Dashboard (FR-5) | [#73](https://github.com/stickleprojects/azure_devops_analyzer/pull/73) | ✅ **Merged** 2026-04-26 (commit `c4346ad`) | All tracks shipped in single PR |
+| 022 — Thoughtworks Tech Radar Publication (FR-6) | [#74](https://github.com/stickleprojects/azure_devops_analyzer/pull/74) | ✅ **Merged** 2026-04-26 (commit `db5ffd6`) | All tracks shipped in single PR; merge conflict with Plan 021 in `src/api/rescan.py` resolved before merge |
+
+### Outcome vs. plan
+
+- **Parallelism worked**: Copilot implemented both plans concurrently, no blocking between them. Both landed on the same day (2026-04-26).
+- **PR strategy diverged**: Each plan landed as a **single PR** rather than the three-tracks-three-PRs split originally proposed below. In practice the per-track decomposition was unnecessary — review burden was manageable as one PR per plan.
+- **Conflict point**: Both PRs added endpoints to `src/api/rescan.py`. PR #74 picked up the conflict when #73 merged first; resolved by keeping all 6 endpoints (3 dashboard + 3 radar). No semantic overlap.
+
+### What shipped (Plan 021, merged in #73)
+
+- `database/migrations/017_dependency_dashboard_views.sql` + 5 views in `database/views.sql`
+- `dashboards/dependency-vulnerability-portfolio.json`
+- `dashboards/library-detail-deep-dive.json`
+- 3 endpoints in `src/api/rescan.py`: `/api/packages/health`, `/api/packages/adoption`, `/api/packages/library/<name>/<ecosystem>`
+- Contract tests: `tests/contract/database/test_dependency_dashboard_views.py`, `tests/contract/api/test_dependency_dashboard_api.py`
+
+### What shipped (Plan 022, merged in #74)
+
+- `database/migrations/018_tech_radar_schema.sql` — 3 tables (`radar_publications`, `radar_blips`, `radar_blip_history`)
+- `src/database/models/radar.py`, `src/analyzers/radar_categorization.py` (+ `radar_categorization_config.json`), `src/workflows/radar_publication.py`
+- 3 endpoints in `src/api/rescan.py`: `/api/radar`, `/api/radar/history`, `/api/radar/export`
+- Tests: 33 unit (incl. 4 hypothesis property-based) + 19 contract — schema (S1–S5), categorization (C1–C6), API (A1–A8)
+- Movement detection records `repo_count_delta`, `vulnerability_change` (`now_exposed` / `fixed` / `unchanged`), and `"Removed"` history rows when packages disappear from the snapshot
+- `is_new` only set when a prior publication exists (avoids first-publication false positives)
+
+---
+
+## Original Plan (Historical)
+
+The strategy below was the pre-implementation delegation plan. Kept for reference; actual execution was simpler (one PR per plan rather than per track).
+
 ## Overview
 
 Two major feature plans are ready for GitHub Copilot implementation:
