@@ -152,7 +152,9 @@ start_test_db_and_migrations() {
 run_pytest_in_runner() {
     local pytest_cmd="$1"
     local exit_code=0
-    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm test-runner \
+    # Dependencies are started explicitly in start_test_db_and_migrations.
+    # Avoid re-running one-shot services like test-migrations for every pytest call.
+    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" run --rm --no-deps test-runner \
         sh -c "pip install pytest pytest-cov pytest-asyncio pytest-mock && ${pytest_cmd}" || exit_code=$?
     return $exit_code
 }
