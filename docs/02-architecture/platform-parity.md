@@ -148,9 +148,9 @@ Both platforms extract file tree and pass to `TechnologyDetector.detect(file_nam
 1. **Extract Dependencies:** Parse manifest files from file tree
 2. **Enrich with OSV.dev:** Get latest versions and vulnerability data
 3. **Check EOL Status:** Query endoflife.date for lifecycle info
-4. **Store Results:** Save to `repository_dependencies` table
+4. **Store Results:** Save package metadata to `packages` table and per-repo usage to `repository_dependencies` table
 
-**Storage:** Both use `store_enriched_dependencies()` with identical schema.
+**Storage:** Both use `store_package_metadata()` and `store_repo_dependencies()` functions (per Plan 012) with identical schema.
 
 ---
 
@@ -259,8 +259,9 @@ Both platforms write to **identical database schema**:
 
 - `repository_stack` - Technology stack (languages, frameworks, databases, etc.)
 - `technologies` - Global EOL metadata per technology
-- `repository_dependencies` - Dependency tracking
-- `vulnerabilities` - Security issues
+- `packages` - Global package metadata (version-agnostic EOL, latest version) — Plan 012
+- `repository_dependencies` - Per-repo dependency usage with version-specific vulnerability exposure
+- `vulnerabilities` - Security issues linked to packages
 
 ### Shared Fields
 

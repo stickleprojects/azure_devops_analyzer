@@ -2,6 +2,53 @@
 
 ---
 
+## Session: 2026-04-26 - Plan 012 Complete: R-A/R-B Implementation Verified
+
+### Summary
+
+Verified and documented the completion of [Plan 012](.ai/plans/012-package-normalisation-plan.md). Both R-A (`/api/packages/by-service` endpoint) and R-B (flag-based vulnerability counts) are fully implemented, tested, and integrated. Plan 012 is now **complete**.
+
+### What Was Done
+
+**Verification of R-A** (`/api/packages/by-service` endpoint):
+- Endpoint implemented in `src/api/rescan.py:510-560`
+- Supports `?name`, `?ecosystem`, and `?version` parameters
+- Returns array of services, each with `repo_count` and deduplicated `versions_in_use`
+- Handles orphan-repo filtering (repos not linked to a service exclude from results)
+- Contract test suite: `tests/contract/api/test_packages_endpoints.py` — 10 tests (A1–A10) **all passing**
+
+**Verification of R-B** (flag-based vulnerability counts):
+- `database/views.sql:695` — `v_repo_dependency_rollup_latest` uses `COUNT(*) FILTER (WHERE d.has_known_vulnerabilities = true)` instead of expensive `LEFT JOIN vulnerabilities`
+- `database/views.sql:589` — `v_service_vulnerabilities_by_severity` filters on `d.has_known_vulnerabilities = true`
+- `src/database/service_analytics.py` — `_aggregate_security_metrics()` filters vulnerability counts on the flag, eliminating false-positive noise
+- Migration `database/migrations/016_use_known_vuln_flag.sql` applied (re-creates the views with correct semantics)
+- Contract test suite: `tests/contract/database/test_dep_dashboard_queries.py` — 8 tests (B1–B8) **all passing**
+
+**Documentation updates**:
+- Plan 012 status table updated: both R-A and R-B marked ✅ Done
+- Critical Files table updated: all rows now show ✅ or concrete line numbers
+- Removed "Remaining work" section (no longer applicable)
+- Updated final status to **"✅ Complete"**
+
+### Test Results
+
+```
+tests/contract/api/test_packages_endpoints.py::       10 passed ✅
+tests/contract/database/test_dep_dashboard_queries.py: 8 passed ✅
+```
+
+All contract tests pass; full Docker test suite validated.
+
+### Files Modified
+
+- `.ai/plans/012-package-normalisation-plan.md` — status reconciliation
+
+### Impact
+
+Plan 012 is now production-ready. The package normalization schema (splitting `dependencies` into `repository_dependencies` + `packages`, re-linking vulnerabilities to packages) is complete end-to-end. All dashboards render correct vulnerability and EOL counts. The API exposes five package-query endpoints covering search, by-repo, by-service, vulnerable, and EOL filters.
+
+---
+
 ## Session: 2026-04-25 - Plan 012 Reconciliation + R-A/R-B Specs Recorded
 
 ### Summary
