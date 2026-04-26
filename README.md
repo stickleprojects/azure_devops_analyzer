@@ -9,7 +9,8 @@ This system analyzes repositories from multiple platforms (Azure DevOps and GitH
 - **Multi-language support**: Detects and analyzes code in various programming languages
 - **Dependency extraction**: Parses manifest files from 7 ecosystems (PyPI, npm, Maven, NuGet, Go, RubyGems, Cargo)
 - **Security scanning**: Identifies vulnerabilities in dependencies and code
-- **Organization-wide security dashboard**: Tracks vulnerabilities and EOL dependencies across all repositories with drilldown capabilities
+- **Dependency vulnerability & EOL dashboards**: Two Grafana dashboards — `dependency-vulnerability-portfolio` (org-wide health buckets, adoption timelines, team breakdowns) and `library-detail-deep-dive` (per-package CVE list, version usage, exposed repos). Backed by API endpoints `/api/packages/health`, `/api/packages/adoption`, `/api/packages/library/<name>/<ecosystem>`.
+- **Thoughtworks Tech Radar**: Auto-generated Tech Radar publication from package adoption, CVE exposure, and EOL signals. Packages are categorised into Adopt / Trial / Assess / Hold rings across Infrastructure / Platforms / Tools / Languages & Frameworks quadrants. Ring movements (incl. `repo_count_delta` and `vulnerability_change`) are tracked publication-to-publication. Endpoints: `/api/radar` (Thoughtworks JSON format), `/api/radar/history`, `/api/radar/export` (CSV/JSON).
 - **Code quality analysis**: Static analysis for best practices and structural issues
 - **Contributor analytics**: Tracks developer activity and patterns
 - **Pull request metrics**: Analyzes PR size, quality, and review patterns
