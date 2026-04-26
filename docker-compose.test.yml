@@ -89,7 +89,7 @@ services:
       - sh
       - -c
       - |
-        pip install pytest pytest-cov pytest-asyncio pytest-mock && \
+        pip install pytest pytest-cov pytest-asyncio pytest-mock hypothesis && \
         pytest tests/unit/ \
                tests/contract/database/ \
                tests/contract/integration/ \

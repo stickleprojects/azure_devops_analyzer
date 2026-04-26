@@ -13,14 +13,17 @@ Usage:
     POST http://localhost:5000/api/compute/service-metrics
 """
 
+import csv
+import io
 import logging
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, Response
 from src.scheduler.celery_app import celery_app
 from src.database import get_session
 from src.database.models.repository import Repository
 from src.database.models.package import Package
 from src.database.models.dependency import RepositoryDependency, Vulnerability
 from src.database.models.service import RepositoryService, Service
+from src.database.models.radar import RadarBlip as RadarBlipModel, RadarBlipHistory, RadarPublication
 
 logger = logging.getLogger(__name__)
 
@@ -603,6 +606,248 @@ def packages_by_service():
     except Exception as e:
         logger.error("Packages by-service error: %s", e)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/radar", methods=["GET"])
+def get_radar():
+    """
+    Return the latest Tech Radar publication in Thoughtworks format.
+
+    https://github.com/thoughtworks/build-your-own-radar/blob/master/doc/data_format.md
+
+    Returns:
+        JSON with documentTitle, quadrants, rings, and entries.
+    """
+    try:
+        with get_session() as session:
+            pub = (
+                session.query(RadarPublication)
+                .filter(RadarPublication.is_latest == True)  # noqa: E712
+                .first()
+            )
+
+            if pub is None:
+                return jsonify({
+                    "documentTitle": "Organization Tech Radar",
+                    "quadrants": [
+                        {"name": "Infrastructure"},
+                        {"name": "Platforms"},
+                        {"name": "Tools"},
+                        {"name": "Languages & Frameworks"},
+                    ],
+                    "rings": [
+                        {"name": "Adopt",  "color": "#00AA00"},
+                        {"name": "Trial",  "color": "#00FFFF"},
+                        {"name": "Assess", "color": "#FFFF00"},
+                        {"name": "Hold",   "color": "#FF0000"},
+                    ],
+                    "entries": [],
+                }), 200
+
+            blips = (
+                session.query(RadarBlipModel)
+                .filter(RadarBlipModel.publication_id == pub.id)
+                .all()
+            )
+
+            entries = [
+                {
+                    "id": b.id,
+                    "label": b.label or b.package_name,
+                    "description": b.description or "",
+                    "quadrant": b.quadrant,
+                    "ring": b.ring,
+                    "isNew": b.is_new,
+                    "isMoved": b.is_moved,
+                }
+                for b in blips
+            ]
+
+            return jsonify({
+                "documentTitle": "Organization Tech Radar",
+                "quadrants": [
+                    {"name": "Infrastructure"},
+                    {"name": "Platforms"},
+                    {"name": "Tools"},
+                    {"name": "Languages & Frameworks"},
+                ],
+                "rings": [
+                    {"name": "Adopt",  "color": "#00AA00"},
+                    {"name": "Trial",  "color": "#00FFFF"},
+                    {"name": "Assess", "color": "#FFFF00"},
+                    {"name": "Hold",   "color": "#FF0000"},
+                ],
+                "entries": entries,
+                "publication": {
+                    "id": pub.id,
+                    "version": pub.publication_version,
+                    "date": pub.publication_date.isoformat(),
+                    "published_by": pub.published_by,
+                },
+            }), 200
+
+    except Exception as e:
+        logger.error("Failed to retrieve radar: %s", e, exc_info=True)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
+
+
+@app.route("/api/radar/history", methods=["GET"])
+def radar_history():
+    """
+    Return ring-movement timeline for one or all packages.
+
+    Query Parameters:
+        package_name (str): filter to a single package
+        limit        (int): max number of records (default 100)
+
+    Returns:
+        JSON with a 'timeline' list sorted by publication_date descending.
+    """
+    try:
+        package_name = request.args.get("package_name", "").strip() or None
+        limit = min(int(request.args.get("limit", 100)), 1000)
+
+        with get_session() as session:
+            query = session.query(RadarBlipHistory).order_by(
+                RadarBlipHistory.publication_date.desc()
+            )
+            if package_name:
+                query = query.filter(RadarBlipHistory.package_name == package_name)
+
+            rows = query.limit(limit).all()
+
+            return jsonify({
+                "timeline": [
+                    {
+                        "publication_date": str(r.publication_date),
+                        "package_name": r.package_name,
+                        "ecosystem": r.ecosystem,
+                        "prior_ring": r.prior_ring,
+                        "current_ring": r.current_ring,
+                        "repo_count_delta": r.repo_count_delta,
+                        "vulnerability_change": r.vulnerability_change,
+                    }
+                    for r in rows
+                ]
+            }), 200
+
+    except Exception as e:
+        logger.error("Failed to retrieve radar history: %s", e, exc_info=True)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
+
+
+@app.route("/api/radar/export", methods=["GET"])
+def export_radar():
+    """
+    Export a radar publication.
+
+    Query Parameters:
+        format (str): 'json' (default) or 'csv'
+        date   (str): YYYY-MM-DD — return the publication closest to this date;
+                      if not found, returns 404.
+
+    Returns:
+        A downloadable file attachment.
+    """
+    try:
+        fmt = request.args.get("format", "json").lower()
+        date_str = request.args.get("date", "").strip() or None
+
+        with get_session() as session:
+            if date_str:
+                # Validate date
+                try:
+                    from datetime import datetime as _dt
+                    target_date = _dt.strptime(date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    return jsonify({"status": "error", "message": f"Invalid date format: {date_str}"}), 404
+
+                # Find closest publication on or before the given date
+                pub = (
+                    session.query(RadarPublication)
+                    .filter(RadarPublication.publication_date <= f"{date_str} 23:59:59")
+                    .order_by(RadarPublication.publication_date.desc())
+                    .first()
+                )
+                if pub is None:
+                    return jsonify({"status": "error", "message": f"No radar publication found for date {date_str}"}), 404
+                filename_date = date_str
+            else:
+                pub = (
+                    session.query(RadarPublication)
+                    .filter(RadarPublication.is_latest == True)  # noqa: E712
+                    .first()
+                )
+                if pub is None:
+                    return jsonify({"status": "error", "message": "No radar publication available"}), 404
+                filename_date = pub.publication_date.strftime("%Y-%m-%d")
+
+            blips = (
+                session.query(RadarBlipModel)
+                .filter(RadarBlipModel.publication_id == pub.id)
+                .all()
+            )
+
+            if fmt == "csv":
+                output = io.StringIO()
+                writer = csv.writer(output)
+                writer.writerow([
+                    "package_name", "ecosystem", "ring", "quadrant",
+                    "label", "description", "repo_count",
+                    "is_new", "is_moved", "is_eol", "exposed_to_cves",
+                ])
+                for b in blips:
+                    writer.writerow([
+                        b.package_name, b.ecosystem, b.ring, b.quadrant,
+                        b.label or b.package_name, b.description or "",
+                        b.repo_count, b.is_new, b.is_moved, b.is_eol, b.exposed_to_cves,
+                    ])
+                csv_data = output.getvalue()
+                return Response(
+                    csv_data,
+                    mimetype="text/csv",
+                    headers={
+                        "Content-Disposition": f"attachment; filename=radar-{filename_date}.csv"
+                    },
+                )
+
+            # Default: JSON in TW format
+            entries = [
+                {
+                    "id": b.id,
+                    "label": b.label or b.package_name,
+                    "description": b.description or "",
+                    "quadrant": b.quadrant,
+                    "ring": b.ring,
+                    "isNew": b.is_new,
+                    "isMoved": b.is_moved,
+                }
+                for b in blips
+            ]
+            payload = jsonify({
+                "documentTitle": "Organization Tech Radar",
+                "quadrants": [
+                    {"name": "Infrastructure"},
+                    {"name": "Platforms"},
+                    {"name": "Tools"},
+                    {"name": "Languages & Frameworks"},
+                ],
+                "rings": [
+                    {"name": "Adopt",  "color": "#00AA00"},
+                    {"name": "Trial",  "color": "#00FFFF"},
+                    {"name": "Assess", "color": "#FFFF00"},
+                    {"name": "Hold",   "color": "#FF0000"},
+                ],
+                "entries": entries,
+            })
+            payload.headers["Content-Disposition"] = (
+                f"attachment; filename=radar-{filename_date}.json"
+            )
+            return payload, 200
+
+    except Exception as e:
+        logger.error("Failed to export radar: %s", e, exc_info=True)
+        return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 
 @app.route("/api/packages/health", methods=["GET"])
