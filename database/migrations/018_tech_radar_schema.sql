@@ -1,4 +1,4 @@
--- Migration 017: Tech Radar Schema (Plan 022)
+-- Migration 018: Tech Radar Schema (Plan 022)
 --
 -- Creates three tables for managing Thoughtworks Tech Radar publications:
 --   radar_publications  — versioned radar snapshots
