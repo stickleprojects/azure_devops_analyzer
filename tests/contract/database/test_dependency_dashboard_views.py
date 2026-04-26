@@ -1,5 +1,5 @@
 """
-CONTRACT Tests T1–T6: dependency vulnerability dashboard views (Plan 021 / FR-5).
+CONTRACT Tests T1–T9: dependency vulnerability dashboard views (Plan 021 / FR-5).
 
 These tests guard the five new portfolio-level views introduced in migration 017:
   T1 — v_package_portfolio_latest: 3 repos, 1 vulnerable → repo_count=3, exposed_repos=1
@@ -8,6 +8,9 @@ These tests guard the five new portfolio-level views introduced in migration 017
   T4 — v_package_adoption_timeline: 3 different dates → 3 date rows
   T5 — v_package_by_team_latest: same package, 2 teams → 2 rows
   T6 — v_package_vulnerabilities_detail: multiple exposed repos counted accurately
+  T7 — v_package_portfolio_latest: max_severity_exposed rank ordering (CRITICAL+MEDIUM → CRITICAL)
+  T8 — v_package_portfolio_latest: service_count reflects linked services
+  T9 — v_package_health_latest: past eol_date with is_eol=false → health_status='EOL'
 """
 
 import pytest
@@ -17,7 +20,9 @@ from sqlalchemy import text
 
 from src.database.models.dependency import RepositoryDependency, Vulnerability
 from src.database.models.package import Package
+from src.database.models.service import RepositoryService, Service
 from src.database.storage import (
+    get_or_create_service,
     store_organization,
     store_project,
     store_repository,
@@ -308,3 +313,101 @@ def test_t6_vulnerability_detail_exposed_count(db_session):
 
     assert row is not None
     assert row.exposed_repo_count == 2
+
+
+# ---------------------------------------------------------------------------
+# T7: v_package_portfolio_latest — max_severity_exposed uses rank ordering
+# ---------------------------------------------------------------------------
+
+@pytest.mark.integration
+def test_t7_max_severity_exposed_rank_ordering(db_session):
+    """T7: Package with both CRITICAL and MEDIUM CVEs, exposed repo → max_severity_exposed='CRITICAL'."""
+    pkg = _make_package(db_session, "t7-axios", "npm")
+    # Two CVEs: one MEDIUM and one CRITICAL
+    _make_vuln(db_session, pkg, "CVE-2022-MED", "MEDIUM")
+    _make_vuln(db_session, pkg, "CVE-2022-CRIT", "CRITICAL")
+    _make_repo(db_session, "org/t7-repo", "t7-repo")
+    _make_dep(db_session, "org/t7-repo", "t7-axios", has_known_vulnerabilities=True)
+    db_session.commit()
+
+    row = db_session.execute(
+        text(
+            "SELECT max_severity_exposed "
+            "FROM v_package_portfolio_latest "
+            "WHERE package_name = 't7-axios' AND ecosystem = 'npm'"
+        )
+    ).fetchone()
+
+    assert row is not None
+    assert row.max_severity_exposed == "CRITICAL", (
+        f"Expected 'CRITICAL', got {row.max_severity_exposed!r}. "
+        "max_severity_exposed must use rank ordering, not lexicographic."
+    )
+
+
+# ---------------------------------------------------------------------------
+# T8: v_package_portfolio_latest — service_count reflects linked services
+# ---------------------------------------------------------------------------
+
+@pytest.mark.integration
+def test_t8_portfolio_service_count(db_session):
+    """T8: Package used by repos in 2 distinct services → service_count=2."""
+    pkg = _make_package(db_session, "t8-react", "npm")
+
+    for i in range(2):
+        repo_id = f"org/t8-repo-{i}"
+        _make_repo(db_session, repo_id, f"t8-repo-{i}")
+        _make_dep(db_session, repo_id, "t8-react")
+        svc = get_or_create_service(db_session, f"t8-service-{i}")
+        db_session.flush()
+        rs = RepositoryService(
+            repo_id=repo_id,
+            service_id=svc.service_id,
+            linked_at=datetime.now(UTC),
+        )
+        db_session.add(rs)
+
+    db_session.commit()
+
+    row = db_session.execute(
+        text(
+            "SELECT service_count "
+            "FROM v_package_portfolio_latest "
+            "WHERE package_name = 't8-react' AND ecosystem = 'npm'"
+        )
+    ).fetchone()
+
+    assert row is not None
+    assert row.service_count == 2, f"Expected service_count=2, got {row.service_count}"
+
+
+# ---------------------------------------------------------------------------
+# T9: v_package_health_latest — past eol_date with is_eol=false → health_status='EOL'
+# ---------------------------------------------------------------------------
+
+@pytest.mark.integration
+def test_t9_health_past_eol_date_classified_as_eol(db_session):
+    """T9: Package with past eol_date but is_eol=False should still be classified as 'EOL'."""
+    pkg = _make_package(
+        db_session,
+        "t9-oldpkg",
+        "pypi",
+        is_eol=False,
+        eol_date=date(2020, 1, 1),  # clearly in the past
+    )
+    _make_repo(db_session, "org/t9-repo", "t9-repo")
+    _make_dep(db_session, "org/t9-repo", "t9-oldpkg", "pypi")
+    db_session.commit()
+
+    row = db_session.execute(
+        text(
+            "SELECT health_status "
+            "FROM v_package_health_latest "
+            "WHERE package_name = 't9-oldpkg' AND ecosystem = 'pypi'"
+        )
+    ).fetchone()
+
+    assert row is not None
+    assert row.health_status == "EOL", (
+        f"Expected 'EOL' for a past eol_date, got {row.health_status!r}."
+    )

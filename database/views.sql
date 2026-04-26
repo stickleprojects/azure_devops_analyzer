@@ -1320,9 +1320,16 @@ SELECT
     COUNT(DISTINCT rd.repo_id) FILTER (WHERE rd.has_known_vulnerabilities = true) AS exposed_repos,
     COUNT(DISTINCT v.id) AS total_cves,
     MAX(CASE WHEN v.severity = 'CRITICAL' THEN 1 ELSE 0 END) AS has_critical_cve,
-    MAX(v.severity) FILTER (
-        WHERE rd.has_known_vulnerabilities = true
-    ) AS max_severity_exposed
+    CASE MAX(
+        CASE WHEN rd.has_known_vulnerabilities = true THEN
+            CASE v.severity WHEN 'CRITICAL' THEN 4 WHEN 'HIGH' THEN 3 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 1 END
+        END
+    )
+        WHEN 4 THEN 'CRITICAL'
+        WHEN 3 THEN 'HIGH'
+        WHEN 2 THEN 'MEDIUM'
+        WHEN 1 THEN 'LOW'
+    END AS max_severity_exposed
 FROM packages p
 LEFT JOIN repository_dependencies rd
     ON p.package_name = rd.package_name AND p.ecosystem = rd.ecosystem
@@ -1341,6 +1348,7 @@ SELECT
     p.ecosystem,
     CASE
         WHEN p.is_eol THEN 'EOL'
+        WHEN p.eol_date IS NOT NULL AND p.eol_date <= CURRENT_DATE THEN 'EOL'
         WHEN p.eol_date IS NOT NULL AND p.eol_date < CURRENT_DATE + INTERVAL '90 days' THEN 'APPROACHING_EOL'
         WHEN MAX(CASE WHEN v.severity = 'CRITICAL' THEN 1 ELSE 0 END) = 1
              AND COUNT(DISTINCT rd.repo_id) FILTER (WHERE rd.has_known_vulnerabilities = true) > 0
@@ -1381,7 +1389,7 @@ SELECT
     COALESCE(t.name, 'Unknown') AS team_name,
     COUNT(DISTINCT rd.repo_id) AS repo_count,
     COUNT(DISTINCT rd.repo_id) FILTER (WHERE rd.has_known_vulnerabilities = true) AS exposed_repos,
-    STRING_AGG(DISTINCT rd.version, ', ') AS versions_in_use
+    STRING_AGG(DISTINCT rd.version, ', ' ORDER BY rd.version) AS versions_in_use
 FROM packages p
 LEFT JOIN repository_dependencies rd
     ON p.package_name = rd.package_name AND p.ecosystem = rd.ecosystem

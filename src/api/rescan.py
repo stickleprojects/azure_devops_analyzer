@@ -667,9 +667,8 @@ def packages_health():
 
             if severity_filter and severity_filter in _severity_rank:
                 allowed = [s for s, r in _severity_rank.items() if r >= _severity_rank[severity_filter]]
-                base_sql += " WHERE h.health_status IN ('CRITICAL_EXPOSED','HIGH_EXPOSED')"
                 base_sql += (
-                    " AND EXISTS ("
+                    " WHERE EXISTS ("
                     "  SELECT 1 FROM v_package_vulnerabilities_detail pvd"
                     "  WHERE pvd.package_name = h.package_name"
                     "    AND pvd.ecosystem = h.ecosystem"
