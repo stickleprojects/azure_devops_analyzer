@@ -1,9 +1,9 @@
 # Plan: Package Normalisation — `packages` + `repository_dependencies`
 
-## Status: Mostly Complete
+## Status: ✅ Complete
 
 **Branch**: `copilot/implement-plan-012` (foundation merged via PR #38, 2026-04-03)
-**Last updated**: 2026-04-25 (status reconciled against current dashboards/views)
+**Last updated**: 2026-04-26 (R-A and R-B implementation verified and tested)
 
 | Section | Status | Notes |
 |---------|--------|-------|
@@ -13,24 +13,13 @@
 | DependencyEnricher | ✅ Done | `PackageMetadata`, `EnrichedDependency`, `_version_is_affected` |
 | Workflow integration | ✅ Done | `_process_dependencies` updated |
 | Unit tests | ✅ Done | `test_package_storage.py` (8 tests), `test_version_comparison.py` (15 tests) — all passing |
-| API endpoints (4/5) | ✅ Done | `/api/packages/search`, `/api/packages/by-repo`, `/api/packages/vulnerable`, `/api/packages/eol` in `rescan.py` |
+| API endpoints (5/5) | ✅ Done | `/api/packages/search`, `/api/packages/by-repo`, `/api/packages/vulnerable`, `/api/packages/eol`, and `/api/packages/by-service` (R-A) all in `rescan.py` |
 | Dashboard — EOL panels (deep-dive + service-overview) | ✅ Done | Plan 016 reporting views (`v_repo_dependency_rollup_latest`, `v_dependency_snapshot_latest`) JOIN `repository_dependencies → packages` and expose `is_eol`/`eol_date`; existing EOL panels at `repository-deep-dive.json:2532` and `service-overview.json:1440` consume them. |
 | Dashboard — CVE detail panel (deep-dive) | ✅ Done | `v_repo_vulnerability_details_latest` (views.sql:726) JOINs `vulnerabilities` to packages and produces (package, version, CVE, severity, summary, fixed_in, published); panel at `repository-deep-dive.json:2818` already renders it. |
-| `/api/packages/by-service` (R-A) | ❌ Not done | Endpoint described in plan but not implemented (verified 2026-04-25). Contract test spec in **Addendum A** below. |
-| Dashboard vulnerability counts use `has_known_vulnerabilities` flag (R-B) | ❌ Not done | Decision recorded 2026-04-25: **adopt flag-based counts** to match plan 012's original design intent. `v_repo_dependency_rollup_latest:695` uses `COUNT(DISTINCT v.id)` via `LEFT JOIN vulnerabilities`; `service_analytics.py:295-313` populates `service_metrics.total_vulnerabilities` the same way. Both must change. Contract test spec in **Addendum B** below. |
+| `/api/packages/by-service` (R-A) | ✅ Done | Endpoint implemented in `src/api/rescan.py:510-560`. Contract tests (A1–A10) all passing in `tests/contract/api/test_packages_endpoints.py`. |
+| Dashboard vulnerability counts use `has_known_vulnerabilities` flag (R-B) | ✅ Done | Flag-based counts adopted: `v_repo_dependency_rollup_latest` uses `COUNT(*) FILTER (WHERE d.has_known_vulnerabilities = true)` (line 695); `service_analytics.py:_aggregate_security_metrics` filters on `has_known_vulnerabilities == True`. Contract tests (B1–B8) all passing in `tests/contract/database/test_dep_dashboard_queries.py`. Migration `016_use_known_vuln_flag.sql` applied. |
 
-**Remaining work**: R-A (endpoint) and R-B (flag adoption) — both have contract test specs ready for agent delegation.
-
-### Decision recorded 2026-04-25 — adopt flag-based vulnerability counts
-
-The migration introduced `repository_dependencies.has_known_vulnerabilities` as a per-repo, version-aware flag (`true` only when the pinned version is below `fixed_in_version` of an active CVE). Plan 012's design intent was for dashboards to use this flag for counts.
-
-Decision: **switch dashboards and `service_analytics.py` to the flag**. Rationale:
-
-- Matches plan 012's original design — the flag was added precisely to enable this without expensive per-query joins.
-- Removes false-positive noise: a repo on `lodash@4.17.21` (already at the fix) should not appear under "vulnerable repos".
-- Helper views `v_dep_security_summary` (views.sql:780) and `v_dependency_summary` (views.sql:1132) already expose the flag, so the path is well-trodden.
-- Upgrade pressure (showing all CVEs that ever existed against a package) is better surfaced via the EOL view and `/api/packages/eol` than via vulnerability counts.
+**Plan 012 is now complete:** All core requirements and both R-A and R-B extensions are implemented, tested, and integrated into dashboards and APIs.
 
 ---
 
@@ -524,17 +513,17 @@ GET /api/packages/eol
 | ✅ Done | Modify | `src/database/storage.py` (`store_package_metadata`, `store_repo_dependencies`, deprecated `store_enriched_dependencies` alias) |
 | ✅ Done | Modify | `src/analyzers/dependency_enricher.py` (`PackageMetadata`, `_version_is_affected`, `has_known_vulnerabilities` computation) |
 | ✅ Done | Modify | `src/workflows/github_analysis.py` (`_process_dependencies` updated) |
-| ✅ Done | Modify | `src/api/rescan.py` (search, by-repo, vulnerable, eol endpoints added) |
+| ✅ Done | Modify | `src/api/rescan.py` (search, by-repo, vulnerable, eol, by-service endpoints added) |
 | ✅ Done | Create | `tests/unit/test_package_storage.py` |
 | ✅ Done | Create | `tests/unit/test_version_comparison.py` |
-| ❌ R-A | Modify | `src/api/rescan.py` — add `/api/packages/by-service` endpoint per Addendum A |
-| ❌ R-A | Create | `tests/contract/api/test_packages_endpoints.py` — A1–A10 per Addendum A |
+| ✅ Done | Modify | `src/api/rescan.py:510-560` — `/api/packages/by-service` endpoint (R-A) |
+| ✅ Done | Create | `tests/contract/api/test_packages_endpoints.py` — A1–A10 (R-A), all passing |
 | ✅ Done | Modify | `dashboards/repository-deep-dive.json` — EOL stat (line 2532) and CVE detail panel (line 2818) consume reporting views from plan 016; underlying schema is correct |
 | ✅ Done | Modify | `dashboards/service-overview.json` — EOL Dependencies (line 1440), Critical Vulnerabilities (line 1306), High Vulnerabilities (line 1373) all consume `v_service_metrics_latest` populated from the new schema |
-| ❌ R-B | Modify | `database/views.sql` — `v_repo_dependency_rollup_latest` and `v_service_vulnerabilities_by_severity` to use `has_known_vulnerabilities` flag per Addendum B |
-| ❌ R-B | Modify | `src/database/service_analytics.py:_aggregate_security_metrics` — filter on `RepositoryDependency.has_known_vulnerabilities` per Addendum B |
-| ❌ R-B | Create | `database/migrations/0XX_use_known_vuln_flag.sql` — re-CREATE the two views (next free migration number at implementation time) |
-| ❌ R-B | Create | `tests/contract/database/test_dep_dashboard_queries.py` — B1–B8 per Addendum B |
+| ✅ Done | Modify | `database/views.sql` — `v_repo_dependency_rollup_latest` and `v_service_vulnerabilities_by_severity` using `has_known_vulnerabilities` flag (R-B) |
+| ✅ Done | Modify | `src/database/service_analytics.py:_aggregate_security_metrics` — filters on `RepositoryDependency.has_known_vulnerabilities` (R-B) |
+| ✅ Done | Create | `database/migrations/016_use_known_vuln_flag.sql` — views updated to use the flag (R-B) |
+| ✅ Done | Create | `tests/contract/database/test_dep_dashboard_queries.py` — B1–B8 (R-B), all passing |
 
 ---
 
