@@ -20,6 +20,7 @@ from src.database import get_session
 from src.database.models.repository import Repository
 from src.database.models.package import Package
 from src.database.models.dependency import RepositoryDependency, Vulnerability
+from src.database.models.service import RepositoryService, Service
 
 logger = logging.getLogger(__name__)
 
@@ -532,6 +533,75 @@ def eol_packages():
             return jsonify(results)
     except Exception as e:
         logger.error("EOL packages error: %s", e)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/packages/by-service", methods=["GET"])
+def packages_by_service():
+    """
+    Services that have repos using a specific package.
+
+    Query params:
+      ?name=       required; exact match on package_name
+      ?ecosystem=  optional; exact match
+      ?version=    optional; filter to repos on this exact version
+
+    Returns one row per service that has >=1 repo using the package,
+    ordered by service_name. Repos not linked to any service are excluded.
+    """
+    name = request.args.get("name", "").strip()
+    if not name:
+        return jsonify({"status": "error", "message": "name is required"}), 400
+
+    ecosystem = request.args.get("ecosystem", "").strip()
+    version = request.args.get("version", "").strip()
+
+    try:
+        with get_session() as session:
+            query = (
+                session.query(
+                    Service.service_id,
+                    Service.name,
+                    RepositoryDependency.repo_id,
+                    RepositoryDependency.version,
+                )
+                .join(RepositoryService, RepositoryService.service_id == Service.service_id)
+                .join(
+                    RepositoryDependency,
+                    RepositoryDependency.repo_id == RepositoryService.repo_id,
+                )
+                .filter(RepositoryDependency.package_name == name)
+            )
+            if ecosystem:
+                query = query.filter(RepositoryDependency.ecosystem == ecosystem)
+            if version:
+                query = query.filter(RepositoryDependency.version == version)
+            rows = query.all()
+
+            by_service: dict = {}
+            for row in rows:
+                key = row.service_id
+                if key not in by_service:
+                    by_service[key] = {
+                        "service_name": row.name,
+                        "repos": set(),
+                        "versions": set(),
+                    }
+                by_service[key]["repos"].add(row.repo_id)
+                if row.version:
+                    by_service[key]["versions"].add(row.version)
+
+            results = [
+                {
+                    "service_name": v["service_name"],
+                    "repo_count": len(v["repos"]),
+                    "versions_in_use": sorted(v["versions"]),
+                }
+                for v in sorted(by_service.values(), key=lambda x: x["service_name"])
+            ]
+            return jsonify(results)
+    except Exception as e:
+        logger.error("Packages by-service error: %s", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
