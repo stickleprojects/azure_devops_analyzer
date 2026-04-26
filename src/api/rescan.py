@@ -850,6 +850,290 @@ def export_radar():
         return jsonify({"status": "error", "message": "Internal server error"}), 500
 
 
+@app.route("/api/packages/health", methods=["GET"])
+def packages_health():
+    """
+    Portfolio health summary for all packages.
+
+    Optional filters:
+      ?team=<name>      — restrict to repos belonging to this team
+      ?service=<name>   — restrict to repos linked to this service
+      ?severity=<level> — only include packages at this severity or above
+
+    Returns one key per health_status bucket:
+      healthy, high_exposed, critical_exposed, eol, approaching_eol
+    """
+    team = request.args.get("team", "").strip()
+    service = request.args.get("service", "").strip()
+    severity_filter = request.args.get("severity", "").strip().upper()
+
+    _severity_rank = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}
+
+    try:
+        with get_session() as session:
+            from sqlalchemy import text as _text
+
+            base_sql = """
+                SELECT
+                    h.package_name,
+                    h.ecosystem,
+                    h.health_status,
+                    h.repo_count,
+                    h.exposed_cve_count,
+                    h.eol_date
+                FROM v_package_health_latest h
+            """
+            filters = []
+            params: dict = {}
+
+            if team or service:
+                base_sql += """
+                    JOIN (
+                        SELECT DISTINCT p2.package_name, p2.ecosystem
+                        FROM packages p2
+                        JOIN repository_dependencies rd2
+                            ON p2.package_name = rd2.package_name AND p2.ecosystem = rd2.ecosystem
+                        JOIN repositories r2 ON rd2.repo_id = r2.repo_id
+                """
+                if team:
+                    base_sql += " JOIN teams t2 ON t2.team_id = r2.team_id"
+                    filters.append("t2.name = :team")
+                    params["team"] = team
+                if service:
+                    base_sql += (
+                        " JOIN repository_services rs2 ON rs2.repo_id = r2.repo_id"
+                        " JOIN services svc2 ON svc2.service_id = rs2.service_id"
+                    )
+                    filters.append("svc2.name = :service")
+                    params["service"] = service
+                if filters:
+                    base_sql += " WHERE " + " AND ".join(filters)
+                base_sql += ") AS pkg_filter USING (package_name, ecosystem)"
+
+            if severity_filter and severity_filter in _severity_rank:
+                allowed = [s for s, r in _severity_rank.items() if r >= _severity_rank[severity_filter]]
+                base_sql += (
+                    " WHERE EXISTS ("
+                    "  SELECT 1 FROM v_package_vulnerabilities_detail pvd"
+                    "  WHERE pvd.package_name = h.package_name"
+                    "    AND pvd.ecosystem = h.ecosystem"
+                    "    AND pvd.severity = ANY(:allowed_severities)"
+                    " )"
+                )
+                params["allowed_severities"] = allowed
+
+            rows = session.execute(_text(base_sql), params).fetchall()
+
+            buckets: dict = {
+                "healthy": {"count": 0, "packages": []},
+                "high_exposed": {"count": 0, "packages": []},
+                "critical_exposed": {"count": 0, "packages": []},
+                "eol": {"count": 0, "packages": []},
+                "approaching_eol": {"count": 0, "packages": []},
+            }
+            _status_map = {
+                "HEALTHY": "healthy",
+                "HIGH_EXPOSED": "high_exposed",
+                "CRITICAL_EXPOSED": "critical_exposed",
+                "EOL": "eol",
+                "APPROACHING_EOL": "approaching_eol",
+            }
+            for row in rows:
+                bucket_key = _status_map.get(row.health_status, "healthy")
+                entry = {
+                    "package_name": row.package_name,
+                    "ecosystem": row.ecosystem,
+                    "repo_count": row.repo_count,
+                    "exposed_cve_count": row.exposed_cve_count,
+                    "eol_date": row.eol_date.isoformat() if row.eol_date else None,
+                }
+                buckets[bucket_key]["count"] += 1
+                buckets[bucket_key]["packages"].append(entry)
+
+            return jsonify(buckets), 200
+    except Exception as e:
+        logger.error("Package health error: %s", e)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/packages/adoption", methods=["GET"])
+def package_adoption():
+    """
+    Adoption timeline for a package or top-N packages.
+
+    Query params:
+      ?name=<name>        — package_name (exact); if omitted, returns top-N
+      ?ecosystem=<eco>    — optional ecosystem filter (used with name)
+      ?top=<n>            — top N packages by current repo_count (default 10)
+      ?days=<n>           — limit timeline to last N days (default 90, max 365)
+    """
+    name = request.args.get("name", "").strip()
+    ecosystem = request.args.get("ecosystem", "").strip()
+    try:
+        top_n = int(request.args.get("top", 10))
+    except ValueError:
+        top_n = 10
+    try:
+        days = min(int(request.args.get("days", 90)), 365)
+    except ValueError:
+        days = 90
+
+    try:
+        with get_session() as session:
+            from sqlalchemy import text as _text
+
+            if name:
+                sql = """
+                    SELECT package_name, ecosystem, adoption_date, repo_count
+                    FROM v_package_adoption_timeline
+                    WHERE package_name = :name
+                      AND adoption_date >= CURRENT_DATE - CAST(:days AS INT)
+                """
+                params: dict = {"name": name, "days": days}
+                if ecosystem:
+                    sql += " AND ecosystem = :ecosystem"
+                    params["ecosystem"] = ecosystem
+                sql += " ORDER BY adoption_date"
+                rows = session.execute(_text(sql), params).fetchall()
+            else:
+                # Top-N packages by most recent repo_count
+                sql = """
+                    SELECT t.package_name, t.ecosystem, t.adoption_date, t.repo_count
+                    FROM v_package_adoption_timeline t
+                    JOIN (
+                        SELECT package_name, ecosystem
+                        FROM v_package_portfolio_latest
+                        ORDER BY repo_count DESC
+                        LIMIT :top_n
+                    ) top_pkgs USING (package_name, ecosystem)
+                    WHERE t.adoption_date >= CURRENT_DATE - CAST(:days AS INT)
+                    ORDER BY t.package_name, t.ecosystem, t.adoption_date
+                """
+                rows = session.execute(_text(sql), {"top_n": top_n, "days": days}).fetchall()
+
+            timeline = [
+                {
+                    "package_name": row.package_name,
+                    "ecosystem": row.ecosystem,
+                    "adoption_date": row.adoption_date.isoformat() if row.adoption_date else None,
+                    "repo_count": row.repo_count,
+                }
+                for row in rows
+            ]
+            return jsonify(timeline), 200
+    except Exception as e:
+        logger.error("Package adoption error: %s", e)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/packages/library/<name>/<ecosystem>", methods=["GET"])
+def library_detail(name: str, ecosystem: str):
+    """
+    Detailed information for a single library.
+
+    Returns:
+      - metadata:  package_name, ecosystem, latest_version, is_eol, eol_date
+      - cves:      list of CVEs with severity / fixed_in_version / exposed_repo_count
+      - usage:     list of {repo_id, team_name, version, has_known_vulnerabilities}
+      - by_team:   list of {team_name, repo_count, exposed_repos, versions_in_use}
+    """
+    try:
+        with get_session() as session:
+            from sqlalchemy import text as _text
+
+            pkg = (
+                session.query(Package)
+                .filter_by(package_name=name, ecosystem=ecosystem)
+                .first()
+            )
+            if not pkg:
+                return jsonify({"status": "error", "message": "Package not found"}), 404
+
+            cve_rows = session.execute(
+                _text(
+                    """
+                    SELECT cve_id, severity, summary, fixed_in_version,
+                           published_date, exposed_repo_count
+                    FROM v_package_vulnerabilities_detail
+                    WHERE package_name = :name AND ecosystem = :eco
+                    ORDER BY severity DESC, cve_id
+                    """
+                ),
+                {"name": name, "eco": ecosystem},
+            ).fetchall()
+
+            usage_rows = session.execute(
+                _text(
+                    """
+                    SELECT rd.repo_id, COALESCE(t.name, 'Unknown') AS team_name,
+                           rd.version, rd.has_known_vulnerabilities
+                    FROM repository_dependencies rd
+                    JOIN repositories r ON r.repo_id = rd.repo_id
+                    LEFT JOIN teams t ON t.team_id = r.team_id
+                    WHERE rd.package_name = :name AND rd.ecosystem = :eco
+                    ORDER BY rd.has_known_vulnerabilities DESC, rd.repo_id
+                    """
+                ),
+                {"name": name, "eco": ecosystem},
+            ).fetchall()
+
+            team_rows = session.execute(
+                _text(
+                    """
+                    SELECT team_name, repo_count, exposed_repos, versions_in_use
+                    FROM v_package_by_team_latest
+                    WHERE package_name = :name AND ecosystem = :eco
+                    ORDER BY repo_count DESC
+                    """
+                ),
+                {"name": name, "eco": ecosystem},
+            ).fetchall()
+
+            return jsonify(
+                {
+                    "metadata": {
+                        "package_name": pkg.package_name,
+                        "ecosystem": pkg.ecosystem,
+                        "latest_version": pkg.latest_version,
+                        "is_eol": pkg.is_eol,
+                        "eol_date": pkg.eol_date.isoformat() if pkg.eol_date else None,
+                    },
+                    "cves": [
+                        {
+                            "cve_id": r.cve_id,
+                            "severity": r.severity,
+                            "summary": r.summary,
+                            "fixed_in_version": r.fixed_in_version,
+                            "published_date": r.published_date.isoformat() if r.published_date else None,
+                            "exposed_repo_count": r.exposed_repo_count,
+                        }
+                        for r in cve_rows
+                    ],
+                    "usage": [
+                        {
+                            "repo_id": r.repo_id,
+                            "team_name": r.team_name,
+                            "version": r.version,
+                            "has_known_vulnerabilities": r.has_known_vulnerabilities,
+                        }
+                        for r in usage_rows
+                    ],
+                    "by_team": [
+                        {
+                            "team_name": r.team_name,
+                            "repo_count": r.repo_count,
+                            "exposed_repos": r.exposed_repos,
+                            "versions_in_use": r.versions_in_use,
+                        }
+                        for r in team_rows
+                    ],
+                }
+            ), 200
+    except Exception as e:
+        logger.error("Library detail error: %s", e)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.errorhandler(404)
 def not_found(e):
     """Handle 404 errors."""
