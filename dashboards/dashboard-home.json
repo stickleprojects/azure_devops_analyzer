@@ -82,7 +82,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -141,7 +143,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -200,7 +204,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -259,7 +265,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -318,7 +326,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -377,7 +387,9 @@
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -444,7 +456,7 @@
       },
       "id": 9,
       "options": {
-        "content": "# Repository Overview\n\n**High-level metrics and trends across all repositories**\n\n- Total repository count and activity\n- Commit trends over time\n- Pull request statistics\n- Language distribution\n- Top contributors\n\n[View Repository Overview →](/d/repo-overview)",
+        "content": "# Repository Overview\n\n**High-level metrics and trends across all repositories**\n\n- Total repository count and activity\n- Commit trends over time\n- Pull request statistics\n- Language distribution\n- Top contributors\n\n[View Repository Overview \u2192](/d/repo-overview)",
         "mode": "markdown"
       },
       "pluginVersion": "11.0.0",
@@ -482,7 +494,7 @@
       },
       "id": 10,
       "options": {
-        "content": "# Repository Deep-Dive\n\n**Detailed analysis of individual repositories**\n\n- Repository-specific metrics\n- Branch analysis and staleness\n- File change patterns\n- Code quality metrics\n- Dependency vulnerabilities\n\n[View Repository Deep-Dive →](/d/repo-deep-dive)",
+        "content": "# Repository Deep-Dive\n\n**Detailed analysis of individual repositories**\n\n- Repository-specific metrics\n- Branch analysis and staleness\n- File change patterns\n- Code quality metrics\n- Dependency vulnerabilities\n\n[View Repository Deep-Dive \u2192](/d/repo-deep-dive)",
         "mode": "markdown"
       },
       "pluginVersion": "11.0.0",
@@ -520,7 +532,7 @@
       },
       "id": 11,
       "options": {
-        "content": "# Pull Requests\n\n**Comprehensive pull request analytics**\n\n- PR creation and merge trends\n- Review times and approval rates\n- Size and complexity analysis\n- Author and reviewer statistics\n- Quality metrics and issues\n\n[View Pull Requests →](/d/pull-requests)",
+        "content": "# Pull Requests\n\n**Comprehensive pull request analytics**\n\n- PR creation and merge trends\n- Review times and approval rates\n- Size and complexity analysis\n- Author and reviewer statistics\n- Quality metrics and issues\n\n[View Pull Requests \u2192](/d/pull-requests)",
         "mode": "markdown"
       },
       "pluginVersion": "11.0.0",
@@ -558,7 +570,7 @@
       },
       "id": 12,
       "options": {
-        "content": "# Contributors\n\n**Developer productivity and contribution analysis**\n\n- Individual contributor metrics\n- Commit patterns and frequency\n- Code review participation\n- Productivity trends\n- Team collaboration insights\n\n[View Contributors →](/d/contributor-analytics)",
+        "content": "# Contributors\n\n**Developer productivity and contribution analysis**\n\n- Individual contributor metrics\n- Commit patterns and frequency\n- Code review participation\n- Productivity trends\n- Team collaboration insights\n\n[View Contributors \u2192](/d/contributor-analytics)",
         "mode": "markdown"
       },
       "pluginVersion": "11.0.0",
@@ -596,7 +608,7 @@
       },
       "id": 13,
       "options": {
-        "content": "# Team Overview\n\n**Team-based development analytics**\n\n- Team performance metrics\n- Cross-repository team activity\n- Team collaboration patterns\n- Repository ownership by team\n- Team velocity and quality metrics\n\n[View Team Overview →](/d/team-overview)",
+        "content": "# Team Overview\n\n**Team-based development analytics**\n\n- Team performance metrics\n- Cross-repository team activity\n- Team collaboration patterns\n- Repository ownership by team\n- Team velocity and quality metrics\n\n[View Team Overview \u2192](/d/team-overview)",
         "mode": "markdown"
       },
       "pluginVersion": "11.0.0",
@@ -634,7 +646,7 @@
       },
       "id": 14,
       "options": {
-        "content": "# Service Overview\n\n**Service-level analytics aggregated across repositories**\n\n- Service health at a glance\n- Commit and PR activity by service\n- Code quality and test coverage trends\n- Security vulnerabilities and EOL dependencies\n- Repository breakdown per service\n\n[View Service Overview →](/d/service-overview)",
+        "content": "# Service Overview\n\n**Service-level analytics aggregated across repositories**\n\n- Service health at a glance\n- Commit and PR activity by service\n- Code quality and test coverage trends\n- Security vulnerabilities and EOL dependencies\n- Repository breakdown per service\n\n[View Service Overview \u2192](/d/service-overview)",
         "mode": "markdown"
       },
       "pluginVersion": "11.0.0",
@@ -672,11 +684,163 @@
       },
       "id": 15,
       "options": {
-        "content": "# Administration\n\n**System administration and operational controls**\n\n- Trigger full platform rescans (GitHub / Azure DevOps)\n- Monitor active extraction jobs and progress\n- Identify stale and never-scanned repositories\n- Force-rescan individual repositories\n- Access Celery Flower monitoring UI\n\n[Open Administration →](/d/admin-dashboard)",
+        "content": "# Administration\n\n**System administration and operational controls**\n\n- Trigger full platform rescans (GitHub / Azure DevOps)\n- Monitor active extraction jobs and progress\n- Identify stale and never-scanned repositories\n- Force-rescan individual repositories\n- Access Celery Flower monitoring UI\n\n[Open Administration \u2192](/d/admin-dashboard)",
         "mode": "markdown"
       },
       "pluginVersion": "11.0.0",
       "title": "Administration",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 20
+      },
+      "id": 16,
+      "options": {
+        "content": "# Security Dashboard\n\n**Org-wide vulnerability and EOL exposure**\n\n- Total vulnerabilities and EOL dependencies\n- Severity distribution and top vulnerable repos\n- Vulnerability trends over time\n- Repository security overview with drilldown\n\n[View Security Dashboard \u2192](/d/security-dashboard)",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.0",
+      "title": "Security Dashboard",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 16,
+        "y": 20
+      },
+      "id": 17,
+      "options": {
+        "content": "# Technology Landscape\n\n**Languages, frameworks, and EOL technology footprint**\n\n- Top languages and frameworks by repo count\n- Distinct technologies in use across the portfolio\n- EOL technologies with affected-repo counts\n- Repository stack heatmap by source\n\n[View Technology Landscape \u2192](/d/technology-landscape)",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.0",
+      "title": "Technology Landscape",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 0,
+        "y": 26
+      },
+      "id": 18,
+      "options": {
+        "content": "# Dependency Vulnerability Portfolio\n\n**Org-wide dependency health and CVE exposure**\n\n- Health buckets: healthy / high-exposed / critical-exposed / EOL / approaching-EOL\n- Top vulnerable packages by repo count\n- Adoption timelines (90-day trend)\n- Filter by team, service, or severity\n\n[View Dependency Portfolio \u2192](/d/dep-vuln-portfolio)",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.0",
+      "title": "Dependency Vulnerability Portfolio",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 8,
+        "x": 8,
+        "y": 26
+      },
+      "id": 19,
+      "options": {
+        "content": "# Library Detail Deep-Dive\n\n**Per-package CVE, version, and team usage view**\n\n- CVE list with severity and fixed-in version\n- Repos using the package, grouped by team\n- Versions in use across the portfolio\n- Drilldown target from the portfolio dashboard\n\n[View Library Detail \u2192](/d/library-detail-deep-dive)",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.0",
+      "title": "Library Detail Deep-Dive",
       "type": "text"
     }
   ],
