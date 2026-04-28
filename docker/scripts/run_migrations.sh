@@ -130,9 +130,10 @@ if [ "$TRACKING_TABLE_EXISTED" -eq 0 ] && [ "$CORE_TABLES_EXIST" -gt 0 ]; then
             continue
         fi
         migration_name=$(basename "$migration_file")
+        # Escape single quotes (defensive; filenames follow NNN_desc.sql and never contain them).
+        safe_name=$(printf '%s' "$migration_name" | sed "s/'/''/g")
         PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-            --set="migration_name=$migration_name" \
-            -c "INSERT INTO schema_migrations (version) VALUES (:'migration_name') ON CONFLICT DO NOTHING;" >/dev/null 2>&1
+            -c "INSERT INTO schema_migrations (version) VALUES ('$safe_name') ON CONFLICT DO NOTHING;" >/dev/null 2>&1
         log_info "  Backfilled: $migration_name"
     done
     log_success "Backfill complete — existing migrations will be skipped on this and future runs."
@@ -154,9 +155,11 @@ for migration_file in "$MIGRATIONS_DIR"/*.sql; do
     migration_name=$(basename "$migration_file")
     MIGRATION_COUNT=$((MIGRATION_COUNT + 1))
 
+    # Escape single quotes (defensive; filenames follow NNN_desc.sql and never contain them).
+    safe_name=$(printf '%s' "$migration_name" | sed "s/'/''/g")
+
     ALREADY_APPLIED=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t \
-        --set="migration_name=$migration_name" \
-        -c "SELECT 1 FROM schema_migrations WHERE version = :'migration_name';" 2>/dev/null || echo "")
+        -c "SELECT 1 FROM schema_migrations WHERE version = '$safe_name';" 2>/dev/null || echo "")
 
     if [ -n "$(echo "$ALREADY_APPLIED" | tr -d '[:space:]')" ]; then
         log_info "Already applied (skipping): $migration_name"
@@ -173,8 +176,7 @@ for migration_file in "$MIGRATIONS_DIR"/*.sql; do
 
     if [ $MIGRATION_EXIT_CODE -eq 0 ]; then
         PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
-            --set="migration_name=$migration_name" \
-            -c "INSERT INTO schema_migrations (version) VALUES (:'migration_name') ON CONFLICT DO NOTHING;" >/dev/null 2>&1
+            -c "INSERT INTO schema_migrations (version) VALUES ('$safe_name') ON CONFLICT DO NOTHING;" >/dev/null 2>&1
         log_success "Applied migration: $migration_name"
         MIGRATION_APPLIED=$((MIGRATION_APPLIED + 1))
     else
