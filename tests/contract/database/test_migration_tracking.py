@@ -90,6 +90,8 @@ def temp_db(request):
     """Create and tear down an isolated database for each migration test."""
     safe = "mig_" + "".join(c if c.isalnum() else "_" for c in request.node.name)
     db = safe[:50].lower()
+    # Enforce the sanitization: only [a-z0-9_] allowed (guards DDL identifier usage below).
+    assert db.replace("_", "").isalnum(), f"Unexpected characters in test db name: {db}"
 
     admin_env = {**os.environ, "PGPASSWORD": _POSTGRES_PASSWORD}
 
