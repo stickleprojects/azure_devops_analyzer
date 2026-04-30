@@ -91,14 +91,16 @@ else
     log_warning "For production use, ensure the timescaledb/timescaledb Docker image is used."
 fi
 
-# Check if schema already exists
-log_info "Checking if database schema exists..."
-SCHEMA_EXISTS=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'organizations';" 2>/dev/null || echo "0")
+# Detect whether this database already had user tables before this run.
+# This avoids relying on a hard-coded sentinel table name.
+log_info "Detecting existing schema state..."
+PRE_EXISTING_TABLES=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';" 2>/dev/null || echo "0")
 
-if [ "$SCHEMA_EXISTS" -gt 0 ]; then
-    log_info "Database schema already exists, skipping initial schema creation"
+if [ "$PRE_EXISTING_TABLES" -gt 0 ]; then
+    log_info "Detected existing schema ($PRE_EXISTING_TABLES public tables), skipping initial schema creation"
 else
-    log_info "Creating initial database schema..."
+    log_info "No existing schema detected; creating initial database schema..."
     if PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$SCHEMA_FILE" >/dev/null 2>&1; then
         log_success "Database schema initialized"
     else
@@ -117,19 +119,11 @@ TRACKING_TABLE_EXISTED=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST
 PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
     "CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW());" >/dev/null 2>&1
 
-# Use the 'packages' table (created by migration 014) as the bootstrap indicator.
-# 'repositories' is created by schema.sql on every fresh database, so checking
-# it would incorrectly trigger the bootstrap on a brand-new install.  'packages'
-# only exists when migration 014 (or later) has actually been applied, which is
-# the correct signal that this is a pre-tracking deployment rather than a fresh one.
-CORE_TABLES_EXIST=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
-    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'packages';" 2>/dev/null || echo "0")
-
-if [ "$TRACKING_TABLE_EXISTED" -eq 0 ] && [ "$CORE_TABLES_EXIST" -gt 0 ]; then
-    # The tracking table is brand-new but the schema already contains the 'packages'
-    # table (created by migration 014), so this is a pre-existing deployment that
-    # predates migration tracking.  Record every migration file as already applied
-    # so none of them will be re-executed.
+if [ "$TRACKING_TABLE_EXISTED" -eq 0 ] && [ "$PRE_EXISTING_TABLES" -gt 0 ]; then
+    # The tracking table is brand-new but this database already had public tables
+    # before this run, so this is a pre-existing deployment that predates migration
+    # tracking. Record every migration file as already applied so none of them
+    # will be re-executed.
     log_warning "Detected existing schema without migration tracking — backfilling all known migrations as already applied."
     for migration_file in "$MIGRATIONS_DIR"/*.sql; do
         if [ ! -f "$migration_file" ]; then

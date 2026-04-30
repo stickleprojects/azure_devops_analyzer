@@ -31,17 +31,26 @@ END $$;
 -- Pick the most recently-seen row per (package_name, ecosystem) for metadata.
 -- has_vulnerabilities is intentionally NOT migrated — it is version-specific
 -- and will be recomputed per-repo as has_known_vulnerabilities on the next scan.
-INSERT INTO packages (package_name, ecosystem, latest_version, is_eol, eol_date, enriched_at)
-SELECT DISTINCT ON (package_name, ecosystem)
-    package_name,
-    ecosystem,
-    latest_version,
-    is_eol,
-    eol_date,
-    NOW()
-FROM dependencies
-ORDER BY package_name, ecosystem, last_seen_at DESC
-ON CONFLICT (package_name, ecosystem) DO NOTHING;
+DO $$ BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public'
+          AND table_name = 'dependencies'
+    ) THEN
+        INSERT INTO packages (package_name, ecosystem, latest_version, is_eol, eol_date, enriched_at)
+        SELECT DISTINCT ON (package_name, ecosystem)
+            package_name,
+            ecosystem,
+            latest_version,
+            is_eol,
+            eol_date,
+            NOW()
+        FROM dependencies
+        ORDER BY package_name, ecosystem, last_seen_at DESC
+        ON CONFLICT (package_name, ecosystem) DO NOTHING;
+    END IF;
+END $$;
 
 -- ── Phase 3: Add package_id to vulnerabilities and populate it ────────────────
 DO $$ BEGIN
@@ -53,12 +62,28 @@ DO $$ BEGIN
     END IF;
 END $$;
 
-UPDATE vulnerabilities v
-SET package_id = p.id
-FROM dependencies d
-JOIN packages p ON p.package_name = d.package_name AND p.ecosystem = d.ecosystem
-WHERE v.dependency_id = d.id
-  AND v.package_id IS NULL;
+DO $$ BEGIN
+        IF EXISTS (
+                SELECT 1
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                    AND table_name = 'dependencies'
+        )
+        AND EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                    AND table_name = 'vulnerabilities'
+                    AND column_name = 'dependency_id'
+        ) THEN
+                UPDATE vulnerabilities v
+                SET package_id = p.id
+                FROM dependencies d
+                JOIN packages p ON p.package_name = d.package_name AND p.ecosystem = d.ecosystem
+                WHERE v.dependency_id = d.id
+                    AND v.package_id IS NULL;
+        END IF;
+END $$;
 
 -- Make package_id NOT NULL and add FK only when all rows are populated
 DO $$ BEGIN

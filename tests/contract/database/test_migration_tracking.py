@@ -12,13 +12,31 @@ is exercised.
 import glob
 import os
 import subprocess
+from urllib.parse import urlparse
 
 import pytest
 
-_POSTGRES_HOST = os.environ.get("POSTGRES_HOST", "localhost")
-_POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
-_POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
-_POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "postgres")
+_DB_URL = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL", "")
+
+
+def _env_db_settings():
+    if _DB_URL:
+        parsed = urlparse(_DB_URL)
+        host = parsed.hostname or os.environ.get("POSTGRES_HOST", "localhost")
+        port = str(parsed.port or os.environ.get("POSTGRES_PORT", "5432"))
+        user = parsed.username or os.environ.get("POSTGRES_USER", "postgres")
+        password = parsed.password or os.environ.get("POSTGRES_PASSWORD", "postgres")
+        return host, port, user, password
+
+    return (
+        os.environ.get("POSTGRES_HOST", "localhost"),
+        os.environ.get("POSTGRES_PORT", "5432"),
+        os.environ.get("POSTGRES_USER", "postgres"),
+        os.environ.get("POSTGRES_PASSWORD", "postgres"),
+    )
+
+
+_POSTGRES_HOST, _POSTGRES_PORT, _POSTGRES_USER, _POSTGRES_PASSWORD = _env_db_settings()
 
 # Support both CI (GitHub Actions runner, GITHUB_WORKSPACE set) and Docker
 # (test-runner container where the repo is mounted at /app).
@@ -86,6 +104,10 @@ def _run_migration_script(db):
 
 def _count_migration_files():
     return len(glob.glob(f"{_MIGRATIONS_DIR}/*.sql"))
+
+
+def _migration_filenames():
+    return sorted(os.path.basename(path) for path in glob.glob(f"{_MIGRATIONS_DIR}/*.sql"))
 
 
 @pytest.fixture()
@@ -254,3 +276,33 @@ class TestMigrationTracking:
         assert "011_add_reporting_views.sql" in recorded_011, (
             "011_add_reporting_views.sql must be recorded in schema_migrations after bootstrap"
         )
+
+    def test_replay_each_migration_on_migrated_db(self, temp_db):
+        """Contract: each migration can be replayed safely on an already-migrated DB.
+
+        For every migration file, remove only its tracking row and rerun the
+        migration runner. The rerun must succeed and re-record that migration.
+        """
+        first = _run_migration_script(temp_db)
+        assert first.returncode == 0
+
+        for migration_name in _migration_filenames():
+            _psql(
+                temp_db,
+                f"DELETE FROM schema_migrations WHERE version = '{migration_name}';"
+            )
+
+            rerun = _run_migration_script(temp_db)
+            assert rerun.returncode == 0, (
+                f"Replay failed for {migration_name}.\n"
+                f"stdout:\n{rerun.stdout}\n"
+                f"stderr:\n{rerun.stderr}"
+            )
+
+            recorded = _psql_query(
+                temp_db,
+                f"SELECT COUNT(*) FROM schema_migrations WHERE version = '{migration_name}';"
+            )
+            assert recorded == "1", (
+                f"Expected exactly one tracking row after replay for {migration_name}, got {recorded}"
+            )

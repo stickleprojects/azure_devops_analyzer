@@ -19,5 +19,15 @@ ALTER TABLE pull_requests
     DROP CONSTRAINT IF EXISTS uq_pull_requests_platform_pr_id;
 
 -- Step 2: Add the composite unique constraint.
-ALTER TABLE pull_requests
-    ADD CONSTRAINT uq_pr_repo_platform_pr_id UNIQUE (repo_id, platform_pr_id);
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'uq_pr_repo_platform_pr_id'
+          AND conrelid = 'pull_requests'::regclass
+    ) THEN
+        ALTER TABLE pull_requests
+            ADD CONSTRAINT uq_pr_repo_platform_pr_id UNIQUE (repo_id, platform_pr_id);
+    END IF;
+END $$;

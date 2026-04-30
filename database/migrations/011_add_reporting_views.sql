@@ -1,5 +1,28 @@
 -- Migration 011: Add reporting views for Grafana dashboards
 
+-- Re-applying this snapshot after migration 014 can fail because 014 renames
+-- dependencies -> repository_dependencies and removes vulnerabilities.dependency_id.
+-- Skip this migration when the legacy dependency schema is no longer present.
+SELECT CASE
+        WHEN EXISTS (
+                SELECT 1
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                    AND table_name = 'dependencies'
+        )
+        AND EXISTS (
+                SELECT 1
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                    AND table_name = 'vulnerabilities'
+                    AND column_name = 'dependency_id'
+        )
+        THEN 1
+        ELSE 0
+END AS migration_011_can_apply\gset
+
+\if :migration_011_can_apply
+
 -- Keep reporting logic in one place to avoid drift between migration SQL and view definitions.
 
 -- NOTE: This is a static snapshot of views.sql as of migration 011.
@@ -1381,3 +1404,7 @@ LEFT JOIN
     team_metrics tm ON t.team_id = tm.team_id
 GROUP BY 
     t.team_id, t.name, t.organization_id;
+
+\else
+\echo 'Skipping migration 011_add_reporting_views.sql: legacy dependencies schema not present'
+\endif
