@@ -99,8 +99,20 @@ start_infrastructure() {
         write_info "Pulling Docker images..."
         run_docker_compose pull >/dev/null 2>&1
 
+        # db-migrations embeds the migration runner script in the image.
+        # Rebuild it so script changes are always picked up.
+        write_info "Building migration image (to avoid stale migration runner)..."
+        run_docker_compose build "$DOCKER_MIGRATION_SERVICE" >/dev/null
+
         write_info "Starting all services (scheduler, celery-beat, workers, monitoring)..."
-        run_docker_compose up -d >/dev/null 2>&1
+        local up_output
+        if ! up_output=$(run_docker_compose up -d 2>&1); then
+            write_error "Docker services failed to start"
+            echo "$up_output"
+            write_info "Recent db-migrations logs:"
+            run_docker_compose logs --no-color --tail 80 "$DOCKER_MIGRATION_SERVICE" || true
+            return 1
+        fi
 
         write_info "Waiting for services to be healthy..."
         wait_for_healthy "analyzer-timescaledb" "$MAX_HEALTH_CHECK_RETRIES" "$HEALTH_CHECK_INTERVAL" >/dev/null
@@ -115,11 +127,14 @@ initialize_database() {
         cd "$PROJECT_ROOT" || exit 1
 
         write_info "Starting database migration service..."
-        if ! run_docker_compose run --rm "$DOCKER_MIGRATION_SERVICE" >/dev/null 2>&1; then
-            write_warning "Migration service completed with warnings (this may be OK if migrations already applied)"
-        else
-            write_success "Database schema and migrations initialized successfully"
+        if ! run_docker_compose run --rm "$DOCKER_MIGRATION_SERVICE"; then
+            write_error "Migration service failed"
+            write_info "Recent db-migrations logs:"
+            run_docker_compose logs --no-color --tail 120 "$DOCKER_MIGRATION_SERVICE" || true
+            return 1
         fi
+
+        write_success "Database schema and migrations initialized successfully"
     )
 }
 
