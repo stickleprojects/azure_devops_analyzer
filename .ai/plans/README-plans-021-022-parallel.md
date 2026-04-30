@@ -1,5 +1,7 @@
 # Plans 021 & 022: Parallel Implementation Strategy for Copilot Delegation
 
+_Last reviewed: 2026-04-30_
+
 ## Status (2026-04-26)
 
 | Plan | PR | Status | Notes |

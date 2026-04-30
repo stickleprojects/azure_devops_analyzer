@@ -1,5 +1,7 @@
 # Plan 022: Thoughtworks Tech Radar Publication (FR-6)
 
+_Last reviewed: 2026-04-30_
+
 ## Status: DESIGN (Ready for Implementation)
 
 **Implements**: FR-6.1, FR-6.2, FR-6.3, FR-6.4, FR-6.5, FR-6.6, FR-6.7

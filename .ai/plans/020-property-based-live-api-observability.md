@@ -1,5 +1,7 @@
 # Plan 020: Property-Based Identity Tests, Live-API Monitoring, Production Observability
 
+_Last reviewed: 2026-04-30_
+
 ## Status: DRAFT
 
 ## Problem

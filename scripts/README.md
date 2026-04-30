@@ -1,5 +1,7 @@
 # Scripts Directory
 
+_Last reviewed: 2026-04-30_
+
 Utility scripts for the Azure DevOps Analyzer project.
 
 ## Available Scripts

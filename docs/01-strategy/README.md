@@ -1,5 +1,7 @@
 # Strategic Planning
 
+_Last reviewed: 2026-04-30_
+
 ## Overview
 
 This folder contains business requirements, project planning documents, and guiding principles for the Repository Analysis System.

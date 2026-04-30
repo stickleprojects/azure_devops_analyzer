@@ -1,5 +1,7 @@
 # Plan 019: Production-Data-Shaped Bug Defence
 
+_Last reviewed: 2026-04-30_
+
 ## Status: IMPLEMENTED
 
 ## Problem

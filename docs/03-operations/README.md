@@ -1,5 +1,7 @@
 # Operations & Deployment
 
+_Last reviewed: 2026-04-30_
+
 ## Overview
 
 This folder contains documentation for deploying, running, and maintaining the Repository Analysis System in production or development environments.
