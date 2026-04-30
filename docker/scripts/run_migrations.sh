@@ -8,12 +8,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "schema.sql" ] && [ -d "migrations" ]; then
     SCHEMA_FILE="schema.sql"
     MIGRATIONS_DIR="migrations"
+    VIEWS_FILE="views.sql"
 elif [ -f "database/schema.sql" ] && [ -d "database/migrations" ]; then
     SCHEMA_FILE="database/schema.sql"
     MIGRATIONS_DIR="database/migrations"
+    VIEWS_FILE="database/views.sql"
 elif [ -f "$SCRIPT_DIR/../../database/schema.sql" ] && [ -d "$SCRIPT_DIR/../../database/migrations" ]; then
     SCHEMA_FILE="$SCRIPT_DIR/../../database/schema.sql"
     MIGRATIONS_DIR="$SCRIPT_DIR/../../database/migrations"
+    VIEWS_FILE="$SCRIPT_DIR/../../database/views.sql"
 else
     echo "[ERROR] Could not locate schema.sql and migrations directory from current context"
     exit 1
@@ -103,6 +106,45 @@ else
     fi
 fi
 
+# Create the migration tracking table and detect whether it was freshly created.
+# A freshly-created table combined with an already-populated schema means this is
+# an existing deployment being upgraded; backfill all known migrations so they are
+# not re-executed against a schema that already reflects them.
+log_info "Ensuring schema_migrations tracking table exists..."
+TRACKING_TABLE_EXISTED=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'schema_migrations';" 2>/dev/null || echo "0")
+
+PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c \
+    "CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW());" >/dev/null 2>&1
+
+# Use the 'packages' table (created by migration 014) as the bootstrap indicator.
+# 'repositories' is created by schema.sql on every fresh database, so checking
+# it would incorrectly trigger the bootstrap on a brand-new install.  'packages'
+# only exists when migration 014 (or later) has actually been applied, which is
+# the correct signal that this is a pre-tracking deployment rather than a fresh one.
+CORE_TABLES_EXIST=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -c \
+    "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'packages';" 2>/dev/null || echo "0")
+
+if [ "$TRACKING_TABLE_EXISTED" -eq 0 ] && [ "$CORE_TABLES_EXIST" -gt 0 ]; then
+    # The tracking table is brand-new but the schema already contains the 'packages'
+    # table (created by migration 014), so this is a pre-existing deployment that
+    # predates migration tracking.  Record every migration file as already applied
+    # so none of them will be re-executed.
+    log_warning "Detected existing schema without migration tracking — backfilling all known migrations as already applied."
+    for migration_file in "$MIGRATIONS_DIR"/*.sql; do
+        if [ ! -f "$migration_file" ]; then
+            continue
+        fi
+        migration_name=$(basename "$migration_file")
+        # Escape single quotes (defensive; filenames follow NNN_desc.sql and never contain them).
+        safe_name=$(printf '%s' "$migration_name" | sed "s/'/''/g")
+        PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+            -c "INSERT INTO schema_migrations (version) VALUES ('$safe_name') ON CONFLICT DO NOTHING;" >/dev/null 2>&1
+        log_info "  Backfilled: $migration_name"
+    done
+    log_success "Backfill complete — existing migrations will be skipped on this and future runs."
+fi
+
 # Apply migrations in order
 log_info "Applying database migrations..."
 
@@ -119,30 +161,32 @@ for migration_file in "$MIGRATIONS_DIR"/*.sql; do
     migration_name=$(basename "$migration_file")
     MIGRATION_COUNT=$((MIGRATION_COUNT + 1))
 
+    # Escape single quotes (defensive; filenames follow NNN_desc.sql and never contain them).
+    safe_name=$(printf '%s' "$migration_name" | sed "s/'/''/g")
+
+    ALREADY_APPLIED=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t \
+        -c "SELECT 1 FROM schema_migrations WHERE version = '$safe_name';" 2>/dev/null || echo "")
+
+    if [ -n "$(echo "$ALREADY_APPLIED" | tr -d '[:space:]')" ]; then
+        log_info "Already applied (skipping): $migration_name"
+        MIGRATION_SKIPPED=$((MIGRATION_SKIPPED + 1))
+        continue
+    fi
+
     log_info "Processing migration: $migration_name..."
 
-    # Execute migration and capture output
-    if PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$migration_file" >/dev/null 2>&1; then
+    set +e
+    OUTPUT=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$migration_file" 2>&1)
+    MIGRATION_EXIT_CODE=$?
+    set -e
+
+    if [ $MIGRATION_EXIT_CODE -eq 0 ]; then
+        PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+            -c "INSERT INTO schema_migrations (version) VALUES ('$safe_name') ON CONFLICT DO NOTHING;" >/dev/null 2>&1
         log_success "Applied migration: $migration_name"
         MIGRATION_APPLIED=$((MIGRATION_APPLIED + 1))
     else
-        # Re-run once with captured output for idempotency/error classification.
-        # Disable errexit briefly so we can inspect psql failures instead of exiting early.
-        set +e
-        OUTPUT=$(PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$migration_file" 2>&1)
-        RETRY_EXIT_CODE=$?
-        set -e
-
-        if echo "$OUTPUT" | grep -Eiq "already exists|duplicate"; then
-            log_info "Migration already applied: $migration_name"
-            MIGRATION_SKIPPED=$((MIGRATION_SKIPPED + 1))
-        elif [ $RETRY_EXIT_CODE -ne 0 ]; then
-            log_error "Migration failed: $migration_name\n$OUTPUT"
-        else
-            log_warning "Migration had warnings: $migration_name"
-            log_info "Output: $OUTPUT"
-            MIGRATION_APPLIED=$((MIGRATION_APPLIED + 1))
-        fi
+        log_error "Migration failed: $migration_name\n$OUTPUT"
     fi
 done
 
@@ -156,6 +200,18 @@ if [ $MIGRATION_COUNT -gt 0 ]; then
     log_success "All migrations completed successfully"
 else
     log_info "No migrations to apply"
+fi
+
+# Always reapply views to keep definitions current (all statements are CREATE OR REPLACE).
+if [ -f "$VIEWS_FILE" ]; then
+    log_info "Reapplying views.sql..."
+    if PGPASSWORD="$POSTGRES_PASSWORD" psql -v ON_ERROR_STOP=1 -h "$POSTGRES_HOST" -p "$POSTGRES_PORT" -U "$POSTGRES_USER" -d "$POSTGRES_DB" -f "$VIEWS_FILE" >/dev/null 2>&1; then
+        log_success "Views reapplied"
+    else
+        log_warning "views.sql reapplication had errors (non-fatal)"
+    fi
+else
+    log_warning "views.sql not found at $VIEWS_FILE — skipping view reapplication"
 fi
 
 # Exit with success

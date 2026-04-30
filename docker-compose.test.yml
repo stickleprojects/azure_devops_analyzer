@@ -134,6 +134,7 @@ services:
       - ./src:/app/src
       - ./scripts:/app/scripts:ro
       - ./database:/app/database:ro
+      - ./docker:/app/docker:ro
       - ./pyproject.toml:/app/pyproject.toml:ro
       - ./.env.resolved:/app/.env.resolved:ro
       - ./.env:/app/.env:ro
