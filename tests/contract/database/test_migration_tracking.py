@@ -20,8 +20,11 @@ _POSTGRES_PORT = os.environ.get("POSTGRES_PORT", "5432")
 _POSTGRES_USER = os.environ.get("POSTGRES_USER", "postgres")
 _POSTGRES_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "postgres")
 
-_MIGRATION_SCRIPT = "/app/docker/scripts/run_migrations.sh"
-_MIGRATIONS_DIR = "/app/database/migrations"
+# Support both CI (GitHub Actions runner, GITHUB_WORKSPACE set) and Docker
+# (test-runner container where the repo is mounted at /app).
+_APP_ROOT = os.environ.get("GITHUB_WORKSPACE", "/app")
+_MIGRATION_SCRIPT = os.path.join(_APP_ROOT, "docker/scripts/run_migrations.sh")
+_MIGRATIONS_DIR = os.path.join(_APP_ROOT, "database/migrations")
 
 
 def _psql(db, sql, *, check=True):
