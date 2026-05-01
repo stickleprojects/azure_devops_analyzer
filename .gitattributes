@@ -1,13 +1,26 @@
 # Normalize text files to LF in the repo
 * text=auto eol=lf
 
+# Explicitly pin common text formats to LF (project runs entirely in Docker/Linux)
+*.md   text eol=lf
+*.py   text eol=lf
+*.sql  text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.txt  text eol=lf
+*.rst  text eol=lf
+*.ini  text eol=lf
+*.cfg  text eol=lf
+*.toml text eol=lf
+
 # Windows-native scripts should be CRLF on checkout
-*.ps1 text eol=crlf
+*.ps1  text eol=crlf
 *.psm1 text eol=crlf
-*.bat text eol=crlf
-*.cmd text eol=crlf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
 
 # Shell scripts and BATS tests must stay LF
-*.sh text eol=lf
+*.sh   text eol=lf
 *.bash text eol=lf
 *.bats text eol=lf
