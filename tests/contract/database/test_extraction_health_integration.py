@@ -38,64 +38,46 @@ class TestExtractionHealthIntegration:
             f"{[r for r in report.invariants if r.violations > 0]}"
         )
 
-    def test_synthetic_orphan_pr_author_detected(self, db_session) -> None:
-        """Inserting a PR with a non-existent author_id triggers no_orphan_pr_author_fk."""
-        # Insert a minimal organization, project, repository, then an orphan PR.
+    def test_synthetic_violation_detected(self, db_session) -> None:
+        """Inserting two contributors with the same normalised email triggers
+        no_case_variant_contributor_twins — the invariant most easily exercised
+        in tests since the contributors table has only a case-sensitive UNIQUE
+        constraint on email, not a normalised-email constraint."""
+        # Insert two contributors whose emails differ only in case/whitespace.
+        # The unique constraint allows both (exact match); the invariant catches them.
         db_session.execute(
             text(
-                "INSERT INTO organizations (name, url, platform) "
-                "VALUES ('health-test-org', 'https://github.com/health-test-org', 'github') "
-                "ON CONFLICT DO NOTHING"
+                "INSERT INTO contributors (email, name) "
+                "VALUES ('health-twin@example.com', 'Alice Lower') "
+                "ON CONFLICT (email) DO NOTHING"
             )
         )
-        db_session.flush()
-
         db_session.execute(
             text(
-                "INSERT INTO projects (organization_id, name) "
-                "SELECT organization_id, 'health-test-project' "
-                "FROM organizations WHERE name = 'health-test-org' AND platform = 'github' "
-                "ON CONFLICT DO NOTHING"
-            )
-        )
-        db_session.flush()
-
-        db_session.execute(
-            text(
-                "INSERT INTO repositories (repo_id, project_id, name, url) "
-                "SELECT 'health-test-repo-001', p.project_id, 'health-test-repo', "
-                "       'https://github.com/health-test-org/health-test-repo' "
-                "FROM projects p "
-                "JOIN organizations o ON o.organization_id = p.organization_id "
-                "WHERE o.name = 'health-test-org' AND o.platform = 'github' "
-                "ON CONFLICT DO NOTHING"
-            )
-        )
-        db_session.flush()
-
-        # Insert a PR whose author_id (999999) does not exist in the contributors table.
-        db_session.execute(
-            text(
-                "INSERT INTO pull_requests "
-                "  (repo_id, pr_number, title, created_at, author_id) "
-                "VALUES "
-                "  ('health-test-repo-001', 9999, 'Orphan PR', NOW(), 999999) "
-                "ON CONFLICT DO NOTHING"
+                "INSERT INTO contributors (email, name) "
+                "VALUES ('HEALTH-TWIN@EXAMPLE.COM', 'Alice Upper') "
+                "ON CONFLICT (email) DO NOTHING"
             )
         )
         db_session.flush()
 
         report = compute_extraction_health(db_session, platform="github")
 
-        orphan_result = next(
-            (r for r in report.invariants if r.name == "no_orphan_pr_author_fk"),
+        twin_result = next(
+            (
+                r
+                for r in report.invariants
+                if r.name == "no_case_variant_contributor_twins"
+            ),
             None,
         )
-        assert orphan_result is not None, "no_orphan_pr_author_fk invariant not in report"
-        assert orphan_result.violations > 0, (
-            "Expected violations > 0 for orphan PR author"
+        assert twin_result is not None, (
+            "no_case_variant_contributor_twins invariant not in report"
         )
-        assert len(orphan_result.sample_rows) > 0, "Expected sample_rows populated"
+        assert twin_result.violations > 0, (
+            "Expected violations > 0 for case-variant contributor twins"
+        )
+        assert len(twin_result.sample_rows) > 0, "Expected sample_rows populated"
 
     def test_all_invariants_checked(self, db_session) -> None:
         """All invariants from tests/db_invariants.sql must appear in the report."""
