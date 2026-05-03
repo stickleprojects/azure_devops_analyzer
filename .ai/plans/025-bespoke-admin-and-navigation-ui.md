@@ -1,4 +1,6 @@
-# Plan 024: Bespoke Web UI for Admin & Cross-Dashboard Navigation
+# Plan 025: Bespoke Web UI for Admin & Cross-Dashboard Navigation
+
+> **Renumber note (2026-05-03)**: Originally drafted as Plan 024. Renumbered to 025 because PR #83 (open at drafting time) reserved Plan 024 for "auth error taxonomy and view consistency". Phase numbering inside this document is unchanged.
 
 ## Status: APPROVED 2026-05-03
 

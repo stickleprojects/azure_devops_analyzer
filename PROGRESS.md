@@ -2,11 +2,13 @@
 
 ---
 
-## Session: 2026-05-03 — Plan 024 Investigation Closeout
+## Session: 2026-05-03 — Plan 025 (née 024) Investigation Closeout
 
 ### Summary
 
-User filled in Themes A–E answers in the investigation and answered Plan 024's open questions. Closed out the investigation as **Outcome 2 selected**, flipped Plan 024 from DRAFT to APPROVED, ran the three audits, and re-sequenced the phases.
+User filled in Themes A–E answers in the investigation and answered the open questions. Closed out the investigation as **Outcome 2 selected**, flipped the plan from DRAFT to APPROVED, ran the three audits, and re-sequenced the phases.
+
+**Renumber**: discovered late in session that PR #83 already reserved Plan 024 for "auth error taxonomy". Renamed our work to **Plan 025** and updated cross-references in plans 020, 022, the investigation, and memory. Phase numbering inside Plan 025 is unchanged.
 
 Key decisions captured:
 
@@ -25,7 +27,7 @@ Three audits added to investigation as historical record:
 ### Files Modified
 
 - `.ai/investigations/grafana-ui-shortcomings.md` (RESOLVED, synthesis filled, audits appended)
-- `.ai/plans/024-bespoke-admin-and-navigation-ui.md` (APPROVED, decisions section, phase reorder, 1a/1b split, concrete drill-down list)
+- `.ai/plans/025-bespoke-admin-and-navigation-ui.md` (APPROVED, decisions section, phase reorder, 1a/1b split, concrete drill-down list)
 - `PROGRESS.md` (this entry)
 
 ### Next Session — Pickup Points
@@ -60,7 +62,7 @@ Wrote two artefacts to capture the decision before any code changes:
   three-outcome synthesis matrix. Pre-investigation lean is **Outcome 2**
   (split). Includes three concrete `jq` audits the user can run to ground
   the answers in data.
-- [.ai/plans/024-bespoke-admin-and-navigation-ui.md](.ai/plans/024-bespoke-admin-and-navigation-ui.md) —
+- [.ai/plans/025-bespoke-admin-and-navigation-ui.md](.ai/plans/025-bespoke-admin-and-navigation-ui.md) —
   **DRAFT, gated on Outcome 2**. Three phases: (1) React+Vite+TS admin MVP at
   `web/admin-ui/` consuming the existing 7 Flask endpoints (no new backend),
   (2) uniform 5-entry top-link bar across all 12 dashboards, (3) fill in the
@@ -71,7 +73,7 @@ Wrote two artefacts to capture the decision before any code changes:
 ### Files Modified
 
 - `.ai/investigations/grafana-ui-shortcomings.md` (new)
-- `.ai/plans/024-bespoke-admin-and-navigation-ui.md` (new — DRAFT)
+- `.ai/plans/025-bespoke-admin-and-navigation-ui.md` (new — DRAFT)
 
 ### Next Session — Pickup Points
 

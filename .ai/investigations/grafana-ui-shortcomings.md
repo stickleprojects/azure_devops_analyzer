@@ -1,8 +1,8 @@
 # Investigation: Grafana UI Shortcomings — Navigation, Relational Drill-down, and Tool Fit
 
-**Status**: RESOLVED 2026-05-03 — **Outcome 2 selected** (split admin from analytics; bespoke admin UI + tidied Grafana). Proceed with [Plan 024](../plans/024-bespoke-admin-and-navigation-ui.md).
+**Status**: RESOLVED 2026-05-03 — **Outcome 2 selected** (split admin from analytics; bespoke admin UI + tidied Grafana). Proceed with [Plan 025](../plans/025-bespoke-admin-and-navigation-ui.md).
 **Created**: 2026-05-01
-**Related plans**: `.ai/plans/023-grafana-home-dashboard-links.md` (home nav links — closed), `.ai/plans/024-bespoke-admin-and-navigation-ui.md` (approved React UI)
+**Related plans**: `.ai/plans/023-grafana-home-dashboard-links.md` (home nav links — closed), `.ai/plans/025-bespoke-admin-and-navigation-ui.md` (approved React UI)
 
 ---
 
@@ -143,19 +143,19 @@ Once Themes A–E have answers, map them to one of three outcomes. The investiga
 | **(2) Split: bespoke admin UI + tidied Grafana analytics** | Theme C surfaces real tool-fit pain (admin in Grafana feels wrong), Theme D says analytics is mostly fine, Theme E supports modest ongoing maintenance | ~1–2 weeks for admin MVP + the Outcome 1 work             | Reversible — admin UI can be deleted, Grafana stays |
 | **(3) Replace analytics tool too**                         | Theme D surfaces ceiling problems (queries Grafana can't express, interactions it can't render)                                                        | Multi-week migration to Metabase/Superset/bespoke         | Hard — dashboards are real assets                   |
 
-**Pre-investigation lean** (to be confirmed by answers): Outcome 2. Plan 024 is drafted on that assumption.
+**Pre-investigation lean** (to be confirmed by answers): Outcome 2. Plan 025 is drafted on that assumption.
 
 **Resolution (2026-05-03): Outcome 2 confirmed.**
 
 | Theme | Signal | Mapped to outcome |
 | --- | --- | --- |
-| A — Navigation | Wants consistent top-link bar; wants click-through from any data row to its target dashboard. No breadcrumbs needed. | Tidy Grafana (Phase 2/3 of Plan 024) |
-| B — Drill-down | Friction is "no navigation at all" rather than slow nav. Data is there, just unconfigured. All panels with a unique target should drill down. | Tidy Grafana (Phase 3 of Plan 024) |
-| C — Admin | Only "start analysis" is used today. Does NOT feel right in Grafana. New-tab JSON feedback is bad UX. | Out of Grafana (Phase 1 of Plan 024) |
+| A — Navigation | Wants consistent top-link bar; wants click-through from any data row to its target dashboard. No breadcrumbs needed. | Tidy Grafana (Phase 2/3 of Plan 025) |
+| B — Drill-down | Friction is "no navigation at all" rather than slow nav. Data is there, just unconfigured. All panels with a unique target should drill down. | Tidy Grafana (Phase 3 of Plan 025) |
+| C — Admin | Only "start analysis" is used today. Does NOT feel right in Grafana. New-tab JSON feedback is bad UX. | Out of Grafana (Phase 1 of Plan 025) |
 | D — Tool fit | Grafana fine for charts/alerts. No query ceiling. Diagnostics/details and panel clutter are the actual issues. | Keep Grafana for analytics |
 | E — Effort | Team + leadership audience. Tidy nav + missing data links would solve ~80% of pain. Happy to maintain a small React app. | Outcome 2 viable |
 
-**80/20 implication**: Phases 2 + 3 of Plan 024 (Grafana tidy, ~2–3 days) capture most of the value. Phase 1 (React MVP, ~1–2 weeks) addresses the remaining admin pain. Plan 024 has been re-sequenced accordingly. RESOLVED
+**80/20 implication**: Phases 2 + 3 of Plan 025 (Grafana tidy, ~2–3 days) capture most of the value. Phase 1 (React MVP, ~1–2 weeks) addresses the remaining admin pain. Plan 025 has been re-sequenced accordingly. RESOLVED
 
 ---
 
@@ -180,13 +180,13 @@ These three artefacts make Themes A, B, and C answerable from data instead of me
 
 ## Next step
 
-When the synthesis table is at least half filled in, decide between Outcomes 1, 2, 3. If Outcome 2 (the current lean), proceed with [Plan 024](../plans/024-bespoke-admin-and-navigation-ui.md). If Outcome 1, scope a smaller "Grafana navigation hardening" plan instead. If Outcome 3, this becomes a much larger conversation.
+When the synthesis table is at least half filled in, decide between Outcomes 1, 2, 3. If Outcome 2 (the current lean), proceed with [Plan 025](../plans/025-bespoke-admin-and-navigation-ui.md). If Outcome 1, scope a smaller "Grafana navigation hardening" plan instead. If Outcome 3, this becomes a much larger conversation.
 
 ---
 
 ## Risks of skipping this investigation
 
-- Building Plan 024's React UI without confirming Theme C means we might over-build (rebuilding things Grafana actually does well) or under-build (missing the actual workflows that motivate the rebuild).
+- Building Plan 025's React UI without confirming Theme C means we might over-build (rebuilding things Grafana actually does well) or under-build (missing the actual workflows that motivate the rebuild).
 - Tidying Grafana without confirming Theme D means we may sink time into a tool that has a ceiling we haven't acknowledged.
 - 30–60 min of structured Q&A here probably saves a week of misdirected work.
 
@@ -194,7 +194,7 @@ When the synthesis table is at least half filled in, decide between Outcomes 1, 
 
 ## Audit findings (2026-05-03)
 
-These three audits make Phases 2 and 3 of Plan 024 mechanical to execute. Snapshot from `main` at the time of investigation closure.
+These three audits make Phases 2 and 3 of Plan 025 mechanical to execute. Snapshot from `main` at the time of investigation closure.
 
 ### 1. Top-link audit
 
