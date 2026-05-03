@@ -1,0 +1,234 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "title": "Invariant Violation Gauges",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "options": { "0": { "color": "green", "index": 0, "text": "OK" } }, "type": "value" }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "minVizHeight": 75,
+        "minVizWidth": 75,
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "sizing": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  invariant_name AS \"Invariant\",\n  violations     AS \"Violations\"\nFROM extraction_health_log\nWHERE checked_at = (\n  SELECT MAX(checked_at)\n  FROM   extraction_health_log\n  WHERE  platform = '$platform'\n)\n  AND platform = '$platform'\nORDER BY invariant_name;",
+          "refId": "A"
+        }
+      ],
+      "title": "Latest Invariant Violations — $platform",
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": { "valueLabel": "Invariant" }
+        }
+      ],
+      "type": "gauge"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "id": 101,
+      "title": "7-Day Violation Trend",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Violations",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 10 },
+      "id": 2,
+      "options": {
+        "legend": { "calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  checked_at AS time,\n  invariant_name AS metric,\n  violations     AS value\nFROM extraction_health_log\nWHERE platform   = '$platform'\n  AND checked_at >= NOW() - INTERVAL '7 days'\nORDER BY checked_at;",
+          "refId": "A"
+        }
+      ],
+      "title": "7-Day Violation Trend — $platform",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "id": 102,
+      "title": "Recent Violations Detail",
+      "type": "row"
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+      "fieldConfig": {
+        "defaults": { "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "violations" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "red", "value": 1 }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 21 },
+      "id": 3,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "countRows": false, "fields": "", "reducer": ["sum"], "show": false },
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "${DS_TIMESCALEDB}" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  checked_at,\n  platform,\n  repo_id,\n  invariant_name,\n  violations,\n  sample_rows\nFROM extraction_health_log\nWHERE platform   = '$platform'\n  AND violations > 0\n  AND checked_at >= NOW() - INTERVAL '7 days'\nORDER BY checked_at DESC\nLIMIT 100;",
+          "refId": "A"
+        }
+      ],
+      "title": "Violations in Last 7 Days — $platform",
+      "type": "table"
+    }
+  ],
+  "refresh": "5m",
+  "schemaVersion": 39,
+  "tags": ["extraction", "health", "observability"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": false, "text": "github", "value": "github" },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Platform",
+        "multi": false,
+        "name": "platform",
+        "options": [
+          { "selected": true, "text": "github", "value": "github" },
+          { "selected": false, "text": "azure-devops", "value": "azure-devops" }
+        ],
+        "query": "github,azure-devops",
+        "type": "custom"
+      },
+      {
+        "current": {},
+        "hide": 2,
+        "includeAll": false,
+        "label": "TimescaleDB",
+        "multi": false,
+        "name": "DS_TIMESCALEDB",
+        "options": [],
+        "query": "postgres",
+        "refresh": 1,
+        "type": "datasource"
+      }
+    ]
+  },
+  "time": { "from": "now-7d", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Extraction Health",
+  "uid": "extraction-health",
+  "version": 1
+}

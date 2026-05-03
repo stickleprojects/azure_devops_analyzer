@@ -16,6 +16,7 @@ This system analyzes repositories from multiple platforms (Azure DevOps and GitH
 - **Pull request metrics**: Analyzes PR size, quality, and review patterns
 - **Branch-level analysis**: Supports per-branch metrics and comparisons
 - **Incremental updates**: Efficiently refreshes data as changes occur
+- **Extraction health observability**: After every successful extraction, named database invariants are checked and results persisted to `extraction_health_log`. The **Extraction Health** Grafana dashboard (`/d/extraction-health`) shows violation counts and 7-day trends. See [docs/03-operations/extraction-health-monitoring.md](docs/03-operations/extraction-health-monitoring.md).
 - **Grafana dashboards**: Rich visualizations for all metrics
 
 ## Local Repository Analysis Quickstart
@@ -58,7 +59,7 @@ See [Start-RepoAnalysis.sh](Start-RepoAnalysis.sh#L1-L50) for parameters and exa
 - [docs/README.md](docs/README.md) — entry point with role-based navigation across strategy, architecture, operations, and implementation
 - [docs/01-strategy/](docs/01-strategy/) — business requirements, status, and project rules
 - [docs/02-architecture/](docs/02-architecture/) — system design, stack, data flow, storage, orchestration
-- [docs/03-operations/](docs/03-operations/) — deployment plan, visualization, session continuity, Docker setup
+- [docs/03-operations/](docs/03-operations/) — deployment plan, visualization, session continuity, Docker setup, extraction health monitoring
 - [docs/04-implementation/README.md](docs/04-implementation/README.md) — implementation backlog and future work
 
 ### AI Agent Guides
@@ -107,6 +108,7 @@ azure-devops-analyzer/
 │   ├── database/           # Database models and storage layer
 │   ├── extractors/         # GitHub and Azure DevOps data extraction
 │   ├── scheduler/          # Job scheduling and task submission
+│   ├── utils/              # Cross-cutting utilities (health checks, metrics)
 │   └── workflows/          # Orchestration across extractors and analyzers
 ├── dashboards/             # Grafana dashboard definitions
 ├── database/               # Database schema and migrations
