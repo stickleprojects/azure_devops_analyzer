@@ -45,7 +45,7 @@ def emit_health_report(report: HealthReport) -> None:
     """
     try:
         _emit_logs(report)
-    except Exception as exc:  # pragma: no cover
+    except Exception as exc:
         logger.warning("Failed to emit health report logs: %s", exc)
 
     try:

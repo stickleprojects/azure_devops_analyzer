@@ -114,7 +114,7 @@ class TestExtractionHealthIntegration:
             f"Invariant mismatch — expected: {expected_names}, got: {reported_names}"
         )
 
-    def test_new_invariant_picked_up_without_code_changes(
+    def test_single_source_of_truth_property(
         self, db_session, tmp_path: Path
     ) -> None:
         """Monkey-patching the invariants SQL path proves the single-source-of-truth property.
