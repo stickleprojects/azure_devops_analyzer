@@ -13,8 +13,8 @@ from hypothesis import strategies as st
 _local_char = st.characters(
     min_codepoint=0x21,
     max_codepoint=0x7E,
-    whitelist_categories=("Ll", "Lu", "Nd"),
-    whitelist_characters="._+-",
+    categories=("Ll", "Lu", "Nd"),
+    include_characters="._+-",
 )
 
 
@@ -66,7 +66,7 @@ def unicode_name_strategy() -> st.SearchStrategy[str]:
         st.characters(
             min_codepoint=0x20,
             max_codepoint=0x10FFFF,
-            blacklist_categories=("Cs", "Cc"),
+            exclude_categories=("Cs", "Cc"),
         ),
         min_size=1,
         max_size=50,
