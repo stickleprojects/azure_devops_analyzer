@@ -24,6 +24,13 @@ from typing import Optional
 import pytest
 from sqlalchemy.orm import Session
 
+from src.config.azure_devops import AzureDevOpsExtractorConfig
+from src.config.github import GitHubExtractorConfig
+from src.database.models import Contributor, Repository
+from src.database.storage import get_or_create_contributor
+from src.extractors.azure_devops.extractor import AzureDevOpsExtractor
+from src.extractors.github.extractor import GitHubExtractor
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,6 +64,18 @@ def _get_canary_azure_org_url() -> Optional[str]:
     return os.environ.get("AZURE_DEVOPS_ORG_URL", "https://dev.azure.com/kieronwray")
 
 
+def _org_name_from_url(org_url: str) -> str:
+    """Extract the organisation name from an Azure DevOps URL.
+
+    Mirrors the logic in ``AzureDevOpsExtractor.get_repository`` (extractor.py:167):
+    the org name is the trailing path segment of the URL.
+
+    >>> _org_name_from_url("https://dev.azure.com/kieronwray")
+    'kieronwray'
+    """
+    return org_url.rstrip("/").split("/")[-1]
+
+
 # ---------------------------------------------------------------------------
 # GitHub canary
 # ---------------------------------------------------------------------------
@@ -83,10 +102,7 @@ class TestGitHubCanary:
         """The canary repository can be fetched from the GitHub API."""
         token = _get_canary_github_token()
         if not token:
-            pytest.skip("CANARY_GITHUB_TOKEN / GITHUB_TOKEN not set")
-
-        from src.config.github import GitHubExtractorConfig
-        from src.extractors.github.extractor import GitHubExtractor
+            pytest.skip("CANARY_GITHUB_TOKEN not set")
 
         config = GitHubExtractorConfig(token=token)
         extractor = GitHubExtractor(config=config)
@@ -99,10 +115,7 @@ class TestGitHubCanary:
         """At least ``EXPECTED_PR_COUNT`` pull requests exist in the canary repo."""
         token = _get_canary_github_token()
         if not token:
-            pytest.skip("CANARY_GITHUB_TOKEN / GITHUB_TOKEN not set")
-
-        from src.config.github import GitHubExtractorConfig
-        from src.extractors.github.extractor import GitHubExtractor
+            pytest.skip("CANARY_GITHUB_TOKEN not set")
 
         config = GitHubExtractorConfig(token=token)
         extractor = GitHubExtractor(config=config)
@@ -114,23 +127,27 @@ class TestGitHubCanary:
         )
         logger.info("GitHub canary PR count OK: %d >= %d", len(prs), self.EXPECTED_PR_COUNT)
 
-    def test_canary_contributor_count_meets_baseline(self, test_session: Session, db_invariants_check):
-        """Storing canary PRs produces at least ``EXPECTED_CONTRIB_COUNT`` contributors."""
+    def test_canary_contributor_identity_invariants(self, test_session: Session, db_invariants_check):
+        """Stored contributor emails are normalised and identity invariants hold.
+
+        This test verifies that:
+        1. At least ``EXPECTED_CONTRIB_COUNT`` contributors are stored.
+        2. Every stored email equals its own ``email.strip().lower()`` — i.e.
+           normalisation has been applied and no mixed-case or padded email
+           slips through to the database.
+
+        ``db_invariants_check`` validates the full DB invariant set on teardown.
+        """
         token = _get_canary_github_token()
         if not token:
-            pytest.skip("CANARY_GITHUB_TOKEN / GITHUB_TOKEN not set")
-
-        from src.config.github import GitHubExtractorConfig
-        from src.database.models import Contributor, Repository
-        from src.database.storage import get_or_create_contributor
-        from src.extractors.github.extractor import GitHubExtractor
+            pytest.skip("CANARY_GITHUB_TOKEN not set")
 
         config = GitHubExtractorConfig(token=token)
         extractor = GitHubExtractor(config=config)
 
-        # Store the canary repository record
+        # Store the canary repository record, keyed by the platform repo_id.
         repo_data = extractor.get_repository(self.CANARY)
-        existing = test_session.query(Repository).filter_by(repo_id=self.CANARY).first()
+        existing = test_session.query(Repository).filter_by(repo_id=repo_data.repo_id).first()
         if existing is None:
             repo = Repository(
                 repo_id=repo_data.repo_id,
@@ -145,19 +162,30 @@ class TestGitHubCanary:
             test_session.add(repo)
             test_session.commit()
 
-        # Pull PRs and store contributing authors
+        # Pull PRs and store contributing authors (cap at 50 to keep the test fast).
         prs = extractor.get_pull_requests(self.CANARY)
-        for pr in prs[:50]:  # cap at 50 to keep the test fast
+        for pr in prs[:50]:
             if pr.author_email:
                 get_or_create_contributor(test_session, pr.author_email, pr.author_name or "")
         test_session.commit()
 
-        count = test_session.query(Contributor).count()
+        # Baseline count check.
+        all_contributors = test_session.query(Contributor).all()
+        count = len(all_contributors)
         assert count >= self.EXPECTED_CONTRIB_COUNT, (
             f"Expected >= {self.EXPECTED_CONTRIB_COUNT} contributors, got {count}."
         )
         logger.info("GitHub canary contributor count OK: %d >= %d", count, self.EXPECTED_CONTRIB_COUNT)
-        # db_invariants_check fixture validates DB invariants on teardown
+
+        # Identity invariant: every stored email must already be normalised.
+        non_normalised = [
+            c.email for c in all_contributors
+            if c.email != c.email.strip().lower()
+        ]
+        assert not non_normalised, (
+            f"Contributor emails are not normalised in the database: {non_normalised}"
+        )
+        # db_invariants_check fixture validates the full DB invariant set on teardown.
 
 
 # ---------------------------------------------------------------------------
@@ -179,46 +207,48 @@ class TestAzureDevOpsCanary:
 
     EXPECTED_REPO_COUNT = 1  # lower bound — the project must contain at least one repo
 
-    def test_canary_organisation_is_accessible(self):
-        """The canary Azure DevOps organisation can be reached."""
+    def test_canary_organization_is_accessible(self):
+        """The canary Azure DevOps organization can be reached."""
         pat = _get_canary_azure_pat()
         org_url = _get_canary_azure_org_url()
         if not pat:
-            pytest.skip("CANARY_AZURE_DEVOPS_PAT / AZURE_DEVOPS_PAT not set")
+            pytest.skip("CANARY_AZURE_DEVOPS_PAT not set")
         if not org_url:
             pytest.skip("AZURE_DEVOPS_ORG_URL not set")
 
-        from src.config.azure_devops import AzureDevOpsExtractorConfig
-        from src.extractors.azure_devops.extractor import AzureDevOpsExtractor
-
+        org_name = _org_name_from_url(org_url)
         config = AzureDevOpsExtractorConfig(pat=pat, org_url=org_url)
         extractor = AzureDevOpsExtractor(config=config)
-        projects = extractor.get_projects()
+        projects = extractor.get_projects(org_name)
         assert projects is not None, "get_projects() returned None"
-        logger.info("Azure DevOps canary organisation accessible: %s (%d project(s))", org_url, len(projects))
+        logger.info(
+            "Azure DevOps canary organization accessible: %s (%d project(s))",
+            org_url, len(projects),
+        )
 
     def test_canary_repo_count_meets_baseline(self):
-        """At least ``EXPECTED_REPO_COUNT`` repositories exist in the canary organisation."""
+        """At least ``EXPECTED_REPO_COUNT`` repositories exist in the canary organization."""
         pat = _get_canary_azure_pat()
         org_url = _get_canary_azure_org_url()
         if not pat:
-            pytest.skip("CANARY_AZURE_DEVOPS_PAT / AZURE_DEVOPS_PAT not set")
+            pytest.skip("CANARY_AZURE_DEVOPS_PAT not set")
         if not org_url:
             pytest.skip("AZURE_DEVOPS_ORG_URL not set")
 
-        from src.config.azure_devops import AzureDevOpsExtractorConfig
-        from src.extractors.azure_devops.extractor import AzureDevOpsExtractor
-
+        org_name = _org_name_from_url(org_url)
         config = AzureDevOpsExtractorConfig(pat=pat, org_url=org_url)
         extractor = AzureDevOpsExtractor(config=config)
-        projects = extractor.get_projects()
+        projects = extractor.get_projects(org_name)
         total_repos = 0
         for project in projects:
-            repos = extractor.get_repositories(project.id)
+            repos = extractor.get_repositories(organization=org_name, project=project.name)
             total_repos += len(repos)
 
         assert total_repos >= self.EXPECTED_REPO_COUNT, (
             f"Expected >= {self.EXPECTED_REPO_COUNT} repos across all projects, "
             f"got {total_repos}.  If the baseline is stale, update EXPECTED_REPO_COUNT."
         )
-        logger.info("Azure DevOps canary repo count OK: %d >= %d", total_repos, self.EXPECTED_REPO_COUNT)
+        logger.info(
+            "Azure DevOps canary repo count OK: %d >= %d",
+            total_repos, self.EXPECTED_REPO_COUNT,
+        )

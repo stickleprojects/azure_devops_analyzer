@@ -108,7 +108,7 @@ jobs:
             const title = "Live-API canary regression detected";
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const body = [
-              `## :warning: Live-API nightly canary failed`,
+              `## ⚠️ Live-API nightly canary failed`,
               ``,
               `**Run:** ${runUrl}`,
               `**Workflow:** \`live-api-nightly\``,
