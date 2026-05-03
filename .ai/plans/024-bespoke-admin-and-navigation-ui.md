@@ -50,13 +50,14 @@ This plan splits the concerns:
 **Phase 2 — Cross-dashboard nav tidy (Grafana-side, no React) — RUN FIRST:**
 
 - Uniform top-link bar across 11 of 12 dashboards in `dashboards/*.json` (`dashboard-home.json` keeps no bar — it IS Home). Six entries in this fixed order: **Home, Repos, Security, Technology, Admin, Admin UI**.
-  - `Home` → `/d/dashboard-home`
+  - `Home` → `/d/dashboard-home` (type: `dashboards` or `link` with relative URL — see canonical example below)
   - `Repos` → `/d/repo-overview`
   - `Security` → `/d/security-dashboard`
   - `Technology` → `/d/technology-landscape`
   - `Admin` → `/d/admin-dashboard` (Grafana admin observability)
-  - `Admin UI` → `/admin/` (new React UI — link added in Phase 2 even though the UI itself isn't built until Phase 1; renders as a 404 in the meantime, which is acceptable for an internal tool)
-- All entries use `targetBlank=false` so navigation stays in-tab.
+  - `Admin UI` → `http://localhost:8080/` with `targetBlank: true` (new React UI — Phase 1 will serve it on `:8080`. Until Phase 1 ships, this link 404s; opening in a new tab keeps the dead-link impact minimal. **All other entries use `targetBlank: false`.**)
+- The links array **fully replaces** any existing `links[]` in each dashboard JSON — do not append.
+- Canonical existing example: `security-dashboard.json` already has 6 working internal links — copy that link object shape (`type`, `icon`, `tags`, `targetBlank`, `url`, `title`) and just swap the entry list.
 - Replaces the 7 distinct shapes catalogued in the top-link audit (investigation, audit #1).
 
 **Phase 3 — Relational drill-down completeness (Grafana-side, no React) — RUN SECOND:**
