@@ -6,7 +6,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": null,
-  "links": [
+    "links": [
     {
       "asDropdown": false,
       "icon": "home",
@@ -25,7 +25,7 @@
       "keepTime": true,
       "tags": [],
       "targetBlank": false,
-      "title": "Repository Overview",
+      "title": "Repos",
       "type": "link",
       "url": "/d/repo-overview"
     },
@@ -36,9 +36,9 @@
       "keepTime": true,
       "tags": [],
       "targetBlank": false,
-      "title": "Repository Deep-Dive",
+      "title": "Security",
       "type": "link",
-      "url": "/d/repo-deep-dive"
+      "url": "/d/security-dashboard"
     },
     {
       "asDropdown": false,
@@ -47,20 +47,31 @@
       "keepTime": true,
       "tags": [],
       "targetBlank": false,
-      "title": "Pull Requests",
+      "title": "Technology",
       "type": "link",
-      "url": "/d/pull-requests"
+      "url": "/d/technology-landscape"
     },
     {
       "asDropdown": false,
-      "icon": "dashboard",
+      "icon": "cog",
       "includeVars": false,
       "keepTime": true,
       "tags": [],
       "targetBlank": false,
-      "title": "Contributors",
+      "title": "Admin",
       "type": "link",
-      "url": "/d/contributor-analytics"
+      "url": "/d/admin-dashboard"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Admin UI",
+      "type": "link",
+      "url": "http://localhost:8080/"
     }
   ],
   "panels": [

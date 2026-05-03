@@ -6,7 +6,7 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": null,
-  "links": [
+    "links": [
     {
       "asDropdown": false,
       "icon": "home",
@@ -25,20 +25,9 @@
       "keepTime": true,
       "tags": [],
       "targetBlank": false,
-      "title": "Repository Overview",
+      "title": "Repos",
       "type": "link",
       "url": "/d/repo-overview"
-    },
-    {
-      "asDropdown": false,
-      "icon": "dashboard",
-      "includeVars": false,
-      "keepTime": true,
-      "tags": [],
-      "targetBlank": false,
-      "title": "Team Overview",
-      "type": "link",
-      "url": "/d/team-overview"
     },
     {
       "asDropdown": false,
@@ -50,6 +39,39 @@
       "title": "Security",
       "type": "link",
       "url": "/d/security-dashboard"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Technology",
+      "type": "link",
+      "url": "/d/technology-landscape"
+    },
+    {
+      "asDropdown": false,
+      "icon": "cog",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Admin",
+      "type": "link",
+      "url": "/d/admin-dashboard"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Admin UI",
+      "type": "link",
+      "url": "http://localhost:8080/"
     }
   ],
   "panels": [
