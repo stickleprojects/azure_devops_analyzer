@@ -156,9 +156,44 @@ To refresh screenshots: **Actions → Update-Docs Bot → Run workflow** (enable
 
 ![Service Overview Dashboard](../images/dashboards/service-overview.png)
 
-## Dashboard Navigation
+### 10. Dependency Vulnerability Portfolio (`dependency-vulnerability-portfolio.json`)
 
-### 9. Administration (`admin-dashboard.json`)
+**UID**: `dep-vuln-portfolio`
+**Purpose**: Portfolio-level view of dependency health, vulnerability exposure, and EOL status across all repositories
+
+**Sections**:
+
+- **Package Health Overview**: Stat tiles — Healthy, High Risk, Critical Exposed, EOL/Approaching EOL (from `v_package_health_latest`)
+- **Top Vulnerable Packages**: Table of top 20 packages sorted by exposed repos and CVE severity (from `v_package_portfolio_latest`)
+- **Approaching EOL**: Table of packages within 90 days of EOL, sorted by `eol_date`
+- **Package Adoption Trends**: Time-series chart of top 10 packages by repo adoption over the last 90 days (from `v_package_adoption_timeline`)
+- **Usage by Team**: Table of package usage aggregated by team and ecosystem (from `v_package_by_team_latest`)
+- **Critical CVE Breakdown**: Pie chart of CVE severity distribution across exposed repos (from `v_package_vulnerabilities_detail`)
+
+**Data Sources**: `v_package_health_latest`, `v_package_portfolio_latest`, `v_package_adoption_timeline`, `v_package_by_team_latest`, `v_package_vulnerabilities_detail`
+
+![Dependency Vulnerability Portfolio Dashboard](../images/dashboards/dependency-vulnerability-portfolio.png)
+
+### 11. Library Detail Deep-Dive (`library-detail-deep-dive.json`)
+
+**UID**: `library-detail-deep-dive`
+**Purpose**: Per-library drill-down showing CVE history, version adoption, and team usage — linked from the Dependency Vulnerability Portfolio
+
+**Template Variables**: `package_name`, `ecosystem` (query-driven dropdowns from `packages` table)
+
+**Sections**:
+
+- **Library Card**: Package name, ecosystem, latest version, EOL status, and health classification
+- **Vulnerability Timeline**: Stacked time-series of CVE publications grouped by severity
+- **CVE Details**: Table of all CVEs with severity, summary, fixed version, publish date, and exposed repo count
+- **Repositories Using This Library**: Table of repos, team, version, and vulnerability flag — sorted by exposure
+- **Service Adoption**: Bar chart of repo count and exposed repos grouped by team
+
+**Data Sources**: `v_package_portfolio_latest`, `v_package_health_latest`, `v_package_vulnerabilities_detail`, `v_package_by_team_latest`, `repository_dependencies`
+
+![Library Detail Deep-Dive Dashboard](../images/dashboards/library-detail-deep-dive.png)
+
+### 12. Administration Details (`admin-dashboard.json`)
 
 **UID**: `admin-dashboard`
 **Purpose**: Centralized control panel for system administrators — extraction triggers, system status, and repository health monitoring
@@ -253,6 +288,8 @@ curl -X POST -H "Content-Type: application/json" \
 - [x] Contributor Analytics dashboard (`contributor-analytics.json`)
 - [x] Security dashboard (`security-dashboard.json`)
 - [x] Administration dashboard (`admin-dashboard.json`)
+- [x] Dependency Vulnerability Portfolio dashboard (`dependency-vulnerability-portfolio.json`)
+- [x] Library Detail Deep-Dive dashboard (`library-detail-deep-dive.json`)
 - [x] Cross-dashboard navigation links
 - [x] Data links for drill-down navigation (repo → Deep-Dive)
 - [ ] Code Quality dashboard
