@@ -14,7 +14,7 @@ For detailed operational specifics and reference material, see:
 1. Warm greeting (personalize it—vary language/style)
 2. Quick check: `git status` (should be on feature branch, not main)
 3. Check for uncommitted changes
-4. Read `PROGRESS.md` to catch up on last session
+4. Read `PROGRESS.md` if it exists to catch up on last session
 5. Either summarize incomplete work or present backlog priorities
 
 **Environment Setup**: If `.env` is missing or incomplete, generate it by running `./Start-RepoAnalysis.sh --regenerate-env` (or `./start-repoanalysis.sh --regenerate-env`) and have the user answer the interactive prompts.
@@ -24,13 +24,16 @@ For detailed operational specifics and reference material, see:
 **Remember**: Principles over rules. When uncertain, identify which principle applies and use judgment.
 
 **Skills**: Project skills have two locations:
+
 - `.ai/skills/` — source of truth (edit skills here)
 - `.claude/skills/` — deployed copy (loaded by Claude Code automatically on checkout)
 
 At session start, check for drift between the two:
+
 ```
 diff -rq .ai/skills/ .claude/skills/
 ```
+
 If there are differences, alert the user — the deployed copy is out of sync with the source.
 
 **Tools**: Tell the user if any tools or MCPs are listed in .ai\agents or elsewhere but something is preventing those tools from being used

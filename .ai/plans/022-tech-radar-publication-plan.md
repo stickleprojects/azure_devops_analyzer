@@ -366,13 +366,11 @@ def export_radar():
     """
 ```
 
-### File: `src/api/radar_viewer.html` (optional)
+### Viewer UI — superseded by Plan 025
 
-Simple HTML wrapper linking to TW Radar viewer:
+A standalone `src/api/radar_viewer.html` is **no longer planned**. With Plan 025 introducing a React app at `web/admin-ui/`, the radar viewer becomes a route in that app (Plan 025 Phase 1c, deferred). It consumes the `/api/radar`, `/api/radar/history`, and `/api/radar/export` endpoints defined above — all backend work in this plan is unchanged.
 
-```html
-<!-- Embedded viewer or iframe to https://radar.thoughtworks.com/?sheetId=... -->
-```
+If Plan 025's React app is dropped or the radar must ship before Phase 1c, fall back to: external viewer (`https://radar.thoughtworks.com`) consuming `/api/radar` JSON.
 
 ---
 
@@ -448,7 +446,7 @@ def test_high_cve_exposure_not_adopt():
 | ❌ TODO | Create | `tests/contract/database/test_radar_categorization.py` |
 | ❌ TODO | Create | `tests/contract/api/test_radar_endpoints.py` |
 | ❌ TODO | Create | `tests/unit/test_radar_categorizer.py` |
-| ⚠️ Optional | Create | `src/api/radar_viewer.html` (link to external viewer) |
+| ❌ Removed | — | ~~`src/api/radar_viewer.html`~~ — replaced by Plan 025 Phase 1c (React route) |
 | ⚠️ Optional | Create | `.github/workflows/publish-radar.yml` (scheduled publication) |
 
 ---

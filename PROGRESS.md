@@ -2,6 +2,103 @@
 
 ---
 
+## Session: 2026-05-03 — Plan 025 (née 024) Investigation Closeout
+
+### Summary
+
+User filled in Themes A–E answers in the investigation and answered the open questions. Closed out the investigation as **Outcome 2 selected**, flipped the plan from DRAFT to APPROVED, ran the three audits, and re-sequenced the phases.
+
+**Renumber**: discovered late in session that PR #83 already reserved Plan 024 for "auth error taxonomy". Renamed our work to **Plan 025** and updated cross-references in plans 020, 022, the investigation, and memory. Phase numbering inside Plan 025 is unchanged.
+
+Key decisions captured:
+
+- **Outcome 2 confirmed** — split admin from Grafana analytics
+- **Framework**: React + Vite + TypeScript at `web/admin-ui/`, no auth for MVP
+- **Coexistence**: React UI lives alongside Grafana home, doesn't replace it. Grafana top-link bar gets a separate `Admin UI` slot (option (a))
+- **Phase order reversed**: Phase 2 (uniform top-link bar) and Phase 3 (missing drill-downs) ship first — Theme E.2 says they capture 80% of the pain. Phase 1 (React MVP) third
+- **Phase 1 narrowed**: split into 1a (rescan triggers + health, Theme C.1's actually-used workflow) and 1b (Repository List + Compute Metrics, deferred)
+
+Three audits added to investigation as historical record:
+
+1. **Top-link audit** — 7 distinct shapes across 12 dashboards (technology-landscape regression: no bar at all)
+2. **Drill-down audit** — ~12 high-value gaps; only 4 panels currently have data links. Highest-value gap is `library-detail-deep-dive` "Repositories Using $package_name" (it's a leaf with no exit)
+3. **Admin action inventory** — 4 action panels become React (rescan ×2, compute metrics, health); 9 observability panels stay in Grafana
+
+### Files Modified
+
+- `.ai/investigations/grafana-ui-shortcomings.md` (RESOLVED, synthesis filled, audits appended)
+- `.ai/plans/025-bespoke-admin-and-navigation-ui.md` (APPROVED, decisions section, phase reorder, 1a/1b split, concrete drill-down list)
+- `PROGRESS.md` (this entry)
+
+### Next Session — Pickup Points
+
+1. **Phase 2 implementation** on a new feature branch — mechanical 6-entry top-link bar across 11 dashboards (`dashboard-home.json` skipped). Coding-agent ready; the plan's Scope section enumerates the exact entries.
+2. **Phase 3 implementation** — ~12 specific `fieldConfig.overrides[]` edits enumerated in the plan. Use the existing `security-dashboard.json` "Repository Security Overview" data link as the canonical pattern.
+3. **Phase 1 scaffolding** comes after Phases 2+3 ship — React + Vite + TS at `web/admin-ui/`.
+
+### Notes
+
+- Branch: `feat/plan-024-investigation-closeout`. Doc-only changes; no code touched.
+- No tests run — investigation/plan documents only.
+
+---
+
+## Session: 2026-05-01 — Bespoke Web UI Decision: Investigation + Plan 024 Drafted
+
+### Summary
+
+Discussed the user's frustration with Grafana for cross-dashboard navigation and
+relational drill-down (especially the security dashboard's missing
+"vulnerability → repo" links), and the awkwardness of admin/CRUD workflows
+embedded in `dashboards/admin-dashboard.json`. Recommendation: **split admin
+from analytics** — bespoke React UI for admin + nav hub, Grafana stays for
+analytics charts but gets a uniform top-link bar and the missing data links.
+
+Wrote two artefacts to capture the decision before any code changes:
+
+- [.ai/investigations/grafana-ui-shortcomings.md](.ai/investigations/grafana-ui-shortcomings.md) —
+  question-driven analysis. Five themes (cross-dashboard nav, relational
+  drill-down, admin tool fit, analytics tool fit, effort/audience) with a
+  three-outcome synthesis matrix. Pre-investigation lean is **Outcome 2**
+  (split). Includes three concrete `jq` audits the user can run to ground
+  the answers in data.
+- [.ai/plans/025-bespoke-admin-and-navigation-ui.md](.ai/plans/025-bespoke-admin-and-navigation-ui.md) —
+  **DRAFT, gated on Outcome 2**. Three phases: (1) React+Vite+TS admin MVP at
+  `web/admin-ui/` consuming the existing 7 Flask endpoints (no new backend),
+  (2) uniform 5-entry top-link bar across all 12 dashboards, (3) fill in the
+  missing Grafana data links. Stays out of `src/extractors/`, `src/analyzers/`,
+  `src/database/`, `src/workflows/` — Architecture Guardian boundaries
+  unchanged.
+
+### Files Modified
+
+- `.ai/investigations/grafana-ui-shortcomings.md` (new)
+- `.ai/plans/025-bespoke-admin-and-navigation-ui.md` (new — DRAFT)
+
+### Next Session — Pickup Points
+
+1. **Fill in investigation Themes A–C** (cross-dashboard nav, relational
+   drill-down, admin workflows). These three drive whether Plan 024 is the
+   right shape. Theme E (effort/audience) is also worth answering early.
+2. **Run the three audits** the investigation prescribes (top-link audit,
+   drill-down audit, admin action inventory) — these turn opinion into data.
+3. **Confirm or adjust Plan 024 open questions** at the bottom of the plan:
+   framework choice (React vs Vue/Svelte/HTMX), location (`web/admin-ui/` vs
+   alternatives), no-auth-for-MVP acceptable, whether the React Home replaces
+   `dashboards/dashboard-home.json`.
+4. Once Outcome 2 confirmed and open questions resolved → flip Plan 024 from
+   DRAFT to DESIGN and start Phase 1 scaffolding on a new feature branch.
+
+### Notes
+
+- No code changes this session — pure planning. Currently on `main`, working
+  tree clean. Feature branch should be created tomorrow before any
+  implementation work (Principle 4).
+- Plan 023 (Grafana Home nav links) is the most recent shipped plan; this
+  plan is `024`.
+
+---
+
 ## Session: 2026-04-26 - Plan 012 Complete: R-A/R-B Implementation Verified
 
 ### Summary
