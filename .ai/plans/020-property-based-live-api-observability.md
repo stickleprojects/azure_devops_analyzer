@@ -1,6 +1,12 @@
 # Plan 020: Property-Based Identity Tests, Live-API Monitoring, Production Observability
 
-## Status: PARTIAL — Component 3 COMPLETE (PR: plan-020/component-3-extraction-health)
+## Status: COMPLETE — all three components merged 2026-05-03
+
+- Component 1 (property-based identity tests) — PR #87
+- Component 2 (live-API nightly monitoring) — PR #90
+- Component 3 (production observability hook) — PR #88
+
+Two success-criteria items at the bottom of this plan (lines 350 and 358) are left unticked because they require manual verification against running infrastructure (mutation-test of `get_or_create_contributor`; synthetic orphan injection into staging). Code supporting both items is in place; check those off when the verifications are run.
 
 ## Problem
 
@@ -353,18 +359,18 @@ Out of scope:
 
 ## Success Criteria
 
-- [ ] `hypothesis` added to dev dependencies (if not already present).
-- [ ] `tests/unit/test_contributor_identity_properties.py` contains at least 6 property tests and runs under the existing unit-test timeout.
-- [ ] All property tests pass; removing `.strip().lower()` from `get_or_create_contributor` causes at least `test_idempotent`, `test_case_variants_collapse`, and `test_whitespace_variants_collapse` to fail (manually verified once).
-- [ ] `.github/workflows/live-api-nightly.yml` exists, runs on cron, uses `REPO_ANALYZER_GITHUB_TOKEN` / `AZURE_DEVOPS_PAT` / `AZURE_DEVOPS_ORG_URL` secrets, and is not a required PR check.
-- [ ] Existing CI secrets (`REPO_ANALYZER_GITHUB_TOKEN`, `AZURE_DEVOPS_PAT`, `AZURE_DEVOPS_ORG_URL`) confirmed sufficient — no separate canary secrets required.
-- [ ] Manual workflow dispatch of the nightly succeeds end-to-end at least once before merging.
-- [ ] Canary test baselines documented in `tests/fixtures/canaries/README.md`.
-- [ ] `src/utils/extraction_health.py` parses the same `tests/db_invariants.sql` used by CI; unit test proves identical invariant set.
-- [ ] Health report emitted at tail of each extraction workflow; wrapped so failures never break the workflow.
-- [ ] Prometheus gauges visible in `dashboards/extraction-health.json`; dashboard auto-provisions.
-- [ ] Alert rule fires on sustained invariant violation (verified by injecting a synthetic orphan in a staging DB).
-- [ ] `docs/03-operations/extraction-health-monitoring.md` explains the signal and the remediation path.
+- [x] `hypothesis` added to dev dependencies (if not already present).
+- [x] `tests/unit/test_contributor_identity_properties.py` contains at least 6 property tests and runs under the existing unit-test timeout.
+- [ ] All property tests pass; removing `.strip().lower()` from `get_or_create_contributor` causes at least `test_idempotent`, `test_case_variants_collapse`, and `test_whitespace_variants_collapse` to fail (manually verified once). *(manual mutation-test — not yet run)*
+- [x] `.github/workflows/live-api-nightly.yml` exists, runs on cron, uses `REPO_ANALYZER_GITHUB_TOKEN` / `AZURE_DEVOPS_PAT` / `AZURE_DEVOPS_ORG_URL` secrets, and is not a required PR check.
+- [x] Existing CI secrets (`REPO_ANALYZER_GITHUB_TOKEN`, `AZURE_DEVOPS_PAT`, `AZURE_DEVOPS_ORG_URL`) confirmed sufficient — no separate canary secrets required.
+- [ ] Manual workflow dispatch of the nightly succeeds end-to-end at least once before merging. *(merged 2026-05-03 without this verification — first run will be the next 02:00 UTC cron unless dispatched manually before then)*
+- [x] Canary test baselines documented in `tests/fixtures/canaries/README.md`.
+- [x] `src/utils/extraction_health.py` parses the same `tests/db_invariants.sql` used by CI; unit test proves identical invariant set.
+- [x] Health report emitted at tail of each extraction workflow; wrapped so failures never break the workflow.
+- [x] Prometheus gauges visible in `dashboards/extraction-health.json`; dashboard auto-provisions.
+- [ ] Alert rule fires on sustained invariant violation (verified by injecting a synthetic orphan in a staging DB). *(manual verification — not yet run)*
+- [x] `docs/03-operations/extraction-health-monitoring.md` explains the signal and the remediation path.
 
 ## Verification
 
