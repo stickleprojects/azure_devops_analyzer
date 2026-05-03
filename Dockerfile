@@ -26,6 +26,10 @@ COPY config/ ./config/
 COPY workers/ ./workers/
 COPY scripts/ ./scripts/
 
+# Copy invariant definitions so src/utils/extraction_health.py can resolve them
+# at runtime inside the container (Plan 020 Component 3).
+COPY tests/db_invariants.sql ./tests/db_invariants.sql
+
 # Create non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser && \
     chown -R appuser:appuser /app
