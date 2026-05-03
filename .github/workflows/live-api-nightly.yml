@@ -1,0 +1,156 @@
+## Plan 020 Component 2 — Live-API nightly monitoring workflow.
+##
+## Runs the canary live-API tests against real credentials every night and
+## opens a GitHub Issue on failure.  This workflow is NOT a required PR check;
+## failures never block merges — the signal is the opened issue.
+##
+## Secrets required (provision once by an org admin):
+##   CANARY_GITHUB_TOKEN     — fine-grained PAT, read-only on stickleprojects/azure_devops_analyzer
+##   CANARY_AZURE_DEVOPS_PAT — Azure DevOps PAT, Code(read) on kieronwray/azure_devops_analyzer
+##
+## See tests/fixtures/canaries/README.md for full setup instructions.
+
+name: live-api-nightly
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 02:00 UTC daily
+  workflow_dispatch:       # manual trigger for ad-hoc checks
+
+concurrency:
+  group: live-api-nightly
+  cancel-in-progress: false   # let a running nightly finish before starting another
+
+jobs:
+  live-api:
+    name: Canary Live-API Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: timescale/timescaledb:2.17.2-pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_azure_devops
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -r requirements.txt
+
+      - name: Create test environment file
+        run: |
+          cat > .env.test << 'EOF'
+          POSTGRES_HOST=localhost
+          POSTGRES_PORT=5432
+          POSTGRES_USER=postgres
+          POSTGRES_PASSWORD=postgres
+          POSTGRES_DB=test_azure_devops
+          TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_azure_devops
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/test_azure_devops
+          EOF
+
+      - name: Ensure TimescaleDB extension is available
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -p 5432 -U postgres -d test_azure_devops -v ON_ERROR_STOP=1 -c "CREATE EXTENSION IF NOT EXISTS timescaledb;"
+
+      - name: Run database migrations
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_azure_devops
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
+        run: |
+          bash docker/scripts/run_migrations.sh
+
+      - name: Run canary live-API tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+          CANARY_GITHUB_TOKEN: ${{ secrets.CANARY_GITHUB_TOKEN }}
+          CANARY_AZURE_DEVOPS_PAT: ${{ secrets.CANARY_AZURE_DEVOPS_PAT }}
+          AZURE_DEVOPS_ORG_URL: https://dev.azure.com/kieronwray
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
+        run: |
+          pytest tests/contract/integration/test_canary_live_api.py \
+            -v --tb=short --durations=10 \
+            -m "live_api" \
+            -p no:cacheprovider
+
+      - name: Open issue on failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = "Live-API canary regression detected";
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              `## :warning: Live-API nightly canary failed`,
+              ``,
+              `**Run:** ${runUrl}`,
+              `**Workflow:** \`live-api-nightly\``,
+              `**Triggered by:** \`${context.eventName}\``,
+              ``,
+              `One or more canary live-API tests failed.  This may indicate:`,
+              `- An API shape change on GitHub or Azure DevOps`,
+              `- A regression in the extraction pipeline`,
+              `- Stale canary baselines (counts below expected lower bound)`,
+              `- Missing or expired secrets (\`CANARY_GITHUB_TOKEN\` / \`CANARY_AZURE_DEVOPS_PAT\`)`,
+              ``,
+              `**Next steps:**`,
+              `1. Click the run URL above and inspect the failing test output.`,
+              `2. If it is a missing/expired secret, reprovision it (see \`tests/fixtures/canaries/README.md\`).`,
+              `3. If it is a baseline drift, update \`EXPECTED_*\` in \`tests/contract/integration/test_canary_live_api.py\`.`,
+              `4. If it is a real regression, open a bug and link it here.`,
+            ].join("\n");
+
+            // Find an existing open issue with the same title to avoid spamming.
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: "live-api-regression",
+            });
+
+            const existing = issues.find(i => i.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `New failure detected.\n\n**Run:** ${runUrl}`,
+              });
+              console.log(`Appended comment to existing issue #${existing.number}`);
+            } else {
+              const { data: issue } = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+                labels: ["live-api-regression"],
+              });
+              console.log(`Opened new issue #${issue.number}: ${issue.html_url}`);
+            }
