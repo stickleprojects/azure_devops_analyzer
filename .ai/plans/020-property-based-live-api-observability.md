@@ -310,6 +310,8 @@ New file `dashboards/extraction-health.json`. Panels:
 
 Alert rule: fire if any invariant gauge is non-zero for more than 1 hour. Route to the same channel as existing extraction alerts.
 
+**Top-link bar (when Plan 024 has landed)**: copy the canonical 6-entry `links[]` array from any other `dashboards/*.json` (e.g. `security-dashboard.json`) so the new dashboard inherits the uniform top-link bar from Plan 024 Phase 2. Do not invent a new bar shape. If Plan 024 has not yet shipped, omit `links[]` and Phase 2 will add it during the sweep.
+
 #### 3.5 Documentation
 
 Short note in `docs/03-operations/extraction-health-monitoring.md`:

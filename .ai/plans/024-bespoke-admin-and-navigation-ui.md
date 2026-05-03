@@ -96,6 +96,19 @@ Skipped (no obvious target or external link): `repository-deep-dive` Branch Deta
 - **Compute Service Metrics** trigger on the Extraction Control page.
 - **Repository List** — paginated/filterable view of `/api/repositories` with per-row Rescan/Remove buttons.
 
+**Phase 1c (deferred — Tech Radar viewer, depends on Plan 022 shipping):**
+
+- React route at `/radar` rendering the Thoughtworks-format JSON returned by `GET /api/radar` (Plan 022 Part C).
+- React route at `/radar/history` rendering the timeline from `GET /api/radar/history` as a sortable table.
+- Replaces the now-removed `src/api/radar_viewer.html` from Plan 022. Plan 022's backend is unchanged and ships independently of this phase.
+- Rationale: Tech Radar is a leadership-facing artifact (Theme E.1 audience). A React route is much cleaner than an iframe to thoughtworks.com or a static HTML wrapper, and is exactly the kind of high-visibility surface that justifies the React investment beyond admin chores.
+
+**Phase 1d (deferred — Library detail page, depends on Plan 021 endpoints):**
+
+- React route at `/library/:ecosystem/:name` consuming `GET /api/packages/library/<name>/<ecosystem>` (Plan 021 Part C).
+- Renders metadata + CVE list + adoption timeline + per-repo usage in a layout the Grafana `library-detail-deep-dive.json` dashboard struggles with (Theme D.1: "panels can feel cluttered and have scrollbars to find links").
+- Coexists with the Grafana dashboard — both stay; data links from Phase 3 still point to the Grafana version. The Grafana home dashboard could optionally add a "Library Browser" tile pointing to the React route once shipped.
+
 ### Out of scope
 
 - Rebuilding any analytics dashboard in React. Charts stay in Grafana. If the investigation surfaces queries Grafana can't express, that's a separate plan.
