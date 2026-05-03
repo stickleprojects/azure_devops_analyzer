@@ -40,28 +40,30 @@ logger = logging.getLogger(__name__)
 
 
 def _get_canary_github_token() -> Optional[str]:
-    """Return the canary GitHub token from the environment, or None.
+    """Return the GitHub token from the environment, or None.
 
-    Only ``CANARY_GITHUB_TOKEN`` is accepted — a narrowly-scoped read-only
-    token provisioned for canary use.  The default ``GITHUB_TOKEN`` (broad
-    write permissions) is intentionally NOT used as a fallback.
+    Reads ``GITHUB_TOKEN``, which the nightly workflow populates from
+    ``secrets.REPO_ANALYZER_GITHUB_TOKEN``.
     """
-    return os.environ.get("CANARY_GITHUB_TOKEN")
+    return os.environ.get("GITHUB_TOKEN")
 
 
 def _get_canary_azure_pat() -> Optional[str]:
-    """Return the canary Azure DevOps PAT from the environment, or None.
+    """Return the Azure DevOps PAT from the environment, or None.
 
-    Only ``CANARY_AZURE_DEVOPS_PAT`` is accepted — a narrowly-scoped read-only
-    token provisioned for canary use.  Production credentials are intentionally
-    NOT used as a fallback.
+    Reads ``AZURE_DEVOPS_PAT``, the same secret used by the existing CI
+    workflows.
     """
-    return os.environ.get("CANARY_AZURE_DEVOPS_PAT")
+    return os.environ.get("AZURE_DEVOPS_PAT")
 
 
 def _get_canary_azure_org_url() -> Optional[str]:
-    """Return the Azure DevOps organisation URL from the environment, or None."""
-    return os.environ.get("AZURE_DEVOPS_ORG_URL", "https://dev.azure.com/kieronwray")
+    """Return the Azure DevOps organisation URL from the environment, or None.
+
+    Reads ``AZURE_DEVOPS_ORG_URL``.  If unset the test is skipped; there is
+    no hardcoded default because the org URL is deployment-specific.
+    """
+    return os.environ.get("AZURE_DEVOPS_ORG_URL")
 
 
 def _org_name_from_url(org_url: str) -> str:
@@ -87,7 +89,8 @@ class TestGitHubCanary:
     """Canary smoke-test for GitHub extraction.
 
     Uses ``stickleprojects/azure_devops_analyzer`` as the canary repository —
-    it is small, stable, and accessible via the ``CANARY_GITHUB_TOKEN`` secret.
+    it is small, stable, and accessible via ``GITHUB_TOKEN``
+    (populated from ``secrets.REPO_ANALYZER_GITHUB_TOKEN`` by the nightly workflow).
 
     Baselines are lower bounds so they survive normal repository growth.
     If the real count drifts far above ``EXPECTED_*``, update the constant
@@ -102,7 +105,7 @@ class TestGitHubCanary:
         """The canary repository can be fetched from the GitHub API."""
         token = _get_canary_github_token()
         if not token:
-            pytest.skip("CANARY_GITHUB_TOKEN not set")
+            pytest.skip("GITHUB_TOKEN not set")
 
         config = GitHubExtractorConfig(token=token)
         extractor = GitHubExtractor(config=config)
@@ -115,7 +118,7 @@ class TestGitHubCanary:
         """At least ``EXPECTED_PR_COUNT`` pull requests exist in the canary repo."""
         token = _get_canary_github_token()
         if not token:
-            pytest.skip("CANARY_GITHUB_TOKEN not set")
+            pytest.skip("GITHUB_TOKEN not set")
 
         config = GitHubExtractorConfig(token=token)
         extractor = GitHubExtractor(config=config)
@@ -140,7 +143,7 @@ class TestGitHubCanary:
         """
         token = _get_canary_github_token()
         if not token:
-            pytest.skip("CANARY_GITHUB_TOKEN not set")
+            pytest.skip("GITHUB_TOKEN not set")
 
         config = GitHubExtractorConfig(token=token)
         extractor = GitHubExtractor(config=config)
@@ -198,8 +201,8 @@ class TestGitHubCanary:
 class TestAzureDevOpsCanary:
     """Canary smoke-test for Azure DevOps extraction.
 
-    Uses the ``azure_devops_analyzer`` project in the ``kieronwray`` org.
-    Accessible via the ``CANARY_AZURE_DEVOPS_PAT`` secret.
+    Uses the ``azure_devops_analyzer`` project in the org identified by
+    ``AZURE_DEVOPS_ORG_URL``.  Accessible via the ``AZURE_DEVOPS_PAT`` secret.
 
     Baselines are lower bounds; update ``EXPECTED_REPO_COUNT`` if the project
     grows significantly.
@@ -212,7 +215,7 @@ class TestAzureDevOpsCanary:
         pat = _get_canary_azure_pat()
         org_url = _get_canary_azure_org_url()
         if not pat:
-            pytest.skip("CANARY_AZURE_DEVOPS_PAT not set")
+            pytest.skip("AZURE_DEVOPS_PAT not set")
         if not org_url:
             pytest.skip("AZURE_DEVOPS_ORG_URL not set")
 
@@ -231,7 +234,7 @@ class TestAzureDevOpsCanary:
         pat = _get_canary_azure_pat()
         org_url = _get_canary_azure_org_url()
         if not pat:
-            pytest.skip("CANARY_AZURE_DEVOPS_PAT not set")
+            pytest.skip("AZURE_DEVOPS_PAT not set")
         if not org_url:
             pytest.skip("AZURE_DEVOPS_ORG_URL not set")
 

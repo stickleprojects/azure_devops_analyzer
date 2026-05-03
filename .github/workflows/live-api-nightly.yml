@@ -4,9 +4,10 @@
 ## opens a GitHub Issue on failure.  This workflow is NOT a required PR check;
 ## failures never block merges — the signal is the opened issue.
 ##
-## Secrets required (provision once by an org admin):
-##   CANARY_GITHUB_TOKEN     — fine-grained PAT, read-only on stickleprojects/azure_devops_analyzer
-##   CANARY_AZURE_DEVOPS_PAT — Azure DevOps PAT, Code(read) on kieronwray/azure_devops_analyzer
+## Secrets used (already provisioned for the existing CI workflows):
+##   REPO_ANALYZER_GITHUB_TOKEN — GitHub PAT, exported as GITHUB_TOKEN
+##   AZURE_DEVOPS_PAT           — Azure DevOps PAT, Code(read) scope
+##   AZURE_DEVOPS_ORG_URL       — Azure DevOps organisation URL secret
 ##
 ## See tests/fixtures/canaries/README.md for full setup instructions.
 
@@ -89,9 +90,9 @@ jobs:
       - name: Run canary live-API tests
         env:
           PYTHONPATH: ${{ github.workspace }}
-          CANARY_GITHUB_TOKEN: ${{ secrets.CANARY_GITHUB_TOKEN }}
-          CANARY_AZURE_DEVOPS_PAT: ${{ secrets.CANARY_AZURE_DEVOPS_PAT }}
-          AZURE_DEVOPS_ORG_URL: https://dev.azure.com/kieronwray
+          GITHUB_TOKEN: ${{ secrets.REPO_ANALYZER_GITHUB_TOKEN }}
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          AZURE_DEVOPS_ORG_URL: ${{ secrets.AZURE_DEVOPS_ORG_URL }}
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
         run: |
@@ -118,7 +119,7 @@ jobs:
               `- An API shape change on GitHub or Azure DevOps`,
               `- A regression in the extraction pipeline`,
               `- Stale canary baselines (counts below expected lower bound)`,
-              `- Missing or expired secrets (\`CANARY_GITHUB_TOKEN\` / \`CANARY_AZURE_DEVOPS_PAT\`)`,
+              `- Missing or expired secrets (\`REPO_ANALYZER_GITHUB_TOKEN\` / \`AZURE_DEVOPS_PAT\` / \`AZURE_DEVOPS_ORG_URL\`)`,
               ``,
               `**Next steps:**`,
               `1. Click the run URL above and inspect the failing test output.`,

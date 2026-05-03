@@ -15,8 +15,8 @@ A canary repository must be:
 
 - **Small** — handful of PRs and contributors, not hundreds.
 - **Stable** — rarely changes; predictable counts.
-- **Accessible** — readable by the `CANARY_GITHUB_TOKEN` / `CANARY_AZURE_DEVOPS_PAT`
-  secrets with read-only scope.
+- **Accessible** — readable by the existing CI secrets (`REPO_ANALYZER_GITHUB_TOKEN` /
+  `AZURE_DEVOPS_PAT`) with read-only scope.
 - **Representative** — contains at least one mixed-case contributor email and
   one reviewer scenario so the key contributor-identity invariants are exercised.
 
@@ -30,7 +30,7 @@ A canary repository must be:
 | URL | <https://github.com/stickleprojects/azure_devops_analyzer> |
 | Baseline PR count (lower bound) | 10 |
 | Baseline contributor count (lower bound) | 1 |
-| Secret required | `CANARY_GITHUB_TOKEN` (read-only, `repo:read` or fine-grained `contents:read`) |
+| Secret required | `REPO_ANALYZER_GITHUB_TOKEN` (exported as `GITHUB_TOKEN` by the workflow) |
 
 The `azure_devops_analyzer` repo is used as its own canary: it has a growing
 but modest number of pull requests and a small set of known contributors.
@@ -42,10 +42,9 @@ Lower-bound assertions prevent flaky failures as the repository naturally grows.
 
 | Property | Value |
 |---|---|
-| Organisation URL | `https://dev.azure.com/kieronwray` |
-| Project | `azure_devops_analyzer` |
+| Organisation URL | `AZURE_DEVOPS_ORG_URL` secret |
 | Baseline repo count (lower bound) | 1 |
-| Secret required | `CANARY_AZURE_DEVOPS_PAT` (read-only, `Code (read)` scope) |
+| Secret required | `AZURE_DEVOPS_PAT` (Code(read) scope) |
 
 ---
 
@@ -61,16 +60,18 @@ and open a PR.  No secrets or production changes are required.
 
 ---
 
-## Secrets Setup (one-time, admin only)
+## Secrets
 
-Both secrets are stored in the GitHub repository secrets vault.  They must be
-provisioned by someone with `admin` access to the `stickleprojects` organisation:
+The nightly workflow reuses secrets already provisioned for the existing CI
+workflows (`tests.yml`, `generated-test-data-assessment.yml`); **no separate
+provisioning step is required**:
 
-1. **`CANARY_GITHUB_TOKEN`** — A fine-grained personal access token (or classic
-   PAT with `repo:read`) scoped only to `stickleprojects/azure_devops_analyzer`.
-2. **`CANARY_AZURE_DEVOPS_PAT`** — A PAT with `Code (read)` scope on the
-   `azure_devops_analyzer` project in the `kieronwray` Azure DevOps organisation.
+| Secret | Used as | Purpose |
+|---|---|---|
+| `REPO_ANALYZER_GITHUB_TOKEN` | `GITHUB_TOKEN` env var | GitHub API access |
+| `AZURE_DEVOPS_PAT` | `AZURE_DEVOPS_PAT` env var | Azure DevOps API access |
+| `AZURE_DEVOPS_ORG_URL` | `AZURE_DEVOPS_ORG_URL` env var | Azure DevOps organisation URL |
 
-The nightly workflow (`live-api-nightly.yml`) uses these secrets exclusively and
-is **not** a required PR check.  Failures from missing secrets or API outages
-open a GitHub Issue rather than blocking merges.
+The nightly workflow (`live-api-nightly.yml`) is **not** a required PR check.
+Failures from missing secrets or API outages open a GitHub Issue rather than
+blocking merges.

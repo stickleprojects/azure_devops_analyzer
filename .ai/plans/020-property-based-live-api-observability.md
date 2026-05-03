@@ -220,8 +220,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run live-API tests
         env:
-          GITHUB_TOKEN: ${{ secrets.CANARY_GITHUB_TOKEN }}
-          AZURE_DEVOPS_PAT: ${{ secrets.CANARY_AZURE_DEVOPS_PAT }}
+          GITHUB_TOKEN: ${{ secrets.REPO_ANALYZER_GITHUB_TOKEN }}
+          AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
+          AZURE_DEVOPS_ORG_URL: ${{ secrets.AZURE_DEVOPS_ORG_URL }}
         run: bash scripts/run-tests-docker.sh --live-api
       - name: Open issue on failure
         if: failure()
@@ -233,11 +234,18 @@ jobs:
             ...
 ```
 
-**Secrets setup** (manual, one-time):
+**Secrets setup** (reuses existing CI secrets — no separate provisioning required):
 
-- Create `CANARY_GITHUB_TOKEN` — a GitHub PAT with `repo:read` scope on the canary repo only.
-- Create `CANARY_AZURE_DEVOPS_PAT` — equivalent, read-only, scoped to the canary project.
-- Confirm both are classic-scoped tokens with minimal surface.
+- `REPO_ANALYZER_GITHUB_TOKEN` — GitHub PAT, exported as `GITHUB_TOKEN` by the workflow.
+- `AZURE_DEVOPS_PAT` — Azure DevOps PAT, `Code(read)` scope.
+- `AZURE_DEVOPS_ORG_URL` — Azure DevOps organisation URL.
+
+> **Decision 2026-05-03:** Originally specified separate `CANARY_GITHUB_TOKEN` /
+> `CANARY_AZURE_DEVOPS_PAT` secrets for blast-radius isolation.  Revised to reuse
+> the existing read-only repo secrets (`REPO_ANALYZER_GITHUB_TOKEN`,
+> `AZURE_DEVOPS_PAT`, `AZURE_DEVOPS_ORG_URL`) since they are already scoped
+> appropriately and the duplication adds rotation/provisioning friction without
+> security benefit.
 
 Not a required PR check. Failures never block merges — the signal is the opened issue.
 
@@ -348,8 +356,8 @@ Out of scope:
 - [ ] `hypothesis` added to dev dependencies (if not already present).
 - [ ] `tests/unit/test_contributor_identity_properties.py` contains at least 6 property tests and runs under the existing unit-test timeout.
 - [ ] All property tests pass; removing `.strip().lower()` from `get_or_create_contributor` causes at least `test_idempotent`, `test_case_variants_collapse`, and `test_whitespace_variants_collapse` to fail (manually verified once).
-- [ ] `.github/workflows/live-api-nightly.yml` exists, runs on cron, uses canary secrets, and is not a required PR check.
-- [ ] `CANARY_GITHUB_TOKEN` and `CANARY_AZURE_DEVOPS_PAT` secrets provisioned with read-only scope on canary repos only.
+- [ ] `.github/workflows/live-api-nightly.yml` exists, runs on cron, uses `REPO_ANALYZER_GITHUB_TOKEN` / `AZURE_DEVOPS_PAT` / `AZURE_DEVOPS_ORG_URL` secrets, and is not a required PR check.
+- [ ] Existing CI secrets (`REPO_ANALYZER_GITHUB_TOKEN`, `AZURE_DEVOPS_PAT`, `AZURE_DEVOPS_ORG_URL`) confirmed sufficient — no separate canary secrets required.
 - [ ] Manual workflow dispatch of the nightly succeeds end-to-end at least once before merging.
 - [ ] Canary test baselines documented in `tests/fixtures/canaries/README.md`.
 - [ ] `src/utils/extraction_health.py` parses the same `tests/db_invariants.sql` used by CI; unit test proves identical invariant set.
