@@ -33,13 +33,23 @@ logger = logging.getLogger(__name__)
 
 
 def _get_canary_github_token() -> Optional[str]:
-    """Return the canary GitHub token from the environment, or None."""
-    return os.environ.get("CANARY_GITHUB_TOKEN") or os.environ.get("GITHUB_TOKEN")
+    """Return the canary GitHub token from the environment, or None.
+
+    Only ``CANARY_GITHUB_TOKEN`` is accepted — a narrowly-scoped read-only
+    token provisioned for canary use.  The default ``GITHUB_TOKEN`` (broad
+    write permissions) is intentionally NOT used as a fallback.
+    """
+    return os.environ.get("CANARY_GITHUB_TOKEN")
 
 
 def _get_canary_azure_pat() -> Optional[str]:
-    """Return the canary Azure DevOps PAT from the environment, or None."""
-    return os.environ.get("CANARY_AZURE_DEVOPS_PAT") or os.environ.get("AZURE_DEVOPS_PAT")
+    """Return the canary Azure DevOps PAT from the environment, or None.
+
+    Only ``CANARY_AZURE_DEVOPS_PAT`` is accepted — a narrowly-scoped read-only
+    token provisioned for canary use.  Production credentials are intentionally
+    NOT used as a fallback.
+    """
+    return os.environ.get("CANARY_AZURE_DEVOPS_PAT")
 
 
 def _get_canary_azure_org_url() -> Optional[str]:
