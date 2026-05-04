@@ -2,6 +2,46 @@
 
 ---
 
+## Session: 2026-05-04 — Plan 025 Phase 3 complete (PR #94 merged)
+
+### Summary
+
+Implemented Plan 025 Phase 3: all 12 missing relational drill-down data links across 7 Grafana dashboard JSON files. Added `fieldConfig.overrides[]` entries to table panels so clicking a cell value navigates to the natural target dashboard, passing the value as a template variable where one exists.
+
+Gap map shipped:
+- `security-dashboard` "Top Vulnerable Dependencies" Package → `library-detail-deep-dive?var-package_name`
+- `dep-vuln-portfolio` "Top 20 Vulnerable Packages" package_name → `library-detail-deep-dive?var-package_name`
+- `dep-vuln-portfolio` "Packages Reaching EOL Within 90 Days" package_name → `library-detail-deep-dive?var-package_name`
+- `dep-vuln-portfolio` "Package Usage by Team" team_name → `team-overview?var-team`
+- `library-detail-deep-dive` "Repositories Using $package_name" repo_id → `repo-deep-dive?var-repository` ← highest-value gap
+- `technology-landscape` "EOL Technologies with Affected Repo Count" name → `repo-overview`
+- `technology-landscape` "Repository Stack (by source)" repo_id → `repo-deep-dive?var-repository`
+- `repository-deep-dive` "Vulnerability Details" Package → `library-detail-deep-dive?var-package_name`
+- `repository-deep-dive` "Technologies (Detected Stack)" name → `technology-landscape`
+- `repository-deep-dive` "Open Pull Requests" Title → `pull-requests`
+- `team-overview` "Team Performance Summary" team → `repo-overview`
+- `service-overview` "Technology Stack by Service" service → `technology-landscape`
+
+Two links (EOL Technologies → repo-overview, Technology Stack by Service → technology-landscape) navigate without a filter variable because the target dashboards have no matching template variable. Also normalised dashboard JSON to consistent 2-space indentation.
+
+PR #94 merged 2026-05-04.
+
+### Status of Plan 025
+
+- Phase 2 ✅ PR #85
+- Phase 3 ✅ PR #94
+- Phase 1 (React admin UI) — Copilot workstream, prompt prepared, not started
+
+### Next Session — Pickup Points
+
+1. Verify Phase 1a (React admin UI) PR from Copilot when it arrives — review against Phase 1a acceptance criteria in plan.
+2. Plan 022 Track B (`src/workflows/radar_publication.py`) — next Claude task.
+3. Plan 022 Track C (API endpoints `/api/radar`, `/api/radar/history`, `/api/radar/export`).
+4. PR #83 (Plan 024 auth error taxonomy) — still open, separate workstream.
+5. Phase 1a manual click-through verification (one gap per dashboard) still pending.
+
+---
+
 ## Session: 2026-05-03 — Wave 1 Closeout + Plan 020 Complete (PR #90 merged)
 
 ### Summary
