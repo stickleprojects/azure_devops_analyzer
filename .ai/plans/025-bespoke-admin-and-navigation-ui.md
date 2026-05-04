@@ -2,7 +2,7 @@
 
 > **Renumber note (2026-05-03)**: Originally drafted as Plan 024. Renumbered to 025 because PR #83 (open at drafting time) reserved Plan 024 for "auth error taxonomy and view consistency". Phase numbering inside this document is unchanged.
 
-## Status: APPROVED 2026-05-03
+## Status: IN PROGRESS — Phase 2 ✅ (PR #85) · Phase 3 ✅ (PR #94) · Phase 1 pending
 
 **Implements**: A small React frontend that owns admin/operational workflows and coexists with Grafana — Grafana remains the home for analytics charts and the primary "Home" landing.
 
@@ -216,8 +216,8 @@ For each gap enumerated in the Scope section, add a `fieldConfig.overrides[]` en
 
 ### Phase 3
 
-- [ ] Every gap listed in the Scope section's Phase 3 list has a working data link.
-- [ ] Skipped panels (Branch Details, Repository Summary, Recent Commits, Health Status, CVE Details) are documented inline as deliberate skips.
+- [x] Every gap listed in the Scope section's Phase 3 list has a working data link. (PR #94, merged 2026-05-04)
+- [x] Skipped panels (Branch Details, Repository Summary, Recent Commits, Health Status, CVE Details) are documented inline as deliberate skips. (commit message)
 - [ ] Manual click-through: pick one gap-fix per dashboard, confirm the data link opens the right target with the right filter applied.
 
 ### Phase 1a (must-ship MVP)
