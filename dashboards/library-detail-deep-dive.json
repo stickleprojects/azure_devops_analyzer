@@ -1,284 +1,473 @@
 {
-    "annotations": {
-        "list": []
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "home",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Home",
+      "type": "link",
+      "url": "/d/dashboard-home"
     },
-    "editable": true,
-    "fiscalYearStartMonth": 0,
-    "graphTooltip": 0,
-    "id": null,
-        "links": [
-      {
-        "asDropdown": false,
-        "icon": "home",
-        "includeVars": false,
-        "keepTime": true,
-        "tags": [],
-        "targetBlank": false,
-        "title": "Home",
-        "type": "link",
-        "url": "/d/dashboard-home"
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Repos",
+      "type": "link",
+      "url": "/d/repo-overview"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Security",
+      "type": "link",
+      "url": "/d/security-dashboard"
+    },
+    {
+      "asDropdown": false,
+      "icon": "dashboard",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Technology",
+      "type": "link",
+      "url": "/d/technology-landscape"
+    },
+    {
+      "asDropdown": false,
+      "icon": "cog",
+      "includeVars": false,
+      "keepTime": true,
+      "tags": [],
+      "targetBlank": false,
+      "title": "Admin",
+      "type": "link",
+      "url": "/d/admin-dashboard"
+    },
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Admin UI",
+      "type": "link",
+      "url": "http://localhost:8080/"
+    }
+  ],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
       },
-      {
-        "asDropdown": false,
-        "icon": "dashboard",
-        "includeVars": false,
-        "keepTime": true,
-        "tags": [],
-        "targetBlank": false,
-        "title": "Repos",
-        "type": "link",
-        "url": "/d/repo-overview"
+      "id": 1,
+      "panels": [],
+      "title": "Library Card",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
       },
-      {
-        "asDropdown": false,
-        "icon": "dashboard",
-        "includeVars": false,
-        "keepTime": true,
-        "tags": [],
-        "targetBlank": false,
-        "title": "Security",
-        "type": "link",
-        "url": "/d/security-dashboard"
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "unit": "short"
+        },
+        "overrides": []
       },
-      {
-        "asDropdown": false,
-        "icon": "dashboard",
-        "includeVars": false,
-        "keepTime": true,
-        "tags": [],
-        "targetBlank": false,
-        "title": "Technology",
-        "type": "link",
-        "url": "/d/technology-landscape"
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 1
       },
-      {
-        "asDropdown": false,
-        "icon": "cog",
-        "includeVars": false,
-        "keepTime": true,
-        "tags": [],
-        "targetBlank": false,
-        "title": "Admin",
-        "type": "link",
-        "url": "/d/admin-dashboard"
-      },
-      {
-        "asDropdown": false,
-        "icon": "external link",
-        "includeVars": false,
-        "keepTime": false,
-        "tags": [],
-        "targetBlank": true,
-        "title": "Admin UI",
-        "type": "link",
-        "url": "http://localhost:8080/"
-      }
-    ],
-    "liveNow": false,
-    "panels": [
-        {
-            "collapsed": false,
-            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
-            "id": 1,
-            "panels": [],
-            "title": "Library Card",
-            "type": "row"
-        },
-        {
-            "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-            "fieldConfig": {
-                "defaults": { "color": { "mode": "thresholds" }, "unit": "short" },
-                "overrides": []
-            },
-            "gridPos": { "h": 4, "w": 6, "x": 0, "y": 1 },
-            "id": 2,
-            "options": { "colorMode": "none", "graphMode": "none", "reduceOptions": { "calcs": ["lastNotNull"] } },
-            "targets": [
-                {
-                    "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-                    "format": "table",
-                    "rawSql": "SELECT package_name, ecosystem, latest_version, is_eol, eol_date FROM v_package_portfolio_latest WHERE package_name = '$package_name' AND ecosystem = '$ecosystem' LIMIT 1",
-                    "refId": "A"
-                }
-            ],
-            "title": "Library Info ($package_name / $ecosystem)",
-            "type": "stat"
-        },
-        {
-            "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-            "fieldConfig": {
-                "defaults": {},
-                "overrides": [
-                    { "matcher": { "id": "byName", "options": "health_status" }, "properties": [{ "id": "custom.displayMode", "value": "color-background" }] }
-                ]
-            },
-            "gridPos": { "h": 4, "w": 6, "x": 6, "y": 1 },
-            "id": 3,
-            "targets": [
-                {
-                    "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-                    "format": "table",
-                    "rawSql": "SELECT health_status, repo_count, exposed_cve_count FROM v_package_health_latest WHERE package_name = '$package_name' AND ecosystem = '$ecosystem'",
-                    "refId": "A"
-                }
-            ],
-            "title": "Health Status",
-            "type": "table"
-        },
-        {
-            "collapsed": false,
-            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
-            "id": 10,
-            "panels": [],
-            "title": "Vulnerability Timeline",
-            "type": "row"
-        },
-        {
-            "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-            "fieldConfig": {
-                "defaults": { "custom": { "stacking": { "mode": "normal" } } },
-                "overrides": []
-            },
-            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 6 },
-            "id": 11,
-            "options": { "legend": { "displayMode": "list", "placement": "bottom" } },
-            "targets": [
-                {
-                    "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-                    "format": "time_series",
-                    "rawSql": "SELECT published_date AS time, COUNT(*) AS count, severity AS metric FROM v_package_vulnerabilities_detail WHERE package_name = '$package_name' AND ecosystem = '$ecosystem' AND published_date IS NOT NULL GROUP BY published_date, severity ORDER BY published_date",
-                    "refId": "A"
-                }
-            ],
-            "title": "CVE Publication Timeline (Stacked by Severity)",
-            "type": "timeseries"
-        },
-        {
-            "collapsed": false,
-            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
-            "id": 20,
-            "panels": [],
-            "title": "CVE Details",
-            "type": "row"
-        },
-        {
-            "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-            "fieldConfig": {
-                "defaults": {},
-                "overrides": [
-                    { "matcher": { "id": "byName", "options": "severity" }, "properties": [{ "id": "custom.displayMode", "value": "color-background" }] },
-                    { "matcher": { "id": "byName", "options": "exposed_repo_count" }, "properties": [{ "id": "custom.displayMode", "value": "color-background" }] }
-                ]
-            },
-            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 15 },
-            "id": 21,
-            "targets": [
-                {
-                    "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-                    "format": "table",
-                    "rawSql": "SELECT cve_id, severity, summary, fixed_in_version, published_date, exposed_repo_count FROM v_package_vulnerabilities_detail WHERE package_name = '$package_name' AND ecosystem = '$ecosystem' ORDER BY severity DESC, exposed_repo_count DESC",
-                    "refId": "A"
-                }
-            ],
-            "title": "CVE Details",
-            "type": "table"
-        },
-        {
-            "collapsed": false,
-            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
-            "id": 30,
-            "panels": [],
-            "title": "Repositories Using This Library",
-            "type": "row"
-        },
-        {
-            "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-            "fieldConfig": {
-                "defaults": {},
-                "overrides": [
-                    { "matcher": { "id": "byName", "options": "has_known_vulnerabilities" }, "properties": [{ "id": "custom.displayMode", "value": "color-background" }] }
-                ]
-            },
-            "gridPos": { "h": 8, "w": 24, "x": 0, "y": 24 },
-            "id": 31,
-            "targets": [
-                {
-                    "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-                    "format": "table",
-                    "rawSql": "SELECT rd.repo_id, COALESCE(t.name, 'Unknown') AS team_name, rd.version, rd.has_known_vulnerabilities FROM repository_dependencies rd JOIN repositories r ON r.repo_id = rd.repo_id LEFT JOIN teams t ON t.team_id = r.team_id WHERE rd.package_name = '$package_name' AND rd.ecosystem = '$ecosystem' ORDER BY rd.has_known_vulnerabilities DESC, rd.repo_id",
-                    "refId": "A"
-                }
-            ],
-            "title": "Repositories Using $package_name",
-            "type": "table"
-        },
-        {
-            "collapsed": false,
-            "gridPos": { "h": 1, "w": 24, "x": 0, "y": 32 },
-            "id": 40,
-            "panels": [],
-            "title": "Service Adoption",
-            "type": "row"
-        },
-        {
-            "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-            "fieldConfig": { "defaults": {}, "overrides": [] },
-            "gridPos": { "h": 8, "w": 12, "x": 0, "y": 33 },
-            "id": 41,
-            "options": { "orientation": "horizontal" },
-            "targets": [
-                {
-                    "datasource": { "type": "postgres", "uid": "TimescaleDB" },
-                    "format": "table",
-                    "rawSql": "SELECT team_name, repo_count, exposed_repos FROM v_package_by_team_latest WHERE package_name = '$package_name' AND ecosystem = '$ecosystem' ORDER BY repo_count DESC",
-                    "refId": "A"
-                }
-            ],
-            "title": "Adoption by Team",
-            "type": "barchart"
+      "id": 2,
+      "options": {
+        "colorMode": "none",
+        "graphMode": "none",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
         }
-    ],
-    "refresh": "5m",
-    "schemaVersion": 37,
-    "tags": ["security", "dependencies", "library"],
-    "templating": {
-        "list": [
-            {
-                "current": {},
-                "hide": 0,
-                "includeAll": false,
-                "label": "Package Name",
-                "multi": false,
-                "name": "package_name",
-                "options": [],
-                "query": {
-                    "query": "SELECT DISTINCT package_name FROM packages ORDER BY package_name",
-                    "refId": "StandardVariableQuery"
-                },
-                "refresh": 1,
-                "type": "query"
-            },
-            {
-                "current": {},
-                "hide": 0,
-                "includeAll": false,
-                "label": "Ecosystem",
-                "multi": false,
-                "name": "ecosystem",
-                "options": [],
-                "query": {
-                    "query": "SELECT DISTINCT ecosystem FROM packages ORDER BY ecosystem",
-                    "refId": "StandardVariableQuery"
-                },
-                "refresh": 1,
-                "type": "query"
-            }
-        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "format": "table",
+          "rawSql": "SELECT package_name, ecosystem, latest_version, is_eol, eol_date FROM v_package_portfolio_latest WHERE package_name = '$package_name' AND ecosystem = '$ecosystem' LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Library Info ($package_name / $ecosystem)",
+      "type": "stat"
     },
-    "time": { "from": "now-90d", "to": "now" },
-    "timepicker": {},
-    "timezone": "browser",
-    "title": "Library Detail Deep-Dive",
-    "uid": "library-detail-deep-dive",
-    "version": 1
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "health_status"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 3,
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "format": "table",
+          "rawSql": "SELECT health_status, repo_count, exposed_cve_count FROM v_package_health_latest WHERE package_name = '$package_name' AND ecosystem = '$ecosystem'",
+          "refId": "A"
+        }
+      ],
+      "title": "Health Status",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "id": 10,
+      "panels": [],
+      "title": "Vulnerability Timeline",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "stacking": {
+              "mode": "normal"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "id": 11,
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT published_date AS time, COUNT(*) AS count, severity AS metric FROM v_package_vulnerabilities_detail WHERE package_name = '$package_name' AND ecosystem = '$ecosystem' AND published_date IS NOT NULL GROUP BY published_date, severity ORDER BY published_date",
+          "refId": "A"
+        }
+      ],
+      "title": "CVE Publication Timeline (Stacked by Severity)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 20,
+      "panels": [],
+      "title": "CVE Details",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "severity"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "exposed_repo_count"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 15
+      },
+      "id": 21,
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "format": "table",
+          "rawSql": "SELECT cve_id, severity, summary, fixed_in_version, published_date, exposed_repo_count FROM v_package_vulnerabilities_detail WHERE package_name = '$package_name' AND ecosystem = '$ecosystem' ORDER BY severity DESC, exposed_repo_count DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "CVE Details",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
+      "id": 30,
+      "panels": [],
+      "title": "Repositories Using This Library",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "has_known_vulnerabilities"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "repo_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "targetBlank": false,
+                    "title": "",
+                    "url": "/d/repo-deep-dive?var-repository=${__value.raw}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "id": 31,
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "format": "table",
+          "rawSql": "SELECT rd.repo_id, COALESCE(t.name, 'Unknown') AS team_name, rd.version, rd.has_known_vulnerabilities FROM repository_dependencies rd JOIN repositories r ON r.repo_id = rd.repo_id LEFT JOIN teams t ON t.team_id = r.team_id WHERE rd.package_name = '$package_name' AND rd.ecosystem = '$ecosystem' ORDER BY rd.has_known_vulnerabilities DESC, rd.repo_id",
+          "refId": "A"
+        }
+      ],
+      "title": "Repositories Using $package_name",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
+      "id": 40,
+      "panels": [],
+      "title": "Service Adoption",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 33
+      },
+      "id": 41,
+      "options": {
+        "orientation": "horizontal"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "format": "table",
+          "rawSql": "SELECT team_name, repo_count, exposed_repos FROM v_package_by_team_latest WHERE package_name = '$package_name' AND ecosystem = '$ecosystem' ORDER BY repo_count DESC",
+          "refId": "A"
+        }
+      ],
+      "title": "Adoption by Team",
+      "type": "barchart"
+    }
+  ],
+  "refresh": "5m",
+  "schemaVersion": 37,
+  "tags": [
+    "security",
+    "dependencies",
+    "library"
+  ],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Package Name",
+        "multi": false,
+        "name": "package_name",
+        "options": [],
+        "query": {
+          "query": "SELECT DISTINCT package_name FROM packages ORDER BY package_name",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "Ecosystem",
+        "multi": false,
+        "name": "ecosystem",
+        "options": [],
+        "query": {
+          "query": "SELECT DISTINCT ecosystem FROM packages ORDER BY ecosystem",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-90d",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "Library Detail Deep-Dive",
+  "uid": "library-detail-deep-dive",
+  "version": 1
 }
