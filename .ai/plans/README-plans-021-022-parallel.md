@@ -1,11 +1,19 @@
 # Plans 021 & 022: Parallel Implementation Strategy for Copilot Delegation
 
-## Status (2026-04-26)
+## Status: COMPLETE — both plans merged 2026-04-26
 
-| Plan | PR | Status | Notes |
-|------|----|--------|-------|
-| 021 — Dependency Vulnerability & EOL Dashboard (FR-5) | [#73](https://github.com/stickleprojects/azure_devops_analyzer/pull/73) | ✅ **Merged** 2026-04-26 (commit `c4346ad`) | All tracks shipped in single PR |
-| 022 — Thoughtworks Tech Radar Publication (FR-6) | [#74](https://github.com/stickleprojects/azure_devops_analyzer/pull/74) | ✅ **Merged** 2026-04-26 (commit `db5ffd6`) | All tracks shipped in single PR; merge conflict with Plan 021 in `src/api/rescan.py` resolved before merge |
+| Plan | Implementation PR | Status |
+|------|------------------|--------|
+| 021 — Dependency Vulnerability & EOL Dashboard (FR-5) | [#73](https://github.com/stickleprojects/azure_devops_analyzer/pull/73) (`c4346ad`) | ✅ Merged 2026-04-26 |
+| 022 — Thoughtworks Tech Radar Publication (FR-6) | [#74](https://github.com/stickleprojects/azure_devops_analyzer/pull/74) (`db5ffd6`) | ✅ Merged 2026-04-26 |
+
+### Post-merge documentation follow-ups
+
+| PR | Date | What it changed |
+|----|------|-----------------|
+| [#75](https://github.com/stickleprojects/azure_devops_analyzer/pull/75) (`efe30d1`) | 2026-04-26 | Recorded both plans complete; added `.claude/settings.json` |
+| [#86](https://github.com/stickleprojects/azure_devops_analyzer/pull/86) (`a206801`) | 2026-05-03 | Wave 1B: PROGRESS.md note describing tech radar schema/categorizer (titled as a feat, but the implementation already shipped in #74 — diff is docs-only, 44 lines in `PROGRESS.md`) |
+| [#89](https://github.com/stickleprojects/azure_devops_analyzer/pull/89) (`7e581ad`) | 2026-05-03 | Plan 021 docs/visualization/requirements alignment (docs-only, 72 lines) |
 
 ### Outcome vs. plan
 
@@ -32,9 +40,9 @@
 
 ---
 
-## Original Plan (Historical)
+## Original Plan (Historical — superseded by actual execution)
 
-The strategy below was the pre-implementation delegation plan. Kept for reference; actual execution was simpler (one PR per plan rather than per track).
+> **This section is preserved for archaeology only.** Everything below was the pre-implementation delegation strategy — three tracks per plan, multiple parallel Copilot agents, six PRs total. Actual execution was simpler: one PR per plan, both implemented by Copilot concurrently. Track-level effort estimates and PR sequencing below did not match reality and should not be used as a template for future plans.
 
 ## Overview
 
