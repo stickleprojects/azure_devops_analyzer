@@ -15,10 +15,11 @@ function mockOk(body: unknown) {
   })
 }
 
-function mockError(status: number, bodyText: string) {
+function mockError(status: number, bodyText: string, statusText = '') {
   mockFetch.mockResolvedValueOnce({
     ok: false,
     status,
+    statusText,
     text: () => Promise.resolve(bodyText),
   })
 }
@@ -33,7 +34,7 @@ describe('triggerGithubRescan', () => {
 
   it('throws an Error with the response body on non-2xx', async () => {
     mockError(500, 'Internal Server Error')
-    await expect(triggerGithubRescan()).rejects.toThrow('Internal Server Error')
+    await expect(triggerGithubRescan()).rejects.toThrow('HTTP 500: Internal Server Error')
   })
 })
 
@@ -47,7 +48,7 @@ describe('triggerAzureDevOpsRescan', () => {
 
   it('throws an Error with the response body on non-2xx', async () => {
     mockError(400, 'Bad Request')
-    await expect(triggerAzureDevOpsRescan()).rejects.toThrow('Bad Request')
+    await expect(triggerAzureDevOpsRescan()).rejects.toThrow('HTTP 400: Bad Request')
   })
 })
 
@@ -61,6 +62,11 @@ describe('getHealth', () => {
 
   it('throws an Error with the response body on non-2xx', async () => {
     mockError(503, 'Service Unavailable')
-    await expect(getHealth()).rejects.toThrow('Service Unavailable')
+    await expect(getHealth()).rejects.toThrow('HTTP 503: Service Unavailable')
+  })
+
+  it('falls back to statusText when body is empty', async () => {
+    mockError(502, '', 'Bad Gateway')
+    await expect(getHealth()).rejects.toThrow('HTTP 502: Bad Gateway')
   })
 })

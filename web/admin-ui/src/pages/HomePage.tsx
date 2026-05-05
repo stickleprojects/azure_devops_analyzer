@@ -1,4 +1,4 @@
-const GRAFANA_BASE = 'http://localhost:3000'
+import { GRAFANA_BASE } from '../config'
 
 const dashboards = [
   { title: 'Home', uid: 'dashboard-home' },

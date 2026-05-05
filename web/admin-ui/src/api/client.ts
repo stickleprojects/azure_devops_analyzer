@@ -4,7 +4,8 @@ async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const response = await fetch(url, options)
   if (!response.ok) {
     const body = await response.text()
-    throw new Error(body)
+    const detail = body.trim() || response.statusText
+    throw new Error(`HTTP ${response.status}: ${detail}`)
   }
   return response.json() as Promise<T>
 }

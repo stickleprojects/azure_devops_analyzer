@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import HealthPage from './HealthPage'
+import { FLOWER_BASE, GRAFANA_BASE } from '../config'
 
 vi.mock('../api/client', () => ({
   getHealth: vi.fn(),
@@ -34,7 +35,7 @@ describe('HealthPage', () => {
     vi.mocked(getHealth).mockResolvedValueOnce({})
     renderPage()
     const link = screen.getByText('Open Flower ↗')
-    expect(link).toHaveAttribute('href', 'http://localhost:5555')
+    expect(link).toHaveAttribute('href', FLOWER_BASE)
     expect(link).toHaveAttribute('target', '_blank')
   })
 
@@ -42,7 +43,7 @@ describe('HealthPage', () => {
     vi.mocked(getHealth).mockResolvedValueOnce({})
     renderPage()
     const link = screen.getByText('Grafana Admin Dashboard ↗')
-    expect(link).toHaveAttribute('href', 'http://localhost:3000/d/admin-dashboard')
+    expect(link).toHaveAttribute('href', `${GRAFANA_BASE}/d/admin-dashboard`)
     expect(link).toHaveAttribute('target', '_blank')
   })
 })

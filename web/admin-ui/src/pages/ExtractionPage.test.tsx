@@ -53,7 +53,7 @@ describe('ExtractionPage', () => {
     renderPage()
     await userEvent.click(screen.getByText('Trigger GitHub Rescan'))
     await waitFor(() =>
-      expect(screen.getByRole('status')).toHaveTextContent('connection refused'),
+      expect(screen.getByRole('alert')).toHaveTextContent('connection refused'),
     )
   })
 

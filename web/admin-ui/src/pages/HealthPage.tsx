@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { getHealth } from '../api/client'
+import { FLOWER_BASE, GRAFANA_BASE } from '../config'
 
 export default function HealthPage() {
   const { data, isLoading, isError, error } = useQuery({
@@ -13,7 +14,7 @@ export default function HealthPage() {
       <h1 className="text-2xl font-bold text-gray-900 mb-4">System Health</h1>
       <div className="flex gap-4 mb-6">
         <a
-          href="http://localhost:5555"
+          href={FLOWER_BASE}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
@@ -21,7 +22,7 @@ export default function HealthPage() {
           Open Flower ↗
         </a>
         <a
-          href="http://localhost:3000/d/admin-dashboard"
+          href={`${GRAFANA_BASE}/d/admin-dashboard`}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-md bg-white border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
