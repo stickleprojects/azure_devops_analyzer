@@ -1,27 +1,11 @@
-import { GRAFANA_BASE } from '../config'
-
-const dashboards = [
-  { title: 'Home', uid: 'dashboard-home' },
-  { title: 'Repositories', uid: 'repo-overview' },
-  { title: 'Security', uid: 'security-dashboard' },
-  { title: 'Technology', uid: 'technology-landscape' },
-  { title: 'Admin', uid: 'admin-dashboard' },
-  { title: 'Library Deep Dive', uid: 'library-detail-deep-dive' },
-  { title: 'Repository Deep Dive', uid: 'repo-deep-dive' },
-  { title: 'Dependency Vulnerabilities', uid: 'dep-vuln-portfolio' },
-  { title: 'Pull Requests', uid: 'pull-requests' },
-  { title: 'Teams', uid: 'team-overview' },
-  { title: 'Services', uid: 'service-overview' },
-  { title: 'Contributors', uid: 'contributor-analytics' },
-  { title: 'Extraction Health', uid: 'extraction-health' },
-]
+import { GRAFANA_BASE, GRAFANA_DASHBOARDS } from '../config'
 
 export default function HomePage() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Grafana Dashboards</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {dashboards.map(({ title, uid }) => (
+        {GRAFANA_DASHBOARDS.map(({ title, uid }) => (
           <a
             key={uid}
             href={`${GRAFANA_BASE}/d/${uid}`}

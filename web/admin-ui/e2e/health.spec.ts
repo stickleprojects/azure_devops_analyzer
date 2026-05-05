@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
+import { FLOWER_BASE, GRAFANA_BASE } from '../src/config'
 
-const FLOWER_BASE = 'http://localhost:5555'
-const GRAFANA_ADMIN = 'http://localhost:3000/d/admin-dashboard'
+const GRAFANA_ADMIN = `${GRAFANA_BASE}/d/admin-dashboard`
 
 test.describe('System Health page — success', () => {
   test.beforeEach(async ({ page }) => {
