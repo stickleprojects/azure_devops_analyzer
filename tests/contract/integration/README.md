@@ -1,5 +1,7 @@
 # Integration Tests (CONTRACT Tests)
 
+_Last reviewed: 2026-04-30_
+
 End-to-end tests that verify actual data flows through the complete pipeline.
 
 **Location:** `tests/contract/integration/`

@@ -7,7 +7,7 @@ Uses the app_client fixture (from tests/contract/api/conftest.py) which
 patches get_session to use the test database session.
 """
 
-from datetime import datetime, date, UTC
+from datetime import datetime, date, timedelta, UTC
 
 import pytest
 
@@ -109,7 +109,7 @@ class TestRadarEndpoints:
     def test_a3_radar_history_sorted_by_date(self, app_client, db_session):
         """A3: GET /api/radar/history?package_name=lodash → 200, sorted by date."""
         today = date.today()
-        yesterday = date(today.year, today.month, max(1, today.day - 1))
+        yesterday = today - timedelta(days=1)
 
         db_session.add(RadarBlipHistory(
             package_name="lodash-a3", ecosystem="npm",

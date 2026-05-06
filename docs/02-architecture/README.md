@@ -1,5 +1,7 @@
 # System Architecture
 
+_Last reviewed: 2026-04-30_
+
 ## Overview
 
 This folder contains technical architecture documentation describing how the Repository Analysis System is designed and implemented.

@@ -1,5 +1,7 @@
 # Plan 018: Contributor ↔ Pull-Request Linking Regression Tests
 
+_Last reviewed: 2026-04-30_
+
 ## Status: IMPLEMENTED
 
 ## Problem

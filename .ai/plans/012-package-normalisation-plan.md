@@ -1,5 +1,7 @@
 # Plan: Package Normalisation — `packages` + `repository_dependencies`
 
+_Last reviewed: 2026-04-30_
+
 ## Status: ✅ Complete
 
 **Branch**: `copilot/implement-plan-012` (foundation merged via PR #38, 2026-04-03)

@@ -1,5 +1,7 @@
 # Dashboard Screenshots
 
+_Last reviewed: 2026-04-30_
+
 This directory holds PNG screenshots of each Grafana dashboard, embedded in `docs/03-operations/visualization.md`.
 
 ## How to Capture Screenshots
