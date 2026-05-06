@@ -123,15 +123,15 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 
 | ID     | Requirement                                                                                 | Priority | Status | Notes                                                                        |
 | ------ | ------------------------------------------------------------------------------------------- | -------- | ------ | ---------------------------------------------------------------------------- |
-| FR-5.1 | System shall provide a comprehensive dashboard showing all dependencies across repositories | High     | ❌     | Dashboard aggregation of unique libraries and usage patterns not yet built   |
-| FR-5.2 | System shall display dependency versions, EOL status, and vulnerability counts per library  | High     | ❌     | Library card views with version, EOL date, and CVE count not yet built       |
-| FR-5.3 | System shall allow filtering dashboard by organization, team, service, and repository       | High     | ❌     | Filter controls for drill-down from portfolio to repository level            |
-| FR-5.4 | System shall highlight libraries with critical vulnerabilities or upcoming EOL dates        | High     | ❌     | Visual indicators (badges/colors) for Critical CVEs and EOL < 90 days        |
-| FR-5.5 | System shall show which repositories depend on each library                                 | Medium   | ❌     | Repository list with version information for each dependency                 |
-| FR-5.6 | System shall track library adoption trends (how many repos using over time)                 | Medium   | ❌     | Historical adoption curve for each library                                   |
+| FR-5.1 | System shall provide a comprehensive dashboard showing all dependencies across repositories | High     | ✅     | `dependency-vulnerability-portfolio.json` — health buckets, top vulnerable packages, usage by team (Plan 021) |
+| FR-5.2 | System shall display dependency versions, EOL status, and vulnerability counts per library  | High     | ✅     | `library-detail-deep-dive.json` — library card, CVE list, repos by team, adoption chart (Plan 021)           |
+| FR-5.3 | System shall allow filtering dashboard by organization, team, service, and repository       | High     | ✅     | `GET /api/packages/health?team=&service=&severity=` filters; dashboard variables for package/ecosystem       |
+| FR-5.4 | System shall highlight libraries with critical vulnerabilities or upcoming EOL dates        | High     | ✅     | `v_package_health_latest` health-status classification; color-coded stat tiles in portfolio dashboard         |
+| FR-5.5 | System shall show which repositories depend on each library                                 | Medium   | ✅     | "Repositories Using This Library" table in `library-detail-deep-dive.json`; `GET /api/packages/library`      |
+| FR-5.6 | System shall track library adoption trends (how many repos using over time)                 | Medium   | ✅     | `v_package_adoption_timeline` view; "Top 10 Package Adoption Trends" time-series panel; `GET /api/packages/adoption` |
 | FR-5.7 | System shall integrate EOL data from endoflife.date and vulnerability data from OSV.dev     | High     | ✅     | Data sources integrated via EOLClient and OSVClient — 2026-01-24             |
 
-**Summary:** 1/7 Complete, 6/7 Not Started
+**Summary:** 7/7 Complete
 
 ---
 
@@ -438,7 +438,7 @@ _Last counted: 2026-03-26_
 - ~~Create core dashboards (9 dashboards)~~ ✅
 - Implement service-level metric aggregation (FR-12.4)
 - ~~Add drill-down navigation~~ ✅
-- Build Dependency Vulnerability & EOL dashboard (FR-5.1–FR-5.6)
+- ~~Build Dependency Vulnerability & EOL dashboard (FR-5.1–FR-5.6)~~ ✅
 
 ### Phase 4: AI & Advanced Features
 

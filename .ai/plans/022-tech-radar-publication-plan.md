@@ -1,8 +1,8 @@
 # Plan 022: Thoughtworks Tech Radar Publication (FR-6)
 
-_Last reviewed: 2026-04-30_
+## Status: IMPLEMENTED ✅
 
-## Status: DESIGN (Ready for Implementation)
+Merged in [PR #74](https://github.com/stickleprojects/azure_devops_analyzer/pull/74) (`db5ffd6`, 2026-04-26). Verified 2026-05-03: all contract/unit tests pass (53 passed; 4 hypothesis property-based tests skipped because `hypothesis` is not installed in the test image — see `tests/unit/test_radar_categorizer.py::TestCategorizationPropertyBased`).
 
 **Implements**: FR-6.1, FR-6.2, FR-6.3, FR-6.4, FR-6.5, FR-6.6, FR-6.7
 

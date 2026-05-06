@@ -2,6 +2,142 @@
 
 ---
 
+## Session: 2026-05-04 — Plan 025 Phase 3 complete (PR #94 merged)
+
+### Summary
+
+Implemented Plan 025 Phase 3: all 12 missing relational drill-down data links across 7 Grafana dashboard JSON files. Added `fieldConfig.overrides[]` entries to table panels so clicking a cell value navigates to the natural target dashboard, passing the value as a template variable where one exists.
+
+Gap map shipped:
+- `security-dashboard` "Top Vulnerable Dependencies" Package → `library-detail-deep-dive?var-package_name`
+- `dep-vuln-portfolio` "Top 20 Vulnerable Packages" package_name → `library-detail-deep-dive?var-package_name`
+- `dep-vuln-portfolio` "Packages Reaching EOL Within 90 Days" package_name → `library-detail-deep-dive?var-package_name`
+- `dep-vuln-portfolio` "Package Usage by Team" team_name → `team-overview?var-team`
+- `library-detail-deep-dive` "Repositories Using $package_name" repo_id → `repo-deep-dive?var-repository` ← highest-value gap
+- `technology-landscape` "EOL Technologies with Affected Repo Count" name → `repo-overview`
+- `technology-landscape` "Repository Stack (by source)" repo_id → `repo-deep-dive?var-repository`
+- `repository-deep-dive` "Vulnerability Details" Package → `library-detail-deep-dive?var-package_name`
+- `repository-deep-dive` "Technologies (Detected Stack)" name → `technology-landscape`
+- `repository-deep-dive` "Open Pull Requests" Title → `pull-requests`
+- `team-overview` "Team Performance Summary" team → `repo-overview`
+- `service-overview` "Technology Stack by Service" service → `technology-landscape`
+
+Two links (EOL Technologies → repo-overview, Technology Stack by Service → technology-landscape) navigate without a filter variable because the target dashboards have no matching template variable. Also normalised dashboard JSON to consistent 2-space indentation.
+
+PR #94 merged 2026-05-04.
+
+### Status of Plan 025
+
+- Phase 2 ✅ PR #85
+- Phase 3 ✅ PR #94
+- Phase 1 (React admin UI) — Copilot workstream, prompt prepared, not started
+
+### Next Session — Pickup Points
+
+1. Verify Phase 1a (React admin UI) PR from Copilot when it arrives — review against Phase 1a acceptance criteria in plan.
+2. Plan 022 Track B (`src/workflows/radar_publication.py`) — next Claude task.
+3. Plan 022 Track C (API endpoints `/api/radar`, `/api/radar/history`, `/api/radar/export`).
+4. PR #83 (Plan 024 auth error taxonomy) — still open, separate workstream.
+5. Phase 1a manual click-through verification (one gap per dashboard) still pending.
+
+---
+
+## Session: 2026-05-03 — Wave 1 Closeout + Plan 020 Complete (PR #90 merged)
+
+### Summary
+
+Confirmed Wave 1 (parallel coding-agent batch) is complete: all four wave prompts shipped on 2026-05-03 via PRs #85 (1A — Plan 025 Phase 2 top-link bar), #86 (1B — Plan 022 Track A radar schema/categorizer), #87 (1C — Plan 020 Component 1 property tests), #88 (1D — Plan 020 Component 3 extraction-health observability).
+
+Reviewed PR #90 (Plan 020 Component 2 — live-API nightly monitoring) — the deferred-from-Wave-1 piece because it depends on canary/live secrets. Posted `CHANGES_REQUESTED` review with seven items (2 critical, 3 moderate, 2 nits):
+
+1. **Critical**: `AzureDevOpsExtractor.get_projects()` called with no args, but signature requires `organization: str` — would TypeError on first nightly run.
+2. **Critical**: `project.id` accessed on `ProjectData`, which has only `name`/`description`/`organization_name` — AttributeError; also passed to wrong positional slot of `get_repositories(organization, project=None)`.
+3. **Moderate**: `Repository.repo_id` lookup uses repo slug instead of `repo_data.repo_id` — will never match, causing duplicate-insert failures on retry.
+4. **Moderate**: skip messages reference `GITHUB_TOKEN`/`AZURE_DEVOPS_PAT` fallbacks that the code intentionally rejects — misleading.
+5. **Moderate**: README claims canary repos exercise mixed-case identity invariants, but the test only asserts `count >= 1` — no normalization assertion.
+6. **Nit**: hoist intra-method imports to module top.
+7. **Nit**: replace Slack-style `:warning:` with literal `⚠️` so it renders in GitHub Issues.
+
+Review explicitly required `gh pr checks` green AND a successful `workflow_dispatch` run of `live-api-nightly` before declaring done (CI alone doesn't exercise `live_api`-marked tests, so a green PR is misleading).
+
+Secrets consolidation decision: instead of provisioning new `CANARY_GITHUB_TOKEN` / `CANARY_AZURE_DEVOPS_PAT` secrets as Plan 020 originally prescribed, reused the existing read-only `REPO_ANALYZER_GITHUB_TOKEN` / `AZURE_DEVOPS_PAT` / `AZURE_DEVOPS_ORG_URL` secrets that already serve other workflows. The original plan's defense-in-depth rationale was overcautious — the existing tokens are already scoped appropriately and the duplication added rotation/provisioning friction without security benefit. User pasted the follow-up consolidation prompt to Copilot, who landed it as commit 5f12b9d on the PR #90 branch.
+
+CI/architecture decision: live-API tests should stay in their own non-required workflow rather than fold into PR CI — non-deterministic external APIs would turn reliable monitoring into flaky gating.
+
+**PR #90 merged 2026-05-03 (commit 36762c5).** Plan 020 is now fully complete: Components 1 (PR #87), 2 (PR #90), 3 (PR #88).
+
+### Files Modified
+
+- `.ai/prompts/README.md` — marked Wave 1 entries with PR links and shipped status; Wave 2 now reflects PR #90 merged + remaining drafted-on-demand items
+- `.ai/plans/020-property-based-live-api-observability.md` — flipped status header from PARTIAL to COMPLETE; ticked the success-criteria items satisfied by merged code (manual verification items at lines 350/358 left unticked — see note below)
+- `PROGRESS.md` (this entry)
+- Memory updates: `MEMORY.md` (Wave 1 closeout, Plan 020 fully complete), `web-ui-decision.md` (Wave 1 status + Wave 2 candidates)
+
+### Status of Plan 020 / 022 / 025
+
+- **Plan 020**: ✅ COMPLETE. All three components merged.
+- **Plan 022**: Track A merged. Tracks B (workflow) and C (API endpoints) outstanding.
+- **Plan 025**: Phase 2 merged. Phase 3 (drill-downs) and Phase 1 (React MVP) outstanding.
+
+### Outstanding manual verifications (Plan 020)
+
+Two success-criteria items require manual verification against running infrastructure and were not ticked in the plan even though the supporting code is in place:
+
+- **Line 350**: confirm that removing `.strip().lower()` from `get_or_create_contributor` causes `test_idempotent`, `test_case_variants_collapse`, and `test_whitespace_variants_collapse` to fail. ~5-minute exercise; useful sanity check that the property tests do what we think.
+- **Line 358**: confirm the alert rule fires on a sustained invariant violation (e.g. inject a synthetic orphan into a staging DB and watch Grafana). Requires staging environment access.
+
+### Next Session — Pickup Points
+
+1. Optionally clear the two manual verifications above and tick the remaining boxes in Plan 020.
+2. Draft Wave 2 prompts (priorities: Plan 025 Phase 3 drill-downs, then Plan 022 Track B/C).
+3. PR #83 (Plan 024 auth error taxonomy) is still open — separate workstream.
+
+---
+
+## Session: 2026-05-03 — Wave 1B: Tech Radar Schema and Categorization Engine (Plan 022 Track A)
+
+### Summary
+
+Implemented Wave 1B (Plan 022 Track A): Tech Radar schema migration, Python categorization engine,
+config file, and full test suite. All files were already present in the repository from a prior
+session; this session verified and confirmed the implementation is complete and CI-green.
+
+### Files Created / Verified
+
+**Schema (Part A):**
+- `database/migrations/018_tech_radar_schema.sql` — three idempotent tables:
+  `radar_publications`, `radar_blips`, `radar_blip_history`
+
+**Categorization Engine (Part B):**
+- `src/analyzers/radar_categorization.py` — `Ring`, `Quadrant`, `RadarBlip`, `RadarCategorizer`
+  with priority order EOL > CVE Exposure > Adoption Metrics
+- `src/analyzers/radar_categorization_config.json` — ring thresholds and quadrant mapping
+- `src/database/models/radar.py` — SQLAlchemy ORM models for the three radar tables (supporting
+  the schema contract tests)
+
+**Tests (Part D):**
+- `tests/contract/database/test_radar_schema.py` — 5 schema contract tests (S1–S5)
+- `tests/contract/database/test_radar_categorization.py` — 6 categorization contract tests (C1–C6)
+- `tests/unit/test_radar_categorizer.py` — deterministic tests (C1–C6 + edge cases) and
+  `hypothesis`-based property tests
+
+### Architecture Compliance
+
+- `radar_categorization.py` has zero imports from `src/extractors/`, `src/database/storage.py`,
+  or `src/workflows/` — fully platform-agnostic
+- `hypothesis>=6.100.0` already present in `requirements.txt`
+
+### CI Status
+
+Tests workflow passed on `main` (run 25276545853, 0 failed jobs).
+
+### Next Steps
+
+- Track B (workflow — `src/workflows/radar_publication.py`) — separate PR
+- Track C (API endpoints `/api/radar`, `/api/radar/history`, `/api/radar/export`) — separate PR
+
+---
+
 ## Session: 2026-05-03 — Plan 025 (née 024) Investigation Closeout
 
 ### Summary

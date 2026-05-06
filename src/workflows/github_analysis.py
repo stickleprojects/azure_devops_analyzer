@@ -175,6 +175,28 @@ class GitHubAnalysisWorkflow:
             with session_scope() as session:
                 complete_extraction_run(session, run_id)
 
+            # Run health check at the tail of a successful extraction batch.
+            # Wrapped in try/except so a bug in health-checking can never
+            # crash the extraction workflow (Plan 020 Compatibility Note).
+            try:
+                from src.utils.extraction_health import compute_extraction_health
+                from src.utils.metrics import emit_health_report
+
+                with session_scope() as session:
+                    report = compute_extraction_health(
+                        session, platform=org_data.platform.value
+                    )
+                emit_health_report(report)
+                if not report.is_healthy:
+                    logger.warning(
+                        "Extraction health violations detected after %s extraction",
+                        org_data.platform.value,
+                    )
+            except Exception as health_exc:
+                logger.warning(
+                    "Extraction health check failed (non-fatal): %s", health_exc
+                )
+
     def _process_repository(self, org_data, repo_data, run_id):
         """Process a single repository."""
         logger.info("    Processing repo: %s", repo_data.name)
