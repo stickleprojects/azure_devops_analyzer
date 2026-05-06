@@ -7,7 +7,7 @@ radar_blip_history rows are persisted and queried correctly.
 Requires a live PostgreSQL test database (see tests/contract/conftest.py).
 """
 
-from datetime import datetime, date, UTC
+from datetime import datetime, date, timedelta, UTC
 
 import pytest
 
@@ -166,7 +166,7 @@ class TestRadarSchema:
     def test_s5_blip_history_movement_timeline(self, db_session):
         """S5: Query radar_blip_history for one package — correct movement timeline."""
         today = date.today()
-        yesterday = date(today.year, today.month, max(1, today.day - 1))
+        yesterday = today - timedelta(days=1)
 
         h1 = RadarBlipHistory(
             package_name="timeline-pkg-s5",

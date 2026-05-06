@@ -1,5 +1,7 @@
 # Multi-Platform Repository Analysis System
 
+_Last reviewed: 2026-04-30_
+
 ## Overview
 
 This system analyzes repositories from multiple platforms (Azure DevOps and GitHub) and stores comprehensive metrics for visualization in Grafana dashboards. It provides insights into code quality, security vulnerabilities, contributor activity, pull request patterns, and repository health.

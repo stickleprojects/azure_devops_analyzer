@@ -1,5 +1,7 @@
 # Documentation Navigator
 
+_Last reviewed: 2026-04-30_
+
 Welcome to the **Repository Analysis System** documentation. This folder contains strategic, architectural, operational, and implementation guidance organized for easy navigation.
 
 ## Quick Navigation

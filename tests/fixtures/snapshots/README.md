@@ -1,5 +1,7 @@
 # Real-API Snapshots
 
+_Last reviewed: 2026-04-30_
+
 This directory contains anonymised recordings of real API responses from
 GitHub and Azure DevOps. They serve as a test corpus that exercises the
 same data shapes as production traffic, without requiring live credentials

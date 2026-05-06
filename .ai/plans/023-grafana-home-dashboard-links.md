@@ -1,5 +1,7 @@
 # Plan 023: Add Missing Dashboards to Grafana Home Navigation
 
+_Last reviewed: 2026-04-30_
+
 ## Status: DESIGN (Ready for Implementation)
 
 **Implements**: Navigation gaps on the Grafana Home dashboard. No new functional requirement; pure UX/discoverability fix.
