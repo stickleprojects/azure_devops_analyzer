@@ -305,6 +305,23 @@ services:
     networks:
       - analyzer-network
 
+  # ===========================================
+  # Admin UI - React frontend for admin & operational workflows
+  # ===========================================
+  admin-ui:
+    build:
+      context: web/admin-ui
+      dockerfile: Dockerfile
+    container_name: analyzer-admin-ui
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      extraction-api:
+        condition: service_started
+    networks:
+      - analyzer-network
+
 volumes:
   timescaledb_data:
     driver: local
