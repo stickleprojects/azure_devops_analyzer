@@ -19,6 +19,7 @@ AS $$
     ),
     classified AS (
         SELECT
+            msg,
             CASE
                 WHEN msg LIKE '%rate limit%'
                   OR msg LIKE '%secondary rate limit%'
@@ -73,40 +74,59 @@ AS $$
                 WHEN msg LIKE '%api error%'
                   OR msg LIKE '%upstream api%' THEN 'PLATFORM_API'
                 ELSE 'UNKNOWN'
-            END AS category,
+            END AS category
+        FROM normalized
+    ),
+    finalized AS (
+        SELECT
+            category,
             CASE
-                WHEN msg LIKE '%bad credentials%' THEN 'AUTH_TOKEN_INVALID'
-                WHEN msg LIKE '%token has expired%'
-                  OR msg LIKE '%personal access token used has expired%' THEN 'AUTH_TOKEN_EXPIRED'
-                WHEN msg LIKE '%no token%'
+                WHEN category = 'AUTH' AND msg LIKE '%bad credentials%' THEN 'AUTH_TOKEN_INVALID'
+                WHEN category = 'AUTH' AND (
+                    msg LIKE '%token has expired%'
+                  OR msg LIKE '%personal access token used has expired%'
+                ) THEN 'AUTH_TOKEN_EXPIRED'
+                WHEN category = 'AUTH' AND (
+                    msg LIKE '%no token%'
                   OR msg LIKE '%missing token%'
-                  OR msg LIKE '%token not provided%' THEN 'AUTH_TOKEN_MISSING'
-                WHEN msg LIKE '%requires authentication%'
+                  OR msg LIKE '%token not provided%'
+                ) THEN 'AUTH_TOKEN_MISSING'
+                WHEN category = 'AUTH' AND (
+                    msg LIKE '%requires authentication%'
                   OR msg LIKE '%requires user authentication%'
                   OR msg LIKE '%401%'
-                  OR msg LIKE '%unauthorized%' THEN 'AUTH_UNAUTHORIZED'
-                WHEN msg LIKE '%resource not accessible by integration%'
-                  OR msg LIKE '%insufficient scopes%' THEN 'PERMISSION_SCOPE_INSUFFICIENT'
-                WHEN msg LIKE '%access denied%'
+                  OR msg LIKE '%unauthorized%'
+                ) THEN 'AUTH_UNAUTHORIZED'
+                WHEN category = 'PERMISSION' AND (
+                    msg LIKE '%resource not accessible by integration%'
+                  OR msg LIKE '%insufficient scopes%'
+                ) THEN 'PERMISSION_SCOPE_INSUFFICIENT'
+                WHEN category = 'PERMISSION' AND (
+                    msg LIKE '%access denied%'
                   OR msg LIKE '%not authorized to access this resource%'
                   OR msg LIKE '%vs30063%'
-                  OR msg LIKE '%tf400813%' THEN 'PERMISSION_RESOURCE_DENIED'
-                WHEN msg LIKE '%account disabled%'
-                  OR msg LIKE '%account suspended%' THEN 'PERMISSION_ACCOUNT_DISABLED'
-                WHEN msg LIKE '%permission denied%'
+                  OR msg LIKE '%tf400813%'
+                ) THEN 'PERMISSION_RESOURCE_DENIED'
+                WHEN category = 'PERMISSION' AND (
+                    msg LIKE '%account disabled%'
+                  OR msg LIKE '%account suspended%'
+                ) THEN 'PERMISSION_ACCOUNT_DISABLED'
+                WHEN category = 'PERMISSION' AND (
+                    msg LIKE '%permission denied%'
                   OR msg LIKE '%forbidden%'
                   OR msg LIKE '%403%'
-                  OR msg LIKE '%not authorized%' THEN 'PERMISSION_FORBIDDEN'
+                  OR msg LIKE '%not authorized%'
+                ) THEN 'PERMISSION_FORBIDDEN'
                 ELSE NULL
             END AS subcategory
-        FROM normalized
+        FROM classified
     )
     SELECT
         category AS error_category,
         subcategory AS error_subcategory,
         category = 'AUTH' AS is_credential_failure,
         category = 'PERMISSION' AS is_authorization_failure
-    FROM classified
+    FROM finalized
 $$;
 
 CREATE OR REPLACE VIEW v_extraction_runs_recent AS
@@ -133,10 +153,10 @@ LIMIT 20;
 CREATE OR REPLACE VIEW v_auth_errors_by_platform AS
 SELECT
     r.platform,
-    c.error_category,
     COUNT(*) AS error_count,
     COUNT(DISTINCT r.run_id) AS affected_runs,
-    MAX(r.updated_at) AS last_error_time
+    MAX(r.updated_at) AS last_error_time,
+    c.error_category
 FROM extraction_runs r
 CROSS JOIN LATERAL classify_extraction_error(r.error_message) c
 WHERE r.status = 'failed'
