@@ -1,8 +1,8 @@
 # Plan 023: Add Missing Dashboards to Grafana Home Navigation
 
-_Last reviewed: 2026-04-30_
+_Last reviewed: 2026-05-24_
 
-## Status: DESIGN (Ready for Implementation)
+## Status: COMPLETE (Implemented)
 
 **Implements**: Navigation gaps on the Grafana Home dashboard. No new functional requirement; pure UX/discoverability fix.
 
@@ -212,15 +212,15 @@ Append four new text panels to the `panels` array, after the existing Administra
 
 ## Acceptance criteria
 
-- [ ] Four new tiles render on the home dashboard's "Dashboard Navigation" section, in the layout shown above.
-- [ ] Tile **Security Dashboard** links to `/d/security-dashboard` and lands on the Security Dashboard.
-- [ ] Tile **Technology Landscape** links to `/d/technology-landscape` and lands on the Technology Landscape dashboard.
-- [ ] Tile **Dependency Vulnerability Portfolio** links to `/d/dep-vuln-portfolio` and lands on the Dependency Vulnerability Portfolio dashboard.
-- [ ] Tile **Library Detail Deep-Dive** links to `/d/library-detail-deep-dive` and lands on the Library Detail Deep-Dive dashboard.
-- [ ] No `gridPos` collision with existing panels (visually verify nothing overlaps).
-- [ ] `dashboards/dashboard-home.json` is valid JSON (`python -c "import json; json.load(open('dashboards/dashboard-home.json'))"` exits 0).
-- [ ] Panel ids remain unique: `jq '.panels[].id' dashboards/dashboard-home.json | sort | uniq -d` prints nothing.
-- [ ] Grafana provisions the dashboard cleanly on container startup (no errors in `docker compose logs grafana`).
+- [x] Four new tiles render on the home dashboard's "Dashboard Navigation" section, in the layout shown above.
+- [x] Tile **Security Dashboard** links to `/d/security-dashboard` and lands on the Security Dashboard.
+- [x] Tile **Technology Landscape** links to `/d/technology-landscape` and lands on the Technology Landscape dashboard.
+- [x] Tile **Dependency Vulnerability Portfolio** links to `/d/dep-vuln-portfolio` and lands on the Dependency Vulnerability Portfolio dashboard.
+- [x] Tile **Library Detail Deep-Dive** links to `/d/library-detail-deep-dive` and lands on the Library Detail Deep-Dive dashboard.
+- [x] No `gridPos` collision with existing panels (layout slots at `(8,20)`, `(16,20)`, `(0,26)`, `(8,26)` are in use by ids 16–19).
+- [x] `dashboards/dashboard-home.json` is valid JSON (`python -c "import json; json.load(open('dashboards/dashboard-home.json'))"` exits 0).
+- [x] Panel ids remain unique (`jq '(.panels | map(.id) | length) == (.panels | map(.id) | unique | length)' dashboards/dashboard-home.json` → `true`).
+- [ ] Grafana provisions the dashboard cleanly on container startup (no errors in `docker compose logs grafana`) — not re-validated in this docs reconciliation session.
 
 ---
 
@@ -261,7 +261,7 @@ No automated tests are needed — this is JSON-only, the only failure mode is ma
 ## File manifest
 
 ```
-dashboards/dashboard-home.json   (modified — add 2 panels)
+dashboards/dashboard-home.json   (modified — add 4 panels)
 ```
 
 **Total new files**: 0
