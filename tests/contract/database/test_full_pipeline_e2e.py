@@ -14,6 +14,7 @@ Runs in CI under `-m 'not live_api'` (the standard test-runner command).
 
 import pytest
 from datetime import datetime, timezone, timedelta, date
+from uuid import uuid4
 from sqlalchemy import text
 
 from tests.fixtures.fixture_extractor import FixtureExtractor
@@ -129,6 +130,79 @@ def _load_scenario(db_session, scenario_name: str):
 
     db_session.commit()
     return repo
+
+
+# =============================================================================
+# Extraction Error Taxonomy E2E
+# =============================================================================
+
+@pytest.mark.integration
+def test_extraction_error_taxonomy_views_and_unknown_bucket(db_session):
+    now = datetime.now(timezone.utc)
+
+    rows = [
+        (uuid4(), "github", "401 bad credentials"),
+        (uuid4(), "azure_devops", "Access denied: not authorized to access this resource"),
+        (uuid4(), "github", "403 secondary rate limit exceeded"),
+        (uuid4(), "azure_devops", "connection reset by peer"),
+        (uuid4(), "github", "totally unrecognized extractor panic"),
+    ]
+
+    for run_id, platform, error_message in rows:
+        db_session.execute(
+            text(
+                """
+                INSERT INTO extraction_runs
+                (run_id, platform, organization_name, project_name, status, total_repositories, processed_repositories, started_at, updated_at, completed_at, error_message)
+                VALUES
+                (:run_id, :platform, 'fixture-org', NULL, 'failed', 1, 0, :now, :now, :now, :error_message)
+                """
+            ),
+            {
+                "run_id": str(run_id),
+                "platform": platform,
+                "now": now,
+                "error_message": error_message,
+            },
+        )
+    db_session.commit()
+
+    classified = db_session.execute(
+        text(
+            """
+            SELECT run_id, error_category
+            FROM v_extraction_runs_recent
+            WHERE run_id IN (:r1, :r2, :r3, :r4, :r5)
+            """
+        ),
+        {
+            "r1": str(rows[0][0]),
+            "r2": str(rows[1][0]),
+            "r3": str(rows[2][0]),
+            "r4": str(rows[3][0]),
+            "r5": str(rows[4][0]),
+        },
+    ).fetchall()
+
+    categories = {str(row.run_id): row.error_category for row in classified}
+    assert categories[str(rows[0][0])] == "AUTH"
+    assert categories[str(rows[1][0])] == "PERMISSION"
+    assert categories[str(rows[2][0])] == "RATE_LIMIT"
+    assert categories[str(rows[3][0])] == "NETWORK"
+    assert categories[str(rows[4][0])] == "UNKNOWN"
+
+    unknown_rows = db_session.execute(
+        text(
+            """
+            SELECT message_prefix, occurrences
+            FROM v_extraction_errors_unknown_recent
+            WHERE message_prefix ILIKE 'totally unrecognized extractor panic%'
+            """
+        )
+    ).fetchall()
+
+    assert unknown_rows
+    assert sum(row.occurrences for row in unknown_rows) >= 1
 
 
 # =============================================================================

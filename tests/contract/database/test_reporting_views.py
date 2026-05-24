@@ -876,6 +876,7 @@ def test_v_auth_errors_by_platform_and_total(db_session):
     now = datetime.now()
     run_gh = uuid4()
     run_ado = uuid4()
+    run_perm = uuid4()
     run_other = uuid4()
 
     db_session.execute(
@@ -885,19 +886,57 @@ def test_v_auth_errors_by_platform_and_total(db_session):
             (run_id, platform, organization_name, project_name, status, total_repositories, processed_repositories, started_at, updated_at, completed_at, error_message)
             VALUES
             (:run_gh, 'github', 'org', NULL, 'failed', 1, 0, :now, :now, :now, '401 Bad credentials'),
-            (:run_ado, 'azure_devops', 'org', NULL, 'failed', 1, 0, :now, :now, :now, 'The requested resource requires user authentication'),
+            (:run_ado, 'azure_devops', 'org', NULL, 'failed', 1, 0, :now, :now, :now, 'Access Denied: The Personal Access Token used has expired.'),
+            (:run_perm, 'github', 'org', NULL, 'failed', 1, 0, :now, :now, :now, 'Access denied: not authorized to access this resource'),
             (:run_other, 'github', 'org', NULL, 'failed', 1, 0, :now, :now, :now, 'network timeout')
             """
         ),
-        {"run_gh": str(run_gh), "run_ado": str(run_ado), "run_other": str(run_other), "now": now},
+        {
+            "run_gh": str(run_gh),
+            "run_ado": str(run_ado),
+            "run_perm": str(run_perm),
+            "run_other": str(run_other),
+            "now": now,
+        },
     )
     db_session.commit()
 
-    rows = db_session.execute(text("SELECT platform, error_count FROM v_auth_errors_by_platform ORDER BY platform")).fetchall()
+    rows = db_session.execute(
+        text("SELECT platform, error_category, error_count FROM v_auth_errors_by_platform ORDER BY platform, error_category")
+    ).fetchall()
     total = db_session.execute(text("SELECT auth_errors FROM v_auth_errors_24h_total")).scalar_one()
+    recent_total = db_session.execute(
+        text(
+            """
+            SELECT COUNT(*)
+            FROM v_extraction_runs_recent
+            WHERE run_id IN (:run_gh, :run_ado, :run_perm, :run_other)
+              AND error_category IN ('AUTH', 'PERMISSION')
+            """
+        ),
+        {"run_gh": str(run_gh), "run_ado": str(run_ado), "run_perm": str(run_perm), "run_other": str(run_other)},
+    ).scalar_one()
+    category_rows = db_session.execute(
+        text(
+            """
+            SELECT run_id, error_category, error_subcategory
+            FROM v_extraction_runs_recent
+            WHERE run_id IN (:run_gh, :run_ado, :run_perm)
+            """
+        ),
+        {"run_gh": str(run_gh), "run_ado": str(run_ado), "run_perm": str(run_perm)},
+    ).fetchall()
 
-    assert len(rows) == 2
-    assert total == 2
+    assert len(rows) == 3
+    assert total == 3
+    assert recent_total == total
+    expected = {
+        str(run_gh): ("AUTH", "AUTH_TOKEN_INVALID"),
+        str(run_ado): ("AUTH", "AUTH_TOKEN_EXPIRED"),
+        str(run_perm): ("PERMISSION", "PERMISSION_RESOURCE_DENIED"),
+    }
+    for row in category_rows:
+        assert expected[str(row.run_id)] == (row.error_category, row.error_subcategory)
 
 
 @pytest.mark.integration
@@ -943,31 +982,41 @@ def test_v_extraction_metrics_with_errors_categories(db_session):
             VALUES
             (:id1, :run_id, 'repo/a', 'github', 'failed', :now, :now, 3, '401 unauthorized', 0, 0, 0, 0, 0, 0, :c1),
             (:id2, :run_id, 'repo/b', 'github', 'failed', :now, :now, 3, 'bad credentials', 0, 0, 0, 0, 0, 0, :c2),
-            (:id3, :run_id, 'repo/c', 'github', 'failed', :now, :now, 3, 'unexpected parser failure', 0, 0, 0, 0, 0, 0, :c3)
+            (:id3, :run_id, 'repo/c', 'github', 'failed', :now, :now, 3, '403 secondary rate limit exceeded', 0, 0, 0, 0, 0, 0, :c3),
+            (:id4, :run_id, 'repo/d', 'github', 'failed', :now, :now, 3, 'unexpected parser failure', 0, 0, 0, 0, 0, 0, :c4)
             """
         ),
         {
             "id1": 900001,
             "id2": 900002,
             "id3": 900003,
+            "id4": 900004,
             "run_id": str(run_id),
             "now": now,
             "c1": str(uuid4()),
             "c2": str(uuid4()),
             "c3": str(uuid4()),
+            "c4": str(uuid4()),
         },
     )
     db_session.commit()
 
     categories = db_session.execute(
-        text("SELECT error_message, error_category FROM v_extraction_metrics_with_errors WHERE run_id = :run_id"),
+        text(
+            """
+            SELECT error_message, error_category, error_subcategory
+            FROM v_extraction_metrics_with_errors
+            WHERE run_id = :run_id
+            """
+        ),
         {"run_id": str(run_id)},
     ).fetchall()
 
-    category_map = {row.error_message: row.error_category for row in categories}
-    assert category_map["401 unauthorized"] == "AUTH_401_UNAUTHORIZED"
-    assert category_map["bad credentials"] == "BAD_CREDENTIALS"
-    assert category_map["unexpected parser failure"] == "OTHER_ERROR"
+    category_map = {row.error_message: (row.error_category, row.error_subcategory) for row in categories}
+    assert category_map["401 unauthorized"] == ("AUTH", "AUTH_UNAUTHORIZED")
+    assert category_map["bad credentials"] == ("AUTH", "AUTH_TOKEN_INVALID")
+    assert category_map["403 secondary rate limit exceeded"] == ("RATE_LIMIT", None)
+    assert category_map["unexpected parser failure"] == ("UNKNOWN", None)
 
 
 @pytest.mark.integration
@@ -989,12 +1038,21 @@ def test_v_extraction_runs_recent_includes_error_category(db_session):
     db_session.commit()
 
     row = db_session.execute(
-        text("SELECT error_category FROM v_extraction_runs_recent WHERE run_id = :run_id"),
+        text(
+            """
+            SELECT error_category, error_subcategory, is_credential_failure, is_authorization_failure
+            FROM v_extraction_runs_recent
+            WHERE run_id = :run_id
+            """
+        ),
         {"run_id": str(run_id)},
     ).fetchone()
 
     assert row is not None
-    assert row.error_category == "AUTH_401_UNAUTHORIZED"
+    assert row.error_category == "AUTH"
+    assert row.error_subcategory == "AUTH_TOKEN_INVALID"
+    assert row.is_credential_failure is True
+    assert row.is_authorization_failure is False
 
 
 # =============================================================================

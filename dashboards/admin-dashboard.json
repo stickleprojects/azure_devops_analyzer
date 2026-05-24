@@ -682,7 +682,7 @@
           "refId": "A"
         }
       ],
-      "title": "Auth Failures (24h)",
+      "title": "Credential + Authorization Failures (24h)",
       "type": "stat"
     },
     {
@@ -997,7 +997,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT repository_name as repository, platform, status, error_category, error_message, extraction_started_at, extraction_completed_at, extraction_duration_seconds FROM v_extraction_metrics_with_errors;",
+          "rawSql": "SELECT repository_name as repository, platform, status, error_category, error_subcategory, error_message, extraction_started_at, extraction_completed_at, extraction_duration_seconds FROM v_extraction_metrics_with_errors;",
           "refId": "A"
         }
       ],
@@ -1035,12 +1035,129 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT platform, error_count, affected_runs, last_error_time FROM v_auth_errors_by_platform;",
+          "rawSql": "SELECT platform, error_category, error_count, affected_runs, last_error_time FROM v_auth_errors_by_platform;",
           "refId": "A"
         }
       ],
       "title": "Auth Errors by Platform (24h)",
       "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 8,
+        "x": 0,
+        "y": 53
+      },
+      "id": 63,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT COALESCE(SUM(error_count), 0) AS authorization_errors FROM v_auth_errors_by_platform WHERE error_category = 'PERMISSION';",
+          "refId": "A"
+        }
+      ],
+      "title": "Authorization Failures (24h)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 16,
+        "x": 8,
+        "y": 53
+      },
+      "id": 64,
+      "options": {
+        "showHeader": true
+      },
+      "pluginVersion": "11.0.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "TimescaleDB"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT day, message_prefix, occurrences FROM v_extraction_errors_unknown_recent ORDER BY occurrences DESC;",
+          "refId": "A"
+        }
+      ],
+      "title": "Unrecognized Error Patterns (last 7 days)",
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "TimescaleDB"
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 57
+      },
+      "id": 65,
+      "options": {
+        "content": "**Error taxonomy quick help**\\n\\n- **AUTH** = credential/identity failures\\n- **PERMISSION** = authorization/scope/resource denial\\n- Use `error_subcategory` for actionable diagnosis and triage\\n- Unknown patterns are surfaced in the panel above for classifier updates",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.0",
+      "title": "Error Taxonomy Guide",
+      "type": "text"
     }
   ],
   "refresh": "30s",
