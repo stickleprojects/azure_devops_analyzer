@@ -2,6 +2,70 @@
 
 ---
 
+## Session: 2026-05-24 — Plan 022 Track B reconciliation + workflow e2e test
+
+### Summary
+
+Picked up "commence Plan 022 Track B" from the 2026-05-04 pickup list, but on
+inspection **Track B (and Track C) were already complete** — merged in PR #74
+(`db5ffd6`, 2026-04-26), eight days *before* the 2026-05-04 entry that listed
+them as outstanding. The 2026-05-04 "Next Session — Pickup Points" were stale;
+memory had already been corrected to "Plan 022 fully complete, all tracks merged
+in PR #74". `src/workflows/radar_publication.py` and the three `/api/radar*`
+endpoints in `src/api/rescan.py` are present and tested.
+
+The one genuine gap: `RadarPublicationWorkflow.run()` was never exercised
+end-to-end. `_detect_movements` is unit-tested with a mocked session
+(`test_radar_categorizer.py::TestDetectMovements`) and `test_radar_schema.py`
+*re-implements* the storage steps by hand ("simulate what the workflow does")
+rather than calling the workflow — so `_load_package_metrics` and
+`_store_publication` had no direct coverage.
+
+### What Was Done
+
+- Added `tests/contract/database/test_radar_workflow_e2e.py` — 3 tests that seed
+  `repositories` + `repository_dependencies` + `packages` in a live DB and call
+  `run()`:
+  1. **First publication** — blips categorized into Assess/Trial/Hold over real
+     metrics, correct quadrants, cold-start semantics (`is_new=False` for all),
+     one history row per blip with `prior_ring=None`, excluded package absent.
+  2. **Second publication** — a package moving Assess→Trial (`is_moved`), a
+     brand-new package (`is_new`), and a removed package (history
+     `current_ring="Removed"`, delta `-2`); asserts exactly one `is_latest`
+     publication and that it is pub2.
+  3. **Exclusions** — `internal-*` / `test-package-*` globs never become blips.
+- Test-only change; no source touched.
+
+### Test gotcha (resolved)
+
+`radar_blip_history.publication_date` is a `DATE`, so two `run()` calls on the
+same calendar day are indistinguishable by date. The movement test isolates the
+second cycle's history rows by `id > max_hist_id_before` rather than by
+`publication_date`.
+
+### Validation
+
+- `bash scripts/run-tests-docker.sh tests/contract/database/test_radar_workflow_e2e.py` → 3 passed
+- `bash scripts/run-tests-docker.sh tests/contract/database/` → **242 passed** (new tests + all existing radar schema/categorization tests, no regressions)
+
+### Status of Plan 022
+
+- ✅ COMPLETE (all tracks merged in PR #74). This session only adds workflow
+  e2e coverage that was missing.
+
+### Next Session — Pickup Points
+
+1. **Plan 025 Phase 1** — React admin MVP at `web/admin-ui/` (Phases 2 + 3 already shipped). Earmarked Copilot workstream.
+2. **Plan 020 manual verifications** (optional) — `.strip().lower()` mutation check + synthetic-orphan alert test.
+
+> **Correction to 2026-05-04 pickup points:** items 2 and 3 ("Plan 022 Track B" and "Track C") were already done in PR #74. Disregard.
+
+### Branch
+
+- `test/plan-022-workflow-e2e` — doc + one new test file. Not yet committed.
+
+---
+
 ## Session: 2026-05-04 — Plan 025 Phase 3 complete (PR #94 merged)
 
 ### Summary

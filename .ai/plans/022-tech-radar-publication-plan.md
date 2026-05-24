@@ -2,7 +2,9 @@
 
 ## Status: IMPLEMENTED ✅
 
-Merged in [PR #74](https://github.com/stickleprojects/azure_devops_analyzer/pull/74) (`db5ffd6`, 2026-04-26). Verified 2026-05-03: all contract/unit tests pass (53 passed; 4 hypothesis property-based tests skipped because `hypothesis` is not installed in the test image — see `tests/unit/test_radar_categorizer.py::TestCategorizationPropertyBased`).
+Merged in [PR #74](https://github.com/stickleprojects/azure_devops_analyzer/pull/74) (`db5ffd6`, 2026-04-26). Verified 2026-05-03: all contract/unit tests pass (53 passed; 4 hypothesis property-based tests skipped because `hypothesis` is not installed in the test image — see `tests/unit/test_radar_categorizer.py::TestCategorizationPropertyBased`). (`hypothesis` later added to the test image in PR #93, so those 4 now run.)
+
+**2026-05-24 follow-up:** added `tests/contract/database/test_radar_workflow_e2e.py` — end-to-end coverage of `RadarPublicationWorkflow.run()` against a live DB (previously `_load_package_metrics` / `_store_publication` had no direct tests; `test_radar_schema.py` only simulated the storage steps by hand).
 
 **Implements**: FR-6.1, FR-6.2, FR-6.3, FR-6.4, FR-6.5, FR-6.6, FR-6.7
 
