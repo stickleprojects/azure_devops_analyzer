@@ -2,6 +2,33 @@
 
 ---
 
+## Session: 2026-05-24 — Plan 023 documentation reconciliation
+
+### Summary
+
+Reconciled `.ai/plans/023-grafana-home-dashboard-links.md` with the already-shipped implementation in `dashboards/dashboard-home.json`. The code change itself was already present on branch; this session updates plan/docs status only.
+
+### What Was Done
+
+- Updated Plan 023 header from `DESIGN` to `COMPLETE`.
+- Updated "Last reviewed" date to `2026-05-24`.
+- Marked implemented acceptance criteria as complete.
+- Kept the Grafana runtime/provisioning check explicitly unchecked because it was not re-run in this docs-only reconciliation.
+- Corrected file manifest text from "add 2 panels" to "add 4 panels".
+
+### Validation
+
+- `python -c "import json; json.load(open('dashboards/dashboard-home.json')); print('json_ok')"` → `json_ok`
+- `jq '.panels | length' dashboards/dashboard-home.json` → `19`
+- `jq '(.panels | map(.id) | length) == (.panels | map(.id) | unique | length)' dashboards/dashboard-home.json` → `true`
+
+### Notes
+
+- Attempted full baseline `bash scripts/run-tests-docker.sh` before edits, but it failed early because `.env` is missing in this workspace.
+- This session is docs-only; no dashboard JSON or application code changed.
+
+---
+
 ## Session: 2026-05-24 — Plan 022 Track B reconciliation + workflow e2e test
 
 ### Summary
