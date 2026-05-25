@@ -2,6 +2,55 @@
 
 ---
 
+## Session: 2026-05-25 — Session close-out: Plan 025 1c/1d dispatched to Copilot
+
+### Where things stand
+
+Plan 025 is **mostly complete** — Phases 2, 3, 1a, 1b merged; only the two
+deferred optional phases remain, and both are now **in flight with Copilot
+agents** (the user started both prompts this session, will monitor later).
+
+- **PR #107** (open, MERGEABLE) — docs branch `docs/plan-025-radar-zalando`:
+  plan status reconcile + Phase 1c radar swap (AGPL BYOR → MIT Zalando) + the two
+  parallel agent prompts. Docs-only; ready to merge after review.
+- **Phase 1c** — Copilot working from `.ai/prompts/025-phase1c-tech-radar-viewer.md`.
+  Expected PR/branch `feature/025-phase1c-tech-radar-viewer`. Visual radar via
+  vendored MIT Zalando tech-radar (D3) at `/radar` + `/radar/history` table.
+- **Phase 1d** — Copilot working from `.ai/prompts/025-phase1d-library-detail-page.md`.
+  Expected PR/branch `feature/025-phase1d-library-detail-page`. `/library/:ecosystem/:name`
+  detail page over `GET /api/packages/library/<name>/<ecosystem>`.
+
+The two prompts are parallel-safe: each owns its own `src/api/*.ts` module; the
+only shared file is `web/admin-ui/src/App.tsx`, where each pins a different
+insertion anchor (1c after `/health`, 1d after `/repositories`) so git
+auto-merges. Merge order doesn't matter.
+
+### Next Session — Pickup Points
+
+1. **Merge PR #107** (docs) once reviewed — docs-only, only Documentation
+   Validation should run.
+2. **Review the two Copilot PRs** when they land, against the acceptance
+   checklists in each prompt. Watch especially:
+   - 1c: Zalando `radar.js` vendored with its **MIT header + pinned version**,
+     `THIRD_PARTY_NOTICES.md` added, **no AGPL BYOR substituted**; `radarMapping.ts`
+     name→index + `moved` derivation unit-tested; `d3` added to package.json.
+   - 1d: route param order — URL is `/library/:ecosystem/:name` but the API path
+     is `name/ecosystem` (easy to swap); 404 → "Package not found" handled.
+   - Both: **Frontend CI green** before merge (typecheck/test/build/Playwright e2e).
+     If a PR review request-changes is blocked, fall back to `gh pr comment` with
+     an `@copilot` mention (see memory).
+3. After both merge: decide whether to flip Plan 025 to COMPLETE and move it to
+   `.ai/plans/completed/` (entry points for the library page were deferred — a
+   "Library Browser" tile is the only loose end).
+4. **Unrelated:** 3 Dependabot vulns on the default branch (1 high, 2 moderate) —
+   triage when convenient: https://github.com/stickleprojects/azure_devops_analyzer/security/dependabot
+
+### Branch / state at close
+
+- On `docs/plan-025-radar-zalando`, clean tree, level with origin. PR #107 open.
+
+---
+
 ## Session: 2026-05-25 — Plan 025 Task C: swap radar renderer BYOR → Zalando (AGPL concern) (docs-only)
 
 ### Summary
