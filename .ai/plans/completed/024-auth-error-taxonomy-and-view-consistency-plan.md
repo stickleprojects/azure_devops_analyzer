@@ -1,8 +1,8 @@
 # Plan 024: Auth Error Taxonomy and Cross-View Consistency
 
-_Last reviewed: 2026-04-30_
+_Last reviewed: 2026-05-25_
 
-## Status: DESIGN (Ready for Implementation)
+## Status: COMPLETE ✅ (Implemented — PR #100, merged 2026-05-25)
 
 **Motivation**: Admin dashboard auth panels can show blank results while recent-run panels show obvious auth failures, due to message-pattern drift and inconsistent classification rules across views.
 

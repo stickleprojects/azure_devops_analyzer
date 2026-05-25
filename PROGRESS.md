@@ -2,6 +2,24 @@
 
 ---
 
+## Session: 2026-05-25 — Plan 024 closeout + plans reorganisation
+
+### Summary
+
+Merged PR #100 (Plan 024 — auth error taxonomy and cross-view consistency). Updated Plan 024 status to COMPLETE and reorganised all completed plans into `.ai/plans/completed/` subfolder.
+
+### What Was Done
+
+- Merged PR #100: canonical `classify_extraction_error()` SQL function, migration `020_auth_error_taxonomy_and_view_consistency.sql`, refactored reporting views to use shared taxonomy, new `v_extraction_errors_unknown_recent` monitoring view, dashboard panels for auth/authz split and unknown patterns, contract tests (632 passed).
+- Updated `024-auth-error-taxonomy-and-view-consistency-plan.md` status → `COMPLETE ✅ (PR #100, merged 2026-05-25)`.
+- Created `.ai/plans/completed/` subfolder and moved 11 completed plans there (011, 012, 017, 018, 019, 020, 021, 022, 023, 024, README-plans-021-022-parallel).
+
+### Active Plans
+
+- **Plan 025** (`025-bespoke-admin-and-navigation-ui.md`) — IN PROGRESS, Phase 2 & 3 done, Phase 1 pending.
+
+---
+
 ## Session: 2026-05-24 — Plan 023 documentation reconciliation
 
 ### Summary
