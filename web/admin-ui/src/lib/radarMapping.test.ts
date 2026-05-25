@@ -61,9 +61,9 @@ describe('toRadarConfig', () => {
   it('maps quadrant and ring names to numeric indices', () => {
     const result = toRadarConfig(apiResponse)
     expect(result.entries).toEqual([
-      { label: 'react', quadrant: 3, ring: 1, moved: 1, active: true },
-      { label: 'python', quadrant: 3, ring: 0, moved: 2, active: true },
-      { label: 'legacy-lib', quadrant: 2, ring: 3, moved: 0, active: true },
+      { id: 1, label: 'react', quadrant: 3, ring: 1, moved: 1, active: true },
+      { id: 2, label: 'python', quadrant: 3, ring: 0, moved: 2, active: true },
+      { id: 3, label: 'legacy-lib', quadrant: 2, ring: 3, moved: 0, active: true },
     ])
   })
 

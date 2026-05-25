@@ -36,8 +36,7 @@ test.describe('Tech Radar page', () => {
       })
     })
 
-    await page.goto('/')
-    await page.getByRole('link', { name: 'Tech Radar' }).click()
+    await page.goto('/radar')
 
     await expect(page.getByRole('heading', { name: 'Tech Radar' })).toBeVisible()
     await expect(page.locator('svg#radar')).toBeVisible()

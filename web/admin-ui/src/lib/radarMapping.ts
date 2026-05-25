@@ -1,6 +1,7 @@
 import type { RadarResponse, RadarQuadrant, RadarRing } from '../api/radar'
 
 export interface RadarConfigEntry {
+  id: number
   label: string
   quadrant: number
   ring: number
@@ -34,6 +35,7 @@ export function toRadarConfig(api: RadarResponse): RadarVisualizationConfig {
     }
 
     entries.push({
+      id: entry.id,
       label: entry.label,
       quadrant,
       ring,
