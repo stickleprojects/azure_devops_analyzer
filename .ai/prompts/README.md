@@ -13,6 +13,32 @@ Ready-to-paste prompts for delegating work to GitHub Copilot agents (or equivale
 
 The wave prompts above remain in this folder as reference templates for drafting future agent prompts (esp. the CI-green acceptance block at the end of each).
 
+## Wave 3 — Plan 025 Phase 1c + 1d (✅ run in parallel)
+
+These two close out the remaining deferred phases of Plan 025. They are
+**designed to run at the same time**: each does most of its work in new,
+feature-scoped files and gets its own `src/api/*.ts` module instead of appending
+to the shared `client.ts`/`types.ts`.
+
+| Prompt | Plan | Description |
+|---|---|---|
+| [025-phase1c-tech-radar-viewer.md](025-phase1c-tech-radar-viewer.md) | Plan 025 Phase 1c | `/radar` + `/radar/history` — visual radar via the MIT-licensed Zalando tech-radar (D3), plus history table |
+| [025-phase1d-library-detail-page.md](025-phase1d-library-detail-page.md) | Plan 025 Phase 1d | `/library/:ecosystem/:name` — library detail page over `GET /api/packages/library/<name>/<ecosystem>` |
+
+**Parallel-safety contract:** the *only* file both PRs edit is
+`web/admin-ui/src/App.tsx`. Each prompt pins a **different insertion anchor**
+(1c after the `/health` route; 1d after the `/repositories` route) so git
+auto-merges. 1c additionally (and exclusively) touches `Layout.tsx` and
+`package.json` (adds `d3`); 1d touches no other shared file. Whichever PR merges
+second should auto-merge; if `App.tsx` ever conflicts it's a 2-line resolve (keep
+both route sets). Merge order doesn't matter.
+
+> **Licensing note for 1c:** the renderer is Zalando tech-radar (**MIT**), *not*
+> Thoughtworks build-your-own-radar (**AGPL-3.0**) — the swap was a deliberate
+> decision to keep copyleft off the frontend bundle. The prompt forbids
+> substituting BYOR. See `.ai/plans/025-bespoke-admin-and-navigation-ui.md`
+> Task C and `PROGRESS.md` (2026-05-25).
+
 ## Wave 2 (drafting on demand)
 
 - **Plan 020 Component 2** (live-API nightly monitoring) — ✅ merged 2026-05-03 in [PR #90](https://github.com/stickleprojects/azure_devops_analyzer/pull/90). Carved out of Wave 1 because it required provisioning live API tokens manually. Plan 020 is now fully complete.

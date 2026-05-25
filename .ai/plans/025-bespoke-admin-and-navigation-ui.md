@@ -2,7 +2,7 @@
 
 > **Renumber note (2026-05-03)**: Originally drafted as Plan 024. Renumbered to 025 because PR #83 (open at drafting time) reserved Plan 024 for "auth error taxonomy and view consistency". Phase numbering inside this document is unchanged.
 
-## Status: IN PROGRESS — Phase 2 ✅ (PR #85, gap fixed: Task A ✅ PR #103) · Phase 3 ✅ (PR #94) · Phase 1a ✅ (PR #96) · Phase 1b ✅ (PR #104) · Phase 1c/1d deferred
+## Status: IN PROGRESS (mostly complete) — Phase 2 ✅ (PR #85, gap fixed: Task A ✅ PR #103) · Phase 3 ✅ (PR #94) · Phase 1a ✅ (PR #96) · Phase 1b ✅ (PR #104) · **Phase 1c/1d deferred — the only remaining work**
 
 **Implements**: A small React frontend that owns admin/operational workflows and coexists with Grafana — Grafana remains the home for analytics charts and the primary "Home" landing.
 
@@ -10,24 +10,52 @@
 
 ---
 
-## What's next (agent entry point — 2026-05-25)
+## What's next (agent entry point — updated 2026-05-25)
 
-Two tasks remain. Pick the one the user asks for; do not implement both in one PR.
+Tasks A and B are **done** (PRs #103, #104). The only remaining work is the two
+deferred optional phases — **1c (Tech Radar viewer)** and **1d (Library detail
+page)**. Both dependencies are now met (Plans 022 and 021 respectively), so
+either can be picked up independently. Pick the one the user asks for; do not
+implement both in one PR.
 
 ### Task A — Fix extraction-health.json Phase 2 gap ✅ (PR #103)
 
 `dashboards/extraction-health.json` had no `links[]` array. Fixed in PR #103.
+
 ### Task B — Phase 1b: Compute Metrics trigger + Repository List page ✅ (PR #104)
 
 Merged. `ExtractionPage.tsx` extended with Compute Service Metrics button; `RepositoriesPage.tsx` added with filterable table and per-row Rescan/Remove buttons.
 
-### Task C — Phase 1c: Tech Radar viewer route (deferred, ~2–3 days)
+### Task C — Phase 1c: Tech Radar viewer route (deferred, ~3–4 days) — REMAINING
 
 Plan 022 is now complete (merged). Backend endpoints available:
-- `GET /api/radar` — returns Thoughtworks-format JSON
+- `GET /api/radar` — returns Thoughtworks-format JSON (`documentTitle`, `quadrants`, `rings`, `entries[]`)
 - `GET /api/radar/history` — returns timeline
 
-Add React routes `/radar` and `/radar/history` to `web/admin-ui/`. The `/radar` route renders the JSON as a categorised blip list (no iframe to thoughtworks.com). The `/radar/history` route renders a sortable table. Add tiles on `HomePage.tsx`. Unit-test both pages.
+The `/radar` route renders an **actual visual radar** (the circular blip diagram) using the **MIT-licensed** D3 [Zalando tech-radar](https://github.com/zalando/tech-radar) renderer — **not** a list and **not** an iframe to thoughtworks.com. The `/radar/history` route stays a sortable table (timeline data, not a snapshot). Add tiles on `HomePage.tsx`.
+
+> **Why Zalando, not Thoughtworks BYOR:** the obvious pick — Thoughtworks' own build-your-own-radar — is **AGPL-3.0**, which would copyleft the bundled `admin-ui` frontend. Zalando's tech-radar is the same Thoughtworks-derived circular visual but **MIT-licensed** (© 2017–2025 Zalando SE), so it drops in with no copyleft strings. Decision recorded 2026-05-25 (see PROGRESS.md).
+
+**Integration approach (single-file D3 renderer):**
+- Vendor Zalando's single `radar.js` (the `radar_visualization()` function, D3 v7) into `web/admin-ui/src/vendor/zalando-radar/`. Pin a release (e.g. `radar-0.12.js`), record the version, and keep the MIT copyright header in the file.
+- Add runtime dep: `d3` (v7).
+- It ships as a global-function script, not ESM — lightly adapt `radar.js` to `export function radar_visualization(config)` (trivial; MIT permits modification). Build a thin React wrapper `RadarChart.tsx` that calls it inside `useEffect` against a ref'd `<svg id="radar">`; clear the SVG on unmount/re-render.
+- **Data mapping** (`/api/radar` → Zalando config) — Zalando uses **numeric indices**, our API uses **names**, so the mapping must convert:
+  - `quadrants`: pass `[{name}]` (4). Zalando places them clockwise from bottom-right; order is cosmetic.
+  - `rings`: pass `[{name, color}]` indexed 0→3 inner→outer — our order Adopt/Trial/Assess/Hold already matches (Adopt = innermost = 0). Pass `rings[].color` through.
+  - `entries`: per blip → `{ label: entry.label, quadrant: <index of entry.quadrant in quadrants>, ring: <index of entry.ring in rings>, moved: entry.isNew ? 2 : (entry.isMoved ? 1 : 0), active: true }`. (Zalando `moved`: `2`=new, `1`=moved in, `0`=no change, `-1`=moved out; `/api/radar` has no moved-out signal, so `-1` is unused unless derived from `/api/radar/history`.)
+- Handle the empty-publication case (`entries: []`) — show a "no radar published yet" placeholder, not a broken chart.
+
+**Licensing:** Zalando tech-radar is **MIT** — keep the copyright header in the vendored file and add a line to the repo's third-party notices. No copyleft obligation (this is the whole reason it was chosen over BYOR).
+
+**Testing:** D3/SVG renders poorly under jsdom, so don't assert on the drawn chart in Vitest. Instead: (1) unit-test the pure mapping function (API `entries[]` → Zalando config) hard — quadrant→index, ring→index, `moved` derivation from `isNew`/`isMoved`, empty case; (2) a light smoke test that the component mounts and emits an `<svg>` with the expected blip count; (3) cover the visual render in the Playwright e2e suite (`web/admin-ui/e2e/`).
+
+### Task D — Phase 1d: Library detail page (deferred, ~2–3 days) — REMAINING
+
+Plan 021 is now complete (merged). Backend endpoint available:
+- `GET /api/packages/library/<name>/<ecosystem>` — metadata + CVE list + adoption timeline + per-repo usage
+
+Add a React route `/library/:ecosystem/:name` to `web/admin-ui/` consuming that endpoint. Render metadata + CVE list + adoption timeline + per-repo usage. Coexists with the Grafana `library-detail-deep-dive.json` dashboard (Phase 3 data links still point at the Grafana version). Unit-test the page.
 
 ---
 
@@ -123,10 +151,12 @@ Skipped (no obvious target or external link): `repository-deep-dive` Branch Deta
 
 **Phase 1c (deferred — Tech Radar viewer, Plan 022 dependency now met ✅):**
 
-- React route at `/radar` rendering the Thoughtworks-format JSON returned by `GET /api/radar` (Plan 022 Part C).
+- React route at `/radar` rendering an **actual visual radar** — the circular blip diagram — from the Thoughtworks-format JSON returned by `GET /api/radar` (Plan 022 Part C), using the vendored **MIT-licensed** D3 [Zalando tech-radar](https://github.com/zalando/tech-radar) renderer. **Not** a list, **not** an iframe to thoughtworks.com.
 - React route at `/radar/history` rendering the timeline from `GET /api/radar/history` as a sortable table.
 - Replaces the now-removed `src/api/radar_viewer.html` from Plan 022. Plan 022's backend is unchanged and ships independently of this phase.
-- Rationale: Tech Radar is a leadership-facing artifact (Theme E.1 audience). A React route is much cleaner than an iframe to thoughtworks.com or a static HTML wrapper, and is exactly the kind of high-visibility surface that justifies the React investment beyond admin chores.
+- **Why a real radar:** the backend already serves canonical radar JSON (4 quadrants, 4 colour-coded rings, blip `quadrant`/`ring`/`isNew`/`isMoved`), so the data layer is done — this is purely a frontend rendering choice. The circular radar is the recognised, leadership-facing artifact (Theme E.1 audience) and is exactly the high-visibility surface that justifies the React investment beyond admin chores.
+- **Why Zalando, not Thoughtworks BYOR:** the obvious choice (Thoughtworks' own build-your-own-radar) is **AGPL-3.0**, which would copyleft the bundled `admin-ui` frontend. Zalando's tech-radar is the same Thoughtworks-derived visual but **MIT-licensed**, so it carries no copyleft obligation. Decision recorded 2026-05-25 (PROGRESS.md).
+- **Integration:** vendor Zalando's single `radar.js` (`radar_visualization()`, D3 v7) into `web/admin-ui/src/vendor/zalando-radar/` (pin a release, keep the MIT header), add `d3`, adapt to an ESM export, and wrap in a `RadarChart.tsx` React component driven by a data-mapping function. Note: Zalando uses **numeric** quadrant/ring indices while `/api/radar` uses names — the mapping converts name→index and derives `moved` from `isNew`/`isMoved`. See Task C in "What's next" for the full mapping and testing detail.
 
 **Phase 1d (deferred — Library detail page, Plan 021 dependency now met ✅):**
 
@@ -291,6 +321,8 @@ For each gap enumerated in the Scope section, add a `fieldConfig.overrides[]` en
 | Maintenance burden of a second codebase outweighs benefit                                | Medium      | Phase 1a is deliberately tiny (3 pages, no auth, no fancy state). Phase 1b only ships if 1a's value is real.                                                                    |
 | Auth becomes urgent later                                                                | Medium      | Plan now: when the Flask API gets auth, add a login page and an `Authorization` header to the API client. Both are well-trodden patterns; not a blocker today.                  |
 | nginx + reverse proxy complexity in Compose                                              | Low         | Pattern is standard; many examples online. Worst case, serve via Vite preview in dev and skip nginx until prod really matters.                                                  |
+| Radar renderer licensing (Phase 1c)                                                      | Low         | **Resolved 2026-05-25:** chose MIT-licensed Zalando tech-radar over AGPL-3.0 Thoughtworks BYOR to avoid copyleft on the frontend bundle. Keep the MIT header + a third-party notice. |
+| Zalando radar ships as a global-function script, not ESM (Phase 1c)                       | Low         | Single `radar.js` — trivially adapted to an ESM export (MIT permits). Drive it from a unit-tested name→index mapping function so the React seam is the only integration risk. |
 
 ---
 
@@ -333,7 +365,7 @@ web/admin-ui/src/pages/
   RepositoriesPage.test.tsx          ✅
 ```
 
-**Estimated effort**: Phase 1c/1d ~2–3 days each.
+**Estimated effort**: Phase 1c ~3–4 days (visual radar — vendor Zalando's single-file MIT D3 radar + ESM adapt + React wrapper + name→index data mapping + tests). Phase 1d ~2–3 days.
 
 ---
 
