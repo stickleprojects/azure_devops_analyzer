@@ -211,14 +211,12 @@ The fixture system in `tests/fixtures/scenarios/` drives the full parsing → im
 
 **Important:** There is no persistent seed data in the CI database. The database starts empty on every run and all data is created within each test and rolled back automatically. The fixture JSON files below are the source of test data for integration tests.
 
-**Generated scenarios** (`tests/fixtures/scenarios/generated/*.json`) are produced by `scripts/generated/generate-fixture-scenarios.py` and `scripts/generated/generate-repo-seeds.py`. To add a new scenario:
+**Generated scenarios** (`tests/fixtures/scenarios/generated/*.json`) are picked up automatically — the test file discovers all `.json` files in that folder at collection time, so **no list update is needed**. To add a new scenario:
 
-1. Check `tests/fixtures/scenarios/config.json` for an existing pattern that fits (e.g. `single-language`, `fullstack-monorepo`, `dual-ci`), or add a new pattern following the schema at `config.schema.json`.
-2. Edit `scripts/generated/generate-fixture-scenarios.py` to add a new entry to the `SCENARIOS` list, then run it: `python scripts/generated/generate-fixture-scenarios.py`
-3. Add the new scenario name to the `SCENARIOS` list in `tests/contract/integration/test_fixture_scenarios.py`.
-4. Run `bash scripts/run-tests-docker.sh tests/contract/integration/test_fixture_scenarios.py` to verify.
+1. Edit `scripts/generated/generate-fixture-scenarios.py` to add a new entry, then run it: `python scripts/generated/generate-fixture-scenarios.py` (produces a JSON file in `tests/fixtures/scenarios/generated/`).
+2. Run `bash scripts/run-tests-docker.sh tests/contract/integration/test_fixture_scenarios.py` to verify — the new scenario is picked up automatically.
 
-To regenerate all scenarios from config (e.g. after changing patterns): `python scripts/generated/generate-repo-seeds.py`
+To regenerate all scenarios from config patterns (e.g. after changing `config.json`): `python scripts/generated/generate-repo-seeds.py`
 
 **Adversarial scenarios** (`tests/fixtures/scenarios/adversarial/*.json`) are hand-crafted edge cases (bot committers, unicode names, force-pushed PRs, etc.). To add one, create a JSON file matching the schema and add a test in `tests/contract/integration/test_adversarial_scenarios.py`.
 

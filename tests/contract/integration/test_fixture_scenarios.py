@@ -8,6 +8,9 @@ Tests exercise the full extraction → storage pipeline using static JSON fixtur
 from tests/fixtures/scenarios/generated/. Existing live-API tests are untouched.
 """
 
+import json
+import pathlib
+
 import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -24,22 +27,34 @@ from src.database.storage import (
 from src.database.models import Commit, Contributor, PullRequest, PRReview, RepositoryStack
 
 
-SCENARIOS = [
-    "go-microservice",        # Go, go.mod
-    "java-maven-jenkins",     # Java, pom.xml, Jenkins CI
-    "fullstack-monorepo",     # Python + TypeScript, dual manifests
-    "dual-ci-analytics",      # Python, dual CI
-    "deep-nested-manifests",  # Nested manifest paths
-    "empty-stub",             # Edge case: no commits, no manifests
-]
+_SCENARIOS_DIR = (
+    pathlib.Path(__file__).parent.parent.parent / "fixtures" / "scenarios" / "generated"
+)
 
-# Maps scenario name → a manifest filename that must resolve after generation
-MANIFEST_LOOKUP = {
-    "go-microservice": "go.mod",
-    "java-maven-jenkins": "pom.xml",
-    "fullstack-monorepo": "requirements.txt",
-    "dual-ci-analytics": "requirements.txt",
-}
+# All JSON files in the generated/ folder are exercised automatically.
+# To add a new scenario: drop a .json file into tests/fixtures/scenarios/generated/
+# and it will be picked up by CI on the next run — no list update required.
+SCENARIOS = sorted(p.stem for p in _SCENARIOS_DIR.glob("*.json"))
+
+
+def _build_manifest_lookup() -> dict[str, str]:
+    """Return {scenario_name: first_manifest_filename} for every scenario that has manifests."""
+    lookup: dict[str, str] = {}
+    for path in sorted(_SCENARIOS_DIR.glob("*.json")):
+        data = json.loads(path.read_text())
+        manifests = data.get("manifests", {})
+        if isinstance(manifests, dict) and manifests:
+            lookup[path.stem] = next(iter(manifests))
+        elif isinstance(manifests, list) and manifests:
+            first = manifests[0]
+            if isinstance(first, dict):
+                lookup[path.stem] = first.get("file_path", "")
+    return lookup
+
+
+# Maps scenario name → a manifest filename that must resolve — derived from the
+# scenario JSON itself, so it stays in sync automatically.
+MANIFEST_LOOKUP = _build_manifest_lookup()
 
 
 def _create_fixture_repo(session: Session, organization, scenario_name: str):
