@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import ApiButton from '../components/ApiButton'
 import Toast, { type ToastVariant } from '../components/Toast'
-import { triggerGithubRescan, triggerAzureDevOpsRescan } from '../api/client'
+import { triggerGithubRescan, triggerAzureDevOpsRescan, triggerComputeServiceMetrics } from '../api/client'
 
 interface ToastState {
   message: string
@@ -22,6 +22,12 @@ export default function ExtractionPage() {
   const azureMutation = useMutation({
     mutationFn: triggerAzureDevOpsRescan,
     onSuccess: (data) => setToast({ message: `Azure DevOps rescan started — task_id: ${data.task_id}`, variant: 'success' }),
+    onError: (err: Error) => setToast({ message: err.message, variant: 'error' }),
+  })
+
+  const computeMutation = useMutation({
+    mutationFn: triggerComputeServiceMetrics,
+    onSuccess: (data) => setToast({ message: `Service metrics computation started — task_id: ${data.task_id}`, variant: 'success' }),
     onError: (err: Error) => setToast({ message: err.message, variant: 'error' }),
   })
 
@@ -50,6 +56,18 @@ export default function ExtractionPage() {
             loading={azureMutation.isPending}
           >
             Trigger Azure DevOps Rescan
+          </ApiButton>
+        </div>
+        <hr className="border-gray-100" />
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-gray-600">
+            Compute and persist service-level metrics for all repositories.
+          </p>
+          <ApiButton
+            onClick={() => computeMutation.mutate()}
+            loading={computeMutation.isPending}
+          >
+            Compute Service Metrics
           </ApiButton>
         </div>
       </div>
