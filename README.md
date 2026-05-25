@@ -209,12 +209,16 @@ def test_my_view_returns_data(db_session):
 
 The fixture system in `tests/fixtures/scenarios/` drives the full parsing → import → view pipeline without live API credentials.
 
-**Generated scenarios** (`tests/fixtures/scenarios/generated/*.json`) are created from `config.json` patterns. To add a new one:
+**Important:** There is no persistent seed data in the CI database. The database starts empty on every run and all data is created within each test and rolled back automatically. The fixture JSON files below are the source of test data for integration tests.
 
-1. Check `tests/fixtures/scenarios/config.json` for an existing pattern that fits, or add a new pattern following the JSON schema at `config.schema.json`.
-2. Run the generator: `python scripts/generate_fixture_scenarios.py` (creates/updates JSON files).
+**Generated scenarios** (`tests/fixtures/scenarios/generated/*.json`) are produced by `scripts/generated/generate-fixture-scenarios.py` and `scripts/generated/generate-repo-seeds.py`. To add a new scenario:
+
+1. Check `tests/fixtures/scenarios/config.json` for an existing pattern that fits (e.g. `single-language`, `fullstack-monorepo`, `dual-ci`), or add a new pattern following the schema at `config.schema.json`.
+2. Edit `scripts/generated/generate-fixture-scenarios.py` to add a new entry to the `SCENARIOS` list, then run it: `python scripts/generated/generate-fixture-scenarios.py`
 3. Add the new scenario name to the `SCENARIOS` list in `tests/contract/integration/test_fixture_scenarios.py`.
 4. Run `bash scripts/run-tests-docker.sh tests/contract/integration/test_fixture_scenarios.py` to verify.
+
+To regenerate all scenarios from config (e.g. after changing patterns): `python scripts/generated/generate-repo-seeds.py`
 
 **Adversarial scenarios** (`tests/fixtures/scenarios/adversarial/*.json`) are hand-crafted edge cases (bot committers, unicode names, force-pushed PRs, etc.). To add one, create a JSON file matching the schema and add a test in `tests/contract/integration/test_adversarial_scenarios.py`.
 
