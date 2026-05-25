@@ -8,6 +8,8 @@ This folder contains documentation for deploying, running, and maintaining the R
 
 ## Contents
 
+- **[quickstart.md](quickstart.md)** — Stack setup, first-launch checklist, and troubleshooting
+- **[developer-guide.md](developer-guide.md)** — Running tests, adding unit/contract/e2e tests, diagnostic commands
 - **[visualization.md](visualization.md)** — Grafana dashboards, metrics, visualization design, and dashboard setup
 - **[deployment-plan.md](deployment-plan.md)** — Implementation timeline, phases, deployment checklist, and rollout strategy
 - **[docker-setup.md](docker-setup.md)** — Docker configuration, building images, environment variables
@@ -21,6 +23,8 @@ This folder contains documentation for deploying, running, and maintaining the R
 
 | Document                          | Focus                      | For                        |
 | --------------------------------- | -------------------------- | -------------------------- |
+| quickstart.md                     | Stack setup, first run     | New users, onboarding      |
+| developer-guide.md                | Tests, diagnostics         | Developers                 |
 | visualization.md                  | Grafana setup, dashboards  | DevOps, dashboarding       |
 | deployment-plan.md                | Rollout strategy, timeline | Deployment, PM             |
 | docker-setup.md                   | Docker configuration       | Infrastructure, setup      |
