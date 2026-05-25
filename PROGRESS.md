@@ -2,6 +2,123 @@
 
 ---
 
+## Session: 2026-05-25 — Plan 025 Task C: swap radar renderer BYOR → Zalando (AGPL concern) (docs-only)
+
+### Summary
+
+The user raised a licensing concern about using Thoughtworks build-your-own-radar
+(BYOR) for the Phase 1c visual radar, because BYOR is **AGPL-3.0** and vendoring
+it would copyleft the bundled `admin-ui` frontend. Swapped the renderer to the
+**MIT-licensed** [Zalando tech-radar](https://github.com/zalando/tech-radar) —
+the same Thoughtworks-derived circular visual, no copyleft. Supersedes the BYOR
+decision made earlier the same day (entry below).
+
+### Decision and why
+
+- **Chosen:** Zalando tech-radar (MIT, © 2017–2025 Zalando SE), D3 v7, single
+  `radar.js` file. It is explicitly based on the Thoughtworks radar concept, so
+  the visual is equivalent.
+- **Rejected:** Thoughtworks BYOR (AGPL-3.0). Copyleft on the frontend bundle is
+  unacceptable to the user even for an internal `localhost`-only tool; a
+  permissive licence removes the obligation and the need for sign-off entirely.
+- **Bonus:** Zalando is a single file (vs BYOR's webpack app), so integration is
+  simpler — effort dropped from ~4–5 to ~3–4 days.
+
+### Data-format note (for the implementer)
+
+Zalando uses **numeric** quadrant/ring indices; `/api/radar` returns **names**.
+The mapping function converts name→index (quadrant order cosmetic; rings
+Adopt/Trial/Assess/Hold = 0→3 inner→outer, already aligned) and derives Zalando's
+`moved` field: `isNew` → `2`, else `isMoved` → `1`, else `0`. Entry shape:
+`{ label, quadrant: idx, ring: idx, moved, active: true }`.
+
+### What Was Done
+
+- `.ai/plans/025-bespoke-admin-and-navigation-ui.md` — Task C + Phase 1c scope
+  bullet rewritten for Zalando; added a "Why Zalando, not BYOR" note; replaced the
+  AGPL/ webpack Risks rows with MIT-resolved + single-file rows; effort → ~3–4 days.
+- Memory `web-ui-decision.md` — radar decision updated to Zalando + AGPL rationale.
+
+### Validation
+
+- Docs-only; no tests run. No code touched.
+
+---
+
+## Session: 2026-05-25 — Plan 025 Task C scope change: visual BYOR radar (docs-only) — SUPERSEDED (see entry above; BYOR dropped over AGPL)
+
+### Summary
+
+At the user's request, changed Plan 025 Phase 1c (Task C) from "render the radar
+JSON as a categorised blip list" to "render an **actual visual radar** (the
+circular blip diagram) using the Thoughtworks open-source D3 build-your-own-radar
+(BYOR) renderer." Backend is unchanged — `GET /api/radar` already serves
+canonical BYOR-format JSON, so this is purely a frontend rendering decision.
+
+### Key findings driving the plan text
+
+- BYOR is **AGPL-3.0** (verified via the repo LICENSE). Vendoring it copylefts
+  the bundled `admin-ui` frontend. Acceptable for an internal `localhost`-only
+  tool but must be acknowledged (AGPL notice, source kept available, user
+  sign-off). Flagged as a must-address-before-merge item + a Risks-table row.
+- BYOR is a webpack app, not a clean npm package → integration is "vendor the
+  `graphing/` + `models/` D3 modules, pin a commit, wrap in a thin React
+  component driven by a unit-tested data-mapping function."
+- D3/SVG renders poorly under jsdom → test plan shifts to hard-testing the pure
+  mapping function + a mount smoke test + Playwright e2e for the visual.
+
+### What Was Done
+
+- `.ai/plans/025-bespoke-admin-and-navigation-ui.md` — rewrote Task C ("What's
+  next") and the Phase 1c scope bullet for the visual radar; bumped the 1c effort
+  estimate to ~4–5 days; added two BYOR rows (AGPL + webpack-app friction) to the
+  Risks table.
+- Memory `web-ui-decision.md` — recorded the visual-BYOR-radar + AGPL decision.
+
+### Validation
+
+- Docs-only; no tests run. No code touched.
+
+---
+
+## Session: 2026-05-25 — Plan 025 status reconciliation (docs-only)
+
+### Summary
+
+Reviewed Plan 025 state against the code and git history at the user's request
+("I think plan 025 is mostly complete now"). Confirmed it: Phases 2, 3, 1a, 1b
+are all merged; only the two deferred optional phases (1c Tech Radar viewer, 1d
+Library detail page) remain. Refreshed the stale docs to match. No code changed.
+
+### Verification
+
+- `web/admin-ui/src/App.tsx` exposes routes `/`, `/extraction`, `/health`,
+  `/repositories` only — no `/radar` or `/library`, confirming 1c/1d unbuilt.
+- Git log confirms the merged PRs: Phase 2 #85 (+ extraction-health gap fix #103),
+  Phase 3 #94, Phase 1a #96, Phase 1b #104.
+
+### Decision
+
+- Plan kept **IN PROGRESS** (user's call), **not** moved to `.ai/plans/completed/`.
+  1c/1d stay tracked inside the plan as the only remaining work. Both
+  dependencies (Plans 022 and 021) are merged, so either is pickable now.
+
+### What Was Done
+
+- `.ai/plans/025-bespoke-admin-and-navigation-ui.md` — status line now reads
+  "IN PROGRESS (mostly complete) … Phase 1c/1d deferred — the only remaining
+  work"; rewrote the "What's next" section (Tasks A & B marked done, added a
+  Task D agent entry point for Phase 1d alongside the existing Task C for 1c).
+- Memory: `MEMORY.md` moved Plan 025 to an accurate "mostly complete" summary
+  and refreshed the Web UI active-work line; `web-ui-decision.md` Wave 2
+  candidates flipped to "shipped" with the 1c/1d remainder noted.
+
+### Validation
+
+- Docs-only; no tests run. JSON/code untouched.
+
+---
+
 ## Session: 2026-05-25 — Plan 025 Phase 1b implementation
 
 ### Summary
