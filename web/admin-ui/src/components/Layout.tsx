@@ -5,6 +5,7 @@ const navLinks = [
   { to: '/extraction', label: 'Extraction Control' },
   { to: '/repositories', label: 'Repositories' },
   { to: '/health', label: 'System Health' },
+  { to: '/radar', label: 'Tech Radar' },
 ]
 
 export default function Layout() {
