@@ -2,7 +2,7 @@
 
 > **Renumber note (2026-05-03)**: Originally drafted as Plan 024. Renumbered to 025 because PR #83 (open at drafting time) reserved Plan 024 for "auth error taxonomy and view consistency". Phase numbering inside this document is unchanged.
 
-## Status: IN PROGRESS — Phase 2 ✅ (PR #85, gap fixed: Task A ✅) · Phase 3 ✅ (PR #94) · Phase 1a ✅ (PR #96) · Phase 1b/1c/1d deferred
+## Status: IN PROGRESS — Phase 2 ✅ (PR #85, gap fixed: Task A ✅ PR #103) · Phase 3 ✅ (PR #94) · Phase 1a ✅ (PR #96) · Phase 1b ✅ (this PR) · Phase 1c/1d deferred
 
 **Implements**: A small React frontend that owns admin/operational workflows and coexists with Grafana — Grafana remains the home for analytics charts and the primary "Home" landing.
 
@@ -12,12 +12,11 @@
 
 ## What's next (agent entry point — 2026-05-25)
 
-Three tasks remain. Pick the one the user asks for; do not implement all three in one PR.
+Two tasks remain. Pick the one the user asks for; do not implement both in one PR.
 
-### Task A — Fix extraction-health.json Phase 2 gap (tiny, ~30 min)
+### Task A — Fix extraction-health.json Phase 2 gap ✅ (PR #103)
 
-`dashboards/extraction-health.json` has no `links[]` array. All other dashboards (except `dashboard-home.json`) have the 6-entry nav bar. Add the same `links[]` as every other dashboard. Copy the canonical shape from `security-dashboard.json`. Validate with `python3 -c "import json; json.load(open('dashboards/extraction-health.json'))"`.
-
+`dashboards/extraction-health.json` had no `links[]` array. Fixed in PR #103.
 ### Task B — Phase 1b: Compute Metrics trigger + Repository List page (optional, ~2–3 days)
 
 Gate: only implement if Phase 1a value is confirmed by the user.
@@ -238,7 +237,7 @@ For each gap enumerated in the Scope section, add a `fieldConfig.overrides[]` en
 
 ### Phase 2
 
-- [x] Every `dashboards/*.json` except `dashboard-home.json` has identical 6-entry `links[]` array (Home / Repos / Security / Technology / Admin / Admin UI) in that order. (PR #85) — **gap: `extraction-health.json` still has no links array, needs a follow-up fix.**
+- [x] Every `dashboards/*.json` except `dashboard-home.json` has identical 6-entry `links[]` array (Home / Repos / Security / Technology / Admin / Admin UI) in that order. (PR #85, `extraction-health.json` gap fixed PR #103)
 - [x] `dashboard-home.json` retains no top-link bar.
 - [x] Internal nav links use `targetBlank=false`; `Admin UI` link uses `targetBlank=true` (opens React app in new tab).
 - [ ] Manual click-through: from each dashboard, each top-link entry lands on the right destination.
@@ -262,10 +261,10 @@ For each gap enumerated in the Scope section, add a `fieldConfig.overrides[]` en
 - [x] No changes to `src/extractors/**`, `src/analyzers/**`, `src/database/**`, `src/workflows/**`.
 - [ ] Python test suite (`bash scripts/run-tests-docker.sh`) regression check — verify still green after Docker Compose changes.
 
-### Phase 1b (follow-up, optional)
+### Phase 1b (follow-up) — COMPLETE ✅ (this PR)
 
-- [ ] Compute Service Metrics trigger added to Extraction Control with toast feedback.
-- [ ] Repository List page renders rows from `/api/repositories`, supports filter-by-name, and per-row Rescan/Remove buttons work and show feedback.
+- [x] Compute Service Metrics trigger added to Extraction Control with toast feedback.
+- [x] Repository List page renders rows from `/api/repositories`, supports filter-by-name, and per-row Rescan/Remove buttons work and show feedback.
 
 ---
 
@@ -315,30 +314,32 @@ web/admin-ui/
   tailwind.config.ts / postcss.config.js ✅
   index.html                         ✅
   src/
-    main.tsx / App.tsx               ✅
+    main.tsx / App.tsx               ✅ (repositories route added Phase 1b)
     config.ts                        ✅
     pages/
       HomePage.tsx + test            ✅
-      ExtractionPage.tsx + test      ✅
+      ExtractionPage.tsx + test      ✅ (Compute Service Metrics button added Phase 1b)
       HealthPage.tsx + test          ✅
+      RepositoriesPage.tsx + test    ✅ (new — Phase 1b)
     components/
-      Layout.tsx / Toast.tsx / ApiButton.tsx  ✅
+      Layout.tsx / Toast.tsx / ApiButton.tsx  ✅ (Repositories nav link added Phase 1b)
     api/
-      client.ts + test / types.ts    ✅
+      client.ts + test / types.ts    ✅ (4 new functions + types added Phase 1b)
   e2e/
     home.spec.ts / extraction.spec.ts / health.spec.ts  ✅
 docker-compose.yml                   ✅ (admin-ui service added)
 .github/workflows/frontend.yml       ✅
 ```
 
-**Phase 1b — not yet started (follow-up, optional):**
+**Phase 1b — COMPLETE ✅ (this PR):**
 
 ```
 web/admin-ui/src/pages/
-  RepositoriesPage.tsx               (new — Phase 1b)
+  RepositoriesPage.tsx               ✅
+  RepositoriesPage.test.tsx          ✅
 ```
 
-**Estimated effort**: Phase 1b ~2–3 days; Phase 1c/1d ~2–3 days each.
+**Estimated effort**: Phase 1c/1d ~2–3 days each.
 
 ---
 

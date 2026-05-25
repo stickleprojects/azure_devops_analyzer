@@ -7,9 +7,10 @@ import ExtractionPage from './ExtractionPage'
 vi.mock('../api/client', () => ({
   triggerGithubRescan: vi.fn(),
   triggerAzureDevOpsRescan: vi.fn(),
+  triggerComputeServiceMetrics: vi.fn(),
 }))
 
-import { triggerGithubRescan, triggerAzureDevOpsRescan } from '../api/client'
+import { triggerGithubRescan, triggerAzureDevOpsRescan, triggerComputeServiceMetrics } from '../api/client'
 
 function renderPage() {
   const qc = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
@@ -23,13 +24,15 @@ function renderPage() {
 beforeEach(() => {
   vi.mocked(triggerGithubRescan).mockReset()
   vi.mocked(triggerAzureDevOpsRescan).mockReset()
+  vi.mocked(triggerComputeServiceMetrics).mockReset()
 })
 
 describe('ExtractionPage', () => {
-  it('renders both buttons', () => {
+  it('renders all three buttons', () => {
     renderPage()
     expect(screen.getByText('Trigger GitHub Rescan')).toBeInTheDocument()
     expect(screen.getByText('Trigger Azure DevOps Rescan')).toBeInTheDocument()
+    expect(screen.getByText('Compute Service Metrics')).toBeInTheDocument()
   })
 
   it('calls triggerGithubRescan when the GitHub button is clicked', async () => {
@@ -70,6 +73,39 @@ describe('ExtractionPage', () => {
     await userEvent.click(screen.getByText('Trigger Azure DevOps Rescan'))
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent('az-002'),
+    )
+  })
+
+  it('calls triggerComputeServiceMetrics when the Compute button is clicked', async () => {
+    vi.mocked(triggerComputeServiceMetrics).mockResolvedValueOnce({
+      status: 'submitted',
+      task_id: 'cmp-003',
+      message: 'queued',
+    })
+    renderPage()
+    await userEvent.click(screen.getByText('Compute Service Metrics'))
+    expect(triggerComputeServiceMetrics).toHaveBeenCalledOnce()
+  })
+
+  it('shows success toast with task_id after computing service metrics', async () => {
+    vi.mocked(triggerComputeServiceMetrics).mockResolvedValueOnce({
+      status: 'submitted',
+      task_id: 'cmp-003',
+      message: 'queued',
+    })
+    renderPage()
+    await userEvent.click(screen.getByText('Compute Service Metrics'))
+    await waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('cmp-003'),
+    )
+  })
+
+  it('shows error toast when compute service metrics fails', async () => {
+    vi.mocked(triggerComputeServiceMetrics).mockRejectedValueOnce(new Error('worker down'))
+    renderPage()
+    await userEvent.click(screen.getByText('Compute Service Metrics'))
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('worker down'),
     )
   })
 })

@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router-dom'
 const navLinks = [
   { to: '/', label: 'Home' },
   { to: '/extraction', label: 'Extraction Control' },
+  { to: '/repositories', label: 'Repositories' },
   { to: '/health', label: 'System Health' },
 ]
 
