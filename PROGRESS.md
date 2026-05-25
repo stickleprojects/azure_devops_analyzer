@@ -2,6 +2,34 @@
 
 ---
 
+## Session: 2026-05-25 — Plan 025 Phase 1b implementation
+
+### Summary
+
+Implemented Phase 1b of Plan 025: Compute Service Metrics trigger on the Extraction Control page and new Repositories List page. All 44 frontend unit tests pass.
+
+### What Was Done
+
+- Extended `web/admin-ui/src/api/types.ts` with 4 new types: `ComputeMetricsResponse`, `Repository`, `RepositoryListResponse`, `RescanRepositoryResponse`.
+- Added 4 new API client functions to `src/api/client.ts`: `triggerComputeServiceMetrics` (`POST /api/compute/service-metrics`), `getRepositories` (`GET /api/repositories` with optional search/limit/offset params), `rescanRepository` (`POST /api/rescan/repository/<repo_id>`), `removeRepository` (`DELETE /api/rescan/repository/<repo_id>`).
+- Added 12 new unit tests for the new client functions in `src/api/client.test.ts`.
+- Extended `ExtractionPage.tsx` with a "Compute Service Metrics" button with toast feedback; updated its tests.
+- Created `src/pages/RepositoriesPage.tsx`: filterable table of repositories from `GET /api/repositories`, per-row Rescan and Remove buttons each with success/error toast feedback.
+- Created `src/pages/RepositoriesPage.test.tsx`: 11 tests covering loading, error, filter, rescan, remove, and toast states.
+- Added `/repositories` route in `App.tsx`; added "Repositories" nav link in `Layout.tsx`.
+- Updated `.ai/plans/025-bespoke-admin-and-navigation-ui.md`: marked Task A ✅ (PR #103), Phase 1b ✅ (this PR), updated status line and file manifest.
+
+### Validation
+
+- `npm run typecheck` → exit 0
+- `npm run test` → 44 passed, 0 failed
+
+### Active Plans
+
+- **Plan 025** (`025-bespoke-admin-and-navigation-ui.md`) — IN PROGRESS, Phases 2, 3, 1a, 1b done; Phase 1c/1d pending.
+
+---
+
 ## Session: 2026-05-25 — Plan 024 closeout + plans reorganisation
 
 ### Summary

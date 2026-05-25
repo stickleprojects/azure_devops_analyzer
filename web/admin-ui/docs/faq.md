@@ -36,12 +36,13 @@ If you are running locally (developer machine):
 http://localhost:8080
 ```
 
-The Admin UI has three sections reachable from the top navigation bar:
+The Admin UI has four sections reachable from the top navigation bar:
 
 | Section | URL | Purpose |
 |---|---|---|
 | **Home** | `/` | Links to every Grafana analytics dashboard |
-| **Extraction Control** | `/extraction` | Trigger re-scans of GitHub and Azure DevOps |
+| **Extraction Control** | `/extraction` | Trigger re-scans of GitHub and Azure DevOps, compute service metrics |
+| **Repositories** | `/repositories` | Browse, filter, rescan, or remove individual repositories |
 | **System Health** | `/health` | Live status of the extraction API and its dependencies |
 
 ---
