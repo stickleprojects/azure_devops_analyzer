@@ -2,7 +2,7 @@
 
 > **Renumber note (2026-05-03)**: Originally drafted as Plan 024. Renumbered to 025 because PR #83 (open at drafting time) reserved Plan 024 for "auth error taxonomy and view consistency". Phase numbering inside this document is unchanged.
 
-## Status: IN PROGRESS — Phase 2 ✅ (PR #85, gap: extraction-health.json) · Phase 3 ✅ (PR #94) · Phase 1a ✅ (PR #96) · Phase 1b/1c/1d deferred
+## Status: IN PROGRESS — Phase 2 ✅ (PR #85, gap fixed: Task A ✅) · Phase 3 ✅ (PR #94) · Phase 1a ✅ (PR #96) · Phase 1b/1c/1d deferred
 
 **Implements**: A small React frontend that owns admin/operational workflows and coexists with Grafana — Grafana remains the home for analytics charts and the primary "Home" landing.
 
