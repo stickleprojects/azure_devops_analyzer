@@ -43,7 +43,7 @@ class ExtractionMetric(Base):
 
     __tablename__ = "extraction_metrics"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     run_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("extraction_runs.run_id", ondelete="CASCADE"),

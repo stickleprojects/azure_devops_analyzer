@@ -1,6 +1,6 @@
 # Multi-Platform Repository Analysis System
 
-_Last reviewed: 2026-04-30_
+_Last reviewed: 2026-05-25_
 
 ## Overview
 
@@ -47,8 +47,33 @@ How to know it is running:
 - Worker logs show tasks executing
 - Flower UI at `http://localhost:5555`
 - Grafana dashboards at `http://localhost:3000` (admin/admin)
+- Admin UI at `http://localhost:8080` (rescan triggers, system health)
 
 See [Start-RepoAnalysis.sh](Start-RepoAnalysis.sh#L1-L50) for parameters and examples.
+
+## First-launch checklist (new user)
+
+After the stack starts and the first extraction completes:
+
+1. **Grafana Home** — `http://localhost:3000/d/dashboard-home` — confirm summary stats are non-zero (Repositories, Contributors, Commits).
+2. **Repository Overview** — verify your repos appear with correct metadata.
+3. **Security dashboard** — confirm dependency vulnerabilities are populated. If empty, the enrichment worker may still be running; check Flower.
+4. **Extraction Health** — `http://localhost:3000/d/extraction-health` — any invariant violations appear here within minutes of extraction finishing.
+5. **Admin UI** — `http://localhost:8080` — trigger a rescan, confirm a toast appears with a `task_id` and the task shows in Flower.
+
+If Grafana dashboards show "No data": check `docker compose logs worker` for errors. The most common cause is a missing or expired PAT — re-run `./Start-RepoAnalysis.sh --regenerate-env` to refresh credentials.
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| All Grafana panels blank | Credentials missing/expired | Re-run `Start-RepoAnalysis.sh --regenerate-env`; check PAT scopes |
+| Extraction stuck in Flower | Worker container crashed | `docker compose restart worker` |
+| `psql` connection refused | TimescaleDB not ready | `docker compose up -d timescaledb && sleep 10` |
+| Admin UI 502 / not reachable | nginx can't reach Flask API | `docker compose up -d api`; check port 5000 |
+| Security dashboard empty | Enrichment worker still running | Wait 5–10 min; watch `docker compose logs enrichment-worker` |
+| Grafana data source error | Wrong DB credentials in provisioning | Check `provisioning/datasources/` matches `.env.resolved` |
+| `classify_extraction_error` function missing | Migration 020 not applied | `bash scripts/run-tests-docker.sh tests/contract/database/test_migration_tracking.py` |
 
 ## Documentation Structure
 
@@ -102,18 +127,98 @@ Start with [docs/README.md](docs/README.md) for role-based navigation, then revi
 
 ```
 azure-devops-analyzer/
-├── docs/                    # This documentation
+├── docs/                    # Documentation (see docs/README.md for navigation)
 ├── src/
 │   ├── analyzers/          # Platform-agnostic analysis modules
-│   ├── api/                # API-facing entry points and integration surfaces
+│   ├── api/                # Flask API entry points
 │   ├── config/             # Runtime configuration
 │   ├── database/           # Database models and storage layer
 │   ├── extractors/         # GitHub and Azure DevOps data extraction
 │   ├── scheduler/          # Job scheduling and task submission
 │   ├── utils/              # Cross-cutting utilities (health checks, metrics)
 │   └── workflows/          # Orchestration across extractors and analyzers
-├── dashboards/             # Grafana dashboard definitions
-├── database/               # Database schema and migrations
-├── tests/                  # Unit and integration tests
-├── workers/                # Background job workers
+├── web/
+│   └── admin-ui/           # React + Vite admin UI (served on :8080)
+├── dashboards/             # Grafana dashboard JSON definitions
+├── database/
+│   ├── migrations/         # Numbered SQL migrations (apply in order)
+│   └── views.sql           # All reporting views (sourced by contract tests)
+├── tests/
+│   ├── unit/               # Unit tests (no DB, no network)
+│   ├── contract/
+│   │   ├── database/       # View contract tests (require test DB)
+│   │   ├── integration/    # Pipeline e2e tests (fixture- or live-API-backed)
+│   │   └── api/            # Flask API contract tests
+│   └── fixtures/
+│       ├── scenarios/
+│       │   ├── generated/  # 27 JSON fixture scenarios (auto-generated)
+│       │   └── adversarial/# 10 edge-case scenarios (hand-crafted)
+│       └── fixture_extractor.py  # Fake RepositoryExtractor backed by JSON
+├── workers/                # Celery worker entrypoints
+└── scripts/                # Run-tests, validate-docs, resolve-env helpers
 ```
+
+## Developer Guide
+
+### Running tests
+
+```bash
+# Full CI-equivalent suite (runs inside Docker — recommended)
+bash scripts/run-tests-docker.sh
+
+# Subset: database contract tests only
+bash scripts/run-tests-docker.sh tests/contract/database/
+
+# Subset: integration tests (fixture-backed, no live API)
+bash scripts/run-tests-docker.sh tests/contract/integration/ -m 'not live_api'
+
+# Unit tests only (no Docker needed)
+pytest tests/unit/
+
+# Frontend (React admin UI)
+cd web/admin-ui && npm ci && npm run test && npm run typecheck
+```
+
+### Adding a unit test
+
+Add a new file under `tests/unit/test_<module>.py`. Unit tests must not import from `src.database`, touch the network, or open files outside `tests/`. Use mocks for all external dependencies.
+
+### Adding a database contract test
+
+Contract tests verify that SQL views return correct data given seeded rows. They use a real PostgreSQL test database (started by Docker Compose).
+
+1. Create or extend a file in `tests/contract/database/`.
+2. Use the `db_session` fixture — each test gets a clean savepoint-isolated session.
+3. Seed data with SQLAlchemy ORM models from `src.database.models`, or raw `text()` SQL.
+4. Query the view with `db_session.execute(text("SELECT … FROM v_my_view"))`.
+5. Assert on column names, row count, or specific values.
+
+See [tests/contract/database/test_team_dashboard_views.py](tests/contract/database/test_team_dashboard_views.py) for a complete example covering seeding, querying, and asserting on multiple views.
+
+### Adding or extending e2e fixture scenarios
+
+The fixture system in `tests/fixtures/scenarios/` drives the full parsing → import → view pipeline without live API credentials.
+
+**Important:** There is no persistent seed data in the CI database. The database starts empty on every run and all data is created within each test and rolled back automatically. The fixture JSON files below are the source of test data for integration tests.
+
+**Generated scenarios** (`tests/fixtures/scenarios/generated/*.json`) are picked up automatically — the test file discovers all `.json` files in that folder at collection time, so **no list update is needed**. To add a new scenario:
+
+1. Edit `scripts/generated/generate-fixture-scenarios.py` to add a new entry, then run it: `python scripts/generated/generate-fixture-scenarios.py` (produces a JSON file in `tests/fixtures/scenarios/generated/`).
+2. Run `bash scripts/run-tests-docker.sh tests/contract/integration/test_fixture_scenarios.py` to verify — the new scenario is picked up automatically.
+
+To regenerate all scenarios from config patterns (e.g. after changing `config.json`): `python scripts/generated/generate-repo-seeds.py`
+
+**Adversarial scenarios** (`tests/fixtures/scenarios/adversarial/*.json`) are hand-crafted edge cases (bot committers, unicode names, force-pushed PRs, etc.). To add one, create a JSON file matching the schema and add a test in `tests/contract/integration/test_adversarial_scenarios.py`.
+
+For the fixture JSON schema, see any file in `tests/fixtures/scenarios/generated/` as a reference.
+
+### Resolving integration, import, or connectivity issues
+
+| Issue | Diagnostic command |
+|---|---|
+| View returns wrong data | `bash scripts/run-tests-docker.sh tests/contract/database/test_<view_file>.py -v` |
+| Import fails silently | `bash scripts/run-tests-docker.sh tests/contract/integration/test_fixture_scenarios.py -v` |
+| Grafana shows no data | Check `docker compose logs worker`; check migration tracking: `bash scripts/run-tests-docker.sh tests/contract/database/test_migration_tracking.py` |
+| Auth errors in extraction | `bash scripts/run-tests-docker.sh tests/contract/database/test_error_classification_taxonomy.py` |
+| Data integrity violation | `bash scripts/run-tests-docker.sh tests/contract/database/test_extraction_health_integration.py` |
+| Full pipeline smoke | `bash scripts/run-tests-docker.sh tests/contract/database/test_full_pipeline_e2e.py` |

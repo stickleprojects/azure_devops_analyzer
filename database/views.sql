@@ -1007,8 +1007,8 @@ CREATE OR REPLACE VIEW v_team_vulnerabilities_total_latest AS
 SELECT
     rtl.team,
     COUNT(DISTINCT v.id) AS total_vulnerabilities
-FROM v_dependency_snapshot_latest d
-JOIN v_repository_team_labels rtl ON rtl.repo_id = d.repo_id
+FROM v_repository_team_labels rtl
+LEFT JOIN v_dependency_snapshot_latest d ON d.repo_id = rtl.repo_id
 LEFT JOIN vulnerabilities v ON v.package_id = d.package_id
 GROUP BY rtl.team;
 
