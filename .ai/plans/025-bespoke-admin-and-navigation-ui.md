@@ -2,11 +2,39 @@
 
 > **Renumber note (2026-05-03)**: Originally drafted as Plan 024. Renumbered to 025 because PR #83 (open at drafting time) reserved Plan 024 for "auth error taxonomy and view consistency". Phase numbering inside this document is unchanged.
 
-## Status: IN PROGRESS — Phase 2 ✅ (PR #85) · Phase 3 ✅ (PR #94) · Phase 1 pending
+## Status: IN PROGRESS — Phase 2 ✅ (PR #85, gap: extraction-health.json) · Phase 3 ✅ (PR #94) · Phase 1a ✅ (PR #96) · Phase 1b/1c/1d deferred
 
 **Implements**: A small React frontend that owns admin/operational workflows and coexists with Grafana — Grafana remains the home for analytics charts and the primary "Home" landing.
 
 **Predicate met**: [Investigation grafana-ui-shortcomings](../investigations/grafana-ui-shortcomings.md) closed 2026-05-03 with Outcome 2 selected. The audits at the bottom of that document drive Phases 2 and 3 of this plan.
+
+---
+
+## What's next (agent entry point — 2026-05-25)
+
+Three tasks remain. Pick the one the user asks for; do not implement all three in one PR.
+
+### Task A — Fix extraction-health.json Phase 2 gap (tiny, ~30 min)
+
+`dashboards/extraction-health.json` has no `links[]` array. All other dashboards (except `dashboard-home.json`) have the 6-entry nav bar. Add the same `links[]` as every other dashboard. Copy the canonical shape from `security-dashboard.json`. Validate with `python3 -c "import json; json.load(open('dashboards/extraction-health.json'))"`.
+
+### Task B — Phase 1b: Compute Metrics trigger + Repository List page (optional, ~2–3 days)
+
+Gate: only implement if Phase 1a value is confirmed by the user.
+
+Add to `web/admin-ui/`:
+- Extend `ExtractionPage.tsx` with a "Compute Service Metrics" button calling `POST /api/compute/service-metrics` with toast feedback. Add a typed wrapper in `src/api/client.ts` and the corresponding type in `src/api/types.ts`. Unit-test against a mocked `fetch`.
+- New page `src/pages/RepositoriesPage.tsx` calling `GET /api/repositories`; renders a filterable table with per-row Rescan (`POST /api/rescan/repository/<repo_id>`) and Remove (`DELETE /api/rescan/repository/<repo_id>`) buttons; each action shows a toast. Add route in `App.tsx`. Unit-test the page and the two new API client methods.
+
+All Phase 1b acceptance criteria are in the section below.
+
+### Task C — Phase 1c: Tech Radar viewer route (deferred, ~2–3 days)
+
+Plan 022 is now complete (merged). Backend endpoints available:
+- `GET /api/radar` — returns Thoughtworks-format JSON
+- `GET /api/radar/history` — returns timeline
+
+Add React routes `/radar` and `/radar/history` to `web/admin-ui/`. The `/radar` route renders the JSON as a categorised blip list (no iframe to thoughtworks.com). The `/radar/history` route renders a sortable table. Add tiles on `HomePage.tsx`. Unit-test both pages.
 
 ---
 
@@ -20,13 +48,15 @@ Answered open questions, locked in for execution:
 4. **Location**: `web/admin-ui/`.
 5. **Coexistence**: React UI **coexists** with `dashboards/dashboard-home.json` — neither replaces the other. The Grafana top-link bar's `Home` entry continues to point to the Grafana home dashboard. The React UI gets its own `Admin UI` top-link slot in the Grafana bar (option (a) — see Phase 2 below).
 
-### Phase ordering (revised based on Theme E.2)
+### Phase ordering (revised based on Theme E.2) — phases 2, 3 and 1a are complete
 
-Theme E.2 of the investigation: tidying nav + adding missing data links solves "80% of the pain". So phases now run in this order to capture value fastest:
+Theme E.2 of the investigation: tidying nav + adding missing data links solves "80% of the pain". Phases ran in this order:
 
-1. **Phase 2 first** — uniform Grafana top-link bar (~1 day, mechanical, coding-agent ready).
-2. **Phase 3 second** — missing data links (~1–2 days, ~10 specific edits enumerated in the investigation's drill-down audit).
-3. **Phase 1 third** — React admin UI (~1–2 weeks). Scope tightened: Theme C.1 says "start analysis" is the only admin action used today, so Phase 1a ships with rescan triggers + health, deferring Repository List and Compute Service Metrics to Phase 1b.
+1. **Phase 2** ✅ — uniform Grafana top-link bar (PR #85). One gap remains: `extraction-health.json` was missed and still has no links array.
+2. **Phase 3** ✅ — missing data links (PR #94).
+3. **Phase 1a** ✅ — React admin UI MVP (PR #96): Home, Extraction Control, System Health pages; Dockerfile; docker-compose service; frontend CI workflow.
+
+**Remaining deferred phases**: 1b (Compute Metrics + Repository List), 1c (Tech Radar viewer), 1d (Library detail page). Phase 1c/1d dependencies (Plans 021, 022) are now complete and merged.
 
 ---
 
@@ -51,13 +81,13 @@ This plan splits the concerns:
 
 **Phase 2 — Cross-dashboard nav tidy (Grafana-side, no React) — RUN FIRST:**
 
-- Uniform top-link bar across 11 of 12 dashboards in `dashboards/*.json` (`dashboard-home.json` keeps no bar — it IS Home). Six entries in this fixed order: **Home, Repos, Security, Technology, Admin, Admin UI**.
+- Uniform top-link bar across 12 of 13 dashboards in `dashboards/*.json` (`dashboard-home.json` keeps no bar — it IS Home). Six entries in this fixed order: **Home, Repos, Security, Technology, Admin, Admin UI**.
   - `Home` → `/d/dashboard-home` (type: `dashboards` or `link` with relative URL — see canonical example below)
   - `Repos` → `/d/repo-overview`
   - `Security` → `/d/security-dashboard`
   - `Technology` → `/d/technology-landscape`
   - `Admin` → `/d/admin-dashboard` (Grafana admin observability)
-  - `Admin UI` → `http://localhost:8080/` with `targetBlank: true` (new React UI — Phase 1 will serve it on `:8080`. Until Phase 1 ships, this link 404s; opening in a new tab keeps the dead-link impact minimal. **All other entries use `targetBlank: false`.**)
+  - `Admin UI` → `http://localhost:8080/` with `targetBlank: true` (React UI served on `:8080`. **All other entries use `targetBlank: false`.**)
 - The links array **fully replaces** any existing `links[]` in each dashboard JSON — do not append.
 - Canonical existing example: `security-dashboard.json` already has 6 working internal links — copy that link object shape (`type`, `icon`, `tags`, `targetBlank`, `url`, `title`) and just swap the entry list.
 - Replaces the 7 distinct shapes catalogued in the top-link audit (investigation, audit #1).
@@ -98,14 +128,14 @@ Skipped (no obvious target or external link): `repository-deep-dive` Branch Deta
 - **Compute Service Metrics** trigger on the Extraction Control page.
 - **Repository List** — paginated/filterable view of `/api/repositories` with per-row Rescan/Remove buttons.
 
-**Phase 1c (deferred — Tech Radar viewer, depends on Plan 022 shipping):**
+**Phase 1c (deferred — Tech Radar viewer, Plan 022 dependency now met ✅):**
 
 - React route at `/radar` rendering the Thoughtworks-format JSON returned by `GET /api/radar` (Plan 022 Part C).
 - React route at `/radar/history` rendering the timeline from `GET /api/radar/history` as a sortable table.
 - Replaces the now-removed `src/api/radar_viewer.html` from Plan 022. Plan 022's backend is unchanged and ships independently of this phase.
 - Rationale: Tech Radar is a leadership-facing artifact (Theme E.1 audience). A React route is much cleaner than an iframe to thoughtworks.com or a static HTML wrapper, and is exactly the kind of high-visibility surface that justifies the React investment beyond admin chores.
 
-**Phase 1d (deferred — Library detail page, depends on Plan 021 endpoints):**
+**Phase 1d (deferred — Library detail page, Plan 021 dependency now met ✅):**
 
 - React route at `/library/:ecosystem/:name` consuming `GET /api/packages/library/<name>/<ecosystem>` (Plan 021 Part C).
 - Renders metadata + CVE list + adoption timeline + per-repo usage in a layout the Grafana `library-detail-deep-dive.json` dashboard struggles with (Theme D.1: "panels can feel cluttered and have scrollbars to find links").
@@ -208,11 +238,11 @@ For each gap enumerated in the Scope section, add a `fieldConfig.overrides[]` en
 
 ### Phase 2
 
-- [ ] Every `dashboards/*.json` except `dashboard-home.json` has identical 6-entry `links[]` array (Home / Repos / Security / Technology / Admin / Admin UI) in that order.
-- [ ] `dashboard-home.json` retains no top-link bar.
-- [ ] All entries use `targetBlank=false`.
-- [ ] Manual click-through: from each dashboard, each top-link entry lands on the right destination (Admin UI link 404s until Phase 1 ships — acceptable).
-- [ ] JSON sanity per Plan 023 pattern: `python -c "import json; json.load(open('dashboards/<file>.json'))"` exits 0 for each file.
+- [x] Every `dashboards/*.json` except `dashboard-home.json` has identical 6-entry `links[]` array (Home / Repos / Security / Technology / Admin / Admin UI) in that order. (PR #85) — **gap: `extraction-health.json` still has no links array, needs a follow-up fix.**
+- [x] `dashboard-home.json` retains no top-link bar.
+- [x] Internal nav links use `targetBlank=false`; `Admin UI` link uses `targetBlank=true` (opens React app in new tab).
+- [ ] Manual click-through: from each dashboard, each top-link entry lands on the right destination.
+- [x] JSON sanity: all `dashboards/*.json` parse without error.
 
 ### Phase 3
 
@@ -220,17 +250,17 @@ For each gap enumerated in the Scope section, add a `fieldConfig.overrides[]` en
 - [x] Skipped panels (Branch Details, Repository Summary, Recent Commits, Health Status, CVE Details) are documented inline as deliberate skips. (commit message)
 - [ ] Manual click-through: pick one gap-fix per dashboard, confirm the data link opens the right target with the right filter applied.
 
-### Phase 1a (must-ship MVP)
+### Phase 1a (must-ship MVP) — COMPLETE ✅ (PR #96)
 
-- [ ] `docker compose up admin-ui` serves the UI at a known port (e.g. `:8080`).
-- [ ] Home page renders tiles linking to each existing Grafana dashboard.
-- [ ] Clicking "Trigger GitHub rescan" calls `POST /api/rescan/github`, shows an in-page success toast with the returned `task_id`, and does **not** open a new browser tab.
-- [ ] Same for Azure DevOps rescan.
-- [ ] System Health page shows `/health` output and a working "Open Flower" link.
-- [ ] `npm run typecheck` and `npm run test` exit 0 in `web/admin-ui/`.
-- [ ] CI runs frontend lint/typecheck/test on PRs touching `web/admin-ui/**`.
-- [ ] No changes to `src/extractors/**`, `src/analyzers/**`, `src/database/**`, `src/workflows/**`. (Architecture boundary check.)
-- [ ] Python test suite (`bash scripts/run-tests-docker.sh`) still passes — this plan adds no Python code, but verify nothing was broken by Docker Compose changes.
+- [x] `docker compose up admin-ui` serves the UI at a known port (`:8080`).
+- [x] Home page renders tiles linking to each existing Grafana dashboard.
+- [x] Clicking "Trigger GitHub rescan" calls `POST /api/rescan/github`, shows an in-page success toast with the returned `task_id`, and does **not** open a new browser tab.
+- [x] Same for Azure DevOps rescan.
+- [x] System Health page shows `/health` output and a working "Open Flower" link.
+- [x] `npm run typecheck` and `npm run test` exit 0 in `web/admin-ui/`.
+- [x] CI runs frontend typecheck/test/build/e2e on PRs touching `web/admin-ui/**` (`.github/workflows/frontend.yml`).
+- [x] No changes to `src/extractors/**`, `src/analyzers/**`, `src/database/**`, `src/workflows/**`.
+- [ ] Python test suite (`bash scripts/run-tests-docker.sh`) regression check — verify still green after Docker Compose changes.
 
 ### Phase 1b (follow-up, optional)
 
@@ -250,7 +280,7 @@ For each gap enumerated in the Scope section, add a `fieldConfig.overrides[]` en
 ### Grafana (Phases 2–3)
 
 - JSON sanity per Plan 023's pattern: `python -c "import json; json.load(open('dashboards/<file>.json'))"`.
-- `jq` checks that all `links[]` arrays match the canonical 5-entry shape.
+- `jq` checks that all `links[]` arrays match the canonical 6-entry shape.
 - Visual check: stack up, click every link from every dashboard.
 
 ### Cross-cutting
@@ -273,35 +303,42 @@ For each gap enumerated in the Scope section, add a `fieldConfig.overrides[]` en
 
 ## File manifest (Phase 1)
 
+**Phase 1a — shipped (PR #96):**
+
 ```
 web/admin-ui/
-  Dockerfile                         (new)
-  nginx.conf                         (new)
-  package.json                       (new)
-  tsconfig.json                      (new)
-  vite.config.ts                     (new)
-  tailwind.config.ts                 (new)
-  index.html                         (new)
+  Dockerfile                         ✅
+  nginx.conf                         ✅
+  package.json                       ✅
+  tsconfig.json / tsconfig.node.json ✅
+  vite.config.ts                     ✅
+  tailwind.config.ts / postcss.config.js ✅
+  index.html                         ✅
   src/
-    main.tsx                         (new)
-    App.tsx                          (new)
+    main.tsx / App.tsx               ✅
+    config.ts                        ✅
     pages/
-      HomePage.tsx                   (new)
-      ExtractionPage.tsx             (new)
-      RepositoriesPage.tsx           (new)
-      HealthPage.tsx                 (new)
+      HomePage.tsx + test            ✅
+      ExtractionPage.tsx + test      ✅
+      HealthPage.tsx + test          ✅
     components/
-      Layout.tsx                     (new)
-      Toast.tsx                      (new)
-      ApiButton.tsx                  (new)
+      Layout.tsx / Toast.tsx / ApiButton.tsx  ✅
     api/
-      client.ts                      (new)
-      types.ts                       (new)
-docker-compose.yml                   (modified — add admin-ui service)
-.github/workflows/frontend.yml       (new — or extend tests.yml)
+      client.ts + test / types.ts    ✅
+  e2e/
+    home.spec.ts / extraction.spec.ts / health.spec.ts  ✅
+docker-compose.yml                   ✅ (admin-ui service added)
+.github/workflows/frontend.yml       ✅
 ```
 
-**Estimated effort**: Phase 1 ~5–10 working days for one developer; Phases 2–3 ~2–3 days combined and parallelisable.
+**Phase 1b — not yet started (follow-up, optional):**
+
+```
+web/admin-ui/src/pages/
+  RepositoriesPage.tsx               (new — Phase 1b)
+```
+
+**Estimated effort**: Phase 1b ~2–3 days; Phase 1c/1d ~2–3 days each.
 
 ---
 
