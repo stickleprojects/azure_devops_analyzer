@@ -193,17 +193,7 @@ Contract tests verify that SQL views return correct data given seeded rows. They
 4. Query the view with `db_session.execute(text("SELECT … FROM v_my_view"))`.
 5. Assert on column names, row count, or specific values.
 
-```python
-from sqlalchemy import text
-
-def test_my_view_returns_data(db_session):
-    # seed
-    db_session.execute(text("INSERT INTO repositories (repo_id, name, …) VALUES (…)"))
-    db_session.flush()
-    # assert
-    rows = db_session.execute(text("SELECT * FROM v_my_view")).fetchall()
-    assert len(rows) > 0
-```
+See [tests/contract/database/test_team_dashboard_views.py](tests/contract/database/test_team_dashboard_views.py) for a complete example covering seeding, querying, and asserting on multiple views.
 
 ### Adding or extending e2e fixture scenarios
 
@@ -220,18 +210,7 @@ To regenerate all scenarios from config patterns (e.g. after changing `config.js
 
 **Adversarial scenarios** (`tests/fixtures/scenarios/adversarial/*.json`) are hand-crafted edge cases (bot committers, unicode names, force-pushed PRs, etc.). To add one, create a JSON file matching the schema and add a test in `tests/contract/integration/test_adversarial_scenarios.py`.
 
-**Fixture JSON structure:**
-
-```json
-{
-  "file_names": ["requirements.txt"],
-  "manifests": { "requirements.txt": "flask==3.0.0\nrequests==2.31.0" },
-  "languages": [{"language": "Python", "byte_count": 50000}],
-  "branches": [{"name": "main", "is_default": true, "last_commit_sha": "abc123"}],
-  "commits": [...],
-  "pull_requests": [...]
-}
-```
+For the fixture JSON schema, see any file in `tests/fixtures/scenarios/generated/` as a reference.
 
 ### Resolving integration, import, or connectivity issues
 
