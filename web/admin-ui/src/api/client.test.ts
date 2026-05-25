@@ -7,6 +7,8 @@ import {
   getRepositories,
   rescanRepository,
   removeRepository,
+  getLibraryDetail,
+  getPackageAdoption,
 } from './client'
 
 const mockFetch = vi.fn()
@@ -155,5 +157,64 @@ describe('removeRepository', () => {
   it('throws on non-2xx', async () => {
     mockError(500, 'Server error')
     await expect(removeRepository('r2')).rejects.toThrow('HTTP 500: Server error')
+  })
+})
+
+describe('getLibraryDetail', () => {
+  it('GETs /api/packages/library/<name>/<ecosystem>', async () => {
+    const payload = {
+      metadata: { package_name: 'requests', ecosystem: 'pip', latest_version: '2.31.0', is_eol: false, eol_date: null },
+      cves: [],
+      usage: [],
+      by_team: [],
+    }
+    mockOk(payload)
+    const result = await getLibraryDetail('requests', 'pip')
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/packages/library/requests/pip',
+      undefined,
+    )
+    expect(result.metadata.package_name).toBe('requests')
+  })
+
+  it('URL-encodes name and ecosystem', async () => {
+    mockOk({ metadata: {}, cves: [], usage: [], by_team: [] })
+    await getLibraryDetail('my lib', 'npm & more')
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/packages/library/my%20lib/npm%20%26%20more',
+      undefined,
+    )
+  })
+
+  it('throws on 404', async () => {
+    mockError(404, 'Package not found')
+    await expect(getLibraryDetail('missing', 'pip')).rejects.toThrow(
+      'HTTP 404: Package not found',
+    )
+  })
+})
+
+describe('getPackageAdoption', () => {
+  it('GETs /api/packages/adoption with name, ecosystem, days', async () => {
+    mockOk([])
+    await getPackageAdoption('requests', 'pip', 90)
+    expect(mockFetch).toHaveBeenCalledWith(
+      '/api/packages/adoption?name=requests&ecosystem=pip&days=90',
+      undefined,
+    )
+  })
+
+  it('returns parsed timeline array', async () => {
+    const rows = [
+      { package_name: 'requests', ecosystem: 'pip', adoption_date: '2024-01-01', repo_count: 5 },
+    ]
+    mockOk(rows)
+    const result = await getPackageAdoption('requests', 'pip', 90)
+    expect(result).toEqual(rows)
+  })
+
+  it('throws on non-2xx', async () => {
+    mockError(500, 'DB error')
+    await expect(getPackageAdoption('requests', 'pip', 90)).rejects.toThrow('HTTP 500: DB error')
   })
 })

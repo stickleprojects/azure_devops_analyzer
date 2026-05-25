@@ -4,6 +4,8 @@ import type {
   ComputeMetricsResponse,
   RepositoryListResponse,
   RescanRepositoryResponse,
+  LibraryDetailResponse,
+  AdoptionTimelineRow,
 } from './types'
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
@@ -57,4 +59,22 @@ export async function removeRepository(repoId: string): Promise<RescanRepository
 
 export async function getHealth(): Promise<HealthResponse> {
   return request<HealthResponse>('/health')
+}
+
+export async function getLibraryDetail(
+  name: string,
+  ecosystem: string,
+): Promise<LibraryDetailResponse> {
+  return request<LibraryDetailResponse>(
+    `/api/packages/library/${encodeURIComponent(name)}/${encodeURIComponent(ecosystem)}`,
+  )
+}
+
+export async function getPackageAdoption(
+  name: string,
+  ecosystem: string,
+  days = 90,
+): Promise<AdoptionTimelineRow[]> {
+  const qs = new URLSearchParams({ name, ecosystem, days: String(days) })
+  return request<AdoptionTimelineRow[]>(`/api/packages/adoption?${qs}`)
 }

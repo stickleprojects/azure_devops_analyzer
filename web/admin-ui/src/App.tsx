@@ -7,6 +7,7 @@ import HealthPage from './pages/HealthPage'
 import RadarPage from './pages/RadarPage'
 import RadarHistoryPage from './pages/RadarHistoryPage'
 import RepositoriesPage from './pages/RepositoriesPage'
+import LibraryDetailPage from './pages/LibraryDetailPage'
 
 const queryClient = new QueryClient()
 
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="/radar" element={<RadarPage />} />
             <Route path="/radar/history" element={<RadarHistoryPage />} />
             <Route path="/repositories" element={<RepositoriesPage />} />
+            <Route path="/library/:ecosystem/:name" element={<LibraryDetailPage />} />
           </Route>
         </Routes>
       </BrowserRouter>
