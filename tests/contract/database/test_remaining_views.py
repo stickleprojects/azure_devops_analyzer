@@ -303,6 +303,7 @@ class TestSecurityRemainingViews:
             ecosystem="pypi",
             version="0.9.0",
             has_known_vulnerabilities=True,
+            first_seen_at=now,
             last_seen_at=now,
         )
         db_session.add(dep)
@@ -459,13 +460,13 @@ class TestRepoDetailViews:
 class TestCodeQualityViews:
     def test_repo_code_quality_latest_queryable(self, db_session):
         rows = db_session.execute(text(
-            "SELECT repo_id, branch_id, overall_score FROM v_repo_code_quality_latest"
+            "SELECT repo_id, timestamp, total_issues FROM v_repo_code_quality_latest"
         )).fetchall()
         assert isinstance(rows, list)
 
     def test_repo_code_quality_trend_90d_queryable(self, db_session):
         rows = db_session.execute(text(
-            "SELECT repo_id, time, overall_score FROM v_repo_code_quality_trend_90d"
+            "SELECT repo_id, time, critical FROM v_repo_code_quality_trend_90d"
         )).fetchall()
         assert isinstance(rows, list)
 
@@ -554,6 +555,7 @@ class TestDependencySummaryView:
             ecosystem="npm",
             version="4.0.0",
             has_known_vulnerabilities=False,
+            first_seen_at=now,
             last_seen_at=now,
         ))
         db_session.flush()

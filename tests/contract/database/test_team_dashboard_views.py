@@ -141,6 +141,7 @@ def team_dataset(db_session):
             name="Python",
             category="language",
             line_count=5000,
+            first_seen_at=now,
             last_seen_at=now,
         ))
 
