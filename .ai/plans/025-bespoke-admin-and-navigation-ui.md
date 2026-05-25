@@ -2,7 +2,7 @@
 
 > **Renumber note (2026-05-03)**: Originally drafted as Plan 024. Renumbered to 025 because PR #83 (open at drafting time) reserved Plan 024 for "auth error taxonomy and view consistency". Phase numbering inside this document is unchanged.
 
-## Status: IN PROGRESS — Phase 2 ✅ (PR #85, gap fixed: Task A ✅ PR #103) · Phase 3 ✅ (PR #94) · Phase 1a ✅ (PR #96) · Phase 1b ✅ (this PR) · Phase 1c/1d deferred
+## Status: IN PROGRESS — Phase 2 ✅ (PR #85, gap fixed: Task A ✅ PR #103) · Phase 3 ✅ (PR #94) · Phase 1a ✅ (PR #96) · Phase 1b ✅ (PR #104) · Phase 1c/1d deferred
 
 **Implements**: A small React frontend that owns admin/operational workflows and coexists with Grafana — Grafana remains the home for analytics charts and the primary "Home" landing.
 
@@ -17,15 +17,9 @@ Two tasks remain. Pick the one the user asks for; do not implement both in one P
 ### Task A — Fix extraction-health.json Phase 2 gap ✅ (PR #103)
 
 `dashboards/extraction-health.json` had no `links[]` array. Fixed in PR #103.
-### Task B — Phase 1b: Compute Metrics trigger + Repository List page (optional, ~2–3 days)
+### Task B — Phase 1b: Compute Metrics trigger + Repository List page ✅ (PR #104)
 
-Gate: only implement if Phase 1a value is confirmed by the user.
-
-Add to `web/admin-ui/`:
-- Extend `ExtractionPage.tsx` with a "Compute Service Metrics" button calling `POST /api/compute/service-metrics` with toast feedback. Add a typed wrapper in `src/api/client.ts` and the corresponding type in `src/api/types.ts`. Unit-test against a mocked `fetch`.
-- New page `src/pages/RepositoriesPage.tsx` calling `GET /api/repositories`; renders a filterable table with per-row Rescan (`POST /api/rescan/repository/<repo_id>`) and Remove (`DELETE /api/rescan/repository/<repo_id>`) buttons; each action shows a toast. Add route in `App.tsx`. Unit-test the page and the two new API client methods.
-
-All Phase 1b acceptance criteria are in the section below.
+Merged. `ExtractionPage.tsx` extended with Compute Service Metrics button; `RepositoriesPage.tsx` added with filterable table and per-row Rescan/Remove buttons.
 
 ### Task C — Phase 1c: Tech Radar viewer route (deferred, ~2–3 days)
 

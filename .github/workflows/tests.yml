@@ -160,24 +160,6 @@ jobs:
         run: |
           bash docker/scripts/run_migrations.sh
 
-      - name: Run unit tests
-        if: steps.test_scope.outputs.run_python == 'true'
-        env:
-          PYTHONPATH: ${{ github.workspace }}
-          GITHUB_TOKEN: ${{ secrets.REPO_ANALYZER_GITHUB_TOKEN }}
-        run: |
-          pytest tests/unit/ -v --tb=short
-
-      - name: Run integration tests
-        if: steps.test_scope.outputs.run_python == 'true'
-        env:
-          PYTHONPATH: ${{ github.workspace }}
-          GITHUB_TOKEN: ${{ secrets.REPO_ANALYZER_GITHUB_TOKEN }}
-          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
-        run: |
-          pytest tests/contract/ -v --tb=short --durations=10 -m "not live_api"
-
       # - name: Run live API tests
       #   if: steps.test_scope.outputs.run_python == 'true'
       #   env:
@@ -199,7 +181,7 @@ jobs:
       #       echo "Skipping live API tests - credentials not available"
       #     fi
 
-      - name: Generate coverage report
+      - name: Run tests and generate coverage report
         if: steps.test_scope.outputs.run_python == 'true'
         env:
           PYTHONPATH: ${{ github.workspace }}
@@ -213,7 +195,7 @@ jobs:
           POSTGRES_DB: test_azure_devops
         run: |
           mkdir -p test-results
-          pytest tests/ --cov=src --cov-report=xml:test-results/coverage.xml --cov-report=term-missing -m "not live_api" -p no:cacheprovider
+          pytest tests/ -v --tb=short --durations=10 -m "not live_api" -p no:cacheprovider --cov=src --cov-report=xml:test-results/coverage.xml --cov-report=term-missing
       - name: Report test status
         if: always()
         run: |
