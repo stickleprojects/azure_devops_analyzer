@@ -19,7 +19,13 @@ Runs tests in Docker with a clean database. **Now matches CI exactly** - runs te
 ./scripts/run-tests-docker.sh tests/unit/              # Run specific test path
 ./scripts/run-tests-docker.sh --live-api               # Run live API tests
 ./scripts/run-tests-docker.sh --keep-db                # Keep database for debugging
+./scripts/run-tests-docker.sh --force-build            # Rebuild images first (after a git pull / branch switch)
 ```
+
+> **After a `git pull` or branch switch, run with `--force-build`.** `docker compose run`
+> reuses the existing image, so the baked migration runner script or Python deps can drift
+> from source and fail tests in confusing ways (the classic symptom is migrations dying
+> silently at `014`). `--force-build` is cache-aware, so it's fast when nothing actually changed.
 
 **What it does (matches CI exactly):**
 
