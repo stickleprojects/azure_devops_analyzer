@@ -70,6 +70,7 @@ services:
     volumes:
       # Mount schema and migrations at runtime for development (no rebuild needed)
       - ./database/schema.sql:/migrations/schema.sql:ro
+      - ./database/views.sql:/migrations/views.sql:ro
       - ./database/migrations:/migrations/migrations:ro
     depends_on:
       test-db:
