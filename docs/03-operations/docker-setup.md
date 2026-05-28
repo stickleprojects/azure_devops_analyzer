@@ -99,7 +99,9 @@ The test stack behavior:
 - Runs post-integration DB invariant checks via `scripts/verify-extraction.sh`
 - Cleans up resources when finished
 
-The `test-runner` service in `docker-compose.test.yml` bind-mounts `./scripts`, `./src`, `./tests`, and `./database` into `/app`, so shell and Python changes in those directories apply on the next run without an image rebuild. Rebuild (`docker compose -f docker-compose.test.yml build test-runner`) is only required when `Dockerfile` or `requirements.txt` changes.
+The `test-runner` service in `docker-compose.test.yml` bind-mounts `./scripts`, `./src`, `./tests`, and `./database` into `/app`, so shell and Python changes in those directories apply on the next run without an image rebuild. A rebuild is only required when a *baked* (non-mounted) input changes — `Dockerfile` / `requirements.txt` for `test-runner`, or `Dockerfile.migrations` / `docker/scripts/run_migrations.sh` for `test-migrations`.
+
+Because `docker compose run` reuses the existing image, after a `git pull` or branch switch the baked content can drift from source and fail tests in confusing ways (the classic symptom is migrations dying silently at `014`). Rather than tracking which inputs changed, just run `./scripts/run-tests-docker.sh --force-build` after pulling — it rebuilds `test-migrations` and `test-runner` (cache-aware, so fast when nothing changed). The manual equivalent is `docker compose -f docker-compose.test.yml build test-migrations test-runner`.
 
 ## Troubleshooting
 

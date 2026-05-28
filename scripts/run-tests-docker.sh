@@ -11,6 +11,7 @@
 #   ./scripts/run-tests-docker.sh --live-api   # Run only live API tests
 #   ./scripts/run-tests-docker.sh <test_path>  # Run specific test file or pattern
 #   ./scripts/run-tests-docker.sh --keep-db    # Keep database for debugging
+#   ./scripts/run-tests-docker.sh --force-build # Rebuild images first (after a git pull)
 #   ./scripts/run-tests-docker.sh --help       # Show help
 #
 # Environment Variables:
@@ -32,6 +33,7 @@ COMPOSE_FILE="${PROJECT_ROOT}/docker-compose.test.yml"
 RESULTS_DIR="${PROJECT_ROOT}/test-results"
 KEEP_DB=false
 RUN_LIVE_API=false
+FORCE_BUILD=false
 TEST_PATH=""
 ENV_FILE="${PROJECT_ROOT}/.env"
 RESOLVED_ENV_FILE="${PROJECT_ROOT}/.env.resolved"
@@ -80,6 +82,12 @@ OPTIONS:
     --live-api      Run live API tests (tests marked with @pytest.mark.live_api)
                     Includes both GitHub and Azure DevOps platform tests
     --keep-db       Keep test database after run (for debugging)
+    --force-build   Rebuild the test images before running. Use this after a
+                    git pull or branch switch: 'docker compose run' otherwise
+                    reuses the existing image, so a stale baked migration runner
+                    or outdated Python deps can fail tests in confusing ways
+                    (e.g. migrations dying silently at 014). Cache-aware, so it
+                    is fast when nothing actually changed.
     --no-cleanup    Don't clean up containers after run
     --help          Show this help message
 
@@ -89,6 +97,9 @@ EXAMPLES:
 
     # Run specific test file
     $0 tests/unit/extractors/test_cache.py
+
+    # Rebuild images first (do this after a git pull or branch switch)
+    $0 --force-build
 
     # Run only live API tests for both GitHub and Azure DevOps
     $0 --live-api
@@ -172,6 +183,18 @@ build_junit_xml_path() {
     echo "/app/test-results/junit-${safe_suffix}.xml"
 }
 
+# Rebuild the locally-built images (test-migrations, test-runner) before tests.
+# `docker compose run` reuses an existing image, so after a git pull the baked
+# content (migration runner script, Python deps) can drift from source and fail
+# in confusing ways. This is a cache-aware build: a near no-op when nothing
+# changed, a real rebuild of the affected layers when a COPYed file did change.
+force_build_images() {
+    log_info "Rebuilding test images (--force-build)..."
+    docker compose --env-file "$RESOLVED_ENV_FILE" -f "$COMPOSE_FILE" build test-migrations test-runner
+    log_success "Test images rebuilt"
+    echo
+}
+
 # =============================================================================
 # Parse Arguments
 # =============================================================================
@@ -185,6 +208,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --keep-db)
             KEEP_DB=true
+            shift
+            ;;
+        --force-build)
+            FORCE_BUILD=true
             shift
             ;;
         --no-cleanup)
@@ -248,6 +275,16 @@ echo
 # =============================================================================
 # Change to project root so docker-compose volume paths resolve correctly
 cd "$PROJECT_ROOT"
+
+if [ "$FORCE_BUILD" = true ]; then
+    force_build_images
+else
+    log_info "Tip: re-run with --force-build to rebuild the test images first."
+    log_info "     Do this after a git pull or branch switch — otherwise a stale baked"
+    log_info "     migration runner or outdated Python deps can fail tests in confusing"
+    log_info "     ways. It's cache-aware, so it's fast when nothing actually changed."
+    echo
+fi
 
 start_test_db_and_migrations
 
