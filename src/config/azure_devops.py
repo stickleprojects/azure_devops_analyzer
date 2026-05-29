@@ -48,9 +48,9 @@ class AzureDevOpsExtractorConfig:
             regular_env = project_root / ".env"
             
             if resolved_env.exists():
-                load_env_file(resolved_env)
+                load_env_file(resolved_env, override = True)
             elif regular_env.exists():
-                load_env_file(regular_env)
+                load_env_file(regular_env, override = True)
         
         return cls(
             page_size=_get_env_int("AZURE_PAGE_SIZE", cls.page_size),
