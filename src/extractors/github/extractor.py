@@ -226,8 +226,11 @@ class GitHubExtractor(RepositoryExtractor):
                 
                 org_name = user.login
             except GithubException as inner_exc:
+                # Let the workflow layer decide whether to skip this scope
+                # (e.g. permission errors) or fail the run. See
+                # src.workflows.scope_handling.list_repositories_or_skip.
                 self._logger.warning("Failed to list repos for %s: %s", organization, inner_exc)
-                return []
+                raise
             else:
                 self._logger.info(
                     "GitHub extractor: Falling back to user scope for '%s' (%s)",

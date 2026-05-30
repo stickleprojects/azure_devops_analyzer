@@ -44,6 +44,7 @@ from src.analyzers.dependency_analyzer import DependencyAnalyzer
 from src.analyzers.technology_detector import TechnologyDetector
 from src.analyzers.contributor_analyzer import calculate_and_store_contributor_metrics
 from src.extractors.github.extractor import GitHubExtractor
+from src.workflows.scope_handling import list_repositories_or_skip
 
 logger = logging.getLogger(__name__)
 
@@ -135,9 +136,21 @@ class GitHubAnalysisWorkflow:
         self._process_repositories(org_data)
 
     def _process_repositories(self, org_data):
-        """Fetch and process all repositories for an organization."""
+        """Fetch and process all repositories for an organization.
+
+        If the caller lacks permission to list repositories for this org,
+        the org is skipped (a warning is logged) and the workflow continues
+        with the next org. See
+        ``src.workflows.scope_handling.list_repositories_or_skip``.
+        """
         logger.info("  Fetching repositories for %s...", org_data.name)
-        repos = self.extractor.get_repositories(org_data.name)
+        repos = list_repositories_or_skip(
+            self.extractor,
+            org_data.name,
+            scope_label=f"org {org_data.name}",
+        )
+        if repos is None:
+            return
         logger.info("  Found %d repositories", len(repos))
 
         with session_scope() as session:

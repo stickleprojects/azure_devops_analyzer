@@ -1,4 +1,12 @@
-"""Unit tests for Azure DevOps extractor improvements."""
+"""Unit tests for Azure DevOps extractor improvements.
+
+The ``extractor`` fixture binds the inner SDK clients with ``spec=GitClient``
+and ``spec=CoreClient`` (instead of bare ``Mock()``). This means a typo'd
+SDK call inside the extractor — e.g. ``git_client.get_repos(...)`` instead of
+``get_repositories(...)``, or a misspelled kwarg — raises ``AttributeError``
+or ``TypeError`` at test time. Without ``spec=`` those typos pass silently
+because bare Mock auto-creates any attribute or accepts any keyword.
+"""
 
 import time
 from datetime import datetime
@@ -6,6 +14,8 @@ from unittest.mock import Mock, patch, PropertyMock
 
 import pytest
 from azure.devops.exceptions import AzureDevOpsServiceError
+from azure.devops.v7_1.core.core_client import CoreClient
+from azure.devops.v7_1.git.git_client import GitClient
 
 from src.config.azure_devops import AzureDevOpsExtractorConfig
 from src.extractors.azure_devops.extractor import AzureDevOpsExtractor
@@ -61,10 +71,16 @@ def azure_config():
 
 @pytest.fixture
 def extractor(azure_config):
-    """Create an Azure DevOps extractor with mocked clients."""
+    """Create an Azure DevOps extractor with signature-bound mock clients.
+
+    The clients are bound with ``spec=`` so a typo in any SDK method name
+    (e.g. ``get_repos`` instead of ``get_repositories``) raises
+    ``AttributeError`` at test time. Without spec, bare Mock would silently
+    auto-create the misspelled attribute and the test would still pass.
+    """
     ext = AzureDevOpsExtractor(config=azure_config)
-    ext._git_client = Mock()
-    ext._core_client = Mock()
+    ext._git_client = Mock(spec=GitClient)
+    ext._core_client = Mock(spec=CoreClient)
     return ext
 
 

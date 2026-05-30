@@ -1,7 +1,18 @@
-"""Unit tests for manifest file extraction."""
+"""Unit tests for manifest file extraction.
+
+The extractor fixtures bind their underlying SDK clients with ``spec=`` so a
+typo in an SDK method name (e.g. ``get_repos`` vs ``get_repositories``)
+raises ``AttributeError`` at test time instead of passing silently. See
+``test_azure_devops_extractor.py`` for the rationale.
+"""
 
 import pytest
 from unittest.mock import Mock, patch
+
+from azure.devops.v7_1.core.core_client import CoreClient
+from azure.devops.v7_1.git.git_client import GitClient
+from github import Github
+
 from src.config.github import GitHubExtractorConfig
 from src.config.azure_devops import AzureDevOpsExtractorConfig
 from src.extractors.github.extractor import GitHubExtractor
@@ -11,9 +22,9 @@ from src.extractors.base import FileTreeItem, ManifestFileData
 
 @pytest.fixture
 def github_extractor():
-    """Create a GitHub extractor with mocked client."""
+    """Create a GitHub extractor with a signature-bound mock client."""
     with patch('src.extractors.github.client.get_github_client') as mock_client:
-        mock_client.return_value = Mock()
+        mock_client.return_value = Mock(spec=Github)
         config = GitHubExtractorConfig(token="fake-token", user="test-user")
         extractor = GitHubExtractor(config=config)
         return extractor
@@ -31,11 +42,11 @@ def azure_config():
 
 @pytest.fixture
 def azure_extractor(azure_config):
-    """Create an Azure DevOps extractor with mocked clients."""
+    """Create an Azure DevOps extractor with signature-bound mock clients."""
     with patch.object(AzureDevOpsExtractor, '__abstractmethods__', set()):
         extractor = AzureDevOpsExtractor(config=azure_config)
-        extractor._git_client = Mock()
-        extractor._core_client = Mock()
+        extractor._git_client = Mock(spec=GitClient)
+        extractor._core_client = Mock(spec=CoreClient)
         return extractor
 
 
