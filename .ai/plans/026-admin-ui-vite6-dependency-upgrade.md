@@ -112,3 +112,45 @@ npm run e2e          # Playwright (needs browsers + preview server)
   plan covers only the two MEDIUMs.
 - Dependabot has not opened its own PRs (alerts-only), so there's no bot PR to
   reconcile against — this is a hand-rolled upgrade.
+
+---
+
+## Agent execution guards (Copilot)
+
+This plan is suitable for autonomous execution by Copilot, with the following
+non-negotiable guards. They are listed because previous Copilot runs in this
+repo have hit each failure mode at least once.
+
+1. **CI green is the done condition, not "tests pass locally".** After opening
+   the PR, poll `gh pr checks <pr-number>` until every required check returns
+   `SUCCESS`. Do **not** post a "ready for review" comment, mark the task
+   complete, or declare done while any check is still `IN_PROGRESS`, `QUEUED`,
+   or `FAILURE`. If a check fails, push fixes on the same branch and re-poll.
+
+2. **Do not silence failing tests.** The vitest 1 → 3 jump will surface real
+   migration breakage in the unit suite. Fix forward per the vitest migration
+   notes. Do **not**:
+   - comment out or `.skip` failing tests,
+   - mark them `xfail` / `it.todo`,
+   - delete assertions to make the build green,
+   - downgrade `vitest` to 2.x as a half-measure.
+
+   If a test legitimately no longer applies after a vitest API change, delete
+   it with a one-line justification in the PR description — never silently.
+
+3. **Stay within the controlled bumps in Step 1.** Do **not** run
+   `npm audit fix --force`. Do **not** bump `@vitejs/plugin-react` beyond 4.x,
+   `vite` beyond 6.x, or `vitest` beyond 3.x. If `npm install` resolves a
+   surprise major upgrade (e.g. jsdom 25, node-fetch), stop and surface it in
+   the PR description rather than accepting it.
+
+### Required PR shape
+
+- **Branch**: `fix/admin-ui-vite6-upgrade` (off latest `main`).
+- **Title**: `fix(admin-ui): upgrade vite to 6.x to close GHSA-4w7w-66w2-5vf9 and GHSA-67mh-4wv8-2f99`
+- **Body must include**:
+  - Resolved versions of `vite`, `esbuild`, `vitest` from `npm ls`.
+  - Output line from `npm audit` showing `0 vulnerabilities`.
+  - Any tests deleted/rewritten because of vitest API changes, with reason.
+  - Confirmation that `npm run typecheck`, `npm run test`, `npm run build`
+    were each run and exit 0 locally.
