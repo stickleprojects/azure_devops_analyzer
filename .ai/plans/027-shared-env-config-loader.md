@@ -1,4 +1,8 @@
-# Plan 026: Shared Environment / Config Loader Refactor
+# Plan 027: Shared Environment / Config Loader Refactor
+
+> **Renumber note (2026-05-30):** Originally drafted as Plan 026. Renumbered to
+> 027 because PR #114 (merged 2026-05-30) reserved Plan 026 for the admin-ui
+> vite 6 upgrade. Content unchanged.
 
 ## Status: PROPOSED (not started)
 
