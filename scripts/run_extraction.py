@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 """
-CLI entry point for running GitHub repository extraction.
-
-This script can be run directly or invoked from the PowerShell wrapper script.
+CLI entry point for running repository extraction workflows.
 
 Usage:
-    python run_extraction.py
-    python run_extraction.py --max-repos 10
-    python run_extraction.py --max-commits 100 --max-prs 50
+python run_extraction.py
+python run_extraction.py --source github
+python run_extraction.py --source azure-devops
 """
 
 import argparse
@@ -20,8 +18,14 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.workflows.github_analysis import (
     GitHubAnalysisWorkflow,
-    ExtractionLimits,
-    print_extraction_summary,
+    ExtractionLimits as GitHubExtractionLimits,
+    print_extraction_summary as print_github_summary,
+)
+
+from src.workflows.azure_devops_analysis import (
+    AzureDevOpsAnalysisWorkflow,
+    ExtractionLimits as AzureExtractionLimits,
+    print_extraction_summary as print_azure_summary,
 )
 
 
@@ -38,9 +42,18 @@ def setup_logging(verbose: bool = False) -> None:
 def parse_args() -> argparse.Namespace:
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(
-        description="Run GitHub repository extraction workflow.",
+        description="Run repository extraction workflow.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+
+    # ✅ NEW: source selector
+    parser.add_argument(
+        "--source",
+        choices=["github", "azure-devops"],
+        default="azure-devops",
+        help="Select which workflow to run",
+    )
+
     parser.add_argument(
         "--max-branches",
         type=int,
@@ -70,41 +83,50 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Enable verbose logging",
     )
+
     return parser.parse_args()
 
 
 def main() -> int:
-    """
-    Main entry point for the extraction script.
-
-    Returns:
-        Exit code (0 for success, non-zero for failure).
-    """
+    """Main entry point for the extraction script."""
     args = parse_args()
     setup_logging(args.verbose)
 
-    logger = logging.getLogger(__name__)
-    logger.info("Initializing GitHub extraction workflow...")
+    logging.info(f"Starting extraction for source: {args.source}")
 
-    limits = ExtractionLimits(
-        max_branches=args.max_branches,
-        max_commits=args.max_commits,
-        max_pull_requests=args.max_prs,
-        min_scan_interval_hours=args.scan_interval,
-    )
+    
 
     try:
-        workflow = GitHubAnalysisWorkflow(limits=limits)
-        summary = workflow.run()
-        print_extraction_summary(summary)
+        if args.source == "github":
+            # ✅ Build limits (shared structure)
+            limits = GitHubExtractionLimits(
+                max_branches=args.max_branches,
+                max_commits=args.max_commits,
+                max_pull_requests=args.max_prs,
+                min_scan_interval_hours=args.scan_interval,
+            )
+            workflow = GitHubAnalysisWorkflow(limits=limits)
+            result = workflow.run()
+            print_github_summary(result)
+
+        elif args.source == "azure-devops":
+            # Reuse limits structure (same fields expected)
+            azure_limits = AzureExtractionLimits(
+                max_branches=args.max_branches,
+                max_commits=args.max_commits,
+                max_pull_requests=args.max_prs,
+                min_scan_interval_hours=args.scan_interval,
+            )
+
+            workflow = AzureDevOpsAnalysisWorkflow(limits= azure_limits)
+            result = workflow.run()
+            print_azure_summary(result)
+
+        logging.info("Extraction completed successfully")
         return 0
 
-    except KeyboardInterrupt:
-        logger.warning("Extraction interrupted by user")
-        return 130
-
     except Exception as e:
-        logger.error("Extraction failed: %s", e, exc_info=True)
+        logging.exception(f"Extraction failed: {e}")
         return 1
 
 

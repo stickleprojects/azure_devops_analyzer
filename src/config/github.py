@@ -57,7 +57,7 @@ class GitHubExtractorConfig:
             if resolved_env.exists():
                 load_env_file(resolved_env)
             elif regular_env.exists():
-                load_env_file(regular_env)
+                load_env_file(regular_env, override = True)
         
         return cls(
             page_size=_get_env_int("GITHUB_PAGE_SIZE", cls.page_size),
