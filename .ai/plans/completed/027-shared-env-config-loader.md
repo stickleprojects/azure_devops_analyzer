@@ -4,7 +4,15 @@
 > 027 because PR #114 (merged 2026-05-30) reserved Plan 026 for the admin-ui
 > vite 6 upgrade. Content unchanged.
 
-## Status: IN REVIEW — implemented in PR #121 (2026-05-31)
+## Status: COMPLETE ✅ (PR #121, merged 2026-05-31)
+
+Loader helpers moved to `src/config/env_loader.py` (public names); back-compat
+shim kept in `github.py` for the remaining importers (`__init__.py`, `cache.py`,
+`conftest.py`); `azure_devops.py` rewired off `github`. New `test_env_loader.py`
++ `test_azure_devops_config.py`, and the override-of-stale-environment regression
+test added to **both** config suites (with try/finally env cleanup). CI Tests
+green. **Follow-up:** delete the `github.py` shim once nothing imports the
+underscored helper names — tracked as **issue #123**.
 
 > **Related:** [Plan 028](028-static-type-checking-gate.md) adds a static
 > type-checking (mypy) CI gate. It is the complementary half of this work — 027
