@@ -21,7 +21,7 @@ class NodeJsParser(ManifestParser):
 
     def parse(self, content: str, file_path: str) -> list[DependencyData]:
         """Parse package.json content."""
-        dependencies = []
+        dependencies: list[DependencyData] = []
 
         try:
             data = json.loads(content)

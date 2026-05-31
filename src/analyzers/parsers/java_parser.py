@@ -25,7 +25,7 @@ class JavaParser(ManifestParser):
 
     def parse(self, content: str, file_path: str) -> list[DependencyData]:
         """Parse pom.xml content."""
-        dependencies = []
+        dependencies: list[DependencyData] = []
 
         try:
             # Handle namespace in pom.xml
@@ -135,7 +135,7 @@ class JavaParser(ManifestParser):
 
         return None
 
-    def _substitute_properties(self, value: str, properties: dict[str, str]) -> str:
+    def _substitute_properties(self, value: str, properties: dict[str, str]) -> Optional[str]:
         """Substitute Maven property references."""
         pattern = r"\$\{([^}]+)\}"
 

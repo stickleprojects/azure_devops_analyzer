@@ -131,7 +131,7 @@ class DotNetParser(ManifestParser):
           <package id="..." version="..." targetFramework="..." />
         </packages>
         """
-        dependencies = []
+        dependencies: list[DependencyData] = []
 
         try:
             root = ET.fromstring(content)

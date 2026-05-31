@@ -1,3 +1,10 @@
+[tool.mypy]
+# Static type-checking gate (Plan 028). Default checks only — strict per-module
+# overrides (disallow_untyped_defs / check_untyped_defs) are a deliberate
+# follow-up, not enabled here. Scope is src/ (tests/ revisited later).
+files = ["src"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 # Test discovery patterns
 testpaths = ["tests"]

@@ -20,7 +20,7 @@ Key API Behavior Note:
 import logging
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Any
 
 from github import GithubException
 from github.Repository import Repository as GHRepository
@@ -43,6 +43,7 @@ from src.extractors.base import (
     PRReviewData,
     PRCommentData,
     FileTreeItem,
+    LanguageData,
 )
 from src.extractors.cache import cached
 
@@ -337,8 +338,6 @@ class GitHubExtractor(RepositoryExtractor):
         Returns language data with byte counts and percentages.
         GitHub API returns a dict of {language_name: byte_count}.
         """
-        from src.extractors.base import LanguageData
-        
         repo = self._get_repo(repo_id)
         
         try:
@@ -383,7 +382,7 @@ class GitHubExtractor(RepositoryExtractor):
         """Get commits for a repository."""
         repo = self._get_repo(repo_id)
 
-        kwargs = {}
+        kwargs: dict[str, Any] = {}
         if branch:
             kwargs["sha"] = branch
         if since:
@@ -624,8 +623,8 @@ class GitHubExtractor(RepositoryExtractor):
             try:
                 reset_epoch = int(reset_raw)
                 now = int(time.time())
-                wait = max(reset_epoch - now, self.backoff_seconds)
-                return min(wait, self.max_backoff_seconds)
+                wait = max(reset_epoch - now, self.config.backoff_seconds)
+                return min(wait, self.config.max_backoff_seconds)
             except Exception:
                 pass
         return min(self.config.backoff_seconds, self.config.max_backoff_seconds)

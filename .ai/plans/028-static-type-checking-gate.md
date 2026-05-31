@@ -1,6 +1,13 @@
 # Plan 028: Static Type-Checking Gate (mypy in CI)
 
-## Status: PROPOSED (not started)
+## Status: IN REVIEW — implemented in PR #126 (2026-05-31)
+
+All 29 baseline errors fixed and the `Type Check` CI gate added. mypy clean (76
+files); full Docker suite 904 passed / 0 failed. Notable: a **real latent bug**
+surfaced in `github/extractor.py` (`self.backoff_seconds` → `self.config.backoff_seconds`,
+would `AttributeError` on the rate-limit path), and the `readme_analyzer.py`
+duplicate methods were resolved by deleting the 3 dead shadowed copies (no runtime
+change). Only the last box (branch-protection) is left — a maintainer action on merge.
 
 ## Motivation
 
@@ -179,20 +186,18 @@ optional to avoid scope-creep; the CI gate is the hard requirement.
 
 ## Acceptance criteria
 
-- [ ] `mypy src/ --ignore-missing-imports` (or bare `mypy` with the new config)
+- [x] `mypy src/ --ignore-missing-imports` (or bare `mypy` with the new config)
       reports **Success: no issues found** — all 29 baseline errors fixed.
-- [ ] Fixes are real; any `# type: ignore` carries an inline one-line reason and
-      is justified (only the version-guarded `tomllib` import is expected to
-      qualify).
-- [ ] The `readme_analyzer.py` duplicate-method bug is resolved by removing the
-      wrong definition, not by annotation — with the decision noted in the PR.
-- [ ] `pyproject.toml` has a `[tool.mypy]` section pinning `files = ["src"]` and
+- [x] Fixes are real; any `# type: ignore` carries an inline one-line reason and
+      is justified (only the version-guarded `tomllib` import qualified).
+- [x] The `readme_analyzer.py` duplicate-method bug is resolved by removing the
+      dead shadowed copies, not by annotation — decision noted in the PR.
+- [x] `pyproject.toml` has a `[tool.mypy]` section pinning `files = ["src"]` and
       `ignore_missing_imports = true`, **without** strict flags.
-- [ ] `.github/workflows/tests.yml` has a `Type Check` job that fails on any
+- [x] `.github/workflows/tests.yml` has a `Type Check` job that fails on any
       mypy error.
-- [ ] `bash scripts/run-tests-docker.sh` still passes (no behavioural
-      regression from the fixes).
-- [ ] `Type Check` added to `main` branch-protection required checks.
+- [x] `bash scripts/run-tests-docker.sh` still passes (904 passed, 0 failed).
+- [ ] `Type Check` added to `main` branch-protection required checks. *(maintainer action on merge)*
 
 ## Risks
 
