@@ -64,18 +64,25 @@ describe('triggerAzureDevOpsRescan', () => {
 
 describe('getHealth', () => {
   it('GETs /health and returns the parsed response', async () => {
-    mockOk({ status: 'ok', db: 'connected' })
+    mockOk({ status: 'healthy', service: 'extraction-api' })
     const result = await getHealth()
-    expect(mockFetch).toHaveBeenCalledWith('/health', undefined)
-    expect(result).toEqual({ status: 'ok', db: 'connected' })
+    expect(mockFetch).toHaveBeenCalledWith('/health')
+    expect(result).toEqual({ status: 'healthy', service: 'extraction-api' })
   })
 
-  it('throws an Error with the response body on non-2xx', async () => {
-    mockError(503, 'Service Unavailable')
-    await expect(getHealth()).rejects.toThrow('HTTP 503: Service Unavailable')
+  it('returns degraded JSON payload on 503 without throwing', async () => {
+    // 503 from /health carries a valid JSON body; treat it as data, not an error
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+      json: () => Promise.resolve({ status: 'degraded', service: 'extraction-api' }),
+    })
+    const result = await getHealth()
+    expect(result).toEqual({ status: 'degraded', service: 'extraction-api' })
   })
 
-  it('falls back to statusText when body is empty', async () => {
+  it('throws an Error with the response body on unexpected non-2xx (e.g. 502)', async () => {
     mockError(502, '', 'Bad Gateway')
     await expect(getHealth()).rejects.toThrow('HTTP 502: Bad Gateway')
   })
