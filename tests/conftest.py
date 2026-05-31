@@ -28,7 +28,7 @@ def pytest_configure(config):
     project_root = Path(__file__).parent.parent
     sys.path.insert(0, str(project_root))
     
-    from src.config.github import load_env_file
+    from src.config.env_loader import load_env_file
     
     # Try .env.resolved first (resolved variable references), then .env
     env_resolved = project_root / ".env.resolved"
@@ -182,13 +182,13 @@ def _clear_extractor_caches_between_tests():
     3. Test then tries to find private repo from the cached public list
     4. Private repo not found! (FALSE NEGATIVE)
     """
-    from src.config.github import _find_project_root
+    from src.config.env_loader import find_project_root
     from src.extractors.cache import _file_cache_enabled, _file_cache_root
 
     # BEFORE test: Clear file cache (file cache is disabled for tests anyway)
     try:
         cache_root = _file_cache_root()
-        project_root = _find_project_root()
+        project_root = find_project_root()
         if cache_root.exists() and (
             cache_root == project_root / ".cache" or project_root in cache_root.parents
         ):
@@ -201,11 +201,10 @@ def _clear_extractor_caches_between_tests():
     # AFTER test: Clear file cache again
     try:
         cache_root = _file_cache_root()
-        project_root = _find_project_root()
+        project_root = find_project_root()
         if cache_root.exists() and (
             cache_root == project_root / ".cache" or project_root in cache_root.parents
         ):
             shutil.rmtree(cache_root, ignore_errors=True)
     except Exception:
         pass  # Ignore errors
-
