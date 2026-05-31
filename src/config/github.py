@@ -7,12 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from src.config.env_loader import (
-    load_env_file,
-    find_project_root as _find_project_root,
-    get_env_int as _get_env_int,
-    get_env_float as _get_env_float,
-)
+from src.config.env_loader import find_project_root, get_env_float, get_env_int, load_env_file
 
 
 @dataclass
@@ -56,7 +51,7 @@ class GitHubExtractorConfig:
             load_env_file(env_file)
         else:
             # Try .env.resolved first, then .env
-            project_root = _find_project_root()
+            project_root = find_project_root()
             resolved_env = project_root / ".env.resolved"
             regular_env = project_root / ".env"
             
@@ -66,11 +61,11 @@ class GitHubExtractorConfig:
                 load_env_file(regular_env, override = True)
         
         return cls(
-            page_size=_get_env_int("GITHUB_PAGE_SIZE", cls.page_size),
-            max_items_per_list=_get_env_int("GITHUB_MAX_ITEMS_PER_LIST", cls.max_items_per_list),
-            max_retries=_get_env_int("GITHUB_MAX_RETRIES", cls.max_retries),
-            backoff_seconds=_get_env_float("GITHUB_BACKOFF_SECONDS", cls.backoff_seconds),
-            max_backoff_seconds=_get_env_float("GITHUB_MAX_BACKOFF_SECONDS", cls.max_backoff_seconds),
+            page_size=get_env_int("GITHUB_PAGE_SIZE", cls.page_size),
+            max_items_per_list=get_env_int("GITHUB_MAX_ITEMS_PER_LIST", cls.max_items_per_list),
+            max_retries=get_env_int("GITHUB_MAX_RETRIES", cls.max_retries),
+            backoff_seconds=get_env_float("GITHUB_BACKOFF_SECONDS", cls.backoff_seconds),
+            max_backoff_seconds=get_env_float("GITHUB_MAX_BACKOFF_SECONDS", cls.max_backoff_seconds),
             token=os.environ.get("GITHUB_TOKEN"),
             organization=os.environ.get("GITHUB_ORG"),
             user=os.environ.get("GITHUB_USER"),
