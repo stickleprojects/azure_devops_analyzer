@@ -159,11 +159,23 @@ class TestAzureDevOpsExtractorConfig:
         env_file = tmp_path / ".env"
         env_file.write_text("AZURE_VAULT_PAT=pat_fresh\nAZURE_DEVOPS_PAT=$AZURE_VAULT_PAT\n", encoding="utf-8")
 
-        os.environ["AZURE_DEVOPS_PAT"] = "pat_stale"
-        os.environ.pop("AZURE_VAULT_PAT", None)
+        original_vars = {
+            "AZURE_DEVOPS_PAT": os.environ.get("AZURE_DEVOPS_PAT"),
+            "AZURE_VAULT_PAT": os.environ.get("AZURE_VAULT_PAT"),
+        }
 
-        monkeypatch.chdir(tmp_path)
-        config = AzureDevOpsExtractorConfig.from_env()
+        try:
+            os.environ["AZURE_DEVOPS_PAT"] = "pat_stale"
+            os.environ.pop("AZURE_VAULT_PAT", None)
 
-        assert config.pat == "pat_fresh"
-        assert os.environ.get("AZURE_DEVOPS_PAT") == "pat_fresh"
+            monkeypatch.chdir(tmp_path)
+            config = AzureDevOpsExtractorConfig.from_env()
+
+            assert config.pat == "pat_fresh"
+            assert os.environ.get("AZURE_DEVOPS_PAT") == "pat_fresh"
+        finally:
+            for key, value in original_vars.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value

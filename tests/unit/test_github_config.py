@@ -155,11 +155,23 @@ class TestGitHubExtractorConfig:
         env_file = tmp_path / ".env"
         env_file.write_text("VAULT_SECRET=ghp_fresh_token\nGITHUB_TOKEN=$VAULT_SECRET\n", encoding="utf-8")
 
-        os.environ["GITHUB_TOKEN"] = "ghp_stale_token"
-        os.environ.pop("VAULT_SECRET", None)
+        original_vars = {
+            "GITHUB_TOKEN": os.environ.get("GITHUB_TOKEN"),
+            "VAULT_SECRET": os.environ.get("VAULT_SECRET"),
+        }
 
-        monkeypatch.chdir(tmp_path)
-        config = GitHubExtractorConfig.from_env()
+        try:
+            os.environ["GITHUB_TOKEN"] = "ghp_stale_token"
+            os.environ.pop("VAULT_SECRET", None)
 
-        assert config.token == "ghp_fresh_token"
-        assert os.environ.get("GITHUB_TOKEN") == "ghp_fresh_token"
+            monkeypatch.chdir(tmp_path)
+            config = GitHubExtractorConfig.from_env()
+
+            assert config.token == "ghp_fresh_token"
+            assert os.environ.get("GITHUB_TOKEN") == "ghp_fresh_token"
+        finally:
+            for key, value in original_vars.items():
+                if value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = value
