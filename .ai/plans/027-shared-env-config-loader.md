@@ -6,6 +6,12 @@
 
 ## Status: PROPOSED (not started)
 
+> **Related:** [Plan 028](028-static-type-checking-gate.md) adds a static
+> type-checking (mypy) CI gate. It is the complementary half of this work — 027
+> removes the loader duplication that *hid* an asymmetric-parameter bug; 028
+> catches the parameter/type/attribute bug class statically so it can't reach a
+> live run. Independent; either can land first.
+
 ## Motivation
 
 `src/config/github.py` and `src/config/azure_devops.py` currently duplicate the
