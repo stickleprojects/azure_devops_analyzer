@@ -1,6 +1,14 @@
 # Plan 026: Admin UI vite 6 Upgrade (clear remaining MEDIUM Dependabot alerts)
 
-## Status: READY — pick up next session (2026-05-29+)
+## Status: COMPLETE ✅ (PR #117, merged 2026-05-31)
+
+All acceptance criteria met. `vite@6.4.2`, `esbuild@0.25.12`, `vitest@3.2.4`,
+`@vitejs/plugin-react@4.7.0` (kept 4.x). A new transitive advisory surfaced
+during the upgrade — `ws@8.20.0` (GHSA-58qx-3vcg-4xpx) — and was cleared in-range
+to `8.21.0` via `npm audit fix` (no `--force`). `npm audit` → 0 vulnerabilities.
+typecheck / 78 unit tests (vitest 3, no breakage) / build / 15 Playwright e2e all
+pass locally and in CI. Dependabot alerts #1, #3, and the new ws alert all
+auto-closed on merge — repo now has **0 open alerts**.
 
 **Implements**: Phase 2 of the `web/admin-ui` Dependabot remediation — upgrade
 `vite` 5 → 6 so the two remaining **MEDIUM** alerts close. Phase 1 (the HIGH
@@ -90,12 +98,12 @@ npm run e2e          # Playwright (needs browsers + preview server)
 
 ## Acceptance criteria
 
-- [ ] `npm audit` in `web/admin-ui/` reports **0 vulnerabilities**.
-- [ ] `vite ≥ 6.4.2`, `esbuild ≥ 0.25.0`, `vitest ≥ 3.2.4` resolved in the lockfile.
-- [ ] `@vitejs/plugin-react` still on 4.x.
-- [ ] `npm run typecheck`, `npm run test`, `npm run build` all pass.
-- [ ] `npm run e2e` passes (or is explicitly noted as verified in CI).
-- [ ] Dependabot alerts **#1 (esbuild)** and **#3 (vite)** auto-close once merged to `main`.
+- [x] `npm audit` in `web/admin-ui/` reports **0 vulnerabilities**.
+- [x] `vite ≥ 6.4.2`, `esbuild ≥ 0.25.0`, `vitest ≥ 3.2.4` resolved in the lockfile.
+- [x] `@vitejs/plugin-react` still on 4.x (4.7.0).
+- [x] `npm run typecheck`, `npm run test`, `npm run build` all pass.
+- [x] `npm run e2e` passes (15 passed locally + CI `frontend` job green).
+- [x] Dependabot alerts **#1 (esbuild)** and **#3 (vite)** auto-closed on merge to `main` (plus the new ws alert #58qx).
 
 ## Risks
 
