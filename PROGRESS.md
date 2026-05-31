@@ -2,6 +2,65 @@
 
 ---
 
+## Session: 2026-05-31 — Plan 026 complete: admin-ui vite 6 upgrade clears last Dependabot alerts
+
+### Summary
+
+Picked up "address the Dependabot findings". At session start the repo had **2
+open MEDIUM alerts** in `web/admin-ui` (vite GHSA-4w7w-66w2-5vf9, esbuild
+GHSA-67mh-4wv8-2f99) — the HIGH playwright one had already been cleared by PR
+#113. Executed the ready-and-specced **Plan 026** (vite 5 → 6 upgrade) on branch
+`fix/admin-ui-vite6-upgrade`. Merged as **PR #117**; repo now has **0 open
+Dependabot alerts**. Also merged PR #116 (skip-inaccessible-projects) into `main`
+at the top of the session.
+
+### What Was Done
+
+- `web/admin-ui/package.json`: `vite ^5.3.1 → ^6.4.2`, `vitest ^1.6.0 → ^3.2.4`.
+  `@vitejs/plugin-react` deliberately **kept on 4.x** (resolved 4.7.0) — its 4.x
+  peer range covers vite 6; 5.x would force vite 8.
+- `npm install` resolved `vite@6.4.2`, `esbuild@0.25.12` (transitive — clears the
+  esbuild alert for free), `vitest@3.2.4`.
+- **New transitive advisory surfaced** by the upgrade: `ws@8.20.0`
+  (GHSA-58qx-3vcg-4xpx, via `jsdom@24`). Cleared in-range to `ws@8.21.0` with
+  plain `npm audit fix` (the single change; **no `--force`**, per the plan's
+  agent guards). This is the "new vite 6 transitive dep introduces its own
+  advisory" risk the plan anticipated.
+
+### Validation (all in `web/admin-ui`, local + CI green)
+
+- `npm audit` → **0 vulnerabilities**
+- `npm run typecheck` → exit 0
+- `npm run test` → **78 passed** (vitest 3 — no migration breakage, nothing
+  skipped/deleted; the vitest 1→3 jump was clean)
+- `npm run build` → exit 0 (vite 6.4.2)
+- `npm run e2e` → **15 passed** (Playwright chromium; needed `npx playwright
+  install chromium` locally first)
+- CI on PR #117: CI Tests, Documentation Validation, both `frontend` jobs — all pass.
+
+### Status
+
+- **Plan 026 → COMPLETE ✅**, moved to `.ai/plans/completed/`.
+- Dependabot: **0 open alerts** (all of vite/esbuild/ws auto-closed on merge).
+
+### Notes
+
+- Left `.claude/settings.json` (permission allowlist growth from this session's
+  npm/npx commands) **uncommitted** — config noise, not part of the fix.
+- A stray `@` leaked into the first commit's subject line (PowerShell here-string
+  `@'...'@` syntax used in the Bash tool, which doesn't honour it) — amended with
+  a Bash heredoc before pushing. Reminder: in the Bash tool use `-F -` heredocs
+  for multi-line commit messages, not the PS `@'...'@` form.
+
+### Next Session — Pickup Points
+
+1. **Plan 027** (shared env-loader) — renumbered from 026 last session, not yet
+   implemented. Likely next pick-up.
+2. Decide whether to discard or keep the uncommitted `.claude/settings.json`
+   permission additions.
+
+---
+
 ## Session: 2026-05-25 — Session close-out: Plan 025 1c/1d dispatched to Copilot
 
 ### Where things stand
