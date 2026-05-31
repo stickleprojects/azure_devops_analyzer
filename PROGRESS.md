@@ -2,6 +2,85 @@
 
 ---
 
+## Session: 2026-05-31 (evening) — Plan 028 implemented + merged; Plan 027 shim removed; type-check gate live on main
+
+### Summary
+
+Implemented **Plan 028** (static type-checking gate) directly with Claude — the
+agreed call over Copilot, because the gate (mypy) is gameable by suppression and
+the `readme_analyzer.py` duplicate-method case needed real investigation. Merged
+as **PR #126**. In parallel, Copilot completed the **Plan 027 shim-removal**
+follow-up (issue #123) as **PR #125**, also merged. `Type Check` is now a
+**required status check on `main`**.
+
+### Plan 028 — what shipped (PR #126)
+
+- Fixed all **29** `mypy src/` errors (default mode, `--ignore-missing-imports`).
+- `pyproject.toml`: `[tool.mypy]` `files=["src"]`, `ignore_missing_imports=true`
+  (default checks only — strict per-module is a logged follow-up).
+- `tests.yml`: standalone **`Type Check`** job (no Postgres, ~15s).
+- **Real latent bug found by mypy**: `github/extractor.py` used
+  `self.backoff_seconds` / `self.max_backoff_seconds` — attrs that live on
+  `self.config`, not `self` (the next line already used `self.config.*`). Would
+  `AttributeError` on the rate-limit-reset path. Fixed.
+- **`readme_analyzer.py` duplicate methods**: `_calculate_documentation_score` /
+  `_extract_purpose` / `_extract_features` were each defined twice. Python keeps
+  the 2nd (scope-aware) def, so the earlier copies were dead code — deleted the 3
+  shadowed copies, **no runtime change** (file is `-97` lines net). Call sites and
+  live versions unchanged.
+- Other judgment fixes: `base.py` None-guard (also prevents a latent `None + str`
+  crash); `java_parser._substitute_properties` → `Optional[str]` (caller already
+  accepts it); `dependency_analyzer` narrowed `self.enrich` → `self.enricher is
+  not None`; `LanguageData` forward-ref import hoisted; `kwargs: dict[str, Any]`.
+- Only suppression: `# type: ignore[no-redef]` on the two `tomllib` py<3.11
+  fallback imports, each with an inline reason (the one case the plan anticipated).
+- Verified: `mypy` clean (76 files); full Docker suite **904 passed / 0 failed**.
+
+### Plan 027 follow-up — shim removed (PR #125, Copilot)
+
+- Issue #123 done: `github.py` env-loader re-export shim deleted; `__init__.py`,
+  `cache.py`, `conftest.py` repointed to `src.config.env_loader` public names.
+  **Zero** underscored-helper references remain anywhere. Reviewed clean.
+
+### Branch protection
+
+- Added **`Type Check`** to `main` required checks via `gh api` (strict mode
+  preserved; now: CI Tests, Documentation Validation, Type Check). Verified mypy
+  green on the combined `main` after both PRs merged.
+
+### Decision captured (memory)
+
+- For a static-analysis gate where the metric is gameable + there's a real
+  judgment call, **Claude implements directly rather than dispatching Copilot** —
+  worked well here (Copilot would likely have suppressed or mis-resolved the
+  duplicate-method bug). Fleet-of-agents was considered and rejected: too small,
+  cohesive, single-PR, with a global verification gate.
+
+### Status
+
+- **Plan 028 → COMPLETE**, moved to `.ai/plans/completed/`.
+- **Plan 027 → COMPLETE** (shim follow-up #123 also done).
+- Type-safety reflection: discussed whether mypy-on-Python is an anti-pattern /
+  whether to switch languages — conclusion: no. Default-mode mypy on an I/O-bound
+  analyzer is sound; the watch-out is over-rotating into maximal strictness.
+
+### Next Session — Pickup Points
+
+1. **Optional Plan 028 follow-ups** (logged in the plan): ratchet
+   `src/extractors/` + `src/config/` to per-module strict mypy once the baseline
+   holds; wire `flake8`/`pylint` (both already in `requirements.txt`); extend
+   type-checking to `tests/`.
+2. **`.claude/settings.json`** — still has uncommitted permission-allowlist
+   additions from this session. Keep or discard.
+
+### Branch / state at close
+
+- On `docs/plan-028-complete` writing this. `main` synced; PRs #117/#118/#119/
+  #120/#121/#122/#124/#125/#126 all merged this day. No open PRs. Type Check
+  required on `main`.
+
+---
+
 ## Session: 2026-05-31 (later) — Dependabot cleared, Plan 028 created, Plan 027 dispatched to Copilot
 
 ### Summary
