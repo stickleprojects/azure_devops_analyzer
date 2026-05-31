@@ -2,6 +2,95 @@
 
 ---
 
+## Session: 2026-05-31 (later) — Dependabot cleared, Plan 028 created, Plan 027 dispatched to Copilot
+
+### Summary
+
+Continuation of the same day. Three threads: (1) finished the Dependabot work
+(Plan 026, see entry below — merged PR #117 + close-out #118); (2) wrote **Plan
+028** (static type-checking / mypy CI gate) in response to the user finding
+compile-time-class bugs at runtime against a real Azure token; (3) wrote a
+Copilot prompt for **Plan 027** (shared env/config loader) and the user
+dispatched the agent — **PR #121** is open and under review.
+
+### Plan 028 — static type-checking gate (NEW, merged docs)
+
+- The live-token incident (wrong parameter names, missing attrs) is exactly the
+  bug class `mypy` catches. `mypy>=1.8.0` is already in `requirements.txt` but
+  **nothing runs it** — no CI job, no hook.
+- Ran mypy: **29 errors / 11 files** in default mode (`--ignore-missing-imports`),
+  including `call-arg`, `attr-defined`, `arg-type`, `name-defined` — the precise
+  incident categories. Even surfaced a real latent bug: `readme_analyzer.py`
+  defines `_calculate_documentation_score` / `_extract_purpose` /
+  `_extract_features` **twice each** with mismatched signatures.
+- Decision (user picked): **fix the 29 + add a default-mypy CI gate** that fails
+  on any error. Not strict mode (logged as a follow-up). New plan, **not** an
+  expansion of 027.
+- Plan written: `.ai/plans/028-static-type-checking-gate.md`, merged **PR #119**.
+  Cross-referenced from Plan 027.
+- **NOT YET IMPLEMENTED** — the plan exists; the 29-error cleanup + CI job is the
+  next pickup. This is a clean, well-specced Copilot/Claude task.
+
+### Plan 027 — shared env/config loader (DISPATCHED, in review)
+
+- Wrote the Copilot prompt `.ai/prompts/027-shared-env-config-loader.md` (merged
+  **PR #120**). Baked in the *actual* importers of the private helpers
+  (`src/config/__init__.py`, `src/extractors/cache.py`, `tests/conftest.py`) so
+  the agent keeps the back-compat shim working; included the CI-green guard and a
+  "flip plan status in the same PR" instruction.
+- User dispatched the Copilot agent → **PR #121** (`copilot/move-env-config-loading-helpers`).
+- **Reviewed PR #121** (see review below). Core refactor is correct and faithful
+  (helpers moved verbatim, shim exact, azure rewired, both override regression
+  tests present and genuinely guarding `override=True`, plan status flipped in
+  the same PR, shim-riders untouched). CI Tests / Docs / Full-Pipeline-E2E all
+  **green**.
+- **Two fixes requested of the agent (user relayed to Copilot, awaiting push):**
+  1. The two new `test_from_env_overrides_stale_env_values_*` tests (both
+     `test_github_config.py` and `test_azure_devops_config.py`) mutate
+     `os.environ` with **no `try/finally` cleanup** → leak `GITHUB_TOKEN` /
+     `AZURE_DEVOPS_PAT` / `VAULT_*` into later tests (order-dependent flakiness).
+     Wrap in try/finally (or `monkeypatch.setenv`) and pop the leaked keys.
+  2. `src/config/env_loader.py` carries an **unused `import re`** (rode along
+     from old `github.py`; helpers don't use regex) — drop it.
+
+> Note on the "run-tests-docker failed for the agent" worry: it was
+> **environmental**, not a real failure. The Copilot sandbox can't build the
+> Docker test image (`apk add` can't reach mirrors, exit 5 *before* pytest). The
+> authoritative gate is the repo's **CI Tests** check (pytest on a GH runner with
+> Postgres, no Docker build) — and that is green.
+
+### Process wins captured to memory
+
+- `feedback_agent_prompt_flip_plan_status_in_pr` — agent prompts must flip plan
+  status + tick boxes in the impl PR, no separate docs PR.
+- `feedback_offer_copilot_dispatch` — proactively offer to dispatch the Copilot
+  agent (it's assignable on this repo: `copilot-swe-agent`, bot id
+  `BOT_kgDOC9w8XQ`, repo node `R_kgDOQ36jbQ`) via an issue assigned to the bot.
+
+### Next Session — Pickup Points
+
+1. **PR #121 (Plan 027)** — confirm Copilot pushed the two fixes (env cleanup +
+   drop `import re`) and that **CI Tests** is green on the new commit, then merge.
+   On merge, flip Plan 027 → COMPLETE and move to `.ai/plans/completed/`. Also
+   open the follow-up issue to delete the `github.py` shim once `git grep
+   "from src.config.github import"` shows no underscored-helper importers
+   (`cache.py` / `conftest.py` / `__init__.py` still do).
+2. **Plan 028 implementation** — fix the 29 mypy errors + add the `Type Check`
+   CI job (`pyproject.toml [tool.mypy]`, standalone job in `tests.yml`), add to
+   branch-protection required checks. Investigate the `readme_analyzer.py`
+   duplicate-method bug properly (don't just annotate). Good Copilot task — a
+   prompt could be written mirroring the 027 one.
+3. **`.claude/settings.json`** — still has uncommitted permission-allowlist
+   additions from this session's npm/npx/git commands. Keep or discard.
+
+### Branch / state at close
+
+- On `docs/session-2026-05-31-closeout` writing this entry. `main` is synced;
+  PRs #117/#118/#119/#120 merged this session. PR #121 open (Plan 027, awaiting
+  the two review fixes). `.claude/settings.json` intentionally left uncommitted.
+
+---
+
 ## Session: 2026-05-31 — Plan 026 complete: admin-ui vite 6 upgrade clears last Dependabot alerts
 
 ### Summary
