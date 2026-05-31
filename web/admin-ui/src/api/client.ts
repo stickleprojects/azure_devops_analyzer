@@ -59,11 +59,17 @@ export async function removeRepository(repoId: string): Promise<RescanRepository
 
 export async function getHealth(): Promise<HealthResponse> {
   const response = await fetch('/health')
+  if (response.ok) {
+    return response.json() as Promise<HealthResponse>
+  }
   // The /health endpoint returns 503 with a valid JSON body when Celery is
   // degraded (status == "degraded").  Treat that as data, not a hard error,
   // so the UI can display the degraded status rather than an error banner.
-  if (response.ok || response.status === 503) {
-    return response.json() as Promise<HealthResponse>
+  if (response.status === 503) {
+    const contentType = response.headers.get('content-type') ?? ''
+    if (contentType.includes('application/json')) {
+      return response.json() as Promise<HealthResponse>
+    }
   }
   const body = await response.text()
   const detail = body.trim() || response.statusText

@@ -35,6 +35,11 @@ class TestHealthEndpoint:
         """H1: When Celery ping succeeds, /health returns 200 and the exact
         JSON shape the UI consumes: status == "healthy", service == "extraction-api"."""
         mock_celery = MagicMock()
+        # Celery's Control.inspect().ping() returns a dict keyed by worker
+        # hostname, each value being a list of {"ok": "pong"} dicts when the
+        # worker is reachable.  The health_check() implementation only checks
+        # that the call succeeds (no exception), so the exact value here does
+        # not matter — the realistic shape is provided for documentation.
         mock_celery.Control.return_value.inspect.return_value.ping.return_value = {
             "celery@worker": [{"ok": "pong"}]
         }

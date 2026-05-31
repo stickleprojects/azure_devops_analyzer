@@ -76,10 +76,23 @@ describe('getHealth', () => {
       ok: false,
       status: 503,
       statusText: 'Service Unavailable',
+      headers: { get: (h: string) => (h === 'content-type' ? 'application/json' : null) },
       json: () => Promise.resolve({ status: 'degraded', service: 'extraction-api' }),
     })
     const result = await getHealth()
     expect(result).toEqual({ status: 'degraded', service: 'extraction-api' })
+  })
+
+  it('throws when 503 body is not JSON (content-type: text/plain)', async () => {
+    // A 503 without a JSON body is a generic error; surface it as an Error
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { get: (_h: string) => 'text/plain' },
+      text: () => Promise.resolve('Service temporarily unavailable'),
+    })
+    await expect(getHealth()).rejects.toThrow('HTTP 503: Service temporarily unavailable')
   })
 
   it('throws an Error with the response body on unexpected non-2xx (e.g. 502)', async () => {
