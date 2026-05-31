@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from src.config.github import load_env_file, _find_project_root, _get_env_int, _get_env_float
+from src.config.env_loader import load_env_file, find_project_root, get_env_int, get_env_float
 
 
 @dataclass(frozen=True)
@@ -43,7 +43,7 @@ class AzureDevOpsExtractorConfig:
             load_env_file(env_file)
         else:
             # Try .env.resolved first, then .env
-            project_root = _find_project_root()
+            project_root = find_project_root()
             resolved_env = project_root / ".env.resolved"
             regular_env = project_root / ".env"
             
@@ -53,11 +53,11 @@ class AzureDevOpsExtractorConfig:
                 load_env_file(regular_env, override = True)
         
         return cls(
-            page_size=_get_env_int("AZURE_PAGE_SIZE", cls.page_size),
-            max_items_per_list=_get_env_int("AZURE_MAX_ITEMS_PER_LIST", cls.max_items_per_list),
-            max_retries=_get_env_int("AZURE_MAX_RETRIES", cls.max_retries),
-            backoff_seconds=_get_env_float("AZURE_BACKOFF_SECONDS", cls.backoff_seconds),
-            max_backoff_seconds=_get_env_float("AZURE_MAX_BACKOFF_SECONDS", cls.max_backoff_seconds),
+            page_size=get_env_int("AZURE_PAGE_SIZE", cls.page_size),
+            max_items_per_list=get_env_int("AZURE_MAX_ITEMS_PER_LIST", cls.max_items_per_list),
+            max_retries=get_env_int("AZURE_MAX_RETRIES", cls.max_retries),
+            backoff_seconds=get_env_float("AZURE_BACKOFF_SECONDS", cls.backoff_seconds),
+            max_backoff_seconds=get_env_float("AZURE_MAX_BACKOFF_SECONDS", cls.max_backoff_seconds),
             fetch_pr_file_metrics=os.environ.get(
                 "AZURE_FETCH_PR_FILE_METRICS", "true"
             ).lower() == "true",

@@ -4,7 +4,7 @@
 > 027 because PR #114 (merged 2026-05-30) reserved Plan 026 for the admin-ui
 > vite 6 upgrade. Content unchanged.
 
-## Status: PROPOSED (not started)
+## Status: IN REVIEW — implemented in PR #121 (2026-05-31)
 
 > **Related:** [Plan 028](028-static-type-checking-gate.md) adds a static
 > type-checking (mypy) CI gate. It is the complementary half of this work — 027
@@ -143,16 +143,16 @@ resolved value would have caught the original bug.
 
 ## Acceptance criteria
 
-- [ ] `src/config/env_loader.py` exists and is the only definition of
+- [x] `src/config/env_loader.py` exists and is the only definition of
       `load_env_file`, `find_project_root`, `get_env_int`, `get_env_float`.
-- [ ] `src/config/github.py` no longer defines those helpers (re-exports for
+- [x] `src/config/github.py` no longer defines those helpers (re-exports for
       back-compat are OK).
-- [ ] `src/config/azure_devops.py` imports from `env_loader`, not from `github`.
-- [ ] `tests/unit/test_env_loader.py` exists and contains the relocated
+- [x] `src/config/azure_devops.py` imports from `env_loader`, not from `github`.
+- [x] `tests/unit/test_env_loader.py` exists and contains the relocated
       loader tests.
-- [ ] `tests/unit/test_azure_devops_config.py` exists and contains
+- [x] `tests/unit/test_azure_devops_config.py` exists and contains
       `from_env` coverage, including the override-of-stale-environment
       regression test.
 - [ ] `bash scripts/run-tests-docker.sh` passes.
-- [ ] No new public API on `GitHubExtractorConfig` or
+- [x] No new public API on `GitHubExtractorConfig` or
       `AzureDevOpsExtractorConfig`.
