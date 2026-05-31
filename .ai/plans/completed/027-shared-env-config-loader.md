@@ -4,7 +4,15 @@
 > 027 because PR #114 (merged 2026-05-30) reserved Plan 026 for the admin-ui
 > vite 6 upgrade. Content unchanged.
 
-## Status: PROPOSED (not started)
+## Status: COMPLETE ✅ (PR #121, merged 2026-05-31)
+
+Loader helpers moved to `src/config/env_loader.py` (public names); back-compat
+shim kept in `github.py` for the remaining importers (`__init__.py`, `cache.py`,
+`conftest.py`); `azure_devops.py` rewired off `github`. New `test_env_loader.py`
++ `test_azure_devops_config.py`, and the override-of-stale-environment regression
+test added to **both** config suites (with try/finally env cleanup). CI Tests
+green. **Follow-up:** delete the `github.py` shim once nothing imports the
+underscored helper names — tracked as **issue #123**.
 
 > **Related:** [Plan 028](028-static-type-checking-gate.md) adds a static
 > type-checking (mypy) CI gate. It is the complementary half of this work — 027
@@ -143,16 +151,16 @@ resolved value would have caught the original bug.
 
 ## Acceptance criteria
 
-- [ ] `src/config/env_loader.py` exists and is the only definition of
+- [x] `src/config/env_loader.py` exists and is the only definition of
       `load_env_file`, `find_project_root`, `get_env_int`, `get_env_float`.
-- [ ] `src/config/github.py` no longer defines those helpers (re-exports for
+- [x] `src/config/github.py` no longer defines those helpers (re-exports for
       back-compat are OK).
-- [ ] `src/config/azure_devops.py` imports from `env_loader`, not from `github`.
-- [ ] `tests/unit/test_env_loader.py` exists and contains the relocated
+- [x] `src/config/azure_devops.py` imports from `env_loader`, not from `github`.
+- [x] `tests/unit/test_env_loader.py` exists and contains the relocated
       loader tests.
-- [ ] `tests/unit/test_azure_devops_config.py` exists and contains
+- [x] `tests/unit/test_azure_devops_config.py` exists and contains
       `from_env` coverage, including the override-of-stale-environment
       regression test.
 - [ ] `bash scripts/run-tests-docker.sh` passes.
-- [ ] No new public API on `GitHubExtractorConfig` or
+- [x] No new public API on `GitHubExtractorConfig` or
       `AzureDevOpsExtractorConfig`.
