@@ -729,6 +729,8 @@ class RepositoryExtractor(ABC):
             return ["/"]
 
         scope_path = readme.scope_path
+        if scope_path is None:
+            return []
         affected_paths = [scope_path]
 
         # Add all subdirectories under the scope path

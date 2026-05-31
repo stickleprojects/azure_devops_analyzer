@@ -31,8 +31,8 @@ def load_env_file(env_file: str | Path, override: bool = False) -> dict[str, str
     if not os.access(env_path, os.R_OK):
         return {}
 
-    loaded_vars = {}
-    raw_vars = {}
+    loaded_vars: dict[str, str] = {}
+    raw_vars: dict[str, str] = {}
 
     # First pass: load all raw values
     try:

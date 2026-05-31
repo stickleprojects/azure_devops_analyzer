@@ -158,7 +158,7 @@ class DependencyAnalyzer:
         )
 
         # Enrich dependencies if requested
-        if self.enrich and result.dependencies:
+        if self.enricher is not None and result.dependencies:
             logger.info("Enriching dependencies for %s", repo_id)
             try:
                 result.enriched_dependencies = self.enricher.enrich(result.dependencies)

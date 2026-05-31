@@ -227,7 +227,7 @@ class ReadmeAnalyzer:
 
     def _detect_technologies(self, content_lower: str, scope_type: Optional[str] = None) -> Dict[str, List[str]]:
         """Detect technologies mentioned in README."""
-        tech_stack = {
+        tech_stack: Dict[str, List[str]] = {
             'languages': [],
             'frameworks': [],
             'databases': [],
@@ -272,39 +272,6 @@ class ReadmeAnalyzer:
                 return True
         return False
 
-    def _calculate_documentation_score(
-        self,
-        sections: Dict[str, bool],
-        tech_stack: Dict[str, List[str]],
-        word_count: int,
-        has_badges: bool,
-        has_toc: bool
-    ) -> float:
-        """Calculate documentation quality score (0-10)."""
-        score = 0.0
-
-        # Section completeness (4 points)
-        section_score = sum(sections.values()) / len(sections) * 4
-        score += section_score
-
-        # Content length (2 points)
-        if word_count >= 200:
-            score += 2
-        elif word_count >= 50:
-            score += 1
-
-        # Technology information (2 points)
-        if tech_stack['all']:
-            score += min(len(tech_stack['all']) * 0.5, 2)
-
-        # Professional touches (2 points)
-        if has_badges:
-            score += 1
-        if has_toc:
-            score += 1
-
-        return min(score, 10.0)
-
     def _calculate_readability_score(self, content: str, word_count: int) -> float:
         """Calculate readability score (0-10) based on structure and clarity."""
         if word_count == 0:
@@ -345,59 +312,6 @@ class ReadmeAnalyzer:
             score -= 1
 
         return max(0.0, min(score, 10.0))
-
-    def _extract_purpose(self, content: str) -> Optional[str]:
-        """Extract project purpose from the first paragraph or description."""
-        lines = content.strip().split('\n')
-
-        # Skip title and empty lines
-        description_start = 0
-        for i, line in enumerate(lines):
-            if line.strip() and not line.startswith('#'):
-                description_start = i
-                break
-
-        # Get first substantial paragraph
-        purpose_lines = []
-        for line in lines[description_start:]:
-            line = line.strip()
-            if not line:
-                if purpose_lines:
-                    break
-                continue
-            if line.startswith('#'):
-                break
-            purpose_lines.append(line)
-            if len(' '.join(purpose_lines)) > 300:  # Limit length
-                break
-
-        purpose = ' '.join(purpose_lines).strip()
-        return purpose if len(purpose) > 10 else None
-
-    def _extract_features(self, content: str) -> List[str]:
-        """Extract key features from README content."""
-        features = []
-
-        # Look for feature lists
-        feature_patterns = [
-            r'(?:^|\n)(?:##?\s*)?(?:features?|highlights?|benefits?).*?(?=\n(?:#|$))',
-            r'(?:^|\n)[\-\*\+]\s*(.+?)(?=\n(?:[\-\*\+]|\n|$))'
-        ]
-
-        for pattern in feature_patterns:
-            matches = re.findall(pattern, content, re.IGNORECASE | re.MULTILINE | re.DOTALL)
-            for match in matches:
-                if isinstance(match, tuple):
-                    match = match[0]
-
-                # Extract list items
-                list_items = re.findall(r'[\-\*\+]\s*(.+)', match)
-                for item in list_items:
-                    item = item.strip()
-                    if 10 <= len(item) <= 100:  # Reasonable feature length
-                        features.append(item)
-
-        return features[:10]  # Limit to 10 features
 
     def _calculate_scope_coverage(
         self,
@@ -521,7 +435,7 @@ class ReadmeAnalyzer:
                 score += weight
 
         # Content length scoring (scope-adjusted)
-        min_words = {
+        min_words: Dict[Optional[str], int] = {
             "repository": 200,
             "module": 100,
             "package": 100,
@@ -558,7 +472,7 @@ class ReadmeAnalyzer:
                 break
 
         # Get first substantial paragraph
-        purpose_lines = []
+        purpose_lines: list[str] = []
         for line in lines[description_start:]:
             line = line.strip()
             if not line:
@@ -570,12 +484,13 @@ class ReadmeAnalyzer:
             purpose_lines.append(line)
 
             # Adjust length based on scope
-            max_length = {
+            max_length_by_scope: Dict[Optional[str], int] = {
                 "repository": 400,
                 "module": 300,
                 "package": 250,
                 "component": 200
-            }.get(scope_type, 300)
+            }
+            max_length = max_length_by_scope.get(scope_type, 300)
 
             if len(' '.join(purpose_lines)) > max_length:
                 break

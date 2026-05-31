@@ -6,7 +6,7 @@ by analyzing file extensions, configuration files, and dependencies.
 """
 
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Set
+from typing import Optional, List, Dict, Set, Any
 from datetime import datetime, UTC
 
 
@@ -256,8 +256,8 @@ class TechnologyDetector:
     def detect(
         self,
         file_names: List[str],
-        file_tree: Optional[List[Dict[str, any]]] = None,
-        language_data: Optional[List[Dict[str, any]]] = None,
+        file_tree: Optional[List[Dict[str, Any]]] = None,
+        language_data: Optional[List[Dict[str, Any]]] = None,
     ) -> TechnologyDetection:
         """
         Detect technologies used in a repository.
@@ -326,7 +326,7 @@ class TechnologyDetector:
     def _detect_languages(
         self,
         file_names: List[str],
-        language_data: Optional[List[Dict[str, any]]] = None
+        language_data: Optional[List[Dict[str, Any]]] = None
     ) -> List[str]:
         """Detect programming languages."""
         languages: Set[str] = set()

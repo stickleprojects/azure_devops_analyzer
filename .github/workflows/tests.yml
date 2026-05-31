@@ -31,6 +31,29 @@ jobs:
         run: |
           bash scripts/validate-documentation.sh docs
 
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install mypy
+        run: |
+          python -m pip install --upgrade pip
+          pip install "$(grep -E '^mypy' requirements.txt)"
+
+      - name: Run mypy
+        run: mypy   # config in pyproject.toml [tool.mypy]: files=["src"], ignore_missing_imports
+
   test:
     name: CI Tests
     runs-on: ubuntu-latest

@@ -27,7 +27,8 @@ class RustParser(ManifestParser):
             import tomllib
         except ImportError:
             try:
-                import tomli as tomllib
+                # Py<3.11 fallback; tomllib name intentionally reused
+                import tomli as tomllib  # type: ignore[no-redef]
             except ImportError:
                 # Fall back to regex parsing
                 return self._parse_cargo_toml_regex(content, file_path)

@@ -131,7 +131,8 @@ class PythonParser(ManifestParser):
         except ImportError:
             # Python < 3.11, try tomli
             try:
-                import tomli as tomllib
+                # tomllib name intentionally reused for the py<3.11 fallback
+                import tomli as tomllib  # type: ignore[no-redef]
             except ImportError:
                 # No TOML parser available, fall back to regex parsing
                 return self._parse_pyproject_toml_regex(content, file_path)
