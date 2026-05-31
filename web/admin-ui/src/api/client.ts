@@ -58,7 +58,7 @@ export async function removeRepository(repoId: string): Promise<RescanRepository
 }
 
 export async function getHealth(): Promise<HealthResponse> {
-  const response = await fetch('/health', undefined)
+  const response = await fetch('/health')
   const body = await response.text()
 
   let parsedBody: unknown = null

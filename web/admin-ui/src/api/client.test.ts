@@ -69,7 +69,7 @@ describe('getHealth', () => {
   it('GETs /health and returns the parsed response', async () => {
     mockOk({ status: 'ok', db: 'connected' })
     const result = await getHealth()
-    expect(mockFetch).toHaveBeenCalledWith('/health', undefined)
+    expect(mockFetch).toHaveBeenCalledWith('/health')
     expect(result).toEqual({ status: 'ok', db: 'connected' })
   })
 
@@ -83,7 +83,7 @@ describe('getHealth', () => {
     await expect(getHealth()).resolves.toEqual({ status: 'degraded', service: 'extraction-api' })
   })
 
-  it('throws an Error with the response body on non-2xx non-health payloads', async () => {
+  it('throws an Error for non-2xx responses without valid health JSON', async () => {
     mockError(503, 'Service Unavailable')
     await expect(getHealth()).rejects.toThrow('HTTP 503: Service Unavailable')
   })
