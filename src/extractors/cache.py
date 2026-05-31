@@ -17,7 +17,7 @@ from datetime import datetime
 from importlib import import_module
 from pathlib import Path
 
-from src.config.github import _find_project_root
+from src.config.env_loader import find_project_root
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def _file_cache_root() -> Path:
     path = Path(raw_path)
     if path.is_absolute():
         return path
-    return _find_project_root() / path
+    return find_project_root() / path
 
 
 def _file_cache_dir(method_name: str) -> Path:
