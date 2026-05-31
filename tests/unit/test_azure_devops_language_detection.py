@@ -2,6 +2,10 @@
 
 import pytest
 from unittest.mock import Mock, patch
+
+from azure.devops.v7_1.core.core_client import CoreClient
+from azure.devops.v7_1.git.git_client import GitClient
+
 from src.config.azure_devops import AzureDevOpsExtractorConfig
 from src.extractors.azure_devops.extractor import AzureDevOpsExtractor
 from src.extractors.base import FileTreeItem
@@ -19,11 +23,15 @@ def azure_config():
 
 @pytest.fixture
 def extractor(azure_config):
-    """Create an Azure DevOps extractor with mocked clients."""
+    """Create an Azure DevOps extractor with signature-bound mock clients.
+
+    See ``test_azure_devops_extractor.py`` for why we use ``spec=`` rather
+    than bare ``Mock()``.
+    """
     with patch.object(AzureDevOpsExtractor, '__abstractmethods__', set()):
         extractor = AzureDevOpsExtractor(config=azure_config)
-        extractor._git_client = Mock()
-        extractor._core_client = Mock()
+        extractor._git_client = Mock(spec=GitClient)
+        extractor._core_client = Mock(spec=CoreClient)
         return extractor
 
 

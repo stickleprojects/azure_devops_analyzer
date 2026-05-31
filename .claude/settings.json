@@ -6,7 +6,9 @@
       "Bash(xargs -I {} curl -s {})",
       "Bash(git fetch *)",
       "Bash(git show *)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(bash scripts/run-tests-docker.sh *)",
+      "Bash(git add *)"
     ]
   }
 }

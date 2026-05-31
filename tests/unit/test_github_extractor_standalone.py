@@ -37,6 +37,19 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 class TestGetRepositoriesPrivateRepos:
     """Test cases for get_repositories with private repos."""
 
+    @staticmethod
+    def _make_signature_bound_mocks():
+        """Return (client_mock, AuthenticatedUser_class, Organization_class).
+
+        Uses ``spec=`` so a typo in a PyGithub method name (e.g.
+        ``client.get_org`` instead of ``get_organization``) raises
+        ``AttributeError`` rather than silently passing.
+        """
+        from github import Github
+        from github.AuthenticatedUser import AuthenticatedUser
+        from github.Organization import Organization
+        return Mock(spec=Github), AuthenticatedUser, Organization
+
     def test_get_repositories_includes_private_repos_for_user(self):
         """
         Test that private repositories are included when fetching for a user.
@@ -77,8 +90,9 @@ class TestGetRepositoriesPrivateRepos:
 
         mock_repos = [mock_public_repo, mock_private_repo]
 
-        # Mock the client
-        mock_client = Mock()
+        # Mock the client — spec-bound so typos in PyGithub method names
+        # surface as AttributeError instead of silently passing.
+        mock_client, AuthenticatedUser, _ = self._make_signature_bound_mocks()
 
         # Make get_organization raise an exception (user is not an org)
         mock_client.get_organization.side_effect = GithubException(
@@ -86,7 +100,7 @@ class TestGetRepositoriesPrivateRepos:
         )
 
         # Mock get_user to return a user with repos
-        mock_user = Mock()
+        mock_user = Mock(spec=AuthenticatedUser)
         mock_user.login = "testuser"
         mock_user.get_repos.return_value = mock_repos
         mock_client.get_user.return_value = mock_user
@@ -126,9 +140,9 @@ class TestGetRepositoriesPrivateRepos:
         mock_repo.id = 12347
         mock_repo.created_at = None
 
-        # Mock the client
-        mock_client = Mock()
-        mock_org = Mock()
+        # Mock the client — spec-bound, see _make_signature_bound_mocks.
+        mock_client, _, Organization = self._make_signature_bound_mocks()
+        mock_org = Mock(spec=Organization)
         mock_org.get_repos.return_value = [mock_repo]
         mock_client.get_organization.return_value = mock_org
 
