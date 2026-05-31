@@ -21,7 +21,10 @@ beforeEach(() => {
 function mockOk(body: unknown) {
   mockFetch.mockResolvedValueOnce({
     ok: true,
+    status: 200,
+    statusText: 'OK',
     json: () => Promise.resolve(body),
+    text: () => Promise.resolve(JSON.stringify(body)),
   })
 }
 
@@ -70,7 +73,17 @@ describe('getHealth', () => {
     expect(result).toEqual({ status: 'ok', db: 'connected' })
   })
 
-  it('throws an Error with the response body on non-2xx', async () => {
+  it('returns health payload on 503 degraded responses', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 503,
+      statusText: 'Service Unavailable',
+      text: () => Promise.resolve('{"status":"degraded","service":"extraction-api"}'),
+    })
+    await expect(getHealth()).resolves.toEqual({ status: 'degraded', service: 'extraction-api' })
+  })
+
+  it('throws an Error with the response body on non-2xx non-health payloads', async () => {
     mockError(503, 'Service Unavailable')
     await expect(getHealth()).rejects.toThrow('HTTP 503: Service Unavailable')
   })

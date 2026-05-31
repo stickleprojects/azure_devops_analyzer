@@ -58,7 +58,28 @@ export async function removeRepository(repoId: string): Promise<RescanRepository
 }
 
 export async function getHealth(): Promise<HealthResponse> {
-  return request<HealthResponse>('/health')
+  const response = await fetch('/health', undefined)
+  const body = await response.text()
+
+  let parsedBody: unknown = null
+  if (body.trim()) {
+    try {
+      parsedBody = JSON.parse(body)
+    } catch {
+      parsedBody = null
+    }
+  }
+
+  if (response.ok) {
+    return (parsedBody ?? {}) as HealthResponse
+  }
+
+  if (response.status === 503 && parsedBody && typeof parsedBody === 'object') {
+    return parsedBody as HealthResponse
+  }
+
+  const detail = body.trim() || response.statusText
+  throw new Error(`HTTP ${response.status}: ${detail}`)
 }
 
 export async function getLibraryDetail(
