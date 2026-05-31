@@ -1,13 +1,15 @@
 # Plan 028: Static Type-Checking Gate (mypy in CI)
 
-## Status: IN REVIEW — implemented in PR #126 (2026-05-31)
+## Status: COMPLETE ✅ (PR #126, merged 2026-05-31)
 
 All 29 baseline errors fixed and the `Type Check` CI gate added. mypy clean (76
-files); full Docker suite 904 passed / 0 failed. Notable: a **real latent bug**
-surfaced in `github/extractor.py` (`self.backoff_seconds` → `self.config.backoff_seconds`,
-would `AttributeError` on the rate-limit path), and the `readme_analyzer.py`
-duplicate methods were resolved by deleting the 3 dead shadowed copies (no runtime
-change). Only the last box (branch-protection) is left — a maintainer action on merge.
+files); full Docker suite 904 passed / 0 failed. **`Type Check` is now a required
+status check on `main`** (alongside `CI Tests` and `Documentation Validation`,
+strict mode). Notable: a **real latent bug** surfaced in `github/extractor.py`
+(`self.backoff_seconds` → `self.config.backoff_seconds`, would `AttributeError`
+on the rate-limit path), and the `readme_analyzer.py` duplicate methods were
+resolved by deleting the 3 dead shadowed copies (no runtime change). Verified
+still green on `main` after PR #125 (Plan 027 shim removal) merged alongside.
 
 ## Motivation
 
@@ -197,7 +199,7 @@ optional to avoid scope-creep; the CI gate is the hard requirement.
 - [x] `.github/workflows/tests.yml` has a `Type Check` job that fails on any
       mypy error.
 - [x] `bash scripts/run-tests-docker.sh` still passes (904 passed, 0 failed).
-- [ ] `Type Check` added to `main` branch-protection required checks. *(maintainer action on merge)*
+- [x] `Type Check` added to `main` branch-protection required checks (2026-05-31).
 
 ## Risks
 
