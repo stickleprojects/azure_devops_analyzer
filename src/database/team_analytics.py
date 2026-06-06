@@ -11,9 +11,8 @@ The legacy contributors.team_id field should NOT be used for new code.
 See docs/04-implementation/contributor-team-migration.md for details.
 """
 
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, UTC
 from typing import Optional
-from decimal import Decimal
 
 from sqlalchemy import func, and_, or_
 from sqlalchemy.orm import Session

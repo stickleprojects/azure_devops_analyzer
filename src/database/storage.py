@@ -359,7 +359,7 @@ def get_or_create_service(
     if not service:
         service = Service(
             name=service_name,
-            purpose=purpose or f"Auto-created from repository.json",
+            purpose=purpose or "Auto-created from repository.json",
             created_at=datetime.now(UTC),
             updated_at=datetime.now(UTC),
         )

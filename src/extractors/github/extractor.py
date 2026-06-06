@@ -25,11 +25,7 @@ from typing import Optional, Any
 from github import GithubException
 from github.Repository import Repository as GHRepository
 
-from src.extractors.github.client import (
-    get_github_client,
-    get_organization_name,
-    get_user_name,
-)
+from src.extractors.github.client import get_github_client
 from src.config.github import GitHubExtractorConfig
 from src.extractors.base import (
     Platform,
@@ -57,14 +53,14 @@ class GitHubExtractor(RepositoryExtractor):
     ):
         super().__init__()
         self.config = config or GitHubExtractorConfig.from_env()
-        self._client = None
+        self._client: Any = None
         self._org_name = self.config.organization
         self._user_name = self.config.user
         self._user_email_cache: dict[str, str] = {}
         self._logger = logging.getLogger(__name__)
 
     @property
-    def client(self):
+    def client(self) -> Any:
         if self._client is None:
             self._client = get_github_client(config=self.config)
             # Ensure paginated calls use the configured page size
@@ -498,7 +494,7 @@ class GitHubExtractor(RepositoryExtractor):
 
         return result
 
-    def _get_pr_reviews(self, pr) -> list[PRReviewData]:
+    def _get_pr_reviews(self, pr: Any) -> list[PRReviewData]:
         """Get reviews for a pull request."""
         reviews = []
 
@@ -526,7 +522,7 @@ class GitHubExtractor(RepositoryExtractor):
 
         return reviews
 
-    def _get_pr_comments(self, pr) -> list[PRCommentData]:
+    def _get_pr_comments(self, pr: Any) -> list[PRCommentData]:
         """Get comments for a pull request."""
         comments = []
 
@@ -580,7 +576,9 @@ class GitHubExtractor(RepositoryExtractor):
 
         return comments
 
-    def _safe_paginated_list(self, paginated, limit: Optional[int] = None):
+    def _safe_paginated_list(
+        self, paginated: Any, limit: Optional[int] = None
+    ) -> list[Any]:
         """Iterate a PyGithub PaginatedList with basic rate-limit backoff and bounds."""
         items = []
         max_items = limit or self.config.max_items_per_list

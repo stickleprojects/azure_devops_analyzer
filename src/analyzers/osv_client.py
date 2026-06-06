@@ -12,10 +12,7 @@ API Docs: https://api.osv.dev/v1/query
 
 import logging
 from typing import Optional
-from datetime import datetime, UTC
 import httpx
-
-from src.extractors.base import DependencyData
 
 logger = logging.getLogger(__name__)
 

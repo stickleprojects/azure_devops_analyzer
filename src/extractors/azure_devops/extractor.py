@@ -16,7 +16,7 @@ import logging
 import os
 import time
 from datetime import datetime
-from typing import Optional
+from typing import Any, Callable, Optional
 
 from azure.devops.exceptions import AzureDevOpsServiceError
 from azure.devops.v7_1.git.models import (
@@ -56,13 +56,13 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         self._logger = logging.getLogger(__name__)
 
     @property
-    def git_client(self):
+    def git_client(self) -> Any:
         if self._git_client is None:
             self._git_client = get_git_client(self.config)
         return self._git_client
 
     @property
-    def core_client(self):
+    def core_client(self) -> Any:
         if self._core_client is None:
             self._core_client = get_core_client(self.config)
         return self._core_client
@@ -73,7 +73,9 @@ class AzureDevOpsExtractor(RepositoryExtractor):
 
     # ── Rate Limiting ─────────────────────────────────────────────────
 
-    def _api_call_with_retry(self, api_callable, *args, **kwargs):
+    def _api_call_with_retry(
+        self, api_callable: Callable[..., Any], *args: Any, **kwargs: Any
+    ) -> Any:
         """
         Execute an Azure DevOps API call with retry and exponential backoff.
 
@@ -97,7 +99,9 @@ class AzureDevOpsExtractor(RepositoryExtractor):
                     time.sleep(sleep_time)
                 else:
                     raise
-        raise last_exception
+        if last_exception is not None:
+            raise last_exception
+        raise RuntimeError("Retry loop exited without a result or exception")
 
     @staticmethod
     def _is_throttled(exc: AzureDevOpsServiceError) -> bool:
@@ -169,7 +173,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         except Exception as e:
             raise ValueError(f"Repository {repo_id} not found: {e}")
 
-    def _build_repository_data(self, repo, organization: str) -> RepositoryData:
+    def _build_repository_data(self, repo: Any, organization: str) -> RepositoryData:
         """Build RepositoryData from an Azure DevOps GitRepository object."""
         return RepositoryData(
             repo_id=str(repo.id),
@@ -195,7 +199,7 @@ class AzureDevOpsExtractor(RepositoryExtractor):
         )
 
     @staticmethod
-    def _infer_visibility(repo) -> Optional[bool]:
+    def _infer_visibility(repo: Any) -> Optional[bool]:
         """
         Infer repository privacy from project visibility.
 
