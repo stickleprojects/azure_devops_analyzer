@@ -329,7 +329,7 @@ def health_check():
     """
     try:
         # Verify Celery connection
-        celery_app.Control().inspect().ping()
+        celery_app.control.inspect().ping()
         status = "healthy"
         code = 200
     except Exception as e:

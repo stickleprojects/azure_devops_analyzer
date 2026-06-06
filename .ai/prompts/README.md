@@ -50,3 +50,21 @@ both route sets). Merge order doesn't matter.
 ## Why this folder exists
 
 Previous Copilot agent rounds on this project have ended with the agent declaring done while CI was red, costing 2+ feedback rounds per task. Every prompt here includes a non-negotiable acceptance block requiring `gh pr checks --watch` and root-cause fixing on red. Reuse the block when drafting new prompts.
+
+## Reusable block: model self-check preamble
+
+Paste this as the **first section** of every new agent prompt. The convention is to back the Copilot agent with **Claude Sonnet 4.6** (Opus 4.6 for hard tasks); this block surfaces a mis-dispatch *before* any work happens.
+
+> **Caveat (read before relying on this):** the agent **cannot change its own model** — that is fixed by the model picker at dispatch time — and a model's self-reported identity is **not reliable** (models often misstate or don't know which model they are). So this is a best-effort *declare-and-halt* signal, not a guarantee. The real guard is the human picking the right model in the Copilot UI before dispatch.
+
+```md
+## STEP 0 — Model self-check (do this FIRST, before anything else)
+
+This task is intended to run on **Claude Sonnet 4.6** (or **Claude Opus 4.6** for harder work). Before doing any other step:
+
+1. State, as the first line of your first response and in your opening PR/issue comment: **"Running as: <model name/version>"**.
+2. If you are confident you are NOT one of the expected models (Claude Sonnet 4.6 / Claude Opus 4.6) — e.g. you are a GPT or Gemini model — **STOP immediately. Do not write code, do not open a PR.** Post a comment: *"⚠️ Model mismatch: dispatched on <model>, but this task expects Claude Sonnet 4.6 / Opus 4.6. Please re-dispatch with the correct model selected in the Copilot model picker."* Then halt.
+3. If you cannot reliably determine which model you are, say so explicitly ("Cannot confirm model identity") and **proceed with caution**, flagging it in the PR body so the human can verify the picker.
+
+You cannot switch your own model — only the human can, via the model picker at dispatch. Do not attempt to.
+```
