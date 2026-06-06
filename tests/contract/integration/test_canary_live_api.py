@@ -43,7 +43,7 @@ def _get_canary_github_token() -> Optional[str]:
     """Return the GitHub token from the environment, or None.
 
     Reads ``GITHUB_TOKEN``, which the nightly workflow populates from
-    ``secrets.REPO_ANALYZER_GITHUB_TOKEN``.
+    ``github.token``.
     """
     return os.environ.get("GITHUB_TOKEN")
 
@@ -90,7 +90,7 @@ class TestGitHubCanary:
 
     Uses ``stickleprojects/azure_devops_analyzer`` as the canary repository —
     it is small, stable, and accessible via ``GITHUB_TOKEN``
-    (populated from ``secrets.REPO_ANALYZER_GITHUB_TOKEN`` by the nightly workflow).
+    (populated from ``github.token`` by the nightly workflow).
 
     Baselines are lower bounds so they survive normal repository growth.
     If the real count drifts far above ``EXPECTED_*``, update the constant

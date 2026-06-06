@@ -15,7 +15,7 @@ A canary repository must be:
 
 - **Small** — handful of PRs and contributors, not hundreds.
 - **Stable** — rarely changes; predictable counts.
-- **Accessible** — readable by the existing CI secrets (`REPO_ANALYZER_GITHUB_TOKEN` /
+- **Accessible** — readable by the existing CI credentials (`github.token` /
   `AZURE_DEVOPS_PAT`) with read-only scope.
 - **Representative** — contains at least one mixed-case contributor email and
   one reviewer scenario so the key contributor-identity invariants are exercised.
@@ -30,7 +30,7 @@ A canary repository must be:
 | URL | <https://github.com/stickleprojects/azure_devops_analyzer> |
 | Baseline PR count (lower bound) | 10 |
 | Baseline contributor count (lower bound) | 1 |
-| Secret required | `REPO_ANALYZER_GITHUB_TOKEN` (exported as `GITHUB_TOKEN` by the workflow) |
+| Credential required | `github.token` (exported as `GITHUB_TOKEN` by the workflow) |
 
 The `azure_devops_analyzer` repo is used as its own canary: it has a growing
 but modest number of pull requests and a small set of known contributors.
@@ -60,15 +60,15 @@ and open a PR.  No secrets or production changes are required.
 
 ---
 
-## Secrets
+## Credentials and Secrets
 
-The nightly workflow reuses secrets already provisioned for the existing CI
-workflows (`tests.yml`, `generated-test-data-assessment.yml`); **no separate
+The nightly workflow reuses CI credentials/secrets from GitHub Actions and the
+repository settings; **no separate
 provisioning step is required**:
 
-| Secret | Used as | Purpose |
+| Credential/Secret | Used as | Purpose |
 |---|---|---|
-| `REPO_ANALYZER_GITHUB_TOKEN` | `GITHUB_TOKEN` env var | GitHub API access |
+| `github.token` | `GITHUB_TOKEN` env var | GitHub API access |
 | `AZURE_DEVOPS_PAT` | `AZURE_DEVOPS_PAT` env var | Azure DevOps API access |
 | `AZURE_DEVOPS_ORG_URL` | `AZURE_DEVOPS_ORG_URL` env var | Azure DevOps organisation URL |
 
