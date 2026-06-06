@@ -1,0 +1,21 @@
+# flake8 gate (Plan 028 follow-up). Baseline-first, mirroring the mypy gate:
+# we enforce the high-value *bug* checks now and defer full PEP8 style to a
+# separate `black`/autoformat pass (E/W line-length + whitespace are ~288
+# findings and pure churn — not regressions).
+#
+#   F   = pyflakes: unused imports/vars, undefined names, f-strings without
+#         placeholders, duplicate args, etc. (real bugs)
+#   E9  = runtime/syntax errors (E901/E902/E999) and tokenisation failures
+#
+# To ratchet toward full style later, drop `select` and tune `max-line-length`
+# + `extend-ignore` after running black across src/.
+[flake8]
+select = F,E9
+exclude =
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    build,
+    dist,
+    migrations

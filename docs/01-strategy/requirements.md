@@ -324,7 +324,7 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 
 | ID      | Requirement            | Target                                              | Status | Notes                                                    |
 | ------- | ---------------------- | --------------------------------------------------- | ------ | -------------------------------------------------------- |
-| NFR-5.1 | Code quality standards | Enforced via pre-commit hooks (black, flake8, mypy) | 🔶     | **mypy** is now a required CI gate (`Type Check` job, config in `pyproject.toml`) — Plan 028 (PR #126); black/flake8 and pre-commit hooks not yet configured |
+| NFR-5.1 | Code quality standards | Enforced via pre-commit hooks (black, flake8, mypy) | 🔶     | CI gates live: **mypy** (`Type Check`, Plan 028/PR #126; strict for extractors+config), **flake8** (`Lint`, `select=F,E9` bug checks) and **pylint** (`--errors-only`) — Plan 028 follow-up. Still pending: **black** autoformat (full PEP8 style) and pre-commit hooks |
 | NFR-5.2 | Test coverage          | Minimum 80% coverage for core modules               | 🔶     | Unit, contract, and integration tests exist; % not measured |
 | NFR-5.3 | Documentation          | All modules documented with docstrings              | 🔶     | Some docstrings present; coverage incomplete             |
 | NFR-5.4 | Logging                | Structured logging with correlation IDs             | ✅     | Structlog configured                                     |

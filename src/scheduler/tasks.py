@@ -222,7 +222,7 @@ def compute_service_metrics_task(
                     "unique_contributors": metric.unique_contributors,
                 }
                 
-                logger.info(f"✓ Persisted service metric to database")
+                logger.info("✓ Persisted service metric to database")
                 return {"status": "success", "summary": summary}
         finally:
             session.close()

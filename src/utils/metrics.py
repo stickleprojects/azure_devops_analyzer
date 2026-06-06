@@ -20,7 +20,6 @@ Design notes
 from __future__ import annotations
 
 import logging
-from dataclasses import asdict
 
 from src.utils.extraction_health import HealthReport
 

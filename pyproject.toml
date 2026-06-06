@@ -1,9 +1,17 @@
 [tool.mypy]
-# Static type-checking gate (Plan 028). Default checks only — strict per-module
-# overrides (disallow_untyped_defs / check_untyped_defs) are a deliberate
-# follow-up, not enabled here. Scope is src/ (tests/ revisited later).
+# Static type-checking gate (Plan 028). Default checks across all of src/.
+# Per-module strict ratchet for src/extractors + src/config lives in the
+# overrides below (Plan 028 follow-up). tests/ revisited later.
 files = ["src"]
 ignore_missing_imports = true
+
+# Strict ratchet: fully-typed signatures required in the extractor + config
+# layers (the platform boundary, where type bugs are most costly). Extend this
+# list module-by-module as each package is brought up to strict.
+[[tool.mypy.overrides]]
+module = ["src.extractors.*", "src.config.*"]
+disallow_untyped_defs = true
+check_untyped_defs = true
 
 [tool.pytest.ini_options]
 # Test discovery patterns

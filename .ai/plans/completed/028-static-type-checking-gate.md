@@ -220,8 +220,16 @@ optional to avoid scope-creep; the CI gate is the hard requirement.
 
 ## Follow-ups (out of scope, capture as issues)
 
-- Ratchet `src/extractors/` and `src/config/` to per-module strict mypy
-  (`disallow_untyped_defs`, `check_untyped_defs`) once the baseline holds.
-- Wire `flake8` and/or `pylint` (both already in `requirements.txt`) as
-  additional non-blocking-then-required gates.
+- ✅ **DONE (2026-06-06)** — Ratchet `src/extractors/` and `src/config/` to
+  per-module strict mypy (`disallow_untyped_defs`, `check_untyped_defs`). Added
+  as a `[[tool.mypy.overrides]]` block in `pyproject.toml`; fixed 27 findings
+  (22 missing annotations + a real `raise None` fall-through in
+  `azure_devops/extractor._api_call_with_retry` and `asdict`/instance-vs-class
+  guards in `extractors/cache.py`).
+- ✅ **DONE (2026-06-06)** — Wire `flake8` and `pylint` as gates. New `Lint` job
+  in `tests.yml`: `flake8 src/` (config in `.flake8`: `select = F,E9` — pyflakes
+  bug checks + syntax errors; fixed 27 F-code findings) and
+  `pylint src/ --errors-only --disable=E0401` (already clean). Full PEP8/style
+  (E/W line-length + whitespace, ~288 findings) deliberately deferred to a
+  separate `black` pass — see `.flake8` for the ratchet note.
 - Extend type-checking to `tests/`.

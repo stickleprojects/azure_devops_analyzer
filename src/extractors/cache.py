@@ -16,6 +16,7 @@ from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
+from typing import Any, Callable
 
 from src.config.env_loader import find_project_root
 
@@ -32,7 +33,7 @@ _FILE_CACHE_DATETIME_KEY = "__cache_datetime__"
 _FILE_CACHE_TUPLE_KEY = "__cache_tuple__"
 
 
-def _normalize_arg(arg):
+def _normalize_arg(arg: object) -> str:
     """Convert an argument to a stable, hashable string for cache keys.
 
     - datetime  → ISO-8601 string  (avoids object identity issues)
@@ -46,7 +47,9 @@ def _normalize_arg(arg):
     return str(arg)
 
 
-def _make_cache_key(method_name, args, kwargs):
+def _make_cache_key(
+    method_name: str, args: tuple[Any, ...], kwargs: dict[str, Any]
+) -> str:
     """Build a deterministic string key from method name + call arguments.
 
     ``args`` should already exclude ``self`` (the decorator handles that).
@@ -86,10 +89,10 @@ def _file_cache_path(method_name: str, cache_key: str) -> Path:
     return _file_cache_dir(method_name) / f"{cache_hash}.json"
 
 
-def _encode_cache_value(value):
+def _encode_cache_value(value: Any) -> Any:
     if isinstance(value, datetime):
         return {_FILE_CACHE_DATETIME_KEY: value.isoformat()}
-    if is_dataclass(value):
+    if is_dataclass(value) and not isinstance(value, type):
         return {
             _FILE_CACHE_TYPE_KEY: f"{value.__class__.__module__}.{value.__class__.__qualname__}",
             _FILE_CACHE_DATA_KEY: _encode_cache_value(asdict(value)),
@@ -103,7 +106,7 @@ def _encode_cache_value(value):
     return value
 
 
-def _resolve_type(type_path: str):
+def _resolve_type(type_path: str) -> Any:
     module_name, _, qualname = type_path.rpartition(".")
     module = import_module(module_name)
     attr = module
@@ -112,7 +115,7 @@ def _resolve_type(type_path: str):
     return attr
 
 
-def _decode_cache_value(value):
+def _decode_cache_value(value: Any) -> Any:
     if isinstance(value, dict):
         if _FILE_CACHE_DATETIME_KEY in value:
             return datetime.fromisoformat(value[_FILE_CACHE_DATETIME_KEY])
@@ -121,7 +124,7 @@ def _decode_cache_value(value):
         if _FILE_CACHE_TYPE_KEY in value and _FILE_CACHE_DATA_KEY in value:
             target_type = _resolve_type(value[_FILE_CACHE_TYPE_KEY])
             data = _decode_cache_value(value[_FILE_CACHE_DATA_KEY])
-            if is_dataclass(target_type):
+            if is_dataclass(target_type) and isinstance(target_type, type):
                 return target_type(**data)
             return data
         return {key: _decode_cache_value(item) for key, item in value.items()}
@@ -130,7 +133,7 @@ def _decode_cache_value(value):
     return value
 
 
-def _read_file_cache(path: Path):
+def _read_file_cache(path: Path) -> Any:
     try:
         payload = path.read_text(encoding="utf-8")
     except FileNotFoundError:
@@ -147,7 +150,7 @@ def _read_file_cache(path: Path):
     return _decode_cache_value(data)
 
 
-def _write_file_cache(path: Path, value) -> bool:
+def _write_file_cache(path: Path, value: Any) -> bool:
     try:
         payload = json.dumps(_encode_cache_value(value), ensure_ascii=True, separators=(",", ":"))
     except (TypeError, ValueError) as exc:
@@ -181,7 +184,7 @@ def _write_file_cache(path: Path, value) -> bool:
                 pass
 
 
-def cached(method):
+def cached(method: Callable) -> Callable:
     """Decorator that caches the return value of an extractor instance method.
 
     Requirements on the instance (``self``):
@@ -193,7 +196,7 @@ def cached(method):
     """
 
     @functools.wraps(method)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self: Any, *args: Any, **kwargs: Any) -> Any:
         key = _make_cache_key(method.__name__, args, kwargs)
 
         method_name = method.__name__

@@ -2,9 +2,8 @@
 Azure DevOps API client configuration and authentication.
 """
 
-import os
 from functools import lru_cache
-from typing import Optional
+from typing import Any, Optional
 
 from azure.devops.connection import Connection
 from msrest.authentication import BasicAuthentication
@@ -45,13 +44,13 @@ def get_connection(config: Optional[AzureDevOpsExtractorConfig] = None) -> Conne
     return Connection(base_url=org_url, creds=credentials)
 
 
-def get_git_client(config: Optional[AzureDevOpsExtractorConfig] = None):
+def get_git_client(config: Optional[AzureDevOpsExtractorConfig] = None) -> Any:
     """Get the Git client for repository operations."""
     connection = get_connection(config)
     return connection.clients.get_git_client()
 
 
-def get_core_client(config: Optional[AzureDevOpsExtractorConfig] = None):
+def get_core_client(config: Optional[AzureDevOpsExtractorConfig] = None) -> Any:
     """Get the Core client for project operations."""
     connection = get_connection(config)
     return connection.clients.get_core_client()

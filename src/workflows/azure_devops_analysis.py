@@ -147,7 +147,7 @@ class AzureDevOpsAnalysisWorkflow:
                 .first()
             )
 
-            project = store_project(session, org, project_data.name, project_data.description)
+            store_project(session, org, project_data.name, project_data.description)
             logger.info("      Stored project: %s", project_data.name)
 
         self._process_repositories(org_data, project_data.name)
@@ -287,7 +287,7 @@ class AzureDevOpsAnalysisWorkflow:
                     .first()
                 )
 
-                repo = store_repository(session, project, repo_data)
+                store_repository(session, project, repo_data)
                 logger.info("          Stored repository: %s", repo_data.name)
 
             with session_scope() as session:

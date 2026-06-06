@@ -9,7 +9,7 @@ Enriches extracted dependencies with additional information from external APIs:
 
 import logging
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date
 from typing import Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -61,7 +61,7 @@ def _version_is_affected(current: Optional[str], fixed_in: Optional[str]) -> boo
     if not current or not fixed_in:
         return False
     try:
-        from packaging.version import Version, InvalidVersion
+        from packaging.version import Version
         return Version(current) < Version(fixed_in)
     except Exception:
         return False
