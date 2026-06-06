@@ -6,7 +6,7 @@
 
 **Implements**: A small React frontend that owns admin/operational workflows and coexists with Grafana — Grafana remains the home for analytics charts and the primary "Home" landing.
 
-**Predicate met**: [Investigation grafana-ui-shortcomings](../investigations/grafana-ui-shortcomings.md) closed 2026-05-03 with Outcome 2 selected. The audits at the bottom of that document drive Phases 2 and 3 of this plan.
+**Predicate met**: [Investigation grafana-ui-shortcomings](../../investigations/completed/grafana-ui-shortcomings.md) closed 2026-05-03 with Outcome 2 selected. The audits at the bottom of that document drive Phases 2 and 3 of this plan.
 
 ---
 
