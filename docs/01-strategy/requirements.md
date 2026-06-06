@@ -5,9 +5,9 @@
 | Field            | Value                      |
 | ---------------- | -------------------------- |
 | Project Name     | Repository Analysis System |
-| Document Version | 3.0                        |
+| Document Version | 3.1                        |
 | Status           | Active                     |
-| Last Updated     | 2026-04-05                 |
+| Last Updated     | 2026-06-06                 |
 
 _Version 3.0 merges `business-requirements.md` (v1.3) and `requirements-status.md` (v2.5) into a single source of truth. Each requirement now shows its definition and current implementation status together._
 
@@ -139,15 +139,15 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 
 | ID     | Requirement                                                                                       | Priority | Status | Notes                                                           |
 | ------ | ------------------------------------------------------------------------------------------------- | -------- | ------ | --------------------------------------------------------------- |
-| FR-6.1 | System shall generate a Thoughtworks Tech Radar based on actual library usage across organization | High     | ❌     | Radar generation in JSON format compatible with TW Radar viewer |
-| FR-6.2 | System shall categorize libraries into Thoughtworks Tech Radar rings (Adopt, Trial, Assess, Hold) | High     | ❌     | Categorization based on adoption metrics and recommendations    |
-| FR-6.3 | System shall populate radar with organization's actual technology stack from dependency analysis  | High     | ❌     | All detected libraries with 2+ repositories appear on radar     |
-| FR-6.4 | System shall include Thoughtworks recommended libraries as potential Trial/Assess options         | Medium   | ❌     | Recommended libraries highlighted separately with rationale     |
-| FR-6.5 | System shall display radar with configurable move history and publication timeline                | Medium   | ❌     | Radar shows technology migrations and categorization changes    |
-| FR-6.6 | System shall provide endpoint to publish/export radar for sharing with stakeholders               | High     | ❌     | REST API endpoint; HTML visualization compatible with viewers   |
-| FR-6.7 | System shall track blips with metadata (adoption date, vulnerability status, EOL impact)          | Medium   | ❌     | Each technology entry includes context-specific metadata        |
+| FR-6.1 | System shall generate a Thoughtworks Tech Radar based on actual library usage across organization | High     | ✅     | `RadarPublicationWorkflow` generates TW-format radar; `GET /api/radar` — Plan 022 (PR #74)                      |
+| FR-6.2 | System shall categorize libraries into Thoughtworks Tech Radar rings (Adopt, Trial, Assess, Hold) | High     | ✅     | `radar_categorization.py` buckets by adoption (repo_count + time-in-use) + CVE/EOL signals — Plan 022           |
+| FR-6.3 | System shall populate radar with organization's actual technology stack from dependency analysis  | High     | ✅     | Blips derived from `packages`/adoption metrics; libraries with 2+ repos appear (Assess threshold) — Plan 022    |
+| FR-6.4 | System shall include Thoughtworks recommended libraries as potential Trial/Assess options         | Medium   | 🔶     | Adoption-based Trial/Assess ring assignment exists; a curated externally-recommended seed list is not yet wired |
+| FR-6.5 | System shall display radar with configurable move history and publication timeline                | Medium   | ✅     | `radar_blip_history` + `is_moved` tracking; `GET /api/radar/history`; React `/radar/history` viewer (PR #110)   |
+| FR-6.6 | System shall provide endpoint to publish/export radar for sharing with stakeholders               | High     | ✅     | `GET /api/radar/export`; visual `/radar` viewer (MIT Zalando D3 renderer) — Plan 025 Phase 1c (PR #110)         |
+| FR-6.7 | System shall track blips with metadata (adoption date, vulnerability status, EOL impact)          | Medium   | ✅     | `radar_blips.metadata`/`flags` JSONB carries adoption date, CVE status, EOL impact — Plan 022                   |
 
-**Summary:** 0/7 Complete, 7/7 Not Started
+**Summary:** 6/7 Complete, 1/7 Partial
 
 ---
 
@@ -169,7 +169,7 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 
 ### FR-8: Contributor Analytics
 
-> **Status: PAUSED** — Implementation complete but disabled for performance optimization. See `CONTRIBUTOR_METRICS_GUIDE.md` for re-enablement steps.
+> **Status: PAUSED** — Implementation complete but disabled for performance optimization (the 7-query aggregation impacts extraction speed). Re-enable when metrics calculation is optimized.
 
 | ID     | Requirement                                                              | Priority | Status | Notes                                                                                                                      |
 | ------ | ------------------------------------------------------------------------ | -------- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
@@ -212,7 +212,7 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 
 | ID      | Requirement                                                           | Priority | Status | Notes                                                                                                                                         |
 | ------- | --------------------------------------------------------------------- | -------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-11.1 | System shall provide Grafana dashboards for all metrics               | High     | ✅     | 9 dashboards: Admin, Team Overview, Repo Overview, Repo Deep-Dive, Service Overview, Pull Requests, Contributor Analytics, Security, Home     |
+| FR-11.1 | System shall provide Grafana dashboards for all metrics               | High     | ✅     | 13 dashboards: Admin, Team Overview, Repo Overview, Repo Deep-Dive, Service Overview, Pull Requests, Contributor Analytics, Security, Home, Technology Landscape, Dependency Vulnerability Portfolio, Library Detail Deep-Dive, Extraction Health |
 | FR-11.2 | System shall support time-range filtering on all visualizations       | High     | ✅     | All dashboards use Grafana time picker; navigation preserves time range                                                                       |
 | FR-11.3 | System shall support drill-down from organization to repository level | Medium   | ✅     | Repository names in tables link to Deep-Dive dashboard; cross-dashboard navigation on all dashboards                                          |
 | FR-11.4 | System shall provide security-focused dashboard views                 | High     | ✅     | Dedicated Security Dashboard (`security-dashboard.json`); security metrics also in Team Overview and Repository Deep-Dive                     |
@@ -324,7 +324,7 @@ The Repository Analysis System is a platform designed to provide comprehensive i
 
 | ID      | Requirement            | Target                                              | Status | Notes                                                    |
 | ------- | ---------------------- | --------------------------------------------------- | ------ | -------------------------------------------------------- |
-| NFR-5.1 | Code quality standards | Enforced via pre-commit hooks (black, flake8, mypy) | 🔶     | Dependencies exist; hooks not yet configured             |
+| NFR-5.1 | Code quality standards | Enforced via pre-commit hooks (black, flake8, mypy) | 🔶     | **mypy** is now a required CI gate (`Type Check` job, config in `pyproject.toml`) — Plan 028 (PR #126); black/flake8 and pre-commit hooks not yet configured |
 | NFR-5.2 | Test coverage          | Minimum 80% coverage for core modules               | 🔶     | Unit, contract, and integration tests exist; % not measured |
 | NFR-5.3 | Documentation          | All modules documented with docstrings              | 🔶     | Some docstrings present; coverage incomplete             |
 | NFR-5.4 | Logging                | Structured logging with correlation IDs             | ✅     | Structlog configured                                     |
@@ -366,10 +366,10 @@ _Added 2026-02-09 to track worker-level visibility requirements._
 
 | Category                    | Complete | Partial | Not Started | Total |
 | --------------------------- | -------- | ------- | ----------- | ----- |
-| Functional Requirements     | 46       | 9       | 17          | 72    |
+| Functional Requirements     | 52       | 10      | 10          | 72    |
 | Non-Functional Requirements | 9        | 6       | 4           | 19    |
 
-_Last counted: 2026-03-26_
+_Last counted: 2026-06-06 (FR-6 Tech Radar moved from Not Started to Complete/Partial — Plans 022 & 025)_
 
 ---
 
@@ -444,7 +444,7 @@ _Last counted: 2026-03-26_
 
 - Wire AI integration for repository summarization (FR-10.1)
 - ~~Implement README extraction and indexing~~ ✅
-- Build Thoughtworks Tech Radar (FR-6)
+- ~~Build Thoughtworks Tech Radar (FR-6)~~ ✅ (Plans 022 & 025 — FR-6.4 recommended-library seeding still partial)
 
 ### Phase 5: Production Readiness
 
@@ -462,7 +462,7 @@ _Last counted: 2026-03-26_
 | TC-1 | PostgreSQL 15+ with TimescaleDB | ✅ Met | Docker Compose configured with TimescaleDB                   |
 | TC-2 | Python 3.11+                    | ✅ Met | Project configured for Python 3.11+                          |
 | TC-3 | RabbitMQ for task queue         | ✅ Met | RabbitMQ in Docker Compose                                   |
-| TC-4 | Grafana 10+ for visualization   | ✅ Met | Grafana 11.0.0 in Docker Compose with 9 provisioned dashboards |
+| TC-4 | Grafana 10+ for visualization   | ✅ Met | Grafana 11.0.0 in Docker Compose with 13 provisioned dashboards |
 
 ---
 
@@ -540,3 +540,4 @@ _Last counted: 2026-03-26_
 | 2.2     | 2026-02-09 | System | FR-9.5 complete; NFR-7.1/7.4/7.5 complete after extraction progress tracking implemented          |
 | 2.5     | 2026-03-26 | System | FR-13.8 Complete; DASH-TEAM-001 resolved in Plan 016; GitHub issues #32, #33 track remaining defects |
 | 3.0     | 2026-04-05 | System | Merged `business-requirements.md` + `requirements-status.md` into single document                |
+| 3.1     | 2026-06-06 | System | FR-6 Tech Radar marked Complete (6/7; FR-6.4 Partial) — Plans 022/025; NFR-5.1 mypy CI gate noted; dashboard count 9→13; removed dead `CONTRIBUTOR_METRICS_GUIDE.md` link |

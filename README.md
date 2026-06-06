@@ -2,7 +2,7 @@
 
 <!-- LOGO PLACEHOLDER: replace with <img src="docs/images/logo.png" alt="logo" width="200"> -->
 
-_Last reviewed: 2026-05-25_
+_Last reviewed: 2026-06-06_
 
 Analyzes repositories from Azure DevOps and GitHub, stores comprehensive metrics, and visualizes them in Grafana dashboards. Covers code quality, security vulnerabilities, contributor activity, pull request patterns, and repository health.
 
