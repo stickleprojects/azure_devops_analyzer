@@ -2,7 +2,7 @@
 
 > **Renumber note (2026-05-03)**: Originally drafted as Plan 024. Renumbered to 025 because PR #83 (open at drafting time) reserved Plan 024 for "auth error taxonomy and view consistency". Phase numbering inside this document is unchanged.
 
-## Status: IN PROGRESS (mostly complete) — Phase 2 ✅ (PR #85, gap fixed: Task A ✅ PR #103) · Phase 3 ✅ (PR #94) · Phase 1a ✅ (PR #96) · Phase 1b ✅ (PR #104) · **Phase 1c/1d deferred — the only remaining work**
+## Status: COMPLETE (2026-05-25) — Phase 2 ✅ (PR #85, gap fixed: Task A ✅ PR #103) · Phase 3 ✅ (PR #94) · Phase 1a ✅ (PR #96) · Phase 1b ✅ (PR #104) · Phase 1c ✅ (PR #110) · Phase 1d ✅ (PR #109)
 
 **Implements**: A small React frontend that owns admin/operational workflows and coexists with Grafana — Grafana remains the home for analytics charts and the primary "Home" landing.
 
@@ -12,11 +12,12 @@
 
 ## What's next (agent entry point — updated 2026-05-25)
 
-Tasks A and B are **done** (PRs #103, #104). The only remaining work is the two
-deferred optional phases — **1c (Tech Radar viewer)** and **1d (Library detail
-page)**. Both dependencies are now met (Plans 022 and 021 respectively), so
-either can be picked up independently. Pick the one the user asks for; do not
-implement both in one PR.
+**All phases complete.** Tasks A and B shipped in PRs #103 / #104; the two
+formerly-deferred optional phases both merged 2026-05-25 — **1c (Tech Radar
+viewer)** in PR #110 and **1d (Library detail page)** in PR #109. All routes
+(`/`, `/extraction`, `/health`, `/radar`, `/radar/history`, `/repositories`,
+`/library/:ecosystem/:name`) are live in `web/admin-ui/src/App.tsx`. No
+remaining work.
 
 ### Task A — Fix extraction-health.json Phase 2 gap ✅ (PR #103)
 
@@ -26,7 +27,7 @@ implement both in one PR.
 
 Merged. `ExtractionPage.tsx` extended with Compute Service Metrics button; `RepositoriesPage.tsx` added with filterable table and per-row Rescan/Remove buttons.
 
-### Task C — Phase 1c: Tech Radar viewer route (deferred, ~3–4 days) — REMAINING
+### Task C — Phase 1c: Tech Radar viewer route ✅ (PR #110)
 
 Plan 022 is now complete (merged). Backend endpoints available:
 - `GET /api/radar` — returns Thoughtworks-format JSON (`documentTitle`, `quadrants`, `rings`, `entries[]`)
@@ -50,7 +51,7 @@ The `/radar` route renders an **actual visual radar** (the circular blip diagram
 
 **Testing:** D3/SVG renders poorly under jsdom, so don't assert on the drawn chart in Vitest. Instead: (1) unit-test the pure mapping function (API `entries[]` → Zalando config) hard — quadrant→index, ring→index, `moved` derivation from `isNew`/`isMoved`, empty case; (2) a light smoke test that the component mounts and emits an `<svg>` with the expected blip count; (3) cover the visual render in the Playwright e2e suite (`web/admin-ui/e2e/`).
 
-### Task D — Phase 1d: Library detail page (deferred, ~2–3 days) — REMAINING
+### Task D — Phase 1d: Library detail page ✅ (PR #109)
 
 Plan 021 is now complete (merged). Backend endpoint available:
 - `GET /api/packages/library/<name>/<ecosystem>` — metadata + CVE list + adoption timeline + per-repo usage
