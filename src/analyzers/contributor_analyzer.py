@@ -7,7 +7,7 @@ pull request activity, active days, and commit message quality.
 
 import re
 from dataclasses import dataclass
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, UTC
 from decimal import Decimal
 from typing import Optional
 
@@ -15,7 +15,6 @@ from sqlalchemy import func, distinct, case
 from sqlalchemy.orm import Session
 
 from src.database.models import (
-    Contributor,
     ContributorMetric,
     Commit,
     PullRequest,

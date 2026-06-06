@@ -17,7 +17,6 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.analyzers.radar_categorization import RadarBlip, RadarCategorizer
-from src.database.models.dependency import RepositoryDependency
 from src.database.models.package import Package
 from src.database.models.radar import (
     RadarBlip as RadarBlipModel,

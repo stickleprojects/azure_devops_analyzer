@@ -215,7 +215,7 @@ class RepositoryExtractor(ABC):
     to provide a consistent API for data extraction.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._cache: dict = {}
         self._cache_hits: int = 0
         self._cache_misses: int = 0

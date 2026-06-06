@@ -21,7 +21,7 @@ from src.scheduler.celery_app import celery_app
 from src.database import get_session
 from src.database.models.repository import Repository
 from src.database.models.package import Package
-from src.database.models.dependency import RepositoryDependency, Vulnerability
+from src.database.models.dependency import RepositoryDependency
 from src.database.models.service import RepositoryService, Service
 from src.database.models.radar import RadarBlip as RadarBlipModel, RadarBlipHistory, RadarPublication
 
@@ -758,7 +758,8 @@ def export_radar():
                 # Validate date
                 try:
                     from datetime import datetime as _dt
-                    target_date = _dt.strptime(date_str, "%Y-%m-%d").date()
+                    # Parse to validate the format; raises ValueError if invalid.
+                    _dt.strptime(date_str, "%Y-%m-%d")
                 except ValueError:
                     return jsonify({"status": "error", "message": f"Invalid date format: {date_str}"}), 404
 

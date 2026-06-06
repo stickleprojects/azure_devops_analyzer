@@ -7,7 +7,7 @@ including technology stack, purpose, installation instructions, and documentatio
 
 import re
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 from datetime import datetime
 
 

@@ -24,7 +24,6 @@ from src.database.storage import (
     store_pull_request,
     store_readme,
     store_dependencies,
-    store_enriched_dependencies,
     store_package_metadata,
     store_repo_dependencies,
     store_languages,
@@ -126,7 +125,7 @@ class GitHubAnalysisWorkflow:
             else:
                 logger.info("  Organization exists: %s", org_data.name)
 
-            project = store_project(
+            store_project(
                 session,
                 org,
                 org_data.name,
@@ -267,7 +266,7 @@ class GitHubAnalysisWorkflow:
                     .first()
                 )
 
-                repo = store_repository(session, project, repo_data)
+                store_repository(session, project, repo_data)
                 logger.info("      Stored repository: %s", repo_data.name)
 
             with session_scope() as session:
