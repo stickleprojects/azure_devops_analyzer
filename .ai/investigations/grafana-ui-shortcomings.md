@@ -1,8 +1,8 @@
 # Investigation: Grafana UI Shortcomings — Navigation, Relational Drill-down, and Tool Fit
 
-**Status**: RESOLVED 2026-05-03 — **Outcome 2 selected** (split admin from analytics; bespoke admin UI + tidied Grafana). Proceed with [Plan 025](../plans/025-bespoke-admin-and-navigation-ui.md).
+**Status**: RESOLVED 2026-05-03 — **Outcome 2 selected** (split admin from analytics; bespoke admin UI + tidied Grafana). Downstream [Plan 025](../plans/completed/025-bespoke-admin-and-navigation-ui.md) is now **fully delivered** (all phases merged by 2026-05-25; plan moved to `completed/`).
 **Created**: 2026-05-01
-**Related plans**: `.ai/plans/023-grafana-home-dashboard-links.md` (home nav links — closed), `.ai/plans/025-bespoke-admin-and-navigation-ui.md` (approved React UI)
+**Related plans**: `.ai/plans/023-grafana-home-dashboard-links.md` (home nav links — closed), `.ai/plans/completed/025-bespoke-admin-and-navigation-ui.md` (bespoke React UI — complete)
 
 ---
 

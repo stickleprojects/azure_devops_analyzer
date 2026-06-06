@@ -4,6 +4,8 @@
 **Context**: Plan 014, Layer 2 — per-repo enrichment script generation via Ollama
 **Model tested**: `qwen2.5-coder:14b`
 
+**Status**: SUPERSEDED (2026-04-19) — the Ollama-based enrichment-codegen approach this document investigates was removed in PR #62 (`chore/remove-ollama`). Fixture generation is now deterministic seeded-PRNG and no longer involves an LLM. The artifacts referenced below no longer exist: `.ai/ollama-prompts/fixture-repo-enrichment.md` and the hand-patched `scripts/generated/enrich-*.py` scripts. Current pipeline: `scripts/generated/generate-repo-seeds.py` → `scripts/run-enrich.py` (`scripts/enrich-repo.py`) → `tests/fixtures/fixture_extractor.py`. Retained for historical context only — no action remains.
+
 ---
 
 ## Config Structure (clarified during investigation)

@@ -1,6 +1,6 @@
 # Investigation: Development Feedback Loop & Realistic Test Coverage
 
-**Status**: Complete — all answers filled in; solution design in `.ai/plans/013-fixture-factory-plan.md`
+**Status**: Complete (updated 2026-06-06) — all answers filled in. The originally-referenced `.ai/plans/013-fixture-factory-plan.md` was never created; the fixture-factory direction shipped instead as the **deterministic seeded-PRNG fixture pipeline** (`scripts/generated/generate-repo-seeds.py` → `scripts/run-enrich.py` → `tests/fixtures/fixture_extractor.py`), after the earlier Ollama-based generation was removed in PR #62 (see [014-enrichment-codegen-findings.md](014-enrichment-codegen-findings.md)).
 **Created**: 2026-02-21
 **Related plans**: `.ai/plans/011-technology-detection-persistence-plan.md` (mostly complete — see plan for remaining items)
 
