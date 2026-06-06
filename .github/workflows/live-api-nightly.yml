@@ -4,8 +4,8 @@
 ## opens a GitHub Issue on failure.  This workflow is NOT a required PR check;
 ## failures never block merges — the signal is the opened issue.
 ##
-## Secrets used (already provisioned for the existing CI workflows):
-##   REPO_ANALYZER_GITHUB_TOKEN — GitHub PAT, exported as GITHUB_TOKEN
+## Credentials/secrets used:
+##   github.token               — GitHub Actions token, exported as GITHUB_TOKEN
 ##   AZURE_DEVOPS_PAT           — Azure DevOps PAT, Code(read) scope
 ##   AZURE_DEVOPS_ORG_URL       — Azure DevOps organisation URL secret
 ##
@@ -90,7 +90,7 @@ jobs:
       - name: Run canary live-API tests
         env:
           PYTHONPATH: ${{ github.workspace }}
-          GITHUB_TOKEN: ${{ secrets.REPO_ANALYZER_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
           AZURE_DEVOPS_PAT: ${{ secrets.AZURE_DEVOPS_PAT }}
           AZURE_DEVOPS_ORG_URL: ${{ secrets.AZURE_DEVOPS_ORG_URL }}
           TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_azure_devops
@@ -119,7 +119,7 @@ jobs:
               `- An API shape change on GitHub or Azure DevOps`,
               `- A regression in the extraction pipeline`,
               `- Stale canary baselines (counts below expected lower bound)`,
-              `- Missing or expired secrets (\`REPO_ANALYZER_GITHUB_TOKEN\` / \`AZURE_DEVOPS_PAT\` / \`AZURE_DEVOPS_ORG_URL\`)`,
+              `- Missing or expired secrets (\`AZURE_DEVOPS_PAT\` / \`AZURE_DEVOPS_ORG_URL\`)`,
               ``,
               `**Next steps:**`,
               `1. Click the run URL above and inspect the failing test output.`,
