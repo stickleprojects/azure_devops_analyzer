@@ -1,6 +1,6 @@
 # Investigation: Grafana UI Shortcomings — Navigation, Relational Drill-down, and Tool Fit
 
-**Status**: RESOLVED 2026-05-03 — **Outcome 2 selected** (split admin from analytics; bespoke admin UI + tidied Grafana). Downstream [Plan 025](../plans/completed/025-bespoke-admin-and-navigation-ui.md) is now **fully delivered** (all phases merged by 2026-05-25; plan moved to `completed/`).
+**Status**: RESOLVED 2026-05-03 — **Outcome 2 selected** (split admin from analytics; bespoke admin UI + tidied Grafana). Downstream [Plan 025](../../plans/completed/025-bespoke-admin-and-navigation-ui.md) is now **fully delivered** (all phases merged by 2026-05-25; plan moved to `completed/`).
 **Created**: 2026-05-01
 **Related plans**: `.ai/plans/023-grafana-home-dashboard-links.md` (home nav links — closed), `.ai/plans/completed/025-bespoke-admin-and-navigation-ui.md` (bespoke React UI — complete)
 
@@ -27,7 +27,7 @@ The goal of this investigation is to map the friction concretely before deciding
   - `dependency-vulnerability-portfolio.json` → library detail (per Plan 021)
     Other tables (e.g. "Top Vulnerable Dependencies", severity breakdowns) have no row-level drill-down.
 - The admin dashboard is unusual: extraction is triggered by a `text`/`stat` panel link that POSTs to `http://localhost:5000/api/rescan/github` (the Flask API). It works, but it's a UX of "click a Grafana stat tile and watch a browser tab open showing JSON".
-- A rescan/health/packages/radar/stack Flask API is already exposed (~20 endpoints in [src/api/rescan.py](src/api/rescan.py) and [src/api/stack.py](src/api/stack.py)) — any new frontend has a server to talk to.
+- A rescan/health/packages/radar/stack Flask API is already exposed (~20 endpoints in [src/api/rescan.py](../../../src/api/rescan.py) and [src/api/stack.py](../../../src/api/stack.py)) — any new frontend has a server to talk to.
 - Plan 023 just shipped to fix Home → child-dashboard discoverability. That's the _outbound_ nav from Home; the _inbound_ return-to-Home and _sideways_ sibling nav are still uneven.
 
 ---
@@ -180,7 +180,7 @@ These three artefacts make Themes A, B, and C answerable from data instead of me
 
 ## Next step
 
-When the synthesis table is at least half filled in, decide between Outcomes 1, 2, 3. If Outcome 2 (the current lean), proceed with [Plan 025](../plans/025-bespoke-admin-and-navigation-ui.md). If Outcome 1, scope a smaller "Grafana navigation hardening" plan instead. If Outcome 3, this becomes a much larger conversation.
+When the synthesis table is at least half filled in, decide between Outcomes 1, 2, 3. If Outcome 2 (the current lean), proceed with [Plan 025](../../plans/completed/025-bespoke-admin-and-navigation-ui.md). If Outcome 1, scope a smaller "Grafana navigation hardening" plan instead. If Outcome 3, this becomes a much larger conversation.
 
 ---
 
