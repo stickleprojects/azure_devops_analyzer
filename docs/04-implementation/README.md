@@ -13,6 +13,7 @@ This folder contains planning documents for future initiatives, architectural de
 - **[file-cache-plan.md](file-cache-plan.md)** — File-based cache implementation details
 - **[generated-test-data-assessment.md](generated-test-data-assessment.md)** — Assessment of generated fixture data and follow-up actions
 - **[github-private-repo-access.md](github-private-repo-access.md)** — Private repository authentication approach
+- **[private-repo-caching-summary.md](private-repo-caching-summary.md)** — Solution summary: default private-repo inclusion + caching strategy (moved from repo root)
 - **[contributor-team-allocation-strategy.md](contributor-team-allocation-strategy.md)** — Team assignment architecture
 - **[integration-testing-priority-assessment.md](integration-testing-priority-assessment.md)** — Testing strategy and priorities
 - **[parallelization-plan.md](parallelization-plan.md)** — Multi-worker repository processing strategy, rate limiting, scaling from 1 to 10+ workers

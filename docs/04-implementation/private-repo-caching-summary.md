@@ -4,7 +4,7 @@
 
 ### 1. Default Behavior - Include Private Repos ✅
 
-**File**: [src/extractors/github/extractor.py](src/extractors/github/extractor.py#L142)
+**File**: [src/extractors/github/extractor.py](../../src/extractors/github/extractor.py#L142)
 
 ```python
 def get_repositories(
@@ -63,7 +63,7 @@ github_config.user           # ✅ Correct
 github_config.organization   # ✅ Correct
 ```
 
-**Added convenience aliases** in [src/config/github.py](src/config/github.py#L27-L35):
+**Added convenience aliases** in [src/config/github.py](../../src/config/github.py#L27-L35):
 
 ```python
 @property
@@ -83,7 +83,7 @@ def org(self) -> Optional[str]:
 
 ### 4. Test Enhancement - Private Repo Verification ✅
 
-**File**: [tests/contract/integration/test_github_extraction_e2e.py](tests/contract/integration/test_github_extraction_e2e.py#L136-L188)
+**File**: [tests/contract/integration/test_github_extraction_e2e.py](../../tests/contract/integration/test_github_extraction_e2e.py#L136-L188)
 
 **What the test does now**:
 
@@ -247,7 +247,7 @@ FAILED pytest.fail(f"See debug output above for available repositories.")
 
 ### Caching Strategy Deep Dive
 
-📄 [docs/04-implementation/caching-strategy.md](docs/04-implementation/caching-strategy.md)
+📄 [docs/04-implementation/caching-strategy.md](caching-strategy.md)
 
 Covers:
 
@@ -262,10 +262,10 @@ Covers:
 
 | File                                                                                                                           | Changes                                                                                       | Purpose                                                          |
 | ------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [src/extractors/github/extractor.py](src/extractors/github/extractor.py#L142)                                                  | Added `include_private: bool = True` parameter, endpoint selection logic, access mode logging | Default inclusion of private repos, proper API endpoint handling |
-| [src/config/github.py](src/config/github.py#L27-L35)                                                                           | Added `@property username` and `@property org`                                                | Backward compatibility with test code                            |
-| [tests/contract/integration/test_github_extraction_e2e.py](tests/contract/integration/test_github_extraction_e2e.py#L136-L188) | Enhanced debug block, exception handling, assertions                                          | Comprehensive test debugging and clear error messages            |
-| [docs/04-implementation/caching-strategy.md](docs/04-implementation/caching-strategy.md)                                       | NEW                                                                                           | Comprehensive caching documentation                              |
+| [src/extractors/github/extractor.py](../../src/extractors/github/extractor.py#L142)                                                  | Added `include_private: bool = True` parameter, endpoint selection logic, access mode logging | Default inclusion of private repos, proper API endpoint handling |
+| [src/config/github.py](../../src/config/github.py#L27-L35)                                                                           | Added `@property username` and `@property org`                                                | Backward compatibility with test code                            |
+| [tests/contract/integration/test_github_extraction_e2e.py](../../tests/contract/integration/test_github_extraction_e2e.py#L136-L188) | Enhanced debug block, exception handling, assertions                                          | Comprehensive test debugging and clear error messages            |
+| [docs/04-implementation/caching-strategy.md](caching-strategy.md)                                       | NEW                                                                                           | Comprehensive caching documentation                              |
 
 ---
 
