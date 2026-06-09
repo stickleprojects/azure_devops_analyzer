@@ -324,3 +324,42 @@ class TestTechnologyPersistence:
             query_session,
             [("React", "framework")],
         )
+
+    def test_process_technologies_skips_recently_enriched_entries(self, autospec_extractor):
+        repo_data = MagicMock(repo_id="org/proj/repo", name="repo")
+        autospec_extractor.get_file_tree.return_value = [MagicMock(path="package.json")]
+        detection = SimpleNamespace(
+            all_technologies=["React"],
+            primary_language="TypeScript",
+            frameworks=["React"],
+            databases=[],
+        )
+        stored_entries = [SimpleNamespace(name="React", category="framework")]
+
+        store_session = MagicMock()
+        query_session = MagicMock()
+        query_session.query.return_value.filter.return_value.all.return_value = [
+            SimpleNamespace(name="React", category="framework")
+        ]
+
+        @contextmanager
+        def _scope_for(session):
+            yield session
+
+        with patch(
+            "src.workflows.azure_devops_analysis.TechnologyDetector"
+        ) as detector_cls, patch(
+            "src.workflows.azure_devops_analysis.store_detections",
+            return_value=stored_entries,
+        ), patch(
+            "src.workflows.azure_devops_analysis.TechnologyEnricher"
+        ) as enricher_cls, patch(
+            "src.workflows.azure_devops_analysis.session_scope",
+            side_effect=[_scope_for(store_session), _scope_for(query_session)],
+        ):
+            detector_cls.return_value.detect.return_value = detection
+
+            workflow = AzureDevOpsAnalysisWorkflow(extractor=autospec_extractor)
+            workflow._process_technologies(repo_data)
+
+        enricher_cls.return_value.enrich.assert_not_called()
