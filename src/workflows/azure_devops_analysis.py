@@ -25,7 +25,8 @@ from src.database.storage import (
     store_commit,
     store_pull_request,
     store_dependencies,
-    store_enriched_dependencies,
+    store_package_metadata,
+    store_repo_dependencies,
     store_detections,
     store_readme,
     update_repository_analyzed_timestamp,
@@ -529,20 +530,30 @@ class AzureDevOpsAnalysisWorkflow:
                 )
 
                 with session_scope() as session:
-                    # Use enriched dependencies if available, otherwise fall back to unenriched
                     if result.enriched_dependencies:
                         logger.info(
                             "          Enriching %d dependencies (latest versions, EOL, vulnerabilities)",
                             len(result.enriched_dependencies),
                         )
-                        store_enriched_dependencies(
+                        for enriched_dependency in result.enriched_dependencies:
+                            if enriched_dependency.package_metadata is not None:
+                                package_metadata = enriched_dependency.package_metadata
+                                store_package_metadata(
+                                    session,
+                                    package_name=package_metadata.package_name,
+                                    ecosystem=package_metadata.ecosystem,
+                                    latest_version=package_metadata.latest_version,
+                                    is_eol=package_metadata.is_eol,
+                                    eol_date=package_metadata.eol_date,
+                                    vulnerabilities=package_metadata.vulnerabilities,
+                                )
+                        store_repo_dependencies(
                             session,
                             repo_data.repo_id,
                             result.enriched_dependencies,
                             branch_name=repo_data.default_branch,
                         )
                     else:
-                        # Fallback to unenriched if enrichment failed
                         store_dependencies(
                             session,
                             repo_data.repo_id,
