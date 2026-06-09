@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import contextmanager
+from types import SimpleNamespace
 from unittest.mock import DEFAULT, MagicMock, create_autospec, patch
 
 import pytest
@@ -251,3 +252,75 @@ class TestSkipsInaccessibleProject:
 
         # Aborted after the first project — never reached the second.
         assert autospec_extractor.get_repositories.call_count == 1
+
+
+class TestTechnologyPersistence:
+    """Regression coverage for technology detection persistence on Azure runs."""
+
+    def test_process_technologies_persists_detected_stack(self, autospec_extractor):
+        repo_data = MagicMock(repo_id="org/proj/repo", name="repo")
+        autospec_extractor.get_file_tree.return_value = [MagicMock(path="requirements.txt")]
+        detection = SimpleNamespace(
+            all_technologies=["Django"],
+            primary_language="Python",
+            frameworks=["Django"],
+            databases=[],
+        )
+
+        with patch(
+            "src.workflows.azure_devops_analysis.TechnologyDetector"
+        ) as detector_cls, patch(
+            "src.workflows.azure_devops_analysis.store_detections"
+        ) as store_detections_mock, patch(
+            "src.workflows.azure_devops_analysis.session_scope"
+        ) as session_scope_mock:
+            detector_cls.return_value.detect.return_value = detection
+            store_detections_mock.return_value = []
+            session_scope_mock.return_value = _fake_session_scope()
+
+            workflow = AzureDevOpsAnalysisWorkflow(extractor=autospec_extractor)
+            workflow._process_technologies(repo_data)
+
+        store_detections_mock.assert_called_once()
+        assert store_detections_mock.call_args.args[1] == repo_data.repo_id
+        assert store_detections_mock.call_args.args[2] is detection
+
+    def test_process_technologies_enriches_stale_eol_rows(self, autospec_extractor):
+        repo_data = MagicMock(repo_id="org/proj/repo", name="repo")
+        autospec_extractor.get_file_tree.return_value = [MagicMock(path="package.json")]
+        detection = SimpleNamespace(
+            all_technologies=["React"],
+            primary_language="TypeScript",
+            frameworks=["React"],
+            databases=[],
+        )
+        stored_entries = [SimpleNamespace(name="React", category="framework")]
+
+        store_session = MagicMock()
+        query_session = MagicMock()
+        query_session.query.return_value.filter.return_value.all.return_value = []
+
+        @contextmanager
+        def _scope_for(session):
+            yield session
+
+        with patch(
+            "src.workflows.azure_devops_analysis.TechnologyDetector"
+        ) as detector_cls, patch(
+            "src.workflows.azure_devops_analysis.store_detections",
+            return_value=stored_entries,
+        ), patch(
+            "src.workflows.azure_devops_analysis.TechnologyEnricher"
+        ) as enricher_cls, patch(
+            "src.workflows.azure_devops_analysis.session_scope",
+            side_effect=[_scope_for(store_session), _scope_for(query_session)],
+        ):
+            detector_cls.return_value.detect.return_value = detection
+
+            workflow = AzureDevOpsAnalysisWorkflow(extractor=autospec_extractor)
+            workflow._process_technologies(repo_data)
+
+        enricher_cls.return_value.enrich.assert_called_once_with(
+            query_session,
+            [("React", "framework")],
+        )
