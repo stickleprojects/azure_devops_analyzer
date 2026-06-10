@@ -1212,11 +1212,12 @@ def store_package_metadata(
 
     for vuln_dict in vulnerabilities:
         fixed_versions = vuln_dict.get("fixed_in_versions") or []
+        raw_severity = vuln_dict.get("severity") or "UNKNOWN"
         vuln = Vulnerability(
             package_id=pkg.id,
             cve_id=vuln_dict.get("cve_id"),
             vulnerability_id=vuln_dict.get("osv_id"),
-            severity=vuln_dict.get("severity") or "unknown",
+            severity=raw_severity.upper(),
             summary=vuln_dict.get("summary"),
             description=vuln_dict.get("details"),
             fixed_in_version=fixed_versions[0] if fixed_versions else None,

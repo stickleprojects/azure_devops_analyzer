@@ -65,22 +65,22 @@ class TestOSVClient:
         assert result == {}
 
     def test_extract_severity_high(self):
-        """CONTRACT: CVSS >= 7.0 maps to 'high' severity."""
+        """CONTRACT: CVSS >= 7.0 maps to 'HIGH' severity."""
         client = OSVClient()
         vuln = {
             "severity": [{"type": "CVSS_V3", "score": "7.5"}]
         }
         severity = client._extract_severity(vuln)
-        assert severity == "high"
+        assert severity == "HIGH"
 
     def test_extract_severity_critical(self):
-        """CONTRACT: CVSS >= 9.0 maps to 'critical' severity."""
+        """CONTRACT: CVSS >= 9.0 maps to 'CRITICAL' severity."""
         client = OSVClient()
         vuln = {
             "severity": [{"type": "CVSS_V3", "score": "9.2"}]
         }
         severity = client._extract_severity(vuln)
-        assert severity == "critical"
+        assert severity == "CRITICAL"
 
     def test_extract_vulnerabilities_structure(self):
         """CONTRACT: extract_vulnerabilities returns structured data."""
@@ -112,7 +112,7 @@ class TestOSVClient:
         assert len(result) == 1
         assert result[0]["osv_id"] == "GHSA-test"
         assert result[0]["cve_id"] == "CVE-2024-5678"
-        assert result[0]["severity"] == "medium"
+        assert result[0]["severity"] == "MEDIUM"
         assert "2.0.0" in result[0]["fixed_in_versions"]
 
 

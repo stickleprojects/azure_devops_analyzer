@@ -159,7 +159,11 @@ class OSVClient:
         return result
 
     def _extract_severity(self, vuln: dict) -> Optional[str]:
-        """Extract severity from vulnerability record."""
+        """Extract severity from vulnerability record.
+
+        Returns uppercase severity strings ('CRITICAL', 'HIGH', 'MEDIUM', 'LOW')
+        to match the SQL views that filter by uppercase literals.
+        """
         # Try to get severity from severity field
         severity_data = vuln.get("severity", [])
         if isinstance(severity_data, list) and severity_data:
@@ -168,14 +172,14 @@ class OSVClient:
                 if sev.get("type") == "CVSS_V3":
                     score = float(sev.get("score", 0))
                     if score >= 9.0:
-                        return "critical"
+                        return "CRITICAL"
                     elif score >= 7.0:
-                        return "high"
+                        return "HIGH"
                     elif score >= 4.0:
-                        return "medium"
+                        return "MEDIUM"
                     else:
-                        return "low"
-        
+                        return "LOW"
+
         return None
 
     def _extract_fixed_versions(self, vuln: dict) -> list[str]:
