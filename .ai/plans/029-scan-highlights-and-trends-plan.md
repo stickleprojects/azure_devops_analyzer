@@ -100,7 +100,8 @@ states facts, not assumptions.
   dashboard for the trend panels.
 - A **daily news bulletin**: a `news_bulletins` table, a Celery Beat task that
   generates one bulletin per day from the highlights data, a read API, and an
-  admin-ui archive/reader page.
+  admin-ui archive/reader page. Opt-in email delivery with per-subscriber scope
+  (all / team / specific repos), team inferred from `repository.json`.
 
 ### Out of scope
 
@@ -175,12 +176,33 @@ states facts, not assumptions.
     `email`, with `subscribed_at`, `confirmed_at` (nullable), and an
     `unsubscribe_token`. **No one receives email until they subscribe** — empty
     by default.
+  - **Scoped subscriptions** — a subscriber chooses *what* they hear about, via a
+    `bulletin_subscription_scopes` child table (`subscription_id`, `scope_type`,
+    `scope_value`) so one email can hold several scopes (e.g. "team Payments
+    **plus** repo X"):
+    - `all` — org-wide (everything; `scope_value` unused).
+    - `team` — every repository belonging to a team. **Team is inferred from each
+      repo's `repository.json` `teamname`** ([`base.py:760-769`](../../src/extractors/base.py)),
+      which `store_repository` resolves into `teams` and sets as
+      `repositories.team_id` ([`storage.py:455-468`](../../src/database/storage.py)).
+      `scope_value` = team name/id. (Repos with no `repository.json` have a NULL
+      team — surfaced as an "unassigned" pseudo-team, not silently dropped.)
+    - `repo` — one named repository; `scope_value` = `repo_id`.
+  - **Per-subscriber filtering**: generation still builds one **global** highlights
+    dataset (and the in-app archive shows the full bulletin). The *email* task
+    then, per subscriber, filters that dataset to the union of their scopes,
+    renders a personalised body, and skips the send if nothing in-scope changed
+    (subject to the quiet-day toggle). Highlights carry `repo_id` / `team_id`
+    already, so filtering is a straightforward membership test.
   - **Subscribe from the UI while browsing the news**: the admin-ui `/bulletins`
     archive carries a "Get this by email" control where a user enters their
-    address to subscribe; the reader page has the same affordance. Backed by
-    `POST /api/bulletins/subscribe` and `POST /api/bulletins/unsubscribe`. Each
-    sent email also carries a one-click unsubscribe link (signed token), so
-    users can leave without logging in.
+    address **and picks a scope** — all news, one or more teams (list sourced
+    from distinct `repositories.team_id`/name), or specific repositories; the
+    reader page has the same affordance. Backed by
+    `POST /api/bulletins/subscribe` (email + scopes) and
+    `POST /api/bulletins/unsubscribe`, plus a manage endpoint so a returning user
+    can edit their scopes. Each sent email also carries a one-click unsubscribe
+    link (signed token), so users can leave without logging in.
   - **Email-domain allowlist**: subscriptions and sends are restricted to a
     configured set of allowed domains (`BULLETIN_ALLOWED_EMAIL_DOMAINS`, e.g.
     the org's internal domains). An address outside the allowlist is **rejected
@@ -246,8 +268,12 @@ above handles windows with no notable changes.
       lets the user browse and read old bulletins.
 - [ ] Published bulletins are emailed only to explicitly subscribed addresses
       (opt-in); no email is sent to anyone who hasn't subscribed.
-- [ ] A user can subscribe from the `/bulletins` UI while browsing, and
-      unsubscribe via the link in any email; both update `bulletin_subscriptions`.
+- [ ] A user can subscribe from the `/bulletins` UI while browsing, choosing a
+      scope (all / one-or-more teams / specific repos), and unsubscribe via the
+      link in any email; both update `bulletin_subscriptions`(+ scopes).
+- [ ] Each subscriber's email contains only highlights matching their scopes;
+      team scope resolves via `repository.json`-derived `team_id`, and repos with
+      no team appear under an "unassigned" pseudo-team rather than vanishing.
 - [ ] Subscriptions and sends are restricted to the configured email-domain
       allowlist — an out-of-allowlist address is rejected at subscribe time and
       never emailed even if it somehow exists in the table.
@@ -256,5 +282,6 @@ above handles windows with no notable changes.
 - [ ] Contract tests: digest writer, since-last-scan view, trend view, new-library
       detection at all three rollup levels, bulletin generation (incl. quiet-day
       behaviour and idempotent re-run), bulletin API, subscribe/unsubscribe,
+      scoped delivery (all/team/repo filtering, incl. unassigned-team repos),
       domain-allowlist enforcement, and the quiet-day email toggle.
 - [ ] Docs + plan status flipped to IN REVIEW in the implementation PR.
