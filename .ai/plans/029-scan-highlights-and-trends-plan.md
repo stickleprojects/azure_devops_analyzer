@@ -165,13 +165,30 @@ states facts, not assumptions.
   `GET /api/bulletins/latest`, and `GET /api/bulletins/<date>` (or `/<id>`).
 - **UI**: admin-ui `/bulletins` archive list + `/bulletins/:date` reader route,
   following the existing page/routing pattern.
+- **Quiet-day behaviour — DECIDED: always publish.** On a day with nothing
+  notable, generate a short **"No notable changes"** bulletin (flagged
+  `is_quiet_day = true` on the row) so the daily archive has no gaps. The
+  collator decides "quiet" when every highlight section is empty.
+- **Email distribution — opt-out model.** After a bulletin is published, the
+  task emails it to subscribers. Design:
+  - **Recipient pool**: derived from `contributors.email` (already unique),
+    optionally union an explicit extra-recipients config list.
+  - **Opt-out, not opt-in**: everyone in the pool is subscribed by default; a
+    `bulletin_opt_outs` table (keyed by lowercased email) records who unsubscribed.
+    Each email carries an **unsubscribe link** with a signed token that inserts
+    into `bulletin_opt_outs` — no login required to opt out.
+  - **SMTP is a new dependency** (no email code exists today): add a small
+    sender abstraction + env config (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
+    `SMTP_PASSWORD`, `SMTP_FROM`, `BULLETIN_EMAIL_ENABLED`). Email sending is a
+    **separate Celery task** from generation so a mail failure never blocks the
+    bulletin row from being written, and it can be retried independently.
+  - Respect the quiet-day case per a config toggle (`BULLETIN_EMAIL_ON_QUIET_DAY`,
+    default **off** — don't email "nothing happened" daily; still archived in-app).
 
 **Cadence note** — the bulletin window is *"since the previous bulletin"*, not
 *"since the last scan"*: scans may not run daily, or may run several times a
-day. Define behaviour for a quiet day explicitly — either **skip** publishing
-(no row) or publish a **"no notable changes"** bulletin. Recommend publishing a
-short "quiet day" bulletin so the daily archive has no gaps; make it a config
-toggle.
+day. The collator aggregates everything in that window; the quiet-day path
+above handles windows with no notable changes.
 
 ## Reuse
 
@@ -191,10 +208,10 @@ toggle.
 - One unified `/highlights` page, or fold each highlight into its existing home
   (radar page, security dashboard) plus a digest landing page?
 - Retention/aggregation policy for `scan_summary` (keep all runs vs. roll up).
-- Bulletin quiet-day behaviour (skip vs. "no notable changes" row) and bulletin
-  retention (keep forever vs. prune old rows).
-- Bulletin distribution beyond the in-app archive — is email/Slack/Teams wanted,
-  or is the browsable archive sufficient for now?
+- Bulletin retention (keep forever vs. prune old rows).
+- Recipient pool confirmation: all `contributors.email` by default, or only an
+  explicit subscriber list? (Plan assumes all contributors, opt-out.)
+- Slack/Teams distribution later, or is email + in-app archive enough?
 
 ## Acceptance criteria
 
@@ -208,9 +225,17 @@ toggle.
 - [ ] Daily `tasks.generate_daily_bulletin` runs on the Celery Beat schedule,
       upserts one idempotent row per `bulletin_date`, and collates highlights
       since the previous bulletin.
+- [ ] On a window with no notable changes, a "No notable changes" bulletin is
+      published (`is_quiet_day = true`) so the archive has no gaps.
 - [ ] Bulletin read API lists/serves bulletins; admin-ui `/bulletins` archive
       lets the user browse and read old bulletins.
+- [ ] Published bulletins are emailed to subscribers (opt-out model); each email
+      has a working unsubscribe link that records the opt-out, and opted-out
+      addresses are excluded from subsequent sends.
+- [ ] Email sending is a separate task from generation; a mail failure never
+      blocks the bulletin row from being written.
 - [ ] Contract tests: digest writer, since-last-scan view, trend view, new-library
       detection at all three rollup levels, bulletin generation (incl. quiet-day
-      behaviour and idempotent re-run), and bulletin API.
+      behaviour and idempotent re-run), bulletin API, and email opt-out
+      (unsubscribe excludes recipient; quiet-day email toggle honoured).
 - [ ] Docs + plan status flipped to IN REVIEW in the implementation PR.
