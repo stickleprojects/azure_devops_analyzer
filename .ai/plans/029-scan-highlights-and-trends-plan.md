@@ -22,6 +22,9 @@ follow-up discussion, the requested highlights are:
 - **New security vulnerabilities found** — at repo / team / org level, with
   drill-down (security dashboards already exist — link, don't rebuild)
 - All of the above viewable as **trends over the past months**
+- A **daily news bulletin** that collates the interesting changes into a
+  human-readable digest, published automatically on a cron, with an **archive
+  the user can browse** (old bulletins).
 
 ## Data foundation — verified against the schema and code
 
@@ -95,6 +98,9 @@ states facts, not assumptions.
 - Surfacing existing radar change signals (`is_new`/`is_moved`/`radar_blip_history`).
 - A UI surface: an admin-ui `/highlights` page and/or a Grafana "Scan Highlights"
   dashboard for the trend panels.
+- A **daily news bulletin**: a `news_bulletins` table, a Celery Beat task that
+  generates one bulletin per day from the highlights data, a read API, and an
+  admin-ui archive/reader page.
 
 ### Out of scope
 
@@ -141,6 +147,32 @@ states facts, not assumptions.
   [`web/admin-ui/src/App.tsx`](../../web/admin-ui/src/App.tsx)).
 - Grafana "Scan Highlights" dashboard for the month-trend panels.
 
+### Phase 6 — Daily news bulletin + archive
+- **Storage**: migration adds a `news_bulletins` table — one row per published
+  bulletin: `bulletin_date` (UNIQUE), `published_at`, a structured `payload`
+  (JSONB — the collated highlight sections) and a rendered `body` (Markdown/HTML
+  for display). Keeping both lets the archive re-render without recomputing.
+- **Generation**: a Celery task `tasks.generate_daily_bulletin` that collates
+  everything interesting **since the previous bulletin** (not "since last scan"
+  — see note) into the payload, renders the body, and upserts the row. Idempotent
+  per `bulletin_date` so re-runs don't duplicate.
+- **Schedule**: add the **project's first `beat_schedule` entry** to
+  [`celery_app.py`](../../src/scheduler/celery_app.py) (a daily `crontab`, e.g.
+  06:00 UTC). The `celery-beat` service already exists in
+  [`docker-compose.yml`](../../docker-compose.yml) — no new infra. Provide a
+  manual trigger (API or management task) for backfill/testing.
+- **Read API**: `GET /api/bulletins` (paginated list, newest first),
+  `GET /api/bulletins/latest`, and `GET /api/bulletins/<date>` (or `/<id>`).
+- **UI**: admin-ui `/bulletins` archive list + `/bulletins/:date` reader route,
+  following the existing page/routing pattern.
+
+**Cadence note** — the bulletin window is *"since the previous bulletin"*, not
+*"since the last scan"*: scans may not run daily, or may run several times a
+day. Define behaviour for a quiet day explicitly — either **skip** publishing
+(no row) or publish a **"no notable changes"** bulletin. Recommend publishing a
+short "quiet day" bulletin so the daily archive has no gaps; make it a config
+toggle.
+
 ## Reuse
 
 - `extraction_runs` / `extraction_metrics` (extraction pipeline).
@@ -148,6 +180,9 @@ states facts, not assumptions.
 - `radar_blips` / `radar_blip_history` / `RadarPublicationWorkflow` (Plan 022).
 - Plan 021 security dashboards + views (drill-down target).
 - admin-ui routing/page patterns (Plan 025); Grafana panel patterns (Plan 011/021/023).
+- Celery + `celery-beat` service and named-task pattern in
+  [`src/scheduler/tasks.py`](../../src/scheduler/tasks.py) (bulletin generation
+  task + first `beat_schedule` entry).
 
 ## Open questions
 
@@ -156,6 +191,10 @@ states facts, not assumptions.
 - One unified `/highlights` page, or fold each highlight into its existing home
   (radar page, security dashboard) plus a digest landing page?
 - Retention/aggregation policy for `scan_summary` (keep all runs vs. roll up).
+- Bulletin quiet-day behaviour (skip vs. "no notable changes" row) and bulletin
+  retention (keep forever vs. prune old rows).
+- Bulletin distribution beyond the in-app archive — is email/Slack/Teams wanted,
+  or is the browsable archive sufficient for now?
 
 ## Acceptance criteria
 
@@ -166,6 +205,12 @@ states facts, not assumptions.
       link to the Plan 021 security dashboard.
 - [ ] Radar changes (`is_new`/`is_moved`/ring movements) surfaced for the latest scan.
 - [ ] Month-over-month trend endpoint/panel renders.
+- [ ] Daily `tasks.generate_daily_bulletin` runs on the Celery Beat schedule,
+      upserts one idempotent row per `bulletin_date`, and collates highlights
+      since the previous bulletin.
+- [ ] Bulletin read API lists/serves bulletins; admin-ui `/bulletins` archive
+      lets the user browse and read old bulletins.
 - [ ] Contract tests: digest writer, since-last-scan view, trend view, new-library
-      detection at all three rollup levels.
+      detection at all three rollup levels, bulletin generation (incl. quiet-day
+      behaviour and idempotent re-run), and bulletin API.
 - [ ] Docs + plan status flipped to IN REVIEW in the implementation PR.
