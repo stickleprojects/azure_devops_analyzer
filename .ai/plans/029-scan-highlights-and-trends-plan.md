@@ -1,6 +1,6 @@
 # Plan 029: Scan Highlights & Trends ("What changed since last scan")
 
-## Status: DRAFT 📝 (not started — issue #147)
+## Status: DRAFT 📝 — Phase 0 decisions COMPLETE; Phases 1–6 not started (issue #147)
 
 Tracks GitHub issue
 [#147](https://github.com/stickleprojects/azure_devops_analyzer/issues/147):
@@ -38,7 +38,7 @@ states facts, not assumptions.
 | Discrete scan events | [`extraction_runs`](../../database/schema.sql) (`run_id`, `started_at`, `completed_at`) | The anchor for "since last scan". |
 | Per-repo activity per run | [`extraction_metrics`](../../database/schema.sql) hypertable (`commits_extracted`, `pull_requests_extracted`, `contributors_extracted`, keyed by `run_id`+`repository_id`) | Retains history per run. |
 | **Top commit improvers** | `extraction_metrics.commits_extracted` | **Verified**: this is `stored_count` of *newly-stored, de-duplicated* commits this run ([`github_analysis.py:438-453`](../../src/workflows/github_analysis.py)) — a per-run "new this scan" value. No run-diff needed; just rank the latest run. ⚠️ Capped by `max_commits` and limited to "recent commits". |
-| New / retired repos | run membership in `extraction_metrics` (repos in run N but not N-1, and vice-versa) + `repositories.is_active` / `last_analyzed_at` | `is_active` column exists; confirm extractor flips it rather than hard-deleting. |
+| New / retired repos | run membership in `extraction_metrics` (repos in run N but not N-1, and vice-versa) | **Verified**: `is_active` is never set to `False` and repos are never hard-deleted, so retirement must be derived from run membership, not `is_active` (Phase 0 decision). |
 | **New libraries added** | [`repository_dependencies`](../../database/schema.sql) `first_seen_at` / `last_seen_at`, `UNIQUE(repo_id, package_name, ecosystem)` | **No schema change needed.** New-to-repo = `first_seen_at` in window; new-to-org = `MIN(first_seen_at)` per `(package, ecosystem)` in window. |
 | Team / org rollups | `repository_dependencies.repo_id` → `repositories.team_id` / `project_id` (FKs exist) | Single-repo / team / org = a `GROUP BY`. |
 | **Blast radius** of a library | `radar_blips.repo_count`; vuln exposure = `radar_blips.exposed_to_cves` | Already precomputed by the radar workflow. |
@@ -111,15 +111,29 @@ states facts, not assumptions.
 
 ## Phases
 
-### Phase 0 — Decisions & confirmations (no code)
-- Confirm `is_active` is set (not hard-delete) on disappearance, so retired-repo
-  detection is reliable.
+### Phase 0 — Decisions & confirmations — ✅ COMPLETE
+
+All decisions made; recorded here so implementation phases can proceed.
+
+- **Retired-repo source — DECIDED: run-membership diff, not `is_active`.**
+  **Verified**: `is_active` is only ever written `True` ([`storage.py:489`](../../src/database/storage.py),
+  [`567`](../../src/database/storage.py)) and nothing flips it to `False`; there
+  is no hard-delete of repositories. So a disappeared repo is currently
+  invisible. Retired = "present in extraction run N-1 but absent in run N"
+  (via `extraction_metrics` run membership). Phase 2 owns this; optionally it may
+  *also* set `is_active = false` as a side effect, but detection must not depend
+  on `is_active` being maintained today.
 - **Radar trigger — DECIDED: publish `RadarPublicationWorkflow` at the end of
   each completed full scan.** This makes `radar_blip_history.publication_date`
   track scan completion, so "radar changes since last scan" aligns naturally.
   Guard it to run once per scan (after all repos processed), not per-repo.
-- Confirm the `max_commits` cap is acceptable for "top improvers" (or note the
-  caveat in the UI).
+- **Top improvers — DECIDED: rank raw `extraction_metrics.commits_extracted`**
+  for the latest run (it is already "new this scan"). The `max_commits` cap is
+  accepted; note the caveat in the UI.
+- **Quiet day — DECIDED: always publish** a "No notable changes" bulletin
+  (`is_quiet_day = true`).
+- **Email — DECIDED: opt-in**, with a domain allowlist, scoped subscriptions
+  (all/team/repo, team from `repository.json`), and a team/repo archive filter.
 
 ### Phase 1 — `scan_summary` digest table + writer
 - Migration `021_scan_summary.sql`: one row per `extraction_run` with headline
