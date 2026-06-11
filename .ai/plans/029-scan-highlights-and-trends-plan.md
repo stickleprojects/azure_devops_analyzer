@@ -165,7 +165,12 @@ states facts, not assumptions.
 - **Read API**: `GET /api/bulletins` (paginated list, newest first),
   `GET /api/bulletins/latest`, and `GET /api/bulletins/<date>` (or `/<id>`).
 - **UI**: admin-ui `/bulletins` archive list + `/bulletins/:date` reader route,
-  following the existing page/routing pattern.
+  following the existing page/routing pattern. The archive and reader support a
+  **team/repo filter** (same scope vocabulary as subscriptions: all / team /
+  repo) so browsing can be narrowed to match what a user cares about; the filter
+  is applied client-side over the full stored bulletin, or passed to the read
+  API as query params (`?team=` / `?repo=`) which filter the returned highlight
+  sections server-side. Default view is the full (org-wide) bulletin.
 - **Quiet-day behaviour — DECIDED: always publish.** On a day with nothing
   notable, generate a short **"No notable changes"** bulletin (flagged
   `is_quiet_day = true` on the row) so the daily archive has no gaps. The
@@ -265,7 +270,8 @@ above handles windows with no notable changes.
 - [ ] On a window with no notable changes, a "No notable changes" bulletin is
       published (`is_quiet_day = true`) so the archive has no gaps.
 - [ ] Bulletin read API lists/serves bulletins; admin-ui `/bulletins` archive
-      lets the user browse and read old bulletins.
+      lets the user browse and read old bulletins, and filter the view by
+      team/repo (matching the subscription scope vocabulary).
 - [ ] Published bulletins are emailed only to explicitly subscribed addresses
       (opt-in); no email is sent to anyone who hasn't subscribed.
 - [ ] A user can subscribe from the `/bulletins` UI while browsing, choosing a
