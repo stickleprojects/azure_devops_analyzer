@@ -142,6 +142,20 @@ CREATE INDEX idx_extraction_metrics_platform_status ON extraction_metrics(platfo
 CREATE INDEX idx_extraction_metrics_repo ON extraction_metrics(repository_id);
 CREATE INDEX idx_extraction_metrics_correlation ON extraction_metrics(correlation_id);
 
+CREATE TABLE scan_summary (
+    run_id UUID PRIMARY KEY REFERENCES extraction_runs(run_id) ON DELETE CASCADE,
+    scan_completed_at TIMESTAMPTZ NOT NULL,
+    repos_scanned INTEGER NOT NULL DEFAULT 0,
+    new_repos INTEGER NOT NULL DEFAULT 0,
+    retired_repos INTEGER NOT NULL DEFAULT 0,
+    total_new_commits INTEGER NOT NULL DEFAULT 0,
+    contributors INTEGER NOT NULL DEFAULT 0,
+    new_libraries INTEGER NOT NULL DEFAULT 0,
+    new_vulnerabilities INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX idx_scan_summary_completed_at ON scan_summary(scan_completed_at DESC);
+
 -- Branches
 CREATE TABLE branches (
     branch_id SERIAL PRIMARY KEY,

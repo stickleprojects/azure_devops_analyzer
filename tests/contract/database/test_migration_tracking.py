@@ -84,6 +84,25 @@ def _psql_query(db, sql):
     return result.stdout.strip()
 
 
+def _psql_file(db, sql_file):
+    """Execute a SQL file against the provided database."""
+    env = {**os.environ, "PGPASSWORD": _POSTGRES_PASSWORD}
+    return subprocess.run(
+        [
+            "psql",
+            "-h", _POSTGRES_HOST,
+            "-p", str(_POSTGRES_PORT),
+            "-U", _POSTGRES_USER,
+            "-d", db,
+            "-f", sql_file,
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+
 def _run_migration_script(db):
     """Run run_migrations.sh against *db* and return CompletedProcess."""
     env = {
@@ -306,3 +325,67 @@ class TestMigrationTracking:
             assert recorded == "1", (
                 f"Expected exactly one tracking row after replay for {migration_name}, got {recorded}"
             )
+
+    def test_022_scan_summary_backfill_is_replay_safe(self, temp_db):
+        """Replaying 022 backfills missing digest rows and remains idempotent."""
+        first = _run_migration_script(temp_db)
+        assert first.returncode == 0
+
+        migration_022 = os.path.join(_MIGRATIONS_DIR, "022_scan_summary.sql")
+        assert os.path.exists(migration_022), "Expected migration file 022_scan_summary.sql"
+
+        _psql(
+            temp_db,
+            """
+            INSERT INTO extraction_runs (
+                run_id, platform, status, total_repositories, processed_repositories,
+                started_at, updated_at, completed_at
+            ) VALUES (
+                '22222222-2222-2222-2222-222222222222',
+                'github',
+                'completed',
+                1,
+                1,
+                NOW() - INTERVAL '1 hour',
+                NOW() - INTERVAL '30 minutes',
+                NOW() - INTERVAL '30 minutes'
+            );
+
+            INSERT INTO extraction_metrics (
+                run_id, repository_id, platform, status, extraction_started_at,
+                extraction_completed_at, commits_extracted, contributors_extracted, correlation_id
+            ) VALUES (
+                '22222222-2222-2222-2222-222222222222',
+                'repo-backfill',
+                'github',
+                'completed',
+                NOW() - INTERVAL '50 minutes',
+                NOW() - INTERVAL '45 minutes',
+                6,
+                2,
+                '33333333-3333-3333-3333-333333333333'
+            );
+            """,
+        )
+
+        before = _psql_query(
+            temp_db,
+            "SELECT COUNT(*) FROM scan_summary WHERE run_id = '22222222-2222-2222-2222-222222222222';",
+        )
+        assert before == "0"
+
+        _psql_file(temp_db, migration_022)
+
+        after_first_replay = _psql_query(
+            temp_db,
+            "SELECT COUNT(*) FROM scan_summary WHERE run_id = '22222222-2222-2222-2222-222222222222';",
+        )
+        assert after_first_replay == "1"
+
+        _psql_file(temp_db, migration_022)
+
+        after_second_replay = _psql_query(
+            temp_db,
+            "SELECT COUNT(*) FROM scan_summary WHERE run_id = '22222222-2222-2222-2222-222222222222';",
+        )
+        assert after_second_replay == "1"
