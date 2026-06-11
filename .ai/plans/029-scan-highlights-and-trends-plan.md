@@ -1,0 +1,171 @@
+# Plan 029: Scan Highlights & Trends ("What changed since last scan")
+
+## Status: DRAFT 📝 (not started — issue #147)
+
+Tracks GitHub issue
+[#147](https://github.com/stickleprojects/azure_devops_analyzer/issues/147):
+"when we rescan it's difficult to see updates and highlights, add a feature to
+show interesting information from each scan."
+
+## Motivation
+
+Each rescan rewrites the same tables in place, so there is no surface that
+answers *"what actually changed since last time?"*. Operators want a digest
+after every scan plus longer-term (month-over-month) trends. From the issue and
+follow-up discussion, the requested highlights are:
+
+- **New repos** / **retired repos**
+- **Top commit improvers** (repos with the biggest activity jump since last scan)
+- **Most active contributors** this scan vs last
+- **New libraries added** — at **repo / team / org** level, to spot tech-radar
+  changes and assess **blast radius** when a library is introduced
+- **New security vulnerabilities found** — at repo / team / org level, with
+  drill-down (security dashboards already exist — link, don't rebuild)
+- All of the above viewable as **trends over the past months**
+
+## Data foundation — verified against the schema and code
+
+This was checked against the live schema/code before drafting, so the plan
+states facts, not assumptions.
+
+### What already exists (strong reuse)
+
+| Need | Backing data | Notes |
+| --- | --- | --- |
+| Discrete scan events | [`extraction_runs`](../../database/schema.sql) (`run_id`, `started_at`, `completed_at`) | The anchor for "since last scan". |
+| Per-repo activity per run | [`extraction_metrics`](../../database/schema.sql) hypertable (`commits_extracted`, `pull_requests_extracted`, `contributors_extracted`, keyed by `run_id`+`repository_id`) | Retains history per run. |
+| **Top commit improvers** | `extraction_metrics.commits_extracted` | **Verified**: this is `stored_count` of *newly-stored, de-duplicated* commits this run ([`github_analysis.py:438-453`](../../src/workflows/github_analysis.py)) — a per-run "new this scan" value. No run-diff needed; just rank the latest run. ⚠️ Capped by `max_commits` and limited to "recent commits". |
+| New / retired repos | run membership in `extraction_metrics` (repos in run N but not N-1, and vice-versa) + `repositories.is_active` / `last_analyzed_at` | `is_active` column exists; confirm extractor flips it rather than hard-deleting. |
+| **New libraries added** | [`repository_dependencies`](../../database/schema.sql) `first_seen_at` / `last_seen_at`, `UNIQUE(repo_id, package_name, ecosystem)` | **No schema change needed.** New-to-repo = `first_seen_at` in window; new-to-org = `MIN(first_seen_at)` per `(package, ecosystem)` in window. |
+| Team / org rollups | `repository_dependencies.repo_id` → `repositories.team_id` / `project_id` (FKs exist) | Single-repo / team / org = a `GROUP BY`. |
+| **Blast radius** of a library | `radar_blips.repo_count`; vuln exposure = `radar_blips.exposed_to_cves` | Already precomputed by the radar workflow. |
+| **Tech-radar changes** | `radar_blips.is_new` / `is_moved`; [`radar_blip_history`](../../database/migrations/018_tech_radar_schema.sql) (`prior_ring → current_ring`, `repo_count_delta`, `vulnerability_change`) | The diff engine already exists — this is a *surfacing* job, not a build. |
+
+### Gaps that need real work
+
+1. **Radar publication has no automated trigger.** **Verified**:
+   `RadarPublicationWorkflow` is invoked only from tests — there is no publish
+   API route (only `GET /api/radar*` in
+   [`rescan.py`](../../src/api/rescan.py)) and no CI workflow references radar.
+   So "radar changes since last scan" requires *adding* a trigger. **Decided:
+   publish at the end of each completed full scan** (see Phase 0). This is a
+   prerequisite, not just a cadence-alignment decision.
+
+   *Radar UI/back-end already exist and are tested end-to-end* — schema
+   (`radar_*` tables), `RadarPublicationWorkflow`, `GET /api/radar` +
+   `/api/radar/history` + `/api/radar/export`, and the admin-ui
+   `/radar` + `/radar/history` pages (`RadarPage`, `RadarHistoryPage`,
+   `RadarChart`) all ship with tests (33 categorizer unit, 8 API contract, 3
+   workflow e2e, plus DB-schema and frontend suites). **The only missing piece
+   is the production trigger**: `GET /api/radar` returns `200` with
+   `entries: []` until something is published, so today the radar renders empty
+   in a real deployment. Wiring the post-scan trigger (Phase 0/Phase 4)
+   populates it for the first time — no new UI work is needed for the radar
+   itself.
+
+2. **Vulnerabilities are stored once per package, not per scan.** After
+   migration 014, `vulnerabilities` is keyed by `package_id` with only
+   `created_at` / `published_date`. "New vuln this scan" therefore splits into
+   two *distinct* events that need different queries and labels:
+   - a **newly-published CVE** affecting a library already in use
+     (`vulnerabilities.created_at` in window);
+   - an **existing CVE that now hits us because a newly-added library
+     introduced it** (joins new-library detection to existing vuln rows — this
+     is the "blast radius when a library is introduced" case).
+
+3. **No digest/snapshot table.** Diffing raw `extraction_metrics` answers "last
+   scan" but month-over-month trends across many runs gets expensive and
+   fragile. A small `scan_summary` table written once per run makes trends a
+   trivial time-series query.
+
+4. **Contributor metrics are paused.** `_process_contributor_metrics` is
+   disabled for performance ([`github_analysis.py:293-298`](../../src/workflows/github_analysis.py)).
+   "Most active contributors" must derive from `contributors_extracted` +
+   per-author commit counts from the `commits` table, not the paused pipeline.
+
+## Scope
+
+### In scope
+
+- A `scan_summary` digest table + a writer hook at extraction-run completion.
+- A read API + view exposing "what changed since last scan" and month trends.
+- New-library detection (repo/team/org) from `first_seen_at`.
+- New-vulnerability highlights (both event types above) with drill-down links
+  to the existing Plan 021 security dashboards.
+- Surfacing existing radar change signals (`is_new`/`is_moved`/`radar_blip_history`).
+- A UI surface: an admin-ui `/highlights` page and/or a Grafana "Scan Highlights"
+  dashboard for the trend panels.
+
+### Out of scope
+
+- Rebuilding security drill-downs (Plan 021 owns those — link to them).
+- Re-enabling the paused contributor-metrics pipeline (separate concern).
+- Changing extraction/caching behaviour.
+
+## Phases
+
+### Phase 0 — Decisions & confirmations (no code)
+- Confirm `is_active` is set (not hard-delete) on disappearance, so retired-repo
+  detection is reliable.
+- **Radar trigger — DECIDED: publish `RadarPublicationWorkflow` at the end of
+  each completed full scan.** This makes `radar_blip_history.publication_date`
+  track scan completion, so "radar changes since last scan" aligns naturally.
+  Guard it to run once per scan (after all repos processed), not per-repo.
+- Confirm the `max_commits` cap is acceptable for "top improvers" (or note the
+  caveat in the UI).
+
+### Phase 1 — `scan_summary` digest table + writer
+- Migration `021_scan_summary.sql`: one row per `extraction_run` with headline
+  totals (repos scanned, new/retired counts, total new commits, contributors,
+  new libraries, new vulns).
+- Writer hook on run completion; forward-only, with a one-time backfill from
+  `extraction_metrics` where derivable.
+
+### Phase 2 — "What changed since last scan" view + API
+- View/endpoint returning, for the two latest runs: new/retired repos, top
+  commit improvers (rank latest `commits_extracted`), most active contributors,
+  and **new libraries** (`first_seen_at`) at repo/team/org.
+
+### Phase 3 — Trends over months
+- Time-series view/endpoint over `scan_summary`.
+
+### Phase 4 — Vulnerability + radar highlights
+- New-vuln highlights (both event types), blast-radius via
+  `radar_blips.repo_count` / `exposed_to_cves`, drill-down links to Plan 021
+  dashboards.
+- Surface `radar_blip_history` / `is_new` / `is_moved`. Requires the Phase 0
+  trigger so radar history is produced per scan.
+
+### Phase 5 — UI surface
+- admin-ui `/highlights` (or `/whats-new`) React route (pattern in
+  [`web/admin-ui/src/App.tsx`](../../web/admin-ui/src/App.tsx)).
+- Grafana "Scan Highlights" dashboard for the month-trend panels.
+
+## Reuse
+
+- `extraction_runs` / `extraction_metrics` (extraction pipeline).
+- `repository_dependencies.first_seen_at` (Plan 012).
+- `radar_blips` / `radar_blip_history` / `RadarPublicationWorkflow` (Plan 022).
+- Plan 021 security dashboards + views (drill-down target).
+- admin-ui routing/page patterns (Plan 025); Grafana panel patterns (Plan 011/021/023).
+
+## Open questions
+
+- Should "top improvers" use raw `commits_extracted` (simple, cap-limited) or a
+  true run-N vs run-(N-1) delta? Raw is cheaper and already "new this scan".
+- One unified `/highlights` page, or fold each highlight into its existing home
+  (radar page, security dashboard) plus a digest landing page?
+- Retention/aggregation policy for `scan_summary` (keep all runs vs. roll up).
+
+## Acceptance criteria
+
+- [ ] `scan_summary` populated automatically on each completed scan; backfill runs once.
+- [ ] "Since last scan" API returns new/retired repos, top commit improvers,
+      active contributors, and new libraries (repo/team/org) with correct aggregations.
+- [ ] New-library and new-vuln highlights resolve to a blast-radius repo count and
+      link to the Plan 021 security dashboard.
+- [ ] Radar changes (`is_new`/`is_moved`/ring movements) surfaced for the latest scan.
+- [ ] Month-over-month trend endpoint/panel renders.
+- [ ] Contract tests: digest writer, since-last-scan view, trend view, new-library
+      detection at all three rollup levels.
+- [ ] Docs + plan status flipped to IN REVIEW in the implementation PR.
