@@ -169,21 +169,35 @@ states facts, not assumptions.
   notable, generate a short **"No notable changes"** bulletin (flagged
   `is_quiet_day = true` on the row) so the daily archive has no gaps. The
   collator decides "quiet" when every highlight section is empty.
-- **Email distribution — opt-out model.** After a bulletin is published, the
-  task emails it to subscribers. Design:
-  - **Recipient pool**: derived from `contributors.email` (already unique),
-    optionally union an explicit extra-recipients config list.
-  - **Opt-out, not opt-in**: everyone in the pool is subscribed by default; a
-    `bulletin_opt_outs` table (keyed by lowercased email) records who unsubscribed.
-    Each email carries an **unsubscribe link** with a signed token that inserts
-    into `bulletin_opt_outs` — no login required to opt out.
+- **Email distribution — opt-in model.** After a bulletin is published, the
+  task emails it only to people who have **explicitly subscribed**. Design:
+  - **Subscription store**: a `bulletin_subscriptions` table keyed by lowercased
+    `email`, with `subscribed_at`, `confirmed_at` (nullable), and an
+    `unsubscribe_token`. **No one receives email until they subscribe** — empty
+    by default.
+  - **Subscribe from the UI while browsing the news**: the admin-ui `/bulletins`
+    archive carries a "Get this by email" control where a user enters their
+    address to subscribe; the reader page has the same affordance. Backed by
+    `POST /api/bulletins/subscribe` and `POST /api/bulletins/unsubscribe`. Each
+    sent email also carries a one-click unsubscribe link (signed token), so
+    users can leave without logging in.
+  - **Email-domain allowlist**: subscriptions and sends are restricted to a
+    configured set of allowed domains (`BULLETIN_ALLOWED_EMAIL_DOMAINS`, e.g.
+    the org's internal domains). An address outside the allowlist is **rejected
+    at subscribe time** (clear UI error) and defensively re-checked at send time,
+    so notifications can never go to an unapproved domain even if a row predates
+    a config change.
   - **SMTP is a new dependency** (no email code exists today): add a small
     sender abstraction + env config (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`,
-    `SMTP_PASSWORD`, `SMTP_FROM`, `BULLETIN_EMAIL_ENABLED`). Email sending is a
-    **separate Celery task** from generation so a mail failure never blocks the
-    bulletin row from being written, and it can be retried independently.
+    `SMTP_PASSWORD`, `SMTP_FROM`, `BULLETIN_EMAIL_ENABLED`,
+    `BULLETIN_ALLOWED_EMAIL_DOMAINS`). Email sending is a **separate Celery
+    task** from generation so a mail failure never blocks the bulletin row from
+    being written, and it can be retried independently.
   - Respect the quiet-day case per a config toggle (`BULLETIN_EMAIL_ON_QUIET_DAY`,
     default **off** — don't email "nothing happened" daily; still archived in-app).
+  - *Optional hardening (note for implementation):* a double-opt-in confirmation
+    email (`confirmed_at`) prevents someone subscribing a colleague's address.
+    Worth doing if addresses aren't otherwise verified.
 
 **Cadence note** — the bulletin window is *"since the previous bulletin"*, not
 *"since the last scan"*: scans may not run daily, or may run several times a
@@ -209,8 +223,9 @@ above handles windows with no notable changes.
   (radar page, security dashboard) plus a digest landing page?
 - Retention/aggregation policy for `scan_summary` (keep all runs vs. roll up).
 - Bulletin retention (keep forever vs. prune old rows).
-- Recipient pool confirmation: all `contributors.email` by default, or only an
-  explicit subscriber list? (Plan assumes all contributors, opt-out.)
+- The exact allowed email domains (`BULLETIN_ALLOWED_EMAIL_DOMAINS` value).
+- Double-opt-in confirmation — required, or is a plain subscribe enough given
+  the domain allowlist already limits exposure?
 - Slack/Teams distribution later, or is email + in-app archive enough?
 
 ## Acceptance criteria
@@ -229,13 +244,17 @@ above handles windows with no notable changes.
       published (`is_quiet_day = true`) so the archive has no gaps.
 - [ ] Bulletin read API lists/serves bulletins; admin-ui `/bulletins` archive
       lets the user browse and read old bulletins.
-- [ ] Published bulletins are emailed to subscribers (opt-out model); each email
-      has a working unsubscribe link that records the opt-out, and opted-out
-      addresses are excluded from subsequent sends.
+- [ ] Published bulletins are emailed only to explicitly subscribed addresses
+      (opt-in); no email is sent to anyone who hasn't subscribed.
+- [ ] A user can subscribe from the `/bulletins` UI while browsing, and
+      unsubscribe via the link in any email; both update `bulletin_subscriptions`.
+- [ ] Subscriptions and sends are restricted to the configured email-domain
+      allowlist — an out-of-allowlist address is rejected at subscribe time and
+      never emailed even if it somehow exists in the table.
 - [ ] Email sending is a separate task from generation; a mail failure never
       blocks the bulletin row from being written.
 - [ ] Contract tests: digest writer, since-last-scan view, trend view, new-library
       detection at all three rollup levels, bulletin generation (incl. quiet-day
-      behaviour and idempotent re-run), bulletin API, and email opt-out
-      (unsubscribe excludes recipient; quiet-day email toggle honoured).
+      behaviour and idempotent re-run), bulletin API, subscribe/unsubscribe,
+      domain-allowlist enforcement, and the quiet-day email toggle.
 - [ ] Docs + plan status flipped to IN REVIEW in the implementation PR.
