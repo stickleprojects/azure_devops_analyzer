@@ -194,6 +194,19 @@ def skip_repository_extraction(
     return metric.id
 
 
+def _get_extraction_metric_by_id(
+    session: Session,
+    metric_id: int,
+) -> Optional[ExtractionMetric]:
+    """
+    Return an extraction metric by id.
+
+    ExtractionMetric uses a composite primary key in the database, so
+    session.get() cannot load it from the auto-increment id alone.
+    """
+    return session.query(ExtractionMetric).filter_by(id=metric_id).one_or_none()
+
+
 def complete_repository_extraction(
     session: Session,
     metric_id: int,
@@ -207,7 +220,7 @@ def complete_repository_extraction(
     """
     Record a successful repository extraction completion.
     """
-    metric = session.get(ExtractionMetric, metric_id)
+    metric = _get_extraction_metric_by_id(session, metric_id)
     if not metric:
         return
 
@@ -234,7 +247,7 @@ def fail_repository_extraction(
     """
     Record a repository extraction failure.
     """
-    metric = session.get(ExtractionMetric, metric_id)
+    metric = _get_extraction_metric_by_id(session, metric_id)
     if not metric:
         return
 
@@ -1199,11 +1212,12 @@ def store_package_metadata(
 
     for vuln_dict in vulnerabilities:
         fixed_versions = vuln_dict.get("fixed_in_versions") or []
+        raw_severity = vuln_dict.get("severity") or "UNKNOWN"
         vuln = Vulnerability(
             package_id=pkg.id,
             cve_id=vuln_dict.get("cve_id"),
             vulnerability_id=vuln_dict.get("osv_id"),
-            severity=vuln_dict.get("severity") or "unknown",
+            severity=raw_severity.upper(),
             summary=vuln_dict.get("summary"),
             description=vuln_dict.get("details"),
             fixed_in_version=fixed_versions[0] if fixed_versions else None,

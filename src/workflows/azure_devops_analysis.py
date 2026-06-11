@@ -8,10 +8,14 @@ including organizations, projects, repositories, branches, commits, and pull req
 import logging
 import socket
 from dataclasses import dataclass
+from datetime import datetime, timedelta, UTC
 from typing import Optional
 
+from sqlalchemy import tuple_
+
 from src.database.connection import session_scope
-from src.database.models import Organization, Project
+from src.database.models import Organization, Project, Technology
+from src.analyzers.technology_enricher import TechnologyEnricher
 from src.database.storage import (
     should_scan_repository,
     store_organization,
@@ -21,7 +25,9 @@ from src.database.storage import (
     store_commit,
     store_pull_request,
     store_dependencies,
-    store_enriched_dependencies,
+    store_package_metadata,
+    store_repo_dependencies,
+    store_detections,
     store_readme,
     update_repository_analyzed_timestamp,
     get_extraction_summary,
@@ -384,7 +390,7 @@ class AzureDevOpsAnalysisWorkflow:
             logger.warning("          Failed to fetch languages: %s", e)
 
     def _process_technologies(self, repo_data):
-        """Detect and log technology stack for a repository."""
+        """Detect and persist technology stack for a repository."""
         try:
             # Get file tree to detect technologies
             file_tree = self.extractor.get_file_tree(repo_data.repo_id)
@@ -409,8 +415,34 @@ class AzureDevOpsAnalysisWorkflow:
                 if tech_detection.databases:
                     logger.info("          Databases: %s", ", ".join(tech_detection.databases[:2]))
 
+            # Persist detections
+            with session_scope() as session:
+                stored_entries = store_detections(session, repo_data.repo_id, tech_detection) or []
+
+            # EOL enrichment (weekly staleness check) — fetch all matching rows in one query
+            enricher = TechnologyEnricher()
+            with session_scope() as session:
+                pairs = [(e.name, e.category) for e in stored_entries]
+                if pairs:
+                    cutoff = datetime.now(tz=UTC) - timedelta(days=7)
+                    recent_rows = (
+                        session.query(Technology.name, Technology.category)
+                        .filter(
+                            Technology.eol_enriched_at > cutoff,
+                            tuple_(Technology.name, Technology.category).in_(pairs),
+                        )
+                        .all()
+                    )
+                    recently_enriched = {
+                        (name, category)
+                        for name, category in recent_rows
+                    }
+                    stale = [p for p in pairs if p not in recently_enriched]
+                    if stale:
+                        enricher.enrich(session, stale)
+
         except Exception as e:
-            logger.warning("          Failed to detect technologies: %s", e)
+            logger.warning("          Failed to detect/persist technologies: %s", e)
 
     def _process_readme_files(self, repo_data):
         """Fetch and store README files for a repository."""
@@ -498,20 +530,30 @@ class AzureDevOpsAnalysisWorkflow:
                 )
 
                 with session_scope() as session:
-                    # Use enriched dependencies if available, otherwise fall back to unenriched
                     if result.enriched_dependencies:
                         logger.info(
                             "          Enriching %d dependencies (latest versions, EOL, vulnerabilities)",
                             len(result.enriched_dependencies),
                         )
-                        store_enriched_dependencies(
+                        for enriched_dependency in result.enriched_dependencies:
+                            if enriched_dependency.package_metadata is not None:
+                                package_metadata = enriched_dependency.package_metadata
+                                store_package_metadata(
+                                    session,
+                                    package_name=package_metadata.package_name,
+                                    ecosystem=package_metadata.ecosystem,
+                                    latest_version=package_metadata.latest_version,
+                                    is_eol=package_metadata.is_eol,
+                                    eol_date=package_metadata.eol_date,
+                                    vulnerabilities=package_metadata.vulnerabilities,
+                                )
+                        store_repo_dependencies(
                             session,
                             repo_data.repo_id,
                             result.enriched_dependencies,
                             branch_name=repo_data.default_branch,
                         )
                     else:
-                        # Fallback to unenriched if enrichment failed
                         store_dependencies(
                             session,
                             repo_data.repo_id,

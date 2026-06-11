@@ -252,7 +252,7 @@ class TestVulnerabilityStorageE2E:
 
         if vulns:
             for vuln in vulns[:5]:
-                assert vuln.severity in ["critical", "high", "medium", "low", "unknown"]
+                assert vuln.severity in ["CRITICAL", "HIGH", "MEDIUM", "LOW", "UNKNOWN"]
                 assert vuln.vulnerability_id or vuln.cve_id
                 assert vuln.package_id is not None
 
@@ -409,7 +409,7 @@ class TestDependencyStorageE2E:
                 {
                     "cve_id": "CVE-2023-1234",
                     "osv_id": "GHSA-test-1234",
-                    "severity": "high",
+                    "severity": "HIGH",
                     "summary": "SQL injection",
                     "fixed_in_versions": ["3.2.19"],
                     "references": [],
@@ -556,7 +556,7 @@ class TestVulnerabilityStorageDirectE2E:
             package_id=pkg.id,
             cve_id="CVE-2021-23337",
             vulnerability_id="GHSA-35jh-r3h4-6jhm",
-            severity="high",
+            severity="HIGH",
             summary="Prototype Pollution in lodash",
             fixed_in_version="4.17.21",
             published_date=datetime(2021, 2, 15, tzinfo=timezone.utc),
@@ -569,7 +569,7 @@ class TestVulnerabilityStorageDirectE2E:
         ).first()
 
         assert stored_vuln is not None
-        assert stored_vuln.severity == "high"
+        assert stored_vuln.severity == "HIGH"
         assert stored_vuln.vulnerability_id == "GHSA-35jh-r3h4-6jhm"
         assert stored_vuln.fixed_in_version == "4.17.21"
         assert stored_vuln.summary == "Prototype Pollution in lodash"
@@ -597,21 +597,21 @@ class TestVulnerabilityStorageDirectE2E:
             Vulnerability(
                 package_id=pkg.id,
                 cve_id="CVE-2023-0001",
-                severity="critical",
+                severity="CRITICAL",
                 summary="SQL injection in QuerySet",
                 fixed_in_version="3.2.19",
             ),
             Vulnerability(
                 package_id=pkg.id,
                 cve_id="CVE-2023-0002",
-                severity="medium",
+                severity="MEDIUM",
                 summary="XSS in admin interface",
                 fixed_in_version="3.2.18",
             ),
             Vulnerability(
                 package_id=pkg.id,
                 cve_id="CVE-2023-0003",
-                severity="low",
+                severity="LOW",
                 summary="Information disclosure in debug mode",
             ),
         ]
@@ -625,7 +625,7 @@ class TestVulnerabilityStorageDirectE2E:
 
         assert len(stored_vulns) == 3
         severities = {v.severity for v in stored_vulns}
-        assert severities == {"critical", "medium", "low"}
+        assert severities == {"CRITICAL", "MEDIUM", "LOW"}
 
     @pytest.mark.integration
     def test_two_repos_same_package_independent_vuln_flags(self, test_session: Session):
@@ -658,7 +658,7 @@ class TestVulnerabilityStorageDirectE2E:
                 {
                     "cve_id": "CVE-2021-23337",
                     "osv_id": "GHSA-35jh-r3h4-6jhm",
-                    "severity": "high",
+                    "severity": "HIGH",
                     "summary": "Prototype Pollution",
                     "fixed_in_versions": ["4.17.21"],
                     "references": [],
@@ -736,7 +736,7 @@ class TestVulnerabilityStorageDirectE2E:
         vuln = Vulnerability(
             package_id=pkg.id,
             cve_id="CVE-2022-9999",
-            severity="high",
+            severity="HIGH",
             summary="Path traversal",
         )
         test_session.add(vuln)
