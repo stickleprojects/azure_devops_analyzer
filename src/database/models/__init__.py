@@ -21,6 +21,7 @@ from src.database.models.service import RepositoryService, Service
 from src.database.models.service_metric import ServiceMetric
 from src.database.models.summary import ReadmeFile, RepositorySummary
 from src.database.models.radar import RadarBlip, RadarBlipHistory, RadarPublication
+from src.database.models.scan_summary import ScanSummary
 from src.database.models.team import Team
 from src.database.models.team_contributor import TeamContributor
 from src.database.models.team_metric import TeamMetric
@@ -74,4 +75,6 @@ __all__ = [
     "RadarPublication",
     "RadarBlip",
     "RadarBlipHistory",
+    # Scan digest
+    "ScanSummary",
 ]

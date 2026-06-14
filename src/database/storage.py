@@ -9,6 +9,7 @@ from datetime import date, datetime, timedelta, UTC
 import uuid
 from typing import Optional
 
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from src.database.models import (
@@ -116,6 +117,132 @@ def complete_extraction_run(session: Session, run_id: uuid.UUID) -> None:
     run.completed_at = now
     run.updated_at = now
     run.current_repository_id = None
+    session.flush()
+    upsert_scan_summary_for_run(session, run_id)
+
+
+def upsert_scan_summary_for_run(session: Session, run_id: uuid.UUID) -> None:
+    """Compute and upsert one scan_summary row for a completed extraction run."""
+    run = session.get(ExtractionRun, run_id)
+    if not run or not run.completed_at:
+        return
+
+    session.execute(
+        text(
+            """
+            WITH current_run AS (
+                SELECT
+                    er.run_id,
+                    er.platform,
+                    er.started_at AS scan_started_at,
+                    er.updated_at AS scan_updated_at,
+                    er.completed_at AS scan_completed_at
+                FROM extraction_runs er
+                WHERE er.run_id = :run_id
+                  AND er.completed_at IS NOT NULL
+            ),
+            previous_run AS (
+                SELECT er.completed_at AS previous_completed_at
+                FROM extraction_runs er
+                JOIN current_run cr ON er.platform = cr.platform
+                WHERE er.completed_at IS NOT NULL
+                  -- Use a three-field tuple to mirror migration ordering and
+                  -- resolve same-completed_at ties consistently.
+                  AND (er.completed_at, er.started_at, er.updated_at)
+                      < (cr.scan_completed_at, cr.scan_started_at, cr.scan_updated_at)
+                ORDER BY er.completed_at DESC, er.started_at DESC, er.updated_at DESC
+                LIMIT 1
+            ),
+            current_membership AS (
+                SELECT DISTINCT em.repository_id
+                FROM extraction_metrics em
+                JOIN current_run cr ON em.run_id = cr.run_id
+            ),
+            previous_membership AS (
+                SELECT DISTINCT em.repository_id
+                FROM extraction_metrics em
+                JOIN extraction_runs er ON er.run_id = em.run_id
+                CROSS JOIN previous_run pr
+                JOIN current_run cr ON er.platform = cr.platform
+                WHERE er.completed_at = pr.previous_completed_at
+            )
+            INSERT INTO scan_summary (
+                run_id,
+                scan_completed_at,
+                repos_scanned,
+                new_repos,
+                retired_repos,
+                total_new_commits,
+                contributors,
+                new_libraries,
+                new_vulnerabilities
+            )
+            SELECT
+                cr.run_id,
+                cr.scan_completed_at,
+                COALESCE((
+                    SELECT COUNT(*) FROM current_membership
+                ), 0),
+                COALESCE((
+                    SELECT COUNT(*)
+                    FROM current_membership cm
+                    LEFT JOIN previous_membership pm
+                        ON pm.repository_id = cm.repository_id
+                    WHERE pm.repository_id IS NULL
+                ), 0),
+                COALESCE((
+                    SELECT COUNT(*)
+                    FROM previous_membership pm
+                    LEFT JOIN current_membership cm
+                        ON cm.repository_id = pm.repository_id
+                    WHERE cm.repository_id IS NULL
+                ), 0),
+                COALESCE((
+                    SELECT SUM(COALESCE(em.commits_extracted, 0))
+                    FROM extraction_metrics em
+                    WHERE em.run_id = cr.run_id
+                ), 0),
+                COALESCE((
+                    SELECT SUM(COALESCE(em.contributors_extracted, 0))
+                    FROM extraction_metrics em
+                    WHERE em.run_id = cr.run_id
+                ), 0),
+                COALESCE((
+                    SELECT COUNT(*)
+                    FROM repository_dependencies rd
+                    WHERE rd.repo_id IN (SELECT repository_id FROM current_membership)
+                      AND rd.first_seen_at <= cr.scan_completed_at
+                      AND (
+                          NOT EXISTS (SELECT 1 FROM previous_run)
+                          OR rd.first_seen_at > (SELECT previous_completed_at FROM previous_run)
+                      )
+                ), 0),
+                COALESCE((
+                    SELECT COUNT(*)
+                    FROM repository_dependencies rd
+                    WHERE rd.repo_id IN (SELECT repository_id FROM current_membership)
+                      AND rd.has_known_vulnerabilities = TRUE
+                      AND rd.first_seen_at <= cr.scan_completed_at
+                      AND (
+                          NOT EXISTS (SELECT 1 FROM previous_run)
+                          OR rd.first_seen_at > (SELECT previous_completed_at FROM previous_run)
+                      )
+                ), 0)
+            FROM current_run cr
+            ON CONFLICT (run_id) DO UPDATE
+            SET
+                scan_completed_at = EXCLUDED.scan_completed_at,
+                repos_scanned = EXCLUDED.repos_scanned,
+                new_repos = EXCLUDED.new_repos,
+                retired_repos = EXCLUDED.retired_repos,
+                total_new_commits = EXCLUDED.total_new_commits,
+                contributors = EXCLUDED.contributors,
+                new_libraries = EXCLUDED.new_libraries,
+                new_vulnerabilities = EXCLUDED.new_vulnerabilities
+            """
+        ),
+        {"run_id": run_id},
+    )
     session.flush()
 
 
