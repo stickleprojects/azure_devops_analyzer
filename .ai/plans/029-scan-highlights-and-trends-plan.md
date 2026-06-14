@@ -1,6 +1,6 @@
 # Plan 029: Scan Highlights & Trends ("What changed since last scan")
 
-## Status: DRAFT 📝 — Phase 0 decisions COMPLETE; Phases 1–6 not started (issue #147)
+## Status: IN PROGRESS 🚧 — Phase 0 decisions COMPLETE; Phase 1 in progress (issue #147)
 
 Tracks GitHub issue
 [#147](https://github.com/stickleprojects/azure_devops_analyzer/issues/147):
@@ -136,7 +136,7 @@ All decisions made; recorded here so implementation phases can proceed.
   (all/team/repo, team from `repository.json`), and a team/repo archive filter.
 
 ### Phase 1 — `scan_summary` digest table + writer
-- Migration `021_scan_summary.sql`: one row per `extraction_run` with headline
+- Migration `022_scan_summary.sql`: one row per `extraction_run` with headline
   totals (repos scanned, new/retired counts, total new commits, contributors,
   new libraries, new vulns).
 - Writer hook on run completion; forward-only, with a one-time backfill from
